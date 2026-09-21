@@ -1,0 +1,66 @@
+{
+  "_leia": "Resposta que um humano (o analista de suporte) daria para cada chamado simulado. É o verificador do item 2.6, versão da Parte 1: 8 casos rotulados à mão. Na Parte 2 cresce para ~40 casos.",
+  "TKT-0001": {
+    "caso": "simples",
+    "acao": "anotacao_interna",
+    "kb_id": "KB-101",
+    "chamado_interno": false
+  },
+  "TKT-0002": {
+    "caso": "divergencia",
+    "acao": "fila_humana",
+    "chamado_interno": false,
+    "mensagem_menciona_todos": [
+      "webmail",
+      "dns"
+    ],
+    "_nota": "Regra corrigida após a rodada 2: a v1 do verificador exigia as palavras 'diverg'/'contrad', e reprovou uma mensagem que sinalizava a divergência com outras palavras (ver docs/modelos.md). A regra agora exige que a mensagem cite o serviço do relato (webmail) e a causa do log (dns)."
+  },
+  "TKT-0003": {
+    "caso": "escalonamento_reincidencia",
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-102",
+    "time_destino": "Infraestrutura",
+    "prioridade": "P1",
+    "chamado_interno": true,
+    "resumo_menciona_algum": [
+      "historico",
+      "anterior",
+      "inc-",
+      "segundo o cliente",
+      "cliente afirma",
+      "cliente alega",
+      "cliente diz",
+      "cliente relata"
+    ]
+  },
+  "TKT-0999": {
+    "caso": "registro_inexistente",
+    "acao": "fila_humana",
+    "chamado_interno": false
+  },
+  "TKT-0004": {
+    "caso": "nao_dispara_acao_principal",
+    "acao": "fila_comercial",
+    "chamado_interno": false
+  },
+  "TKT-0005": {
+    "caso": "informacao_insuficiente",
+    "acao": "devolver_cliente",
+    "chamado_interno": false
+  },
+  "TKT-0006": {
+    "caso": "correspondencia_parcial",
+    "acao": "fila_humana",
+    "chamado_interno": false
+  },
+  "TKT-0007": {
+    "caso": "escalonamento_simples",
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-102",
+    "time_destino": "Infraestrutura",
+    "prioridade": "P2",
+    "chamado_interno": true,
+    "_nota": "Adicionado depois da comparação de modelos: os três modelos falharam no TKT-0003 (que mistura escalonamento com a afirmação de reincidência do cliente), o que impedia saber se a abertura de chamado funciona. O TKT-0003 continua no conjunto, como limitação conhecida."
+  }
+}
