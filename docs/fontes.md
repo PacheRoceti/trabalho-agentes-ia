@@ -82,3 +82,10 @@ uma vez.
 processo exatamente (só a leitura do caso, ou o processo de decisão
 inteiro?); nenhuma métrica de taxa de erro ou qualidade da síntese; nem
 custo ou tempo de implementação do projeto.v
+
+Preços de lista consultados em 21/09/2026 (agregadores; confirmar na página oficial da Mistral):
+
+- Mistral, página oficial de preços: https://mistral.ai/pricing/
+- Ministral 3 (3B, 8B, 14B) — AI Pricing Guru, base de 02/09/2026: https://www.aipricing.guru/mistral-ai-pricing/
+- Família Ministral 3, tarifas simétricas — BenchLM, verificado em 18/09/2026: https://benchlm.ai/mistral/api-pricing
+- Plano gratuito (Experiment): https://pricepertoken.com/endpoints/mistral/free e https://www.free-model.com/providers/mistral-ai/ (as fontes divergem sobre limites e sobre uso dos dados para treino; conferir no painel da conta, em Limits)

@@ -8,7 +8,7 @@ O agente não conversa — ele roda em background, cruza fontes e determina algo
 
 | Informação | Por que não está no modelo |
 |---|---|
-| Regras de SLA da empresa (P1=4h, P2=24h, P3=3 dias úteis; pausa em "aguardando cliente"; reabertura reabre o original; reincidência sobe prioridade) | **É privado.** É política interna desta empresa, não uma convenção universal de mercado. |
+| Regras de SLA da empresa (P1=2h, P2=24h, P3=3 dias úteis; pausa em "aguardando cliente"; reabertura reabre o original; reincidência sobe prioridade) | **É privado.** É política interna desta empresa, não uma convenção universal de mercado. |
 | Regra de alçada (só o gestor reclassifica; nenhum ticket pode ser encerrado, mesmo com informação insuficiente) | **É privado.** Decisão de governança interna, sem equivalente padronizado fora da empresa. |
 | Qual time é responsável por qual tipo de assunto (ex.: "problema de login" é Segurança ou Infraestrutura?) | **É específico demais.** O modelo "sabe" o que um time de Infraestrutura tipicamente faz, mas erra a fronteira exata entre os times *desta* empresa — e é exatamente nessa fronteira que mora o caso difícil do responsável real. |
 | Estado atual de cada ticket (status, prioridade, tempo aberto, histórico de trâmite entre times) | **É recente demais.** Muda a cada minuto; não existe versão "treinada" disso, é estado vivo do sistema externo. |
