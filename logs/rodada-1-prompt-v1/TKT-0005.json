@@ -1,0 +1,57 @@
+{
+  "execucao_id": "TKT-0005-686",
+  "id_ticket": "TKT-0005",
+  "modelo": "ministral-8b-latest",
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": "O chamado foi encaminhado para o cliente com solicitação de mais detalhes sobre o problema.",
+  "desfecho": {
+    "acao": "devolver_cliente",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "devolver_cliente"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 3,
+  "tokens_entrada": 4577,
+  "tokens_saida": 120,
+  "custo_usd": 0.000705,
+  "scores_kb": {},
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0005"
+      },
+      "resultado": {
+        "id": "TKT-0005",
+        "texto": "Meu servidor não está funcionando direito.",
+        "aberto_em": "2026-09-21 10:31",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Delta Restaurantes",
+        "plano": "Hospedagem Start",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 1
+    },
+    {
+      "indice": 1,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0005",
+        "destino": "devolver_cliente",
+        "mensagem": "Por favor, informe qual serviço está afetado (site, servidor, disco, etc.), qual erro ou comportamento anormal está ocorrendo e desde quando isso vem acontecendo."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "devolver_cliente"
+      },
+      "erro": null,
+      "ms": 6
+    }
+  ]
+}

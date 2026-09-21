@@ -1,0 +1,98 @@
+
+==============================================================================
+TKT-0001  (caso: simples)  modelo: ministral-8b-latest
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0001"} -> ok
+  passo 1 [leitura ] buscar_base_conhecimento {"termos": ["certificado", "ssl", "venceu", "renovacao", "automatica"]} -> ok
+  passo 2 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0001", "destino": "anotacao_interna", "mensagem": "Certificado SSL venceu e renovação autom -> ok
+
+  TERMINO: respondeu | desfecho: anotacao_interna | passos: 3 | chamadas ao modelo: 4 | lembretes: 0 | tokens: 7295 | custo: US$ 0.00109
+  resposta: O chamado TKT-0001 foi encaminhado para anotação interna com a sugestão de verificação do certificado SSL.
+  VERIFICADOR: OK
+
+==============================================================================
+TKT-0002  (caso: divergencia)  modelo: ministral-8b-latest
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0002"} -> ok
+  passo 1 [leitura ] buscar_base_conhecimento {"termos": ["webmail fora do ar", "dns", "mail zeta"]} -> ok
+  passo 2 [leitura ] buscar_base_conhecimento {"termos": ["dns fail", "servfail", "mail zeta"]} -> ok
+  passo 3 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0002", "destino": "fila_humana", "mensagem": "O cliente relata que o webmail está fora do a -> ok
+
+  TERMINO: respondeu | desfecho: fila_humana | passos: 4 | chamadas ao modelo: 5 | lembretes: 0 | tokens: 9502 | custo: US$ 0.00143
+  resposta: O chamado TKT-0002 foi encaminhado para a fila humana, pois o relato do cliente diverge do que mostra o log anexado.
+  VERIFICADOR: OK
+
+==============================================================================
+TKT-0003  (caso: escalonamento_reincidencia)  modelo: ministral-8b-latest
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0003"} -> ok
+  passo 1 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0003", "destino": "fila_humana", "mensagem": "O cliente afirma que é a terceira ocorrência  -> ok
+
+  TERMINO: respondeu | desfecho: fila_humana | passos: 2 | chamadas ao modelo: 3 | lembretes: 0 | tokens: 5291 | custo: US$ 0.00079
+  resposta: O chamado TKT-0003 foi encaminhado para a fila humana para revisão dos registros de ocorrências.
+  VERIFICADOR: FALHOU - desfecho 'fila_humana' em vez de 'abrir_chamado_interno'; kb_id 'None' em vez de 'KB-102'; time_destino 'None' em vez de 'Infraestrutura'; prioridade 'None' em vez de 'P1'; 0 chamado(s) interno(s) gravado(s) para TKT-0003
+
+==============================================================================
+TKT-0999  (caso: registro_inexistente)  modelo: ministral-8b-latest
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0999"} -> ERRO: chamado não encontrado no sistema de tickets
+  (lembrete 1/2: o modelo encerrou sem registrar desfecho)
+  passo 1 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0999", "destino": "fila_humana", "mensagem": "O ID TKT-0999 não foi encontrado no sistema d -> ok
+
+  TERMINO: respondeu | desfecho: fila_humana | passos: 2 | chamadas ao modelo: 4 | lembretes: 1 | tokens: 6861 | custo: US$ 0.00103
+  resposta: O chamado TKT-0999 foi encaminhado para a fila humana por não existir no sistema.
+  VERIFICADOR: OK
+
+==============================================================================
+TKT-0004  (caso: nao_dispara_acao_principal)  modelo: ministral-8b-latest
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0004"} -> ok
+  passo 1 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0004", "destino": "fila_comercial", "mensagem": "Cliente solicitou upgrade para servidor de -> ok
+
+  TERMINO: respondeu | desfecho: fila_comercial | passos: 2 | chamadas ao modelo: 3 | lembretes: 0 | tokens: 5064 | custo: US$ 0.00076
+  resposta: O chamado TKT-0004 foi encaminhado para a fila comercial para avaliação do upgrade do plano.
+  VERIFICADOR: OK
+
+==============================================================================
+TKT-0005  (caso: informacao_insuficiente)  modelo: ministral-8b-latest
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0005"} -> ok
+  passo 1 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0005", "destino": "devolver_cliente", "mensagem": "Por favor, informe qual serviço está afe -> ok
+
+  TERMINO: respondeu | desfecho: devolver_cliente | passos: 2 | chamadas ao modelo: 3 | lembretes: 0 | tokens: 5036 | custo: US$ 0.00076
+  resposta: O chamado foi devolvido ao cliente para que esclareça qual serviço está afetado e os detalhes do problema.
+  VERIFICADOR: OK
+
+==============================================================================
+TKT-0006  (caso: correspondencia_parcial)  modelo: ministral-8b-latest
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0006"} -> ok
+  passo 1 [leitura ] buscar_base_conhecimento {"termos": ["site", "erro 502"]} -> ok
+  passo 2 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0006", "destino": "fila_humana", "mensagem": "Cliente relata erro 502 intermitente no site  -> ok
+
+  TERMINO: respondeu | desfecho: fila_humana | passos: 3 | chamadas ao modelo: 4 | lembretes: 0 | tokens: 6955 | custo: US$ 0.00104
+  resposta: O chamado TKT-0006 foi encaminhado para análise humana, pois o erro 502 no site não tem procedimento automático definido.
+  VERIFICADOR: OK
+
+==============================================================================
+TKT-0007  (caso: escalonamento_simples)  modelo: ministral-8b-latest
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0007"} -> ok
+  passo 1 [leitura ] buscar_base_conhecimento {"termos": ["disco", "encheu"]} -> ok
+  passo 2 [leitura ] buscar_base_conhecimento {"termos": ["servidor", "parou", "gravar"]} -> ok
+  passo 3 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0007", "destino": "fila_humana", "mensagem": "O cliente relata que o disco do servidor ench -> ok
+
+  TERMINO: respondeu | desfecho: fila_humana | passos: 4 | chamadas ao modelo: 5 | lembretes: 0 | tokens: 9127 | custo: US$ 0.00137
+  resposta: O chamado TKT-0007 foi encaminhado para a fila humana, pois não foi possível encontrar uma solução automática confiável.
+  VERIFICADOR: FALHOU - desfecho 'fila_humana' em vez de 'abrir_chamado_interno'; kb_id 'None' em vez de 'KB-102'; time_destino 'None' em vez de 'Infraestrutura'; prioridade 'None' em vez de 'P2'; 0 chamado(s) interno(s) gravado(s) para TKT-0007
+
+==============================================================================
+RESULTADO: 6 de 8 casos conferidos pelo verificador
+  TKT-0001  simples                      OK
+  TKT-0002  divergencia                  OK
+  TKT-0003  escalonamento_reincidencia   FALHOU
+  TKT-0999  registro_inexistente         OK
+  TKT-0004  nao_dispara_acao_principal   OK
+  TKT-0005  informacao_insuficiente      OK
+  TKT-0006  correspondencia_parcial      OK
+  TKT-0007  escalonamento_simples        FALHOU

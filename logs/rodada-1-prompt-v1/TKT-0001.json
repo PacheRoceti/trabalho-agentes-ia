@@ -1,0 +1,89 @@
+{
+  "execucao_id": "TKT-0001-669",
+  "id_ticket": "TKT-0001",
+  "modelo": "ministral-8b-latest",
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": "O chamado foi encaminhado para anotação interna com orientações sobre a renovação do certificado SSL.",
+  "desfecho": {
+    "acao": "anotacao_interna",
+    "kb_id": "KB-101",
+    "encaminhamento": 1,
+    "destino": "anotacao_interna"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 4,
+  "tokens_entrada": 6615,
+  "tokens_saida": 188,
+  "custo_usd": 0.00102,
+  "scores_kb": {
+    "KB-101": 0.73
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0001"
+      },
+      "resultado": {
+        "id": "TKT-0001",
+        "texto": "O certificado SSL do meu site venceu ontem e a renovação automática não rodou. O navegador mostra aviso de site não seguro para os meus clientes.",
+        "aberto_em": "2026-09-21 08:12",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Acme Contabilidade",
+        "plano": "Hospedagem Business",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "certificado",
+          "ssl",
+          "venceu",
+          "renovacao",
+          "automatica"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-101",
+            "titulo": "Certificado SSL não renovou automaticamente",
+            "score": 0.73,
+            "causa": "Desafio HTTP-01 falhando (porta 80 bloqueada ou DNS apontando para outro IP) ou timer do certbot parado.",
+            "solucao": "Conferir DNS do domínio e liberação da porta 80; rodar \"certbot renew --dry-run\"; reativar o timer do certbot.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1
+    },
+    {
+      "indice": 2,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0001",
+        "destino": "anotacao_interna",
+        "mensagem": "Certificado SSL venceu e renovação automática não executou. Sugestão: verificar desafio HTTP-01 (porta 80 bloqueada ou DNS incorreto) e rodar \"certbot renew --dry-run\" para testar a renovação.",
+        "kb_id": "KB-101"
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "anotacao_interna"
+      },
+      "erro": null,
+      "ms": 4
+    }
+  ]
+}

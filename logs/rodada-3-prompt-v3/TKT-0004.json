@@ -1,0 +1,59 @@
+{
+  "execucao_id": "TKT-0004-1733",
+  "id_ticket": "TKT-0004",
+  "modelo": "ministral-8b-latest",
+  "prompt": "agente-v3.md",
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": "O chamado TKT-0004 foi encaminhado para a fila comercial para avaliação do upgrade solicitado.",
+  "desfecho": {
+    "acao": "fila_comercial",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_comercial"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 3,
+  "lembretes": 0,
+  "tokens_entrada": 4958,
+  "tokens_saida": 106,
+  "custo_usd": 0.00076,
+  "scores_kb": {},
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0004"
+      },
+      "resultado": {
+        "id": "TKT-0004",
+        "texto": "Olá, quero fazer upgrade do meu plano para um servidor dedicado. Podem me passar valores e prazo de migração?",
+        "aberto_em": "2026-09-21 10:05",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Gama Cursos Online",
+        "plano": "Hospedagem Start",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 1
+    },
+    {
+      "indice": 1,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0004",
+        "destino": "fila_comercial",
+        "mensagem": "Cliente solicitou upgrade para servidor dedicado, questionando valores e prazo de migração."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_comercial"
+      },
+      "erro": null,
+      "ms": 3
+    }
+  ]
+}
