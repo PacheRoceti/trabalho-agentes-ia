@@ -1,0 +1,143 @@
+{
+  "execucao_id": "TKT-0002-2289",
+  "id_ticket": "TKT-0002",
+  "modelo": "ministral-3b-latest",
+  "prompt": "agente-v3.md",
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": "Registrou encaminhamento para análise humana no destino \"fila_humana\", esclarecendo a divergência entre o relato do cliente e o log do sistema.",
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 6,
+  "lembretes": 0,
+  "tokens_entrada": 11884,
+  "tokens_saida": 258,
+  "custo_usd": 0.001214,
+  "scores_kb": {
+    "KB-105": 0.22
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0002"
+      },
+      "resultado": {
+        "id": "TKT-0002",
+        "texto": "Meu Webmail está fora do ar desde cedo, ninguém da empresa consegue ler e-mail.",
+        "aberto_em": "2026-09-21 09:15",
+        "status": "novo",
+        "anexo_log": "2026-09-21 09:31:07 ERRO resolver: falha de resolução DNS para mail.zeta.com.br (SERVFAIL); nameserver ns1.zeta.com.br não responde. Serviço webmail: processo ativo, porta 443 respondendo.",
+        "cliente": "Zeta Imóveis",
+        "plano": "Hospedagem Business",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 1
+    },
+    {
+      "indice": 1,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "webmail fora do ar",
+          "falha dns",
+          "serviço webmail"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-105",
+            "titulo": "Backup diário falhou",
+            "score": 0.22,
+            "causa": "Cota de armazenamento de backup excedida ou janela de backup sobreposta a outra tarefa.",
+            "solucao": "Conferir a cota do storage de backup e o agendamento; reexecutar o job manualmente.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "falha dns",
+          "webmail",
+          "erro resolver"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-105",
+            "titulo": "Backup diário falhou",
+            "score": 0.22,
+            "causa": "Cota de armazenamento de backup excedida ou janela de backup sobreposta a outra tarefa.",
+            "solucao": "Conferir a cota do storage de backup e o agendamento; reexecutar o job manualmente.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 3,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "falha resolver dns",
+          "webmail",
+          "erro mail"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-105",
+            "titulo": "Backup diário falhou",
+            "score": 0.22,
+            "causa": "Cota de armazenamento de backup excedida ou janela de backup sobreposta a outra tarefa.",
+            "solucao": "Conferir a cota do storage de backup e o agendamento; reexecutar o job manualmente.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0002",
+        "destino": "fila_humana",
+        "mensagem": "O cliente relata falha no Webmail (webmail fora do ar), mas o anexo_log mostra erro de resolução DNS para o domínio mail.zeta.com.br, não relacionado ao serviço webmail. A divergência entre relato e log exige análise humana para esclarecer a causa real.",
+        "kb_id": ""
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 9
+    }
+  ]
+}
