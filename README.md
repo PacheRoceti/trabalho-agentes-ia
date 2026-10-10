@@ -41,7 +41,9 @@ O banco de dados simulado (`dados/tickets.db`, SQLite) é criado sozinho a parti
 
 ## Como usar
 
-**O que você digita.** O id de um chamado externo do sistema simulado, no formato `TKT-` + 4 dígitos:
+**A entrada do agente é o texto do chamado.** O evento de abertura do chamado entrega ao agente o texto livre do cliente, acompanhado do id do chamado (o `thread_id` da conversa) e do id do cliente. Na Parte 1, o programa simula esse evento: você informa o id de um chamado do sistema simulado (`TKT-` + 4 dígitos) e o programa dispara o agente para ele. Na Parte 2, o texto passa a ser a entrada declarada do grafo, também por linha de comando.
+
+**O que você digita (Parte 1).**
 
 ```bash
 python src/main.py TKT-0003                 # pede a sua confirmação antes de abrir chamado interno
@@ -52,7 +54,7 @@ python src/main.py --reset                  # recria o banco simulado
 
 Os chamados disponíveis são `TKT-0001` a `TKT-0007` e o inexistente `TKT-0999` (ver [`dados/README.md`](dados/README.md)).
 
-**O que o sistema faz.** Lê o chamado no sistema de tickets, decide se o assunto é técnico, comercial ou de informação insuficiente, consulta a base de conhecimento e dá **um desfecho** ao chamado. Quando o desfecho é abrir um chamado interno (ação irreversível), ele para e pede a confirmação do analista de suporte.
+**O que o sistema faz.** Lê o texto do chamado e o histórico do cliente no sistema de tickets, decide se o assunto é técnico, comercial ou de informação insuficiente, consulta a base de conhecimento e dá **um desfecho** ao chamado. Quando o desfecho é abrir um chamado interno (ação irreversível), ele para e pede a confirmação do analista de suporte.
 
 **O que ele devolve.** Uma linha por passo (ferramenta, argumentos, resultado ou erro), o motivo do término, o desfecho e o veredito do verificador. O que vale é o que foi **gravado no banco**:
 
@@ -105,6 +107,6 @@ src/         agente.py (laço, estado, orçamento) · ferramentas.py · db.py (S
 prompts/     agente-v1.md  (técnica, contrato e o que cada regra impede)
 dados/       seed.sql · gabarito.json · README.md (casos difíceis nomeados)
 tests/       testes offline (sem chave)
-docs/        case.md · modelos.md · arquitetura-v1.md · arquitetura-v2.md · fontes.md
+docs/        case.md · modelos.md · arquitetura-v2.md · base-de-conhecimento-v2.md · memoria.md · fontes.md
 logs/        trajetória de cada execução demonstrada (JSON)
 ```

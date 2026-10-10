@@ -23,7 +23,7 @@ O agente nunca executa correções, nunca encerra chamados e nunca altera priori
 - a exigência do cliente ("prioridade máxima") e a contagem que o cliente afirma ("terceira vez") **não** mudam a prioridade;
 - só o gestor reclassifica; o SLA fica pausado em "aguardando cliente".
 
-**Entrada da suíte:** o texto de cada caso é gravado como chamado no banco simulado (`dados/seed.sql`), e o agente é disparado pelo id. Os casos que já existem no seed estão marcados com o id; os demais entram como `TKT-01xx` na ampliação do gabarito para ~40 casos.
+**Entrada da suíte:** o texto de cada caso é a **entrada** do agente, exatamente como escrito na tabela; o id do chamado e o id do cliente acompanham o texto (o id é o `thread_id` da conversa). O chamado também é gravado no banco simulado (`dados/seed.sql`), para que `consultar_ticket` encontre o histórico, o plano e o log anexado. Os casos que já existem no seed estão marcados com o id; os demais entram como `TKT-01xx` na ampliação do gabarito para ~40 casos.
 
 ---
 

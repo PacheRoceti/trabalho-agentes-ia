@@ -75,13 +75,12 @@ consistência.
 síntese — o sistema junta dado espalhado em várias fontes e produz um
 resumo estruturado para uma pessoa decidir. É o caso mais próximo do
 nosso projeto: não decide sozinho, mas consolida a informação que hoje
-está espalhada, para quem decide enxergar de
-uma vez.
+está espalhada, para quem decide enxergar de uma vez.
 
 **O que a divulgação não conta:** "4x mais rápido" comparado com qual
 processo exatamente (só a leitura do caso, ou o processo de decisão
 inteiro?); nenhuma métrica de taxa de erro ou qualidade da síntese; nem
-custo ou tempo de implementação do projeto.v
+custo ou tempo de implementação do projeto.
 
 Preços de lista consultados em 21/09/2026 (agregadores; confirmar na página oficial da Mistral):
 

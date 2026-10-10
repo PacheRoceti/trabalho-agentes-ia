@@ -15,7 +15,7 @@
 | | Curto prazo | Longo prazo |
 |---|---|---|
 | O que é | a janela de uma triagem (um `TKT-xxxx`), incluindo a pausa à espera do cliente quando o agente pede informação | o que atravessa chamados diferentes, de clientes diferentes, em dias diferentes |
-| Conteúdo, no case | prompt do sistema (`prompts/agente-v3.md`), o objetivo ("Chamado a triar: TKT-0002"), a trajetória (as chamadas de `consultar_ticket`, `buscar_base_conhecimento` e seus resultados), os trechos da base de conhecimento recuperados nesta busca | episódica (execuções passadas), semântica (fatos estáveis sobre clientes e times), procedural (regras de triagem aprendidas) |
+| Conteúdo, no case | prompt do sistema (`prompts/agente-v3.md`), o texto do chamado com o id que o acompanha ("TKT-0002: Meu Webmail está fora do ar…"), a trajetória (as chamadas de `consultar_ticket`, `buscar_base_conhecimento` e seus resultados), os trechos da base de conhecimento recuperados nesta busca | episódica (execuções passadas), semântica (fatos estáveis sobre clientes e times), procedural (regras de triagem aprendidas) |
 | Persistido como | **checkpoint** por conversa, endereçado pelo `thread_id` = id do chamado externo (ver 1.5) | índice por similaridade (episódica), tabela chave-valor (semântica), texto dentro do próprio prompt (procedural) |
 | Lido | uma vez, ao retomar uma execução parada | a cada passo do laço em que o modelo pode se beneficiar de um fato ou um precedente |
 | Acesso | por `thread_id` (id do chamado) | por relevância (episódica), por chave `cliente_id`/categoria (semântica), carregado sempre (procedural) |
@@ -40,7 +40,7 @@ Cinco fontes disputam a janela de uma chamada ao modelo. Medido a partir do `pro
 | Fonte | Teto (tokens) | Medido / justificativa |
 |---|---|---|
 | System prompt | 900 (fixo) | ~860 tokens, medido. Nunca é cortado: sem ele o modelo não sabe as regras (é o que a rodada 2 mostrou ao mexer nele sem cuidado) |
-| Objetivo ("Chamado a triar: TKT-xxxx") | 30 (fixo) | uma linha; nunca é cortado |
+| Entrada (texto do chamado + id do chamado e do cliente) | 150, variável | o texto livre do cliente (e, na retomada, a resposta ao pedido de informação); nunca é cortado |
 | Schemas das 4 ferramentas | 750 (fixo) | ~730 tokens, medido; parte do contrato de tool calling, não é opcional |
 | Trajetória (passos já dados nesta execução) | 3.000, variável | cresce a cada chamada (observado: 400 a 1.500 tokens por chamada nas rodadas reais). Quando estoura, **descarta os passos mais antigos**, nunca o mais recente — é o inverso do corte ingênuo pelo fim, que apagaria justo o que acabou de acontecer |
 | Trechos recuperados (top-3 da busca) | 500 | ~110 a 150 tokens por artigo, medido; 3 artigos cabem com folga |
@@ -94,8 +94,6 @@ O agente só conversa com o cliente em um caso: quando falta informação para c
 ### 2.1 Contradição — o fato que mudou
 
 No case, o que mais pode se contradizer são os **procedimentos técnicos** (fonte D de `docs/base-de-conhecimento-v2.md`), porque é deles que vêm o time de destino e a prioridade de cada chamado. Exemplo: a versão antiga do procedimento de SSL mandava renovar o certificado manualmente pelo painel e escalar para a Segurança com P1; a versão vigente (KB-101) manda conferir o certbot e anotar para a Infraestrutura com P2. Os dois textos são igualmente parecidos com o relato "meu certificado SSL venceu", e a busca por similaridade não tem como saber qual vale. Se a versão antiga vencer, o erro não fica no texto: vira um chamado P1 aberto para o time errado.
-
-O repositório já teve um caso real do mesmo tipo durante a Parte 1, entre documentos do grupo: o SLA de P2 aparece como **1 dia útil** em `docs/case.md` e como **24h** em `docs/base-de-conhecimento-v1.md` (o P1 é **2h** nos dois). A política de SLA não é indexada na v2 da base — é aplicada em código —, então essa contradição não chega ao agente, mas mostra que duas versões do mesmo fato convivem sem aviso quando ninguém marca qual é a vigente.
 
 **Regra de desempate:** todo trecho indexado — procedimentos técnicos e catálogo de planos — carrega `data_publicacao` e `revogado_por` (previstos em `docs/base-de-conhecimento-v2.md`). Um trecho com `revogado_por` preenchido é filtrado antes da busca; entre dois trechos vigentes que concorrem para o mesmo relato, vale `max(data_publicacao)`. Não é o modelo que decide: é um filtro e uma comparação de datas em código, determinísticos e testáveis.
 

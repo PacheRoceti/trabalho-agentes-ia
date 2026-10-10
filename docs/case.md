@@ -1,6 +1,6 @@
 # Case — Agente de Triagem e Abertura de Chamado Interno
 
-> Esta é a v2 do case, atualizada após a mudança de escopo: o projeto deixou de ser um agente gerador de dashboard de consolidação e passou a ser um agente que analisa o chamado do cliente, consulta a base de conhecimento interna e propõe uma solução ou abre um chamado interno. Mais detalhes em `docs/arquitetura-v1.md` (desenho no papel), `docs/arquitetura-v2.md` (o que foi construído na Parte 1) e `docs/base-de-conhecimento-v2.md`.
+> Esta é a v2 do case, atualizada após a mudança de escopo: o projeto deixou de ser um agente gerador de dashboard de consolidação e passou a ser um agente que analisa o chamado do cliente, consulta a base de conhecimento interna e propõe uma solução ou abre um chamado interno. Mais detalhes em `docs/arquitetura-v2.md` (o que foi construído na Parte 1) e `docs/base-de-conhecimento-v2.md`.
 
 ## 2 O Tema e o Contexto
 
@@ -20,7 +20,7 @@
 
 - Prioridades por SLA: P1 crítico = 2h, P2 = 1 dia útil, P3 = 3 dias úteis.
 - Ticket em status "aguardando cliente" pausa a contagem de SLA.
-- Reabertura de um ticket já fechado reabre o ticket original (não cria um novo) — e reincidência gera prioridade maior automaticamente.
+- **Reincidência:** quando um problema volta depois de um chamado já fechado, o agente **não reabre** o chamado anterior: abre um chamado interno **novo**, tratado como reincidência. A prioridade do procedimento sobe um nível, e o resumo cita o chamado anterior que o histórico do sistema confirma. Só conta como reincidência o que o histórico confirma (mesmo cliente, mesma categoria); a afirmação do cliente ("é a terceira vez") não basta.
 - Alçada: só o gestor pode reclassificar a prioridade de um ticket. Nenhum chamado pode ser encerrado, mesmo que tenha sido aberto com informação insuficiente — ele precisa permanecer aberto até ser de fato resolvido.
 - **O agente interage diretamente com o cliente apenas para solicitar mais informações.** É a única mensagem que ele envia ao cliente; todo o resto que ele produz é registro interno (chamado interno, anotação ou encaminhamento), e qualquer outra comunicação com o cliente é feita pelo analista de suporte. O pedido de informação segue quatro regras:
   - **o que pode conter:** só a lista do que falta para classificar o chamado (serviço ou servidor afetado, erro ou comportamento observado, desde quando). É proibido prometer correção, prazo ou prioridade, e citar qualquer informação interna (procedimentos, times, scores);
@@ -62,7 +62,9 @@
 
 **O usuário principal** é o **time interno** que recebe o chamado escalado — é para ele que a qualidade da classificação, do resumo e do parecer da base de conhecimento precisa ser boa; quando há conflito (ex.: o analista quer despachar rápido e isso significaria enviar informação incompleta ao time de destino), a prioridade do sistema é a qualidade da informação entregue ao time interno, não a velocidade percebida pelo analista.
 
-**A interação, concretamente:** não é um chat. O sistema é disparado pelo evento de abertura do chamado no sistema externo — ninguém inicia uma conversa com o agente. A única conversa possível é curta e iniciada pelo próprio agente: um pedido de informação ao cliente e a resposta dele.
+**A interação, concretamente:** não é um chat. O sistema é disparado pelo evento de abertura do chamado no sistema externo — ninguém inicia uma conversa com o agente.
+
+**A entrada é o texto do chamado.** O evento de abertura é o gatilho que antecede o sistema; o que ele entrega ao agente é o **texto livre que o cliente escreveu**, exatamente como foi digitado. Junto do texto, sem que ninguém o digite, vêm o **id do chamado** (que vira o `thread_id` da conversa) e o **id do cliente**. O agente começa lendo o texto; `consultar_ticket` continua existindo, mas para o que é registro: o histórico do cliente, o plano e o log anexado. A resposta do cliente a um pedido de informação também chega como texto livre, na mesma conversa. A única conversa possível é curta e iniciada pelo próprio agente: um pedido de informação ao cliente e a resposta dele.
 
 - **Por onde:** o agente é acionado por evento do sistema de chamados e entrega o resultado como registro nesse mesmo sistema (chamado interno, anotação ou encaminhamento), que o time interno e o analista leem.
 - **Quem começa:** o sistema. É um agente proativo, acordado pela criação do chamado externo.
@@ -178,8 +180,9 @@ Os casos 1, 2, 4 (primeira mensagem) e 5 são os chamados simulados `TKT-0007`, 
 ### 2.3 O Workflow
 
 ```
-1. ENTRADA     id do chamado externo (evento)                          [CÓDIGO]
-2. CONSULTA    consultar_ticket: texto, log anexado, plano, histórico  [MODELO chama; CÓDIGO valida o id e lê o banco]
+1. ENTRADA     texto livre do chamado, entregue pelo evento de abertura;
+               acompanham: id do chamado (thread_id) e id do cliente     [CÓDIGO]
+2. CONSULTA    consultar_ticket(id): log anexado, plano, histórico     [MODELO chama; CÓDIGO valida o id e lê o banco]
 3. TRIAGEM     técnico | comercial | insuficiente | relato × log divergente  [MODELO]
 4. BUSCA       buscar_base_conhecimento(termos) -> top-3 com score     [MODELO escolhe os termos; CÓDIGO calcula o score]
 5. PORTÃO      melhor score >= 0.5 ?                                   [CÓDIGO]
@@ -203,7 +206,7 @@ Os casos 1, 2, 4 (primeira mensagem) e 5 são os chamados simulados `TKT-0007`, 
 
 ### 2.4 O Sistema
 
-- **O que o sistema faz:** recebe o id de um chamado externo, lê o texto e o log anexado, classifica o assunto, consulta a base de conhecimento e dá **um desfecho**: abrir chamado interno (com confirmação do analista), sugerir correção, redirecionar ao comercial, pedir ao cliente a informação que falta (sua única interação direta com o cliente) ou pedir olhar humano. Ele não resolve o problema do cliente, não decide prioridade (vem do procedimento da base; só o gestor reclassifica) e nunca fecha um chamado.
+- **O que o sistema faz:** recebe o texto de um chamado externo (com o id do chamado e do cliente), consulta o log anexado e o histórico, classifica o assunto, consulta a base de conhecimento e dá **um desfecho**: abrir chamado interno (com confirmação do analista), sugerir correção, redirecionar ao comercial, pedir ao cliente a informação que falta (sua única interação direta com o cliente) ou pedir olhar humano. Ele não resolve o problema do cliente, não decide prioridade (vem do procedimento da base; só o gestor reclassifica) e nunca fecha um chamado.
 
 - **Nível de autonomia pretendido:** **roteador com laço curto de ferramentas** (3 a 5 passos), na fronteira do workflow. O nível abaixo (workflow fixo, com o modelo só classificando) não basta porque duas decisões acontecem em tempo de execução: refazer a busca com outros termos quando o score volta baixo, e corrigir a chamada quando uma ferramenta devolve erro (por exemplo, id inexistente). O nível acima (agente aberto) não se justifica: o caminho é quase sempre consultar, buscar e escrever, e tudo que é regra fica em código. Se o verificador mostrar que nenhum caso depende dessas duas decisões, o desenho correto é um workflow com duas chamadas ao modelo, e diremos isso na Parte 2.
 
@@ -211,7 +214,7 @@ Os casos 1, 2, 4 (primeira mensagem) e 5 são os chamados simulados `TKT-0007`, 
 
   | Ferramenta | O que faz | Leitura ou escrita | Reversível? | Contra o que ela conversa |
   |:---|:---|:---|:---|:---|
-  | `consultar_ticket` | lê o texto do cliente, o log anexado, o plano e o histórico de chamados internos do cliente | Leitura | NA | Sistema de chamados externo (mock em SQLite: `tickets_externos`, `clientes`, `chamados_internos`) |
+  | `consultar_ticket` | lê, pelo id que acompanha o texto, o log anexado, o plano e o histórico de chamados internos do cliente (o texto já chega como entrada) | Leitura | NA | Sistema de chamados externo (mock em SQLite: `tickets_externos`, `clientes`, `chamados_internos`) |
   | `buscar_base_conhecimento` | busca procedimentos por palavras-chave e devolve até 3 artigos com score (vira RAG na Parte 2) | Leitura | NA | Base de conhecimento (mock em SQLite: `kb_artigos`) |
   | `abrir_chamado_interno` | abre o chamado no time responsável; o time e a prioridade vêm do procedimento recuperado e são copiados pelo código; o modelo só redige o resumo | Escrita | **Não** (idempotente por ticket + artigo; exige confirmação do analista) | API do sistema de tickets interno (mock em SQLite: `chamados_internos`) |
   | `registrar_encaminhamento` | registra `fila_comercial`, `devolver_cliente`, `anotacao_interna` ou `fila_humana`; no destino `devolver_cliente`, a mensagem é o pedido de informação enviado ao cliente | Escrita | Sim, exceto `devolver_cliente` (a mensagem chega ao cliente; limitada a uma por chamado em código) | Sistema de chamados (mock em SQLite: `encaminhamentos`) |

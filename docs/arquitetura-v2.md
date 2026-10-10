@@ -1,7 +1,6 @@
 # Arquitetura v2 — o agente da Parte 1 (o que foi realmente construído)
 
-> `v1` era o desenho no papel (`docs/arquitetura-v1.md`); esta é a versão que
-> roda. A seção 5 lista o que mudou e por quê — é o histórico do raciocínio que
+> Esta é a versão que roda. A seção 5 lista o que mudou e por quê — é o histórico do raciocínio que
 > o enunciado pede que fique no `git diff`.
 
 ## 1. O workflow (itens 2.3 e 4.4): 8 passos, quem decide em cada um
@@ -86,8 +85,11 @@ um workflow com duas chamadas ao modelo, e diremos isso.
 **Onde a decisão entra na Parte 2.** O RAG substitui a busca por palavra; o laço
 ganha um teto de re-busca com reformulação da consulta; e o portão de confiança
 passa a usar similaridade vetorial calibrada com perguntas sem resposta na base
-(exercício 6), em vez do limiar 0.5 ajustado à mão. O `devolver_cliente` passa a ser a única
-interação direta com o cliente: o agente envia um pedido de informação (no máximo um por
+(exercício 6), em vez do limiar 0.5 ajustado à mão. A entrada do sistema passa a ser o **texto do
+chamado**, entregue pelo evento de abertura e acompanhado do id do chamado (`thread_id`) e do
+cliente; `consultar_ticket` fica para o histórico, o plano e o log anexado. A reincidência
+continua gerando um chamado interno novo (o anterior não é reaberto), com a prioridade um nível acima.
+O `devolver_cliente` passa a ser a única interação direta com o cliente: o agente envia um pedido de informação (no máximo um por
 chamado), o grafo pausa com `interrupt` e a resposta do cliente retoma a mesma conversa
 (`thread_id` = id do chamado) para refazer a triagem — o mesmo checkpointer da confirmação
 do analista.
