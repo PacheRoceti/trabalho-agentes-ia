@@ -72,7 +72,7 @@
 - **O que devolve:** um desfecho gravado: chamado interno com resumo e prioridade, ou anotação com a correção sugerida, ou encaminhamento (fila comercial, fila humana ou devolução ao cliente) com mensagem em texto.
 - **Como termina:** quando dá certo, o chamado interno ou a anotação aparece com o procedimento da base anexado. Quando não resolve, vai para a fila humana com o motivo. Quando falta informação, a execução pausa em "aguardando cliente" até a resposta (ou até o prazo de 3 dias úteis, quando vai para a fila humana).
 
-Cinco diálogos de exemplo, cobrindo as ações possíveis. As categorias são as do sistema (`ssl_certificado`, `disco_cheio`, `acesso_ssh`, `site_fora_do_ar`, `backup`, `outro_tecnico`); o score de correspondência é calculado pelo código, e o time e a prioridade vêm do procedimento recuperado. Só o Caso 4 tem mensagem do agente ao cliente, porque pedir informação é a única interação direta permitida.
+Cinco diálogos de exemplo, cobrindo as ações possíveis. As categorias são as dos procedimentos da base (`ssl_certificado`, `disco_cheio`, `acesso_ssh`, `site_fora_do_ar`, `dns_dominio`, `backup`); o score de correspondência é calculado pelo código, e a categoria, o time e a prioridade vêm do procedimento recuperado. Só o Caso 4 tem mensagem do agente ao cliente, porque pedir informação é a única interação direta permitida.
 
 *Caso 1 — escalonamento:*
 ```
@@ -216,7 +216,7 @@ Os casos 1, 2, 4 (primeira mensagem) e 5 são os chamados simulados `TKT-0007`, 
   |:---|:---|:---|:---|:---|
   | `consultar_ticket` | lê, pelo id que acompanha o texto, o log anexado, o plano e o histórico de chamados internos do cliente (o texto já chega como entrada) | Leitura | NA | Sistema de chamados externo (mock em SQLite: `tickets_externos`, `clientes`, `chamados_internos`) |
   | `buscar_base_conhecimento` | busca procedimentos por palavras-chave e devolve até 3 artigos com score (vira RAG na Parte 2) | Leitura | NA | Base de conhecimento (mock em SQLite: `kb_artigos`) |
-  | `abrir_chamado_interno` | abre o chamado no time responsável; o time e a prioridade vêm do procedimento recuperado e são copiados pelo código; o modelo só redige o resumo | Escrita | **Não** (idempotente por ticket + artigo; exige confirmação do analista) | API do sistema de tickets interno (mock em SQLite: `chamados_internos`) |
+  | `abrir_chamado_interno` | abre o chamado no time responsável; a categoria, o time e a prioridade vêm do procedimento recuperado e são copiados pelo código; o modelo só indica o procedimento (`kb_id`) e redige o resumo | Escrita | **Não** (idempotente por ticket + artigo; exige confirmação do analista) | API do sistema de tickets interno (mock em SQLite: `chamados_internos`) |
   | `registrar_encaminhamento` | registra `fila_comercial`, `devolver_cliente`, `anotacao_interna` ou `fila_humana`; no destino `devolver_cliente`, a mensagem é o pedido de informação enviado ao cliente | Escrita | Sim, exceto `devolver_cliente` (a mensagem chega ao cliente; limitada a uma por chamado em código) | Sistema de chamados (mock em SQLite: `encaminhamentos`) |
 
   Não existe ferramenta para encerrar chamado, alterar prioridade ou executar correção: a regra de domínio é garantida pela **ausência da ferramenta**.

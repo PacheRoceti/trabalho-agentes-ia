@@ -19,7 +19,7 @@ O agente nunca executa correções, nunca encerra chamados e nunca altera priori
 **Regras de prioridade usadas como gabarito** (as do sistema, aplicadas em código em `src/db.py`):
 
 - a prioridade é a `prioridade_base` do artigo da base (KB-101 P2, KB-102 P2, KB-103 P2, KB-104 P1, KB-105 P3, KB-106 P1);
-- **reincidência confirmada pelo histórico** (mesmo cliente, mesma categoria) sobe um nível;
+- **reincidência confirmada pelo histórico** (mesmo cliente, mesma categoria do procedimento) sobe um nível;
 - a exigência do cliente ("prioridade máxima") e a contagem que o cliente afirma ("terceira vez") **não** mudam a prioridade;
 - só o gestor reclassifica; o SLA fica pausado em "aguardando cliente".
 
@@ -91,7 +91,7 @@ Tom e estilo da mensagem ficam fora desta versão de propósito.
 |---|---|---|---|
 | Determinístico | desfecho válido | o banco tem exatamente um registro de desfecho por volta da conversa (uma na maioria dos casos; duas nos casos 17 e 18: o pedido e o desfecho final), e o destino ∈ {`abrir_chamado_interno`, `anotacao_interna`, `fila_humana`, `fila_comercial`, `devolver_cliente`} | o modelo responde "encaminhei" em texto e nada é gravado (caso 18 na Parte 1) |
 | Determinístico | desfecho correto | `desfecho == caso["acao"]` | caso 10 abre chamado em vez de ir à fila humana |
-| Determinístico | **prioridade correta** | `prioridade gravada == caso["prioridade"]` (regra do código: base do artigo + reincidência confirmada) | caso 3 sai P2 porque a categoria escolhida pelo modelo não casou com o histórico |
+| Determinístico | **prioridade correta** | `prioridade gravada == caso["prioridade"]` (regra do código: base do artigo + reincidência confirmada) | caso 3 sai P2 porque o modelo escolheu o procedimento errado e a categoria não casou com o histórico |
 | Determinístico | artigo e time corretos | `kb_id == caso["kb_id"]` e `time_destino == caso["time"]` | caso 8 grava o KB-104 (5xx) em vez do KB-106 (DNS) |
 | Determinístico | nenhum id inventado | todo `TKT-\d{4}` e `KB-\d{3}` na mensagem aparece na entrada ou no *trace* | caso 16 responde "o TKT-0999 está em andamento" |
 | Trajetória | consultou a base antes de anotar ou escalar | no *trace*, `buscar_base_conhecimento` aparece antes da escrita (o código já recusa `kb_id` que não veio de uma busca; a propriedade mede quantas recusas isso custou) | caso 6 tenta anotar "de cabeça" e gasta passos em erro |

@@ -16,12 +16,14 @@ fornecida ao agente, e não pelo modelo.** Cada procedimento da base declara par
 time o caso vai e com qual prioridade. Quando o agente recupera um procedimento com
 correspondência suficiente, o sistema copia esses dois valores do documento para o
 chamado interno. O modelo escolhe *qual* procedimento se aplica ao relato; não escolhe
-nem redige o time ou a prioridade.
+nem redige o time ou a prioridade. O mesmo vale para a **categoria** do chamado: ela também
+vem do procedimento, e é por ela que o sistema conta a reincidência — se o modelo pudesse
+escolhê-la, poderia mudar a prioridade sem querer.
 
 Consequências diretas:
 
-- um procedimento sem `time_destino` ou sem `prioridade_base` está **incompleto** e não
-  entra no índice;
+- um procedimento sem `categoria`, `time_destino` ou `prioridade_base` está
+  **incompleto** e não entra no índice;
 - uma mudança de time ou de prioridade se faz **editando o documento**, não o prompt nem o
   código;
 - o cliente não muda a prioridade ("exijo P1"), e o modelo também não: o valor está no
@@ -118,14 +120,15 @@ de referência** que o sistema aplica ou valida, sem que o modelo precise lê-la
   podem variar entre subcenários, **cada trecho carrega os seus**: um 502 constante pode
   ser P1 e um intermitente, P2.
 - O que é embedado e o que é metadado: sintoma, causa e solução formam o texto do trecho
-  (é o que se casa com o relato). `acao_padrao`, `time_destino` e `prioridade_base` ficam
-  como **metadados estruturados** do trecho e não entram no texto embedado: são lidos por
+  (é o que se casa com o relato). `acao_padrao`, `categoria`, `time_destino` e `prioridade_base`
+  ficam como **metadados estruturados** do trecho e não entram no texto embedado: são lidos por
   código depois da recuperação, e não interpretados pelo modelo.
 - Metadados: `kb_id`, `servico` (certbot, nginx, DNS, disco, SSH/fail2ban, backup),
-  `acao_padrao`, `time_destino`, `prioridade_base`, `planos` (a quais planos o guia se
+  `acao_padrao`, `categoria` (ex.: `disco_cheio`, `dns_dominio`; conta a reincidência),
+  `time_destino`, `prioridade_base`, `planos` (a quais planos o guia se
   aplica), `data_publicacao`, `revogado_por` (vazio quando vigente).
-- Validação na indexação: o trecho é recusado se faltar `time_destino` ou
-  `prioridade_base`, se o time não existir na fonte B, ou se a prioridade não for P1, P2
+- Validação na indexação: o trecho é recusado se faltar `categoria`, `time_destino`
+  ou `prioridade_base`, se o time não existir na fonte B, ou se a prioridade não for P1, P2
   ou P3.
 
 **Fonte E — Catálogo de planos**
