@@ -1,0 +1,104 @@
+
+==============================================================================
+TKT-0001  (caso: simples)  modelo: ministral-8b-latest  prompt: agente-v4.md
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0001"} -> ok
+  passo 1 [leitura ] buscar_base_conhecimento {"termos": ["certificado ssl venceu", "renovacao automática não rodou"]} -> ok
+  passo 2 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0001", "destino": "anotacao_interna", "mensagem": "Certificado SSL venceu e renovação autom -> ok
+
+  TERMINO: respondeu | desfecho: anotacao_interna | passos: 3 | chamadas ao modelo: 4 | lembretes: 0 | tokens: 8586 | custo: US$ 0.00129
+  resposta: O chamado TKT-0001 foi encaminhado para anotação interna com sugestão de verificação do certificado SSL.
+  VERIFICADOR: OK
+
+==============================================================================
+TKT-0002  (caso: divergencia)  modelo: ministral-8b-latest  prompt: agente-v4.md
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0002"} -> ok
+  passo 1 [leitura ] buscar_base_conhecimento {"termos": ["webmail fora do ar", "mail zeta com br", "resolucao dns falha"]} -> ok
+  passo 2 [leitura ] buscar_base_conhecimento {"termos": ["webmail fora do ar", "dominio zeta com br", "dns falha"]} -> ok
+  passo 3 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0002", "destino": "fila_humana", "mensagem": "Divergência entre relato do cliente e anexo_l -> ok
+
+  TERMINO: respondeu | desfecho: fila_humana | passos: 4 | chamadas ao modelo: 5 | lembretes: 0 | tokens: 11622 | custo: US$ 0.00174
+  resposta: O chamado foi encaminhado para análise humana, pois o relato do cliente não condiz com o que o log anexado indica.
+  VERIFICADOR: OK
+
+==============================================================================
+TKT-0003  (caso: escalonamento_reincidencia)  modelo: ministral-8b-latest  prompt: agente-v4.md
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0003"} -> ok
+  (lembrete 1/2: o modelo encerrou sem registrar desfecho)
+  passo 1 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0003", "destino": "fila_humana", "mensagem": "O cliente afirma que é a terceira ocorrência  -> ERRO: fila_humana sem nenhuma busca na base para este chamado
+  passo 2 [leitura ] buscar_base_conhecimento {"termos": ["servidor", "sem espaço em disco", "sistemas param"]} -> ok
+  (lembrete 2/2: o modelo encerrou sem registrar desfecho)
+  passo 3 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0003", "destino": "devolver_cliente", "mensagem": "Qual servidor ou serviço está afetado? Q -> ok
+
+  TERMINO: respondeu | desfecho: devolver_cliente | passos: 4 | chamadas ao modelo: 7 | lembretes: 2 | tokens: 16810 | custo: US$ 0.00252
+  resposta: O chamado TKT-0003 foi devolvido ao cliente com solicitação de informações complementares.
+  VERIFICADOR: FALHOU - desfecho 'devolver_cliente' em vez de 'abrir_chamado_interno'; kb_id 'None' em vez de 'KB-102'; time_destino 'None' em vez de 'Infraestrutura'; prioridade 'None' em vez de 'P1'; 0 chamado(s) interno(s) gravado(s) para TKT-0003
+
+==============================================================================
+TKT-0999  (caso: registro_inexistente)  modelo: ministral-8b-latest  prompt: agente-v4.md
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0999"} -> ERRO: chamado não encontrado no sistema de tickets
+  (lembrete 1/2: o modelo encerrou sem registrar desfecho)
+  passo 1 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0999", "destino": "fila_humana", "mensagem": "O ID do chamado TKT-0999 não foi encontrado n -> ok
+
+  TERMINO: respondeu | desfecho: fila_humana | passos: 2 | chamadas ao modelo: 4 | lembretes: 1 | tokens: 8106 | custo: US$ 0.00122
+  resposta: O chamado TKT-0999 foi encaminhado para análise humana por não existir no sistema.
+  VERIFICADOR: OK
+
+==============================================================================
+TKT-0004  (caso: nao_dispara_acao_principal)  modelo: ministral-8b-latest  prompt: agente-v4.md
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0004"} -> ok
+  passo 1 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0004", "destino": "fila_comercial", "mensagem": "Cliente solicitou upgrade para servidor de -> ok
+
+  TERMINO: respondeu | desfecho: fila_comercial | passos: 2 | chamadas ao modelo: 3 | lembretes: 0 | tokens: 6042 | custo: US$ 0.00091
+  resposta: O chamado foi encaminhado para a fila comercial para análise do upgrade do plano.
+  VERIFICADOR: OK
+
+==============================================================================
+TKT-0005  (caso: informacao_insuficiente)  modelo: ministral-8b-latest  prompt: agente-v4.md
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0005"} -> ok
+  passo 1 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0005", "destino": "devolver_cliente", "mensagem": "Qual servidor ou serviço está afetado? Q -> ok
+
+  TERMINO: respondeu | desfecho: devolver_cliente | passos: 2 | chamadas ao modelo: 3 | lembretes: 0 | tokens: 6138 | custo: US$ 0.00092
+  resposta: O chamado foi devolvido ao cliente para que complemente o relato com o serviço afetado, o erro observado e a data de início do problema.
+  VERIFICADOR: OK
+
+==============================================================================
+TKT-0006  (caso: correspondencia_parcial)  modelo: ministral-8b-latest  prompt: agente-v4.md
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0006"} -> ok
+  passo 1 [leitura ] buscar_base_conhecimento {"termos": ["site", "erro 502", "vps", "deploy"]} -> ok
+  passo 2 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0006", "destino": "fila_humana", "mensagem": "O cliente relata erro 502 no site após deploy -> ok
+
+  TERMINO: respondeu | desfecho: fila_humana | passos: 3 | chamadas ao modelo: 4 | lembretes: 0 | tokens: 8619 | custo: US$ 0.00129
+  resposta: O chamado TKT-0006 foi encaminhado para análise humana, pois o problema relatado não corresponde ao padrão do artigo encontrado na base de conhecimento.
+  VERIFICADOR: OK
+
+==============================================================================
+TKT-0007  (caso: escalonamento_simples)  modelo: ministral-8b-latest  prompt: agente-v4.md
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0007"} -> ok
+  passo 1 [leitura ] buscar_base_conhecimento {"termos": ["disco", "encheu", "sistemas", "pararam", "gravar"]} -> ok
+  passo 2 [leitura ] buscar_base_conhecimento {"termos": ["disco", "cheio", "arquivos", "gravar"]} -> ok
+  (lembrete 1/2: o modelo encerrou sem registrar desfecho)
+  passo 3 [ESCRITA ] abrir_chamado_interno {"id_ticket": "TKT-0007", "resumo": "Cliente CLI-07 (Eta Engenharia) relata disco cheio no servidor VPS Pro, i -> ERRO: correspondência abaixo do limiar de confiança
+  passo 4 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0007", "destino": "fila_humana", "mensagem": "O cliente relata que o disco do servidor ench -> ok
+
+  TERMINO: respondeu | desfecho: fila_humana | passos: 5 | chamadas ao modelo: 7 | lembretes: 1 | tokens: 16424 | custo: US$ 0.00246
+  resposta: O chamado foi encaminhado para análise humana devido ao baixo score do artigo encontrado.
+  VERIFICADOR: FALHOU - desfecho 'fila_humana' em vez de 'abrir_chamado_interno'; kb_id 'None' em vez de 'KB-102'; time_destino 'None' em vez de 'Infraestrutura'; prioridade 'None' em vez de 'P2'; 0 chamado(s) interno(s) gravado(s) para TKT-0007
+
+==============================================================================
+RESULTADO: 6 de 8 casos conferidos pelo verificador
+  TKT-0001  simples                      OK
+  TKT-0002  divergencia                  OK
+  TKT-0003  escalonamento_reincidencia   FALHOU
+  TKT-0999  registro_inexistente         OK
+  TKT-0004  nao_dispara_acao_principal   OK
+  TKT-0005  informacao_insuficiente      OK
+  TKT-0006  correspondencia_parcial      OK
+  TKT-0007  escalonamento_simples        FALHOU
