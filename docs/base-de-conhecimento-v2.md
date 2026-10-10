@@ -41,7 +41,7 @@ documentou sobre cada problema e o que o cliente já teve antes.
 
 | Informação | Por que não está no modelo |
 |---|---|
-| Procedimentos de diagnóstico e resolução dos problemas recorrentes de hospedagem (SSL que não renovou, disco cheio, SSH recusado, erro 5xx após deploy, falha de DNS, backup que falhou), **cada um com a ação padrão, o time responsável e a prioridade** | **É específico demais.** O modelo sabe o que é um certificado vencido, mas não sabe o procedimento oficial desta empresa, se o caso é "anotar" ou "escalar", para qual time vai nem com que prioridade. |
+| Procedimentos de diagnóstico e resolução dos problemas recorrentes de hospedagem (SSL que não renovou, permissão negada ao gravar arquivos, SSH recusado, erro 5xx após deploy, falha de DNS, backup que falhou), **cada um com a ação padrão, o time responsável e a prioridade** | **É específico demais.** O modelo sabe o que é um certificado vencido, mas não sabe o procedimento oficial desta empresa, se o caso é "anotar" ou "escalar", para qual time vai nem com que prioridade. |
 | Política de SLA e alçada (P1 = 2h, P2 = 1 dia útil, P3 = 3 dias úteis; reincidência — mesmo cliente, mesma categoria, ocorrência anterior nos últimos 30 dias — sobe a prioridade em um nível, e P1 permanece P1; prioridade e SLA valem para o chamado interno, e em chamado redirecionado o prazo é do time que recebe; "aguardando cliente" pausa o SLA; só o gestor reclassifica; nenhum chamado é encerrado pelo agente) | **É privado.** É política interna, não convenção universal de mercado. |
 | Lista de times e filas válidos (Infraestrutura, Segurança — gravada sem acento, `Seguranca` —, `fila_comercial`, `fila_humana` — esta lida pelo analista de suporte) | **É privado.** Muda com a organização da empresa. |
 | O que cada plano inclui (Hospedagem Start, Business, VPS Pro) e até onde vai o suporte em cada um | **É privado.** Depende do contrato desta empresa. |
@@ -90,7 +90,7 @@ a lista de embeddings cabe em memória e é recalculada a cada revisão da fonte
 **Fica fora do índice:**
 
 - **Fonte C (chamados e histórico):** é registro, não assunto. "Esse cliente já teve
-  disco cheio antes?" é `WHERE cliente_id = ? AND categoria = ?`, resolvido por consulta
+  permissão negada ao gravar arquivos antes?" é `WHERE cliente_id = ? AND categoria = ?`, resolvido por consulta
   estruturada (`consultar_ticket` e `_reincidencia` em `src/db.py`). Indexar o estado de um
   chamado não faz sentido: quando o embedding fica pronto, o dado já mudou.
 - **Fonte A (política de SLA e alçada):** não é indexada porque o agente não precisa
@@ -104,7 +104,7 @@ a lista de embeddings cabe em memória e é recalculada a cada revisão da fonte
   um procedimento que cita um time inexistente é recusado na indexação.
 
 A linha que separa as categorias: **D e E são texto que precisa ser casado por
-semelhança** com o relato livre do cliente ("o disco encheu", "o site cai de vez em
+semelhança** com o relato livre do cliente ("não consigo salvar arquivos", "o site cai de vez em
 quando"); **C é estado estruturado** e se responde por chave; **A e B são regras e listas
 de referência** que o sistema aplica ou valida, sem que o modelo precise lê-las.
 
@@ -125,8 +125,8 @@ de referência** que o sistema aplica ou valida, sem que o modelo precise lê-la
   (é o que se casa com o relato). `acao_padrao`, `categoria`, `time_destino` e `prioridade_base`
   ficam como **metadados estruturados** do trecho e não entram no texto embedado: são lidos por
   código depois da recuperação, e não interpretados pelo modelo.
-- Metadados: `kb_id`, `servico` (certbot, nginx, DNS, disco, SSH/fail2ban, backup),
-  `acao_padrao`, `categoria` (ex.: `disco_cheio`, `dns_dominio`; conta a reincidência),
+- Metadados: `kb_id`, `servico` (certbot, nginx, DNS, arquivos, SSH/fail2ban, backup),
+  `acao_padrao`, `categoria` (ex.: `permissao_arquivos`, `dns_dominio`; conta a reincidência),
   `time_destino`, `prioridade_base`, `planos` (a quais planos o guia se
   aplica), `data_publicacao`, `revogado_por` (vazio quando vigente).
 - Validação na indexação: o trecho é recusado se faltar `categoria`, `time_destino`

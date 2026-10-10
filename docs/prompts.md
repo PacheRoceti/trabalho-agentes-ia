@@ -107,7 +107,8 @@ prompt mudaram três frases:
 A maior parte da mudança está na busca (`buscar_kb`, em `src/db.py`), não no prompt:
 
 - frases são quebradas em palavras, e palavras de ligação saem;
-- sinônimos conhecidos viram a palavra-chave ("encheu" vira "cheio"); a lista é curta e foi escrita
+- sinônimos conhecidos viram a palavra-chave ("encheu" virava "cheio"; desde a troca da categoria do
+  KB-102, "salvar" vira "gravar"); a lista é curta e foi escrita
   depois de ver o `TKT-0007` falhar;
 - o score passou a ser `casados / (casados + não casados / 2)`: mede quanto da consulta o artigo
   explica e não depende do tamanho da lista de palavras-chave. Com um só termo casado, é reduzido
@@ -121,6 +122,12 @@ Com os termos reais das rodadas 1 e 2, a busca nova dá 0,67 a 1,0 para o `TKT-0
 ficou mais generoso, e no `TKT-0002` o KB-106 chega a 0,5 com os termos da rodada 2 (antes, 0,25),
 de modo que só o prompt impede agir sobre o log; e os scores deixam de ser comparáveis com os das
 rodadas anteriores.
+
+**Troca da categoria do KB-102 (10/10/2026).** "Disco cheio" saiu da base simulada e o KB-102
+passou a ser "Permissão negada ao gravar arquivos" (`docs/case.md` §2.12). O `TKT-0003` e o
+`TKT-0007` foram reescritos no seed, e no passo 2 do `agente-v5.md` "disco" virou "permissão de
+arquivos", no mesmo arquivo. Tudo o que este documento mede (§2 e §3) é anterior à troca e fala de
+disco cheio; os 8 casos ainda não foram executados com o seed novo.
 
 **Mudanças de 10/10/2026 nos arquivos.** Os arquivos `agente-v*.md` foram movidos de `prompts/`
 para `src/prompts/` com `git mv`. O texto do lembrete saiu da constante `LEMBRETE` de
