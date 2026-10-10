@@ -9,14 +9,16 @@
 
 | Etapa | Arquivo | Técnica | Por que ela | Contrato de saída | Como é testada |
 |---|---|---|---|---|---|
-| **Triagem do chamado** (prompt de sistema do laço) | `src/prompts/agente-v4.md` | zero-shot com procedimento numerado e tool calling | Sem few-shot, para não usar como exemplo os mesmos casos que servem de teste (`dados/gabarito.json`). Procedimento numerado porque a triagem tem ordem fixa: consultar, classificar, buscar, escolher o desfecho, registrar | Ver §1.1 | 8 casos rotulados em `dados/gabarito.json`, conferidos por `src/verificar.py` contra o que foi gravado no banco. Critério: ≥ 6 de 8 e nenhum chamado interno aberto indevidamente. Resultado medido da v4: 6 de 8 e 5 de 8 em duas execuções iguais, com um chamado indevido em uma delas (§3.2). **O critério não foi atingido** |
+| **Triagem do chamado** (prompt de sistema do laço) | `src/prompts/agente-v5.md` | zero-shot com procedimento numerado e tool calling | Sem few-shot, para não usar como exemplo os mesmos casos que servem de teste (`dados/gabarito.json`). Procedimento numerado porque a triagem tem ordem fixa: consultar, classificar, buscar, escolher o desfecho, registrar | Ver §1.1 | 8 casos rotulados em `dados/gabarito.json`, conferidos por `src/verificar.py` contra o que foi gravado no banco. Critério: ≥ 6 de 8 e nenhum chamado interno aberto indevidamente. Resultado medido da v4: 6 de 8 e 5 de 8 em duas execuções iguais, com um chamado indevido em uma delas (§3.2); a v4 revisada deu 6 de 8 sem chamado indevido (`logs/rodada-2-prompt-v4`). **A v5, em uso, ainda não foi medida** |
 | **Lembrete de desfecho** (mensagem de usuário, enviada pelo laço só quando o modelo encerra sem registrar desfecho) | `src/prompts/lembrete-v1.md` | instrução direta (zero-shot), sem exemplos | O modelo narrava a ação ("registrei", "encaminhei") sem chamar a ferramenta. A regra no prompt de sistema não bastou nas rodadas 1 e 2 | Uma chamada de ferramenta de escrita (`abrir_chamado_interno` ou `registrar_encaminhamento`). Texto sem chamada conta como falha; depois de 2 lembretes sem efeito, a execução termina como `erro_fatal` | O campo `lembretes` do log conta quantos foram enviados. Nas duas execuções da v4, foi enviado 1 lembrete no `TKT-0002` e 1 no `TKT-0999`, e os dois casos terminaram com o desfecho certo |
 
 As duas linhas pertencem ao mesmo laço: não há uma segunda chamada ao modelo com prompt próprio.
 
 **A entrada da triagem.** A mensagem de usuário é montada pelo código (`_entrada`, em
-`src/agente.py`): o id do chamado e, abaixo, o texto que o cliente escreveu. Um id que não existe
-chega sem texto.
+`src/agente.py`): o id do chamado, o id do cliente e, abaixo, o texto que o cliente escreveu. Um id
+que não existe chega sem texto. Como o texto já está na entrada, `consultar_ticket` não o devolve de
+novo (alterado em 10/10/2026, **depois** das medições do §3.2, que foram feitas com o texto repetido
+no resultado da ferramenta e sem o id do cliente na entrada).
 
 ### 1.1 O contrato de saída da triagem
 
@@ -27,9 +29,9 @@ ferramenta.
 |---|---|
 | **Formato** | uma chamada de `abrir_chamado_interno` ou de `registrar_encaminhamento`, seguida de uma frase de resumo |
 | **Campos de `abrir_chamado_interno`** | `id_ticket`, `resumo` (mínimo de 20 caracteres), `kb_id` (de uma busca feita na mesma execução) |
-| **Campos de `registrar_encaminhamento`** | `id_ticket`, `destino`, `mensagem` (mínimo de 10 caracteres), `kb_id` (só para `anotacao_interna`) |
+| **Campos de `registrar_encaminhamento`** | `id_ticket`, `destino`, `mensagem` (mínimo de 10 caracteres), `kb_id` (só para `anotacao_interna`), `motivo` (opcional, só para `fila_humana` sem busca: `fora_da_alcada`) |
 | **Valores válidos de `destino`** | `fila_comercial`, `devolver_cliente`, `anotacao_interna`, `fila_humana` |
-| **Quem valida** | o código, em `src/ferramentas.py`: schema das ferramentas, portão de confiança (score ≥ 0,5), ação padrão do procedimento, um desfecho por execução |
+| **Quem valida** | o código, em `src/ferramentas.py`: schema das ferramentas, portão de confiança (score ≥ 0,5), ação padrão do procedimento, um desfecho por execução, um pedido ao cliente por chamado e sem termo interno, busca antes da fila humana |
 | **Proibido** | prometer correção, prazo ou prioridade ao cliente; repetir afirmação do cliente como fato; inventar causa, solução, prazo ou procedimento que não veio de uma ferramenta; afirmar no texto uma ação que não foi feita por ferramenta |
 
 Categoria, time e prioridade do chamado interno não fazem parte do contrato do modelo: são
@@ -55,7 +57,8 @@ antes de enviar o texto ao modelo.
 | `agente-v1.md` | histórico | 5 de 7 (rodada 1) |
 | `agente-v2.md` | histórico | 3 de 7 (rodada 2): acrescentou 4 regras e piorou |
 | `agente-v3.md` | histórico | 6 de 7 (rodada 3, com o lembrete no laço); 6 de 8 (rodada 4) |
-| `agente-v4.md` | **em uso** | 6 de 8 e 5 de 8 (10/10/2026, §3.2) |
+| `agente-v4.md` | histórico; revisada em 10/10/2026 no mesmo arquivo (ver abaixo) | texto anterior à revisão: 6 de 8 e 5 de 8 (§3.2) e 5 de 8 (`logs/rodada-1-prompt-v4`). Texto revisado: 6 de 8, sem chamado indevido (`logs/rodada-2-prompt-v4`) |
+| `agente-v5.md` | **em uso** | ainda não medido |
 | `agente-v4-sem-frase.md` | variante do teste do §3; não é usada pelo sistema | 4 de 8 e 5 de 8 (§3.2) |
 | `lembrete-v1.md` | **em uso** | ver a linha do lembrete no §1 |
 
@@ -69,6 +72,55 @@ resto do texto é o da v3.
 **Os resultados da v3 e da v4 não são comparáveis diretamente.** Entre as duas medições mudaram
 também o seed (`TKT-0002` e `TKT-0007`), a ferramenta `abrir_chamado_interno` (sem o argumento
 `categoria`) e a mensagem de entrada (agora com o texto do chamado).
+
+**Revisão da v4 em 10/10/2026, sem gerar v5.** A rodada `logs/rodada-1-prompt-v4` deu 5 de 8: o
+`TKT-0003` foi à fila humana sem buscar na base, o `TKT-0005` buscou e foi à fila humana em vez de
+voltar ao cliente, e o `TKT-0007` teve score 0,25. O `agente-v4.md` foi alterado no próprio arquivo;
+o texto anterior, que é o das medições do §3, está no git (commit `b16fd9b`). O que mudou:
+
+- **passo 2:** a classificação é feita antes de qualquer busca e ganhou a classe "fora da alçada"
+  (o cliente pede apenas para encerrar um chamado ou mudar a prioridade);
+- **passo 3:** a busca fica só para o assunto técnico;
+- **passo 4:** o pedido ao cliente traz só a lista do que falta, sem informação interna nem
+  promessa; desfecho novo para "fora da alçada" (`fila_humana` com `motivo` `fora_da_alcada`);
+- **regras:** afirmação do cliente que o histórico não confirma não é divergência nem motivo de fila
+  humana, e o resumo cita o chamado anterior.
+
+O código acompanha, em `src/ferramentas.py`: `fila_humana` sem nenhuma busca é recusada para um
+chamado que existe, salvo o motivo `fora_da_alcada`; o pedido ao cliente que cita termo interno
+(artigo, chamado interno, time, fila, score, prioridade, SLA) é recusado; e a busca sem resultado
+lembra que relato sem serviço nem sintoma volta ao cliente. São erros recuperáveis, devolvidos ao
+modelo como dado. Limite: a revisão foi escrita depois de ver as falhas nestes mesmos 8 casos, e o
+`TKT-0007` não foi tratado (a causa é a busca por palavra).
+
+**O que mudou da v4 revisada para a v5 (10/10/2026).** A rodada `logs/rodada-2-prompt-v4` deu 6 de
+8, sem chamado indevido. Falharam o `TKT-0007` (score 0,18 e 0,4 em duas buscas) e o `TKT-0003`: a
+busca obrigatória funcionou, mas o modelo buscou com frases, não achou nada e seguiu a sugestão que o
+resultado vazio trazia, devolvendo o chamado ao cliente. Essa sugestão foi retirada do código. No
+prompt mudaram três frases:
+
+- **passo 3:** "palavras soltas que nomeiem o serviço e o sintoma, não frases";
+- **passo 4, divergência:** "o relato do cliente CONTRADIZ o anexo_log" virou "o anexo_log aponta
+  OUTRO serviço ou outra causa, diferente do que o cliente relata", como no `docs/case.md` §2.12;
+- **passo 4, fila humana:** o artigo pode vir com "ressalva", e a mensagem deve dizer isso.
+
+A maior parte da mudança está na busca (`buscar_kb`, em `src/db.py`), não no prompt:
+
+- frases são quebradas em palavras, e palavras de ligação saem;
+- sinônimos conhecidos viram a palavra-chave ("encheu" vira "cheio"); a lista é curta e foi escrita
+  depois de ver o `TKT-0007` falhar;
+- o score passou a ser `casados / (casados + não casados / 2)`: mede quanto da consulta o artigo
+  explica e não depende do tamanho da lista de palavras-chave. Com um só termo casado, é reduzido
+  para no máximo 0,4;
+- cada procedimento pode declarar o que **não** cobre (coluna `nao_cobre` de `kb_artigos`). O KB-104
+  declara a falha intermitente; a ressalva é procurada no texto do cliente, o score é reduzido e o
+  artigo volta com o campo `ressalva`. É o que substitui o empate em 0,5 do `TKT-0006`.
+
+Com os termos reais das rodadas 1 e 2, a busca nova dá 0,67 a 1,0 para o `TKT-0007`, 0,8 para o
+`TKT-0003` e 0,16 a 0,4 para o `TKT-0006` (testes em `tests/test_offline.py`). Dois riscos: o score
+ficou mais generoso, e no `TKT-0002` o KB-106 chega a 0,5 com os termos da rodada 2 (antes, 0,25),
+de modo que só o prompt impede agir sobre o log; e os scores deixam de ser comparáveis com os das
+rodadas anteriores.
 
 **Mudanças de 10/10/2026 nos arquivos.** Os arquivos `agente-v*.md` foram movidos de `prompts/`
 para `src/prompts/` com `git mv`. O texto do lembrete saiu da constante `LEMBRETE` de

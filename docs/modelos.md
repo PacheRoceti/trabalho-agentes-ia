@@ -135,7 +135,7 @@ de desenvolvimento de um de avaliação. Outro limite: 7 casos não são mediç�
 ### 3.3-B A comparação entre os três modelos
 
 **Protocolo.** Cinco casos (`TKT-0001`, `TKT-0002`, `TKT-0003`, `TKT-0999`, `TKT-0006`), nos três
-candidatos, com o **mesmo prompt** (`prompts/agente-v3.md`), o **mesmo banco inicial** e o **mesmo
+candidatos, com o **mesmo prompt** (`src/prompts/agente-v3.md`), o **mesmo banco inicial** e o **mesmo
 verificador**. Ficaram de fora `TKT-0004` e `TKT-0005`, os casos fáceis.
 
 **Hipótese antes de rodar** (registrada para o resultado poder nos surpreender): o 3B falha em mais

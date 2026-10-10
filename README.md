@@ -104,8 +104,8 @@ Como ler: o agente consultou o chamado (passo 0), buscou na base duas vezes (pas
 ```
 src/         agente.py (laço, estado, orçamento) · ferramentas.py · db.py (SQLite) · verificar.py
              main.py · comparar_modelos.py (item 3.3)
-prompts/     agente-v3.md  (o prompt em uso: técnica, contrato e o que cada regra impede)
-             agente-v1.md e agente-v2.md (histórico do experimento de prompts)
+src/prompts/ agente-v5.md e lembrete-v1.md (os prompts em uso, carregados em tempo de execução por agente.py)
+             agente-v1.md a agente-v4.md (histórico) · agente-v4-sem-frase.md (variante de teste, docs/prompts.md §3)
 dados/       seed.sql · gabarito.json · README.md (casos difíceis nomeados)
 tests/       testes offline (sem chave)
 docs/        case.md · modelos.md · modelos-tabela-3.3.md · arquitetura-v2.md · base-de-conhecimento-v2.md · memoria.md · fontes.md

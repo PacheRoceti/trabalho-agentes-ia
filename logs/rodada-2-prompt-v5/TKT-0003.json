@@ -1,0 +1,69 @@
+{
+  "execucao_id": "TKT-0003-48568",
+  "id_ticket": "TKT-0003",
+  "modelo": "ministral-8b-latest",
+  "prompt": "agente-v5.md",
+  "prompt_lembrete": "lembrete-v1.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": "O chamado foi encaminhado para a fila humana, pois o cliente pediu apenas prioridade máxima sem relatar um novo problema técnico.",
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana",
+    "motivo": "fora_da_alcada"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 3,
+  "lembretes": 0,
+  "tokens_entrada": 6424,
+  "tokens_saida": 328,
+  "custo_usd": 0.001013,
+  "scores_kb": {},
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0003"
+      },
+      "resultado": {
+        "id": "TKT-0003",
+        "aberto_em": "2026-09-21 09:40",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Beta Logística",
+        "plano": "VPS Pro",
+        "historico_cliente": [
+          {
+            "chamado_interno": "INC-0001",
+            "categoria": "disco_cheio",
+            "criado_em": "2026-09-01 15:00",
+            "status": "resolvido"
+          }
+        ]
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0003",
+        "destino": "fila_humana",
+        "motivo": "fora_da_alcada",
+        "mensagem": "O cliente exige prioridade máxima para um chamado anterior (INC-0001) sem relatar um novo problema técnico. Afirmação de ocorrência repetida não confirmada pelo histórico do sistema."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 9
+    }
+  ]
+}

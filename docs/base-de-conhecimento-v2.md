@@ -113,7 +113,8 @@ de referência** que o sistema aplica ou valida, sem que o modelo precise lê-la
 **Fonte D — Procedimentos técnicos**
 - Unidade natural: um guia por sintoma, no template fixo: **sintoma, causa, solução,
   ação padrão (`anotar` ou `escalar`), categoria, time de destino, prioridade base**. É o
-  formato da tabela `kb_artigos`.
+  formato da tabela `kb_artigos`, que tem ainda a coluna `nao_cobre`: as situações que o guia
+  declara não cobrir (hoje, a falha intermitente no KB-104), usadas pela busca para reduzir o score.
 - Corte: **um trecho por guia**. O template raramente passa de meia página. Um guia com
   subcenários (ex.: "erro 5xx após deploy" — constante × intermitente) é cortado por
   subcenário, repetindo o sintoma pai no início de cada trecho. Como time e prioridade

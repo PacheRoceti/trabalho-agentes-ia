@@ -18,10 +18,10 @@
 
 *As regras do domínio:*
 
-- Prioridades por SLA: P1 crítico = 2h, P2 = 1 dia útil, P3 = 3 dias úteis. Prioridade e SLA valem para o **chamado interno** que o agente abre. Quando o chamado é redirecionado (fila comercial, fila humana, anotação interna), o agente não define prioridade nem SLA: os prazos são definidos pelo time que recebe.
+- Prioridades por SLA: P1 crítico = 2h, P2 = 1 dia útil, P3 = 3 dias úteis. O prazo é de **resolução** e conta a partir da abertura do chamado interno, isto é, depois da confirmação do analista. Prioridade e SLA valem para o **chamado interno** que o agente abre. Quando o chamado é redirecionado (fila comercial, fila humana, anotação interna), o agente não define prioridade nem SLA: os prazos são definidos pelo time que recebe.
 - Ticket em status "aguardando cliente" pausa a contagem de SLA. Essa pausa é do sistema de chamados, sobre o prazo de atendimento do chamado externo; o agente só registra o status, não calcula o prazo.
 - **Reincidência:** quando o mesmo problema volta em **até 30 dias corridos** depois de uma ocorrência anterior, o agente **não reabre** o chamado anterior: abre um chamado interno **novo**, tratado como reincidência. A prioridade do procedimento sobe um nível (se já é P1, não há nível acima e permanece P1), e o resumo cita o chamado anterior que o histórico do sistema confirma. Só conta como reincidência o que o histórico confirma (mesmo cliente, mesma categoria, ocorrência anterior nos últimos 30 dias); a afirmação do cliente ("é a terceira vez") não basta. Hoje o histórico só registra chamados internos, então a regra alcança os procedimentos de escalonamento;
-- Alçada: só o gestor pode reclassificar a prioridade de um ticket. Nenhum chamado pode ser encerrado, mesmo que tenha sido aberto com informação insuficiente — ele precisa permanecer aberto até ser de fato resolvido.
+- Alçada: só o gestor pode reclassificar a prioridade de um ticket. Nenhum chamado pode ser encerrado pelo agente, mesmo que tenha sido aberto com informação insuficiente — ele precisa permanecer aberto até ser de fato resolvido.
 - **O agente interage diretamente com o cliente apenas para solicitar mais informações.** É a única mensagem que ele envia ao cliente; todo o resto que ele produz é registro interno (chamado interno, anotação ou encaminhamento), e qualquer outra comunicação com o cliente é feita pelo analista de suporte. O pedido de informação segue cinco regras:
   - **o que pode conter:** só a lista do que falta para classificar o chamado (serviço ou servidor afetado, erro ou comportamento observado, desde quando). É proibido prometer correção, prazo ou prioridade, e citar qualquer informação interna (procedimentos, times, scores);
   - **quem confirma:** a mensagem chega ao cliente e não tem volta, então o envio só acontece depois da **confirmação do analista de suporte**, como toda ação irreversível;
@@ -31,7 +31,7 @@
 - **O agente tem acesso à documentação interna e pode ter informação suficiente para identificar a solução de um problema, mas não tem acesso administrador para executar a correção.** Ele nunca executa — apenas sugere, escala ou redireciona.
 - A partir da triagem, cada volta da triagem termina em uma de cinco ações:
   1. **Escalonamento** — abre um chamado interno para o time responsável, com o time e a prioridade definidos pelo procedimento da base de conhecimento.
-  2. **Redirecionamento** — quando o assunto é comercial ou fora do escopo da fila de suporte, redireciona o chamado para a fila comercial.
+  2. **Redirecionamento** — quando o assunto é comercial (planos, preços, upgrade, contratação, cobrança) e, portanto, fora do escopo da fila de suporte, redireciona o chamado para a fila comercial. Um pedido técnico que o suporte não cobre e que não é comercial (por exemplo, instalar um aplicativo para o cliente) não tem procedimento na base e vai para a fila humana (ação 5).
   3. **Correção sugerida, sem escalonamento** — quando o agente identifica a correção e não há necessidade de escalar, ele gera uma anotação interna com a correção sugerida, para validação/execução por um analista. A resposta ao cliente, se houver, depende do analista após validar/executar a correção.
   4. **Devolução ao cliente** — quando o chamado não tem informação suficiente para ser classificado, o agente envia ao cliente, depois da confirmação do analista, o pedido das informações que faltam e aguarda a resposta. Nenhum chamado interno é aberto até que a informação chegue; quando ela chega, a triagem recomeça na mesma conversa e termina em uma das outras quatro ações. A devolução é, portanto, o desfecho da primeira volta e uma pausa do chamado, não o seu fim.
   5. **Fila humana** — quando o agente não tem confiança para agir sozinho (score abaixo do limiar ou sem procedimento, divergência entre relato e log, id inexistente, pedido fora da alçada, resposta do cliente ainda insuficiente ou prazo de resposta vencido), encaminha o chamado ao analista de suporte com o motivo.
@@ -159,7 +159,7 @@ ninguém da empresa consegue ler e-mail."
 
 [agente classifica: assunto = técnico]
 [agente lê o log anexado: falha de resolução DNS (SERVFAIL, nameserver não responde);
- o processo do webmail está ativo e a porta 443 responde]
+ o webmail abre normalmente quando acessado direto pelo IP do servidor]
 [a base tem KB-106 "Falha de resolução DNS" com score alto — é a armadilha:
  agir sobre o log abriria um chamado P1 com base em algo que o cliente não relatou]
 [divergência entre relato e evidência -> não age sozinho]
@@ -274,7 +274,9 @@ internos com SLA estourado por mês, sobre os chamados internos abertos no mês.
 
 **É uma estimativa, e é um teto.** A conta aplica os 9 minutos aos 433 chamados, mas os que vão
 à fila humana continuam custando ao analista o tempo de hoje, e anotações e aberturas ainda passam
-por ele para validar ou confirmar. O alvo de 4 chamados/hora e o de 15 estourados/mês são
+por ele para validar ou confirmar. Os 24 minutos da linha de base vêm da vazão total do analista
+(2,5 chamados/hora), que inclui ler, classificar, registrar e responder; a conta supõe que os 9
+minutos saem das etapas de leitura, classificação e registro, que são as que o agente assume. O alvo de 4 chamados/hora e o de 15 estourados/mês são
 hipóteses do grupo, não resultados; a Parte 3 os confere contra o que o sistema
 entregar.
 
@@ -362,4 +364,101 @@ Nenhum dado sensível: todas as informações são sobre serviços e/ou funciona
 
 Base de conhecimento onde o agente realiza as consultas não ser revisada após atualização de algum serviço, desencadeando uma sequência de chamados tratados de maneira incorreta, também é possível que a base fique indisponível por tempo indeterminado.
 
-**Plano B:** se a base estiver indisponível ou o score não passar do limiar, o agente **não responde pelo conhecimento do modelo**: o chamado vai para a fila humana. É o que o prompt (`prompts/agente-v3.md`) e o portão de confiança já fazem quando não há artigo com correspondência. Para o risco de base desatualizada, na Parte 2 cada trecho indexado carrega `data_publicacao` (já previsto em `base-de-conhecimento-v2.md`), com alerta quando um artigo passa de um prazo sem revisão.
+**Plano B:** se a base estiver indisponível ou o score não passar do limiar, o agente **não responde pelo conhecimento do modelo**: o chamado vai para a fila humana. É o que o prompt (`src/prompts/agente-v3.md`) e o portão de confiança já fazem quando não há artigo com correspondência. Para o risco de base desatualizada, na Parte 2 cada trecho indexado carrega `data_publicacao` (já previsto em `base-de-conhecimento-v2.md`), com alerta quando um artigo passa de um prazo sem revisão.
+
+### 2.12 Complemento do case: o que o domínio ensinou (Parte 2, item 0)
+
+Esta seção registra o que o grupo aprendeu sobre suporte de hospedagem e que alguém de fora precisa saber para entender as decisões do sistema: o vocabulário, as regras que a área conhece e não estavam escritas, a exceção que decide a arquitetura e o passo que parecia um e são vários.
+
+#### Vocabulário do atendimento
+
+| Termo | O que é | Onde aparece no sistema |
+|---|---|---|
+| **Chamado externo** (ticket, `TKT-0000`) | O pedido que o cliente abre, em texto livre | É a entrada do agente; o id vira o `thread_id` da conversa |
+| **Chamado interno** (`INC-0000`) | O pedido que o Suporte abre para um time interno resolver | É a escrita irreversível do agente (`abrir_chamado_interno`) |
+| **Triagem** (ou ingresso) | Ler o chamado externo, classificar o assunto e decidir o destino | É o trabalho que o agente assume |
+| **Escalonamento** | Passar o caso a um time com mais acesso ou especialidade, abrindo um chamado interno | Ação padrão `escalar` dos procedimentos |
+| **Anotação interna** | Registro, visível só ao Suporte, com a correção sugerida para o analista validar e executar | Ação padrão `anotar` dos procedimentos |
+| **Fila** | Lista de chamados à espera de um grupo de pessoas | `fila_comercial` (time Comercial) e `fila_humana` (analista de suporte) |
+| **N1 e N2** | Níveis de suporte. N1 é o primeiro atendimento; N2 são os especialistas | N1 é o analista de suporte; N2 são os times internos (Infraestrutura, Segurança) |
+| **Alçada** | O limite do que cada papel pode decidir | O agente não fecha chamado nem muda prioridade; só o gestor reclassifica |
+| **SLA** (*Service Level Agreement*, acordo de nível de serviço) | O prazo combinado para resolver um chamado | Prazo de resolução do chamado interno, definido pela prioridade |
+| **P1, P2, P3** | Níveis de prioridade: P1 é crítico (serviço parado), P3 é o menos urgente | P1 = 2h, P2 = 1 dia útil, P3 = 3 dias úteis |
+| **Reincidência** | O mesmo problema voltar para o mesmo cliente em até 30 dias | Sobe a prioridade em um nível, por regra de código |
+| **Aguardando cliente** | Status do chamado que depende de uma resposta do cliente; o prazo não corre | Estado da pausa depois do pedido de informação |
+| **KB** (*Knowledge Base*, base de conhecimento; `KB-000`) | A coleção de procedimentos internos, um por sintoma | É o que o agente consulta; cada procedimento declara ação padrão, categoria, time e prioridade |
+
+#### Vocabulário dos produtos
+
+| Termo | O que é | Por que importa na triagem |
+|---|---|---|
+| **Hospedagem compartilhada** (planos Hospedagem Start e Hospedagem Business) | Vários clientes dividem o mesmo servidor, administrado pela empresa. O cliente tem uma conta com cota de espaço, sem acesso de administrador | O cliente não tem "disco" nem "servidor" próprios, mesmo quando escreve assim |
+| **VPS** (*Virtual Private Server*, servidor virtual privado; plano VPS Pro) | Uma máquina virtual exclusiva do cliente, com sistema operacional, disco e memória próprios, dentro de um servidor físico da empresa | Disco cheio, serviço parado e acesso SSH são problemas da máquina do cliente, e alguém precisa de acesso a ela para corrigir |
+| **Servidor dedicado** | Uma máquina física inteira alugada a um só cliente | Não está no catálogo atual: o pedido de migração para um é assunto comercial (`TKT-0004`) |
+| **Plano gerenciado** | Plano em que a empresa administra o sistema operacional e os serviços do servidor; no não gerenciado, o cliente administra tudo | Define se um problema é responsabilidade do Suporte. O VPS Pro é gerenciado |
+| **Cota** | O limite de espaço (e de número de arquivos) de uma conta de hospedagem compartilhada | "Disco cheio" em plano compartilhado é cota excedida, não disco de servidor |
+
+#### Vocabulário técnico
+
+| Termo | O que é | Onde aparece |
+|---|---|---|
+| **SSL / TLS** (*Secure Sockets Layer* / *Transport Layer Security*) | O protocolo que cifra a comunicação entre o navegador e o site. O SSL é o nome antigo e o TLS é a versão em uso, mas a área continua dizendo "SSL" | Categoria `ssl_certificado`, KB-101 |
+| **Certificado SSL** | O arquivo que prova a identidade do site e permite a conexão cifrada. Tem validade (90 dias nos gratuitos do Let's Encrypt) e precisa ser renovado | Quando vence, o navegador mostra "site não seguro" (`TKT-0001`) |
+| **HTTPS** | O endereço do site servido com SSL/TLS (porta 443); o HTTP sem cifra usa a porta 80 | KB-101 |
+| **Let's Encrypt e certbot** | Let's Encrypt é a autoridade que emite certificados gratuitos; certbot é o programa que os pede e renova sozinho, por uma tarefa agendada (timer) | KB-101: a renovação automática que não rodou |
+| **Desafio HTTP-01** | A prova que o Let's Encrypt exige antes de emitir: ele acessa um arquivo no site pela porta 80. Falha se a porta estiver bloqueada ou se o domínio apontar para outro endereço | Causa do KB-101 |
+| **DNS** (*Domain Name System*) | O serviço que traduz o nome de um domínio no endereço IP do servidor | Categoria `dns_dominio`, KB-106 |
+| **Nameserver** (`ns1`, `ns2`) | O servidor que responde pelas consultas de DNS de um domínio. Pode ser da empresa de hospedagem ou de terceiros (o registrador do domínio) | KB-106 e log do `TKT-0002` |
+| **Zona DNS** | O conjunto de registros de um domínio (para onde apontam o site, o e-mail etc.) | KB-106 |
+| **SERVFAIL** | Resposta de erro do DNS: o nameserver não conseguiu responder | Log do `TKT-0002` |
+| **SSH** (*Secure Shell*) | O acesso remoto, por linha de comando, a um servidor | Categoria `acesso_ssh`, KB-103 |
+| **fail2ban** | Programa que bloqueia (bane) o IP de quem erra a senha várias vezes seguidas | Causa do KB-103 |
+| **Firewall** | O filtro que libera ou bloqueia conexões por porta e por IP | KB-101 e KB-103 |
+| **nginx** | O servidor web que recebe as requisições e as entrega à aplicação do cliente | KB-104 |
+| **Erro 5xx** (502, 503) | Códigos de erro do lado do servidor. 502 (*Bad Gateway*) quer dizer que o nginx está no ar, mas a aplicação por trás dele não respondeu | Categoria `site_fora_do_ar`, KB-104 |
+| **Deploy** | A publicação de uma nova versão da aplicação do cliente no servidor | KB-104: erro que começa logo depois de um deploy |
+| **Webmail** | A página web por onde o cliente lê o e-mail do domínio | Relato do `TKT-0002` |
+| **Backup e snapshot** | Cópia de segurança dos dados; snapshot é a cópia do disco inteiro num instante | Categoria `backup`, KB-105 |
+| **Inode** | A unidade que o sistema de arquivos usa por arquivo. Um disco pode "encher" por excesso de arquivos pequenos mesmo com espaço livre | Palavra-chave do KB-102 |
+| **Rotação de logs** | Compactar e apagar os arquivos de log antigos para liberar espaço | Solução do KB-102 |
+| **FTP** (*File Transfer Protocol*) | Protocolo de envio de arquivos para o servidor; o erro 550 é "arquivo indisponível ou sem permissão" | Exemplo do §2.6 |
+
+#### Regras que a área conhece e que não estavam escritas
+
+1. **O que separa "anotar" de "escalar" é o acesso que a correção exige.** O analista de suporte (N1) tem acesso operacional, pelo painel de administração: consegue renovar um certificado, liberar um IP banido e reexecutar um backup. São operações de rotina, documentadas e que se desfazem. Ele não tem acesso de administrador (root) aos servidores. Tudo o que exige esse acesso (apagar arquivos, reiniciar a aplicação, mexer no DNS) é feito por um time N2 e vira chamado interno. É por isso que KB-101, KB-103 e KB-105 são "anotar", e KB-102, KB-104 e KB-106 são "escalar".
+2. **O time de um procedimento "anotar" é o dono do procedimento, não o destino da anotação.** A anotação sempre vai para o analista de suporte. O campo `time_destino` de um procedimento "anotar" diz quem mantém o guia e para quem o analista escala se a correção sugerida não resolver (por exemplo, a Segurança no KB-103).
+3. **O SLA é de resolução, e o relógio começa na abertura do chamado interno.** O tempo que o chamado externo passa na triagem, ou à espera da confirmação do analista, não conta no SLA do time interno. Por isso a confirmação precisa de prazo próprio: um P1 parado esperando o "sim" do analista perde tempo sem que nenhum SLA registre.
+4. **O cliente fala "meu servidor" mesmo quando não tem um.** Quem contrata hospedagem compartilhada escreve "meu servidor caiu" ou "o disco encheu". O plano real vem do cadastro (`consultar_ticket`), não do texto, e o agente não corrige o cliente.
+5. **A responsabilidade do Suporte termina onde começa o que é do cliente.** No VPS Pro, gerenciado, a empresa cuida do sistema operacional, do servidor web, do disco, do backup e do DNS que ela hospeda. O código da aplicação e o deploy são do cliente. No KB-104, a Infraestrutura restabelece o serviço (reinicia o processo, valida o nginx); reverter um deploy é feito em acordo com o cliente.
+6. **Nem todo nameserver é da empresa.** Se o domínio usa nameservers de terceiros, uma falha de DNS não é problema da Infraestrutura, e abrir um P1 para ela é erro. O relato do cliente quase nunca diz de quem é o nameserver.
+7. **Pedido técnico fora do que o suporte cobre não é assunto comercial.** "Instalem o WordPress" não é venda nem defeito. Sem procedimento na base, vai para a fila humana, e o analista decide se recusa, orienta ou encaminha.
+
+#### A exceção que decide a arquitetura: o cliente relata o sintoma, o log mostra a causa
+
+No `TKT-0002` o cliente diz que o Webmail está fora do ar, e o log anexado (consultas que o próprio cliente fez) mostra falha de DNS, com o webmail abrindo normalmente pelo IP do servidor. Para quem é da área, as duas informações não se contradizem: se o nome `mail.zeta.com.br` não resolve, o cliente não chega ao webmail, mesmo com o serviço no ar. O cliente descreveu o **sintoma**; o log aponta a **causa**, em outro serviço.
+
+O que o case chama de "divergência entre relato e log" é isto: a evidência anexada aponta para um serviço diferente do que o cliente relatou. O agente não age sozinho nesse caso por três razões do domínio:
+
+- o log foi anexado pelo cliente, e o agente não tem como conferir sua origem;
+- o procedimento que casa com o log (KB-106) abre um chamado P1, irreversível, e a regra 6 acima mostra que a falha pode estar num nameserver que não é da empresa;
+- quem confirma a relação entre o sintoma relatado e a causa do log é uma pessoa com acesso ao ambiente.
+
+É essa exceção que explica três decisões do desenho: `consultar_ticket` devolve o log anexado junto com o histórico; a triagem tem a classe "relato × log divergente"; e score alto na base não basta para agir quando o artigo recuperado responde ao log e não ao relato.
+
+#### O passo que parecia um e são três: "disco cheio"
+
+No desenho original, "disco cheio" era um caso só, coberto pelo KB-102. O domínio mostra três situações com o mesmo relato:
+
+| Situação | Onde ocorre | O que resolve |
+|---|---|---|
+| Disco do servidor cheio | VPS Pro | Infraestrutura identifica os diretórios maiores e rotaciona logs (KB-102, "escalar") |
+| Cota da conta excedida | Hospedagem Start e Business | O cliente apaga arquivos ou contrata mais espaço: é orientação do analista ou assunto comercial |
+| Inodes esgotados | Qualquer plano | Há espaço livre, mas arquivos demais; a correção é outra (remover arquivos pequenos, como cache e sessões) |
+
+Hoje a base tem só o KB-102 e não distingue as três, e o agente não usa o plano do cliente para decidir. O `TKT-0007` é de um cliente de VPS Pro, então o KB-102 se aplica; o mesmo relato vindo de um cliente de hospedagem compartilhada seria tratado do mesmo jeito, e errado. É uma limitação conhecida da Parte 1. Na Parte 2, o metadado `planos` de cada procedimento e as fichas do catálogo (`docs/base-de-conhecimento-v2.md` §4) são o que permite separar os casos.
+
+#### Pontos em aberto nos dados simulados
+
+- O `TKT-0002` e o `TKT-0007` foram corrigidos no seed em 10/10/2026: o log do `TKT-0002` passou a ser o que o cliente consegue obter (consultas de DNS e acesso pelo IP, feitos antes da abertura do chamado), e o `TKT-0007` passou a ser de um cliente de VPS Pro. Os logs da Parte 1 em `logs/` são anteriores e ainda mostram o log e o cliente antigos.
+- O `TKT-0005` é de um cliente de hospedagem compartilhada que fala em "servidor". Vale para testar a regra 4.
+- O prazo para o analista confirmar uma ação irreversível ainda não está definido (regra 3). Entra em `docs/humano.md`, na Parte 2.

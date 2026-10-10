@@ -15,7 +15,7 @@
 | | Curto prazo | Longo prazo |
 |---|---|---|
 | O que é | a janela de uma triagem (um `TKT-xxxx`), incluindo a pausa à espera do cliente quando o agente pede informação | o que atravessa chamados diferentes, de clientes diferentes, em dias diferentes |
-| Conteúdo, no case | prompt do sistema (`prompts/agente-v3.md`), o texto do chamado com o id que o acompanha ("TKT-0002: Meu Webmail está fora do ar…"), a trajetória (as chamadas de `consultar_ticket`, `buscar_base_conhecimento` e seus resultados), os trechos da base de conhecimento recuperados nesta busca | episódica (execuções passadas), semântica (fatos estáveis sobre clientes e times), procedural (regras de triagem aprendidas) |
+| Conteúdo, no case | prompt do sistema (`src/prompts/agente-v3.md`), o texto do chamado com o id que o acompanha ("TKT-0002: Meu Webmail está fora do ar…"), a trajetória (as chamadas de `consultar_ticket`, `buscar_base_conhecimento` e seus resultados), os trechos da base de conhecimento recuperados nesta busca | episódica (execuções passadas), semântica (fatos estáveis sobre clientes e times), procedural (regras de triagem aprendidas) |
 | Persistido como | **checkpoint** por conversa, endereçado pelo `thread_id` = id do chamado externo (ver 1.5) | índice por similaridade (episódica), tabela chave-valor (semântica), texto dentro do próprio prompt (procedural) |
 | Lido | uma vez, ao retomar uma execução parada | a cada passo do laço em que o modelo pode se beneficiar de um fato ou um precedente |
 | Acesso | por `thread_id` (id do chamado) | por relevância (episódica), por chave `cliente_id`/categoria (semântica), carregado sempre (procedural) |
@@ -35,7 +35,7 @@ Isso responde às três perguntas do enunciado: (a) retomável sem reaplicar efe
 
 ### 1.2 O orçamento da janela
 
-Seis fontes disputam a janela de uma chamada ao modelo. Medido a partir do `prompts/agente-v3.md` e dos schemas em `src/ferramentas.py`:
+Seis fontes disputam a janela de uma chamada ao modelo. Medido a partir do `src/prompts/agente-v3.md` e dos schemas em `src/ferramentas.py`:
 
 | Fonte | Teto (tokens) | Medido / justificativa |
 |---|---|---|

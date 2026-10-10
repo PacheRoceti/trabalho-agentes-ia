@@ -100,7 +100,7 @@ do analista.
 ## 4. Prompt engineering (item 4.3)
 
 Um único ponto de chamada ao modelo — o laço em `src/agente.py` — com um único
-prompt, `prompts/agente-v3.md` (v1 e v2 ficam como histórico do experimento, `docs/modelos.md` §3.3-A).
+prompt, `src/prompts/agente-v3.md` (v1 e v2 ficam como histórico do experimento, `docs/modelos.md` §3.3-A).
 O cabeçalho do arquivo documenta a técnica
 (zero-shot com procedimento numerado e tool calling), o contrato de saída (o
 resultado é a escrita da ferramenta, não o texto) e, linha por linha, o que cada
@@ -125,7 +125,7 @@ conjunto de teste (`dados/gabarito.json`) com exemplos do prompt.
 | Achado | Mudança | Onde |
 |---|---|---|
 | O modelo **narra** a ação ("encaminhei...") sem chamar a ferramenta e nada é gravado (`TKT-0999` nas rodadas 1 e 2; `TKT-0003` na 1) | **Lembrete no laço**: se o modelo encerra sem desfecho, recebe até 2 avisos como observação; sem efeito, término `erro_fatal` | `src/agente.py` (`LEMBRETE`, `MAX_LEMBRETES`); campo `lembretes` no log |
-| Mais regras no prompt pioraram o resultado (5 → 3 de 7) | Prompt v3 = v1 + 2 frases; v2 mantida como registro do experimento | `prompts/agente-v*.md` |
+| Mais regras no prompt pioraram o resultado (5 → 3 de 7) | Prompt v3 = v1 + 2 frases; v2 mantida como registro do experimento | `src/prompts/agente-v*.md` |
 | O verificador reprovou uma resposta correta por procurar palavras exatas | Regra do `TKT-0002` passou a exigir que a mensagem cite o serviço do relato e a causa do log | `dados/gabarito.json`, `src/verificar.py` |
 | O modelo pequeno pula a busca no `TKT-0003` e escolhe a fila humana | **Não corrigido**: é erro de julgamento, para o lado seguro. Vira pergunta da comparação de modelos e da Parte 2 (busca obrigatória em código, ou modelo maior) | `docs/modelos.md` §3.3 |
 | **Três das quatro falhas distintas nasceram da busca por palavra** (frases que diluem o score; limiar que cai no empate 0,5 e deixou um modelo abrir chamado indevido; flexão que não casa) | **Não corrigido na Parte 1**: é o motivo do RAG com limiar calibrado na Parte 2. A confirmação do analista é a rede de segurança enquanto isso | `docs/modelos.md` §3.3-B |
