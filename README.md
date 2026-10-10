@@ -61,7 +61,7 @@ Os chamados disponíveis são `TKT-0001` a `TKT-0007` e o inexistente `TKT-0999`
 | `abrir_chamado_interno` | chamado aberto para o time responsável, com resumo e prioridade definida pelo sistema | `python -c "import sqlite3; c=sqlite3.connect('dados/tickets.db'); print(*c.execute('select * from chamados_internos'), sep='\n')"` |
 | `anotacao_interna` | correção sugerida para o analista validar e executar | tabela `encaminhamentos` |
 | `fila_comercial` | assunto comercial, fora do escopo do suporte | tabela `encaminhamentos` |
-| `devolver_cliente` | faltam informações; a mensagem pede o que falta | tabela `encaminhamentos` |
+| `devolver_cliente` | faltam informações; a mensagem é o pedido ao cliente (a única mensagem que o agente envia a ele, no máximo uma por chamado) | tabela `encaminhamentos` |
 | `fila_humana` | o sistema não teve confiança para agir sozinho (ou o id não existe) | tabela `encaminhamentos` |
 
 Como interpretar o término (`TERMINO:` na saída):
@@ -93,7 +93,7 @@ TKT-0002  (caso: divergencia)  modelo: ministral-8b-latest
 
 Como ler: o agente consultou o chamado (passo 0), buscou na base duas vezes (passos 1 e 2), viu que o log aponta DNS enquanto o cliente fala de Webmail, e **não agiu sozinho**: registrou o encaminhamento à fila humana, sinalizando a divergência (passo 3, uma escrita reversível). `TERMINO: respondeu` quer dizer que registrou um desfecho; `VERIFICADOR: OK` que o desfecho gravado no banco é o que o analista humano daria. O custo é o simulado a preço de lista; no plano gratuito o gasto real é zero.
 
-**O que ele não faz.** Não executa correções, não encerra chamados, não altera prioridade (só o gestor reclassifica) e não responde diretamente ao cliente além das mensagens de `devolver_cliente`. A base de conhecimento é uma busca por palavras-chave (Parte 1): ela não entende sinônimos, e é a razão de alguns chamados ficarem na `fila_humana` mesmo com procedimento existente.
+**O que ele não faz.** Não executa correções, não encerra chamados, não altera prioridade (só o gestor reclassifica) e só fala diretamente com o cliente para pedir a informação que falta (`devolver_cliente`, no máximo um pedido por chamado). Na Parte 1 o pedido fica gravado em `encaminhamentos` e a execução termina; o envio ao cliente e a retomada da mesma conversa com a resposta entram na Parte 2. A base de conhecimento é uma busca por palavras-chave (Parte 1): ela não entende sinônimos, e é a razão de alguns chamados ficarem na `fila_humana` mesmo com procedimento existente.
 
 **Quando ele não sabe.** Não chuta: o score da base abaixo de 0,5, um id inexistente ou um assunto ambíguo terminam em `fila_humana`, com uma mensagem que diz o que foi encontrado e por que um humano deve olhar.
 

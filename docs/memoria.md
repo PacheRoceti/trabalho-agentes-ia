@@ -14,12 +14,12 @@
 
 | | Curto prazo | Longo prazo |
 |---|---|---|
-| O que é | a janela de uma execução de triagem (um `TKT-xxxx`) | o que atravessa chamados diferentes, de clientes diferentes, em dias diferentes |
+| O que é | a janela de uma triagem (um `TKT-xxxx`), incluindo a pausa à espera do cliente quando o agente pede informação | o que atravessa chamados diferentes, de clientes diferentes, em dias diferentes |
 | Conteúdo, no case | prompt do sistema (`prompts/agente-v3.md`), o objetivo ("Chamado a triar: TKT-0002"), a trajetória (as chamadas de `consultar_ticket`, `buscar_base_conhecimento` e seus resultados), os trechos da base de conhecimento recuperados nesta busca | episódica (execuções passadas), semântica (fatos estáveis sobre clientes e times), procedural (regras de triagem aprendidas) |
-| Persistido como | **checkpoint**: um registro por execução, indexado por `execucao_id` (o campo já existe no `Estado`) | índice por similaridade (episódica), tabela chave-valor (semântica), texto dentro do próprio prompt (procedural) |
+| Persistido como | **checkpoint** por conversa, endereçado pelo `thread_id` = id do chamado externo (ver 1.5) | índice por similaridade (episódica), tabela chave-valor (semântica), texto dentro do próprio prompt (procedural) |
 | Lido | uma vez, ao retomar uma execução parada | a cada passo do laço em que o modelo pode se beneficiar de um fato ou um precedente |
-| Acesso | por `execucao_id` | por relevância (episódica), por chave `cliente_id`/categoria (semântica), carregado sempre (procedural) |
-| Ciclo de vida | morre quando a execução termina (`respondeu`, `orcamento_esgotado`, `erro_fatal`); **sobrevive** enquanto o término for `aguardando_humano` | acumula entre execuções, sujeita às três causas de esquecimento da Decisão 2 |
+| Acesso | por `thread_id` (id do chamado) | por relevância (episódica), por chave `cliente_id`/categoria (semântica), carregado sempre (procedural) |
+| Ciclo de vida | morre quando a execução termina (`respondeu`, `orcamento_esgotado`, `erro_fatal`); **sobrevive** enquanto o término for `aguardando_humano` (confirmação do analista) ou `aguardando_cliente` (resposta ao pedido de informação) | acumula entre execuções, sujeita às três causas de esquecimento da Decisão 2 |
 
 **O que exatamente vai para o checkpoint.** Hoje o objeto `Estado` já concentra quase tudo que um checkpoint precisaria guardar; a mudança é persisti-lo fora do processo em vez de deixá-lo morrer com ele. Os campos, e por quê:
 
@@ -28,9 +28,10 @@
 - `pendencia` — os argumentos exatos da ação irreversível que aguarda confirmação, para o analista poder aprovar **horas depois**, de outro processo (hoje `confirmar()` é síncrona: espera a resposta no mesmo terminal; um checkpoint é o que torna a confirmação assíncrona possível);
 - `n_chamadas_modelo`, `tokens`, `custo_usd`, o instante de início — para o orçamento continuar contando certo na retomada, em vez de reiniciar e permitir um caso que já gastou 25 dos 30 mil tokens permitidos continuar por mais 30 mil;
 - `scores_kb` — para não recalcular a busca e, principalmente, para a decisão de reabrir ou não a busca (score abaixo do limiar) ser auditável depois;
+- `pedido_cliente` — se o pedido de informação já foi enviado, quando, e a resposta do cliente quando chegar. É o que garante, na retomada, que o pedido **não é enviado de novo** (a mensagem chega ao cliente e não tem volta) e que um segundo pedido seja recusado em código;
 - `desfecho`, se já existir — para o caso de a execução cair **depois** de já ter escrito no banco (o registro venceu, o processo caiu): retomar não deve tentar escrever de novo.
 
-Isso responde às três perguntas do enunciado: (a) retomável sem reaplicar efeito colateral, porque a idempotência e o `desfecho` já gravado impedem reexecutar a escrita; (b) aprovação humana horas depois, porque a `pendencia` fica persistida em vez de presa a um `input()` de terminal; (c) estado defeituoso reproduzível, porque o checkpoint é exatamente o `logs/TKT-xxxx.json` que já usamos para depurar as falhas das rodadas 1 a 3 — só falta ele existir **antes** do fim da execução, não só depois.
+Isso responde às três perguntas do enunciado: (a) retomável sem reaplicar efeito colateral, porque a idempotência e o `desfecho` já gravado impedem reexecutar a escrita; (b) aprovação humana — ou resposta do cliente — horas depois, porque a `pendencia` e o `pedido_cliente` ficam persistidos em vez de presa a um `input()` de terminal; (c) estado defeituoso reproduzível, porque o checkpoint é exatamente o `logs/TKT-xxxx.json` que já usamos para depurar as falhas das rodadas 1 a 3 — só falta ele existir **antes** do fim da execução, não só depois.
 
 ### 1.2 O orçamento da janela
 
@@ -76,6 +77,18 @@ A reincidência é o exemplo mais claro de por que a estrutura decorre do padrã
 - **conteúdo não verificado vindo de fora** — a afirmação do próprio cliente ("é a terceira vez", "prioridade máxima") nunca vira fato semântico. É exatamente a regra que o prompt já aplica ("afirmação a verificar", em `agente-v3.md`): só o que o **histórico do sistema** confirma pode virar memória de longo prazo; a alegação do cliente fica só no registro episódico daquela execução específica, nunca promovida a fato sobre o cliente;
 - **o que é derivável** — a contagem de reincidência, como já dito, nunca é armazenada como valor fixo: é recalculada por consulta. Guardar um número que pode ficar desatualizado (e nenhum mecanismo de decaimento cobrindo justamente ele) seria dívida sem necessidade.
 
+### 1.5 A conversa com o cliente (§5.5)
+
+O agente só conversa com o cliente em um caso: quando falta informação para classificar o chamado, ele envia **um** pedido e espera a resposta (regra em `docs/case.md` §2.1). As quatro decisões da conversa, nesse cenário:
+
+**O que identifica uma conversa.** `thread_id` = id do chamado externo (`TKT-xxxx`). Cada chamado é uma conversa: a mesma pessoa com dois chamados abertos ao mesmo tempo tem duas conversas independentes, e a resposta de um não contamina a triagem do outro. A resposta do cliente chega pelo próprio chamado, então ela já carrega o id que a leva de volta à conversa certa.
+
+**Onde o checkpoint é gravado.** Em SQLite, num arquivo próprio ao lado do banco simulado (`dados/`), e não em memória. A espera pelo cliente pode durar até 3 dias úteis; com checkpoint em memória, a conversa morreria com o processo e a resposta chegaria a uma execução que não sabe que o pedido foi feito — e poderia pedir de novo.
+
+**O que acontece quando a janela enche.** Na prática, não enche: a conversa tem no máximo duas mensagens do cliente (o chamado original e uma resposta), porque o agente faz um único pedido. A retomada não reaproveita a trajetória antiga inteira: ela recomeça a triagem com o texto original + a resposta e mantém do checkpoint só o que é decisão (o pedido já feito, o orçamento já gasto). Se mesmo assim o contexto estourar, vale a ordem de descarte do §1.2 — e o texto do cliente nunca é descartado.
+
+**O que passa da conversa para a memória de longo prazo.** Só o fato de que houve pedido e se ele resolveu, no registro episódico da execução (ex.: "TKT-0005: pediu serviço e sintoma; cliente respondeu; abriu chamado P1"). O texto da resposta do cliente fica no chamado e no checkpoint, que é apagado quando a conversa termina; ele não vira memória semântica pela mesma regra do §1.4: afirmação do cliente não é fato verificado.
+
 ## Decisão 2 — Como o agente esquece
 
 ### 2.1 Contradição — o fato que mudou
@@ -105,7 +118,7 @@ Justificativa no domínio: um incidente de infraestrutura resolvido há 90 dias 
 | Memória episódica | o texto do chamado e o resumo do desfecho citam o cliente | remover o registro do índice por `cliente_id` |
 | Memória semântica | é, por definição, indexada por `cliente_id` | remover a linha da tabela |
 | Memória procedural | improvável, mas possível: uma regra aprendida a partir da correção de um caso específico pode, por descuido, ter sido escrita citando o cliente em vez de generalizada | busca textual pelo nome/id no prompt; se achar, reescrever a regra de forma genérica ou remover |
-| **Checkpoint** | os `passos` guardam os argumentos passados às ferramentas, que incluem o texto do chamado e, portanto, dados do cliente | apagar o checkpoint da execução (ou das execuções) daquele `id_ticket`/`cliente_id` |
+| **Checkpoint** | os `passos` guardam os argumentos passados às ferramentas, que incluem o texto do chamado e, portanto, dados do cliente; o `pedido_cliente` guarda a resposta do cliente | apagar o checkpoint da execução (ou das execuções) daquele `id_ticket`/`cliente_id` |
 | **Log** (`logs/*.json`) | grava argumentos e resultados de cada chamada de ferramenta, incluindo `consultar_ticket` (nome do cliente, plano) e o `resumo` gravado em `abrir_chamado_interno` | apagar ou redigir (substituir por `[removido]`) os campos que citam o cliente nos arquivos de log daquele ticket |
 
 **Verificação, independente da remoção:** depois de apagar, varrer todas as cinco estruturas acima procurando o identificador (`cliente_id`, nome do cliente, e-mail se houver) — uma busca de texto simples nos arquivos de log e no checkpoint, uma consulta `WHERE cliente_id = ?` nas tabelas semânticas e episódicas, e uma busca textual no prompt para a procedural. Só depois dessa varredura não encontrar nada é que a remoção pode ser declarada concluída. Rodar o `delete()` e confiar no retorno não basta — foi o mesmo erro, em espírito, que o verificador do case já pegou uma vez (o modelo dizer "registrei" sem ter registrado): a alegação de que algo foi feito não substitui checar que foi.

@@ -86,7 +86,11 @@ um workflow com duas chamadas ao modelo, e diremos isso.
 **Onde a decisão entra na Parte 2.** O RAG substitui a busca por palavra; o laço
 ganha um teto de re-busca com reformulação da consulta; e o portão de confiança
 passa a usar similaridade vetorial calibrada com perguntas sem resposta na base
-(exercício 6), em vez do limiar 0.5 ajustado à mão.
+(exercício 6), em vez do limiar 0.5 ajustado à mão. O `devolver_cliente` passa a ser a única
+interação direta com o cliente: o agente envia um pedido de informação (no máximo um por
+chamado), o grafo pausa com `interrupt` e a resposta do cliente retoma a mesma conversa
+(`thread_id` = id do chamado) para refazer a triagem — o mesmo checkpointer da confirmação
+do analista.
 
 ## 4. Prompt engineering (item 4.3)
 
