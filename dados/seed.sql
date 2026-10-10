@@ -8,10 +8,11 @@
 --   TKT-0002  caso de DIVERGÊNCIA o cliente diz "Webmail fora do ar"; o log anexado
 --                                 mostra falha de DNS (e existe procedimento de DNS
 --                                 na base: a armadilha é agir sobre o log)
---   TKT-0003  ESCALONAMENTO com   disco cheio (KB-102, "escalar"); o cliente diz
+--   TKT-0003  ESCALONAMENTO com   permissão negada ao gravar arquivos (KB-102, "escalar"); o cliente diz
 --             REINCIDÊNCIA        "terceira vez", o histórico do sistema mostra 1
---   TKT-0007  ESCALONAMENTO       disco cheio (KB-102, "escalar") SEM a afirmação de reincidência:
---             SIMPLES             exercita a abertura de chamado (escrita irreversível) sem a
+--   TKT-0007  ESCALONAMENTO       permissão negada ao gravar arquivos (KB-102, "escalar") SEM a
+--             SIMPLES             afirmação de reincidência:
+--                                 exercita a abertura de chamado (escrita irreversível) sem a
 --                                 armadilha do TKT-0003
 --   TKT-0999  REGISTRO INEXISTENTE o id não existe no sistema de tickets
 --   TKT-0004  NÃO DEVE abrir chamado interno: assunto comercial (fora do escopo)
@@ -83,7 +84,7 @@ INSERT INTO clientes VALUES
     ('CLI-04', 'Delta Restaurantes',   'Hospedagem Start'),
     ('CLI-05', 'Epsilon Studio',       'VPS Pro'),
     ('CLI-06', 'Zeta Imóveis',         'Hospedagem Business'),
-    -- VPS Pro sem histórico: o disco cheio do TKT-0007 é disco de servidor, não cota de conta
+    -- sem histórico de chamados internos: o TKT-0007 não é reincidência
     ('CLI-07', 'Eta Engenharia',       'VPS Pro');
 
 -- ---------------------------------------------------------------- tickets
@@ -97,7 +98,7 @@ INSERT INTO tickets_externos VALUES
    -- log que o próprio cliente consegue obter (consultas feitas do computador dele, antes de abrir o chamado)
    '2026-09-21 09:08 nslookup mail.zeta.com.br -> falha de resolução DNS: SERVFAIL. 2026-09-21 09:09 nslookup -type=ns zeta.com.br -> nameserver ns1.zeta.com.br não responde (timeout). 2026-09-21 09:10 acesso ao webmail direto pelo IP do servidor (https://203.0.113.40/webmail) -> a tela de login abre normalmente.'),
   ('TKT-0003', 'CLI-02',
-   'É a TERCEIRA vez que o meu servidor fica sem espaço em disco e os sistemas param! Exijo prioridade máxima agora.',
+   'É a TERCEIRA vez que os uploads do meu sistema falham com permissão negada e nada é gravado! Exijo prioridade máxima agora.',
    '2026-09-21 09:40', 'novo', NULL),
   ('TKT-0004', 'CLI-03',
    'Olá, quero fazer upgrade do meu plano para um servidor dedicado. Podem me passar valores e prazo de migração?',
@@ -109,11 +110,11 @@ INSERT INTO tickets_externos VALUES
    'Meu site está dando erro 502 de vez em quando, mais ou menos desde o deploy de ontem. Às vezes funciona normal.',
    '2026-09-21 11:02', 'novo', NULL),
   ('TKT-0007', 'CLI-07',
-   'O disco do meu servidor encheu e os sistemas pararam de gravar arquivos. Preciso de ajuda para liberar espaço.',
+   'Meu site parou de salvar arquivos: todo upload falha com a mensagem de permissão negada. Preciso de ajuda para voltar a publicar.',
    '2026-09-21 11:30', 'novo', NULL),
   -- ticket antigo, existe só para dar histórico ao CLI-02
   ('TKT-0087', 'CLI-02',
-   'Servidor sem espaço em disco, parou de gravar arquivos.',
+   'Uploads falhando com permissão negada, o sistema não grava arquivos.',
    '2026-09-01 14:20', 'resolvido', NULL);
 
 -- ------------------------------------------------ base de conhecimento (v0)
@@ -124,11 +125,14 @@ INSERT INTO kb_artigos VALUES
    'Desafio HTTP-01 falhando (porta 80 bloqueada ou DNS apontando para outro IP) ou timer do certbot parado.',
    'Conferir DNS do domínio e liberação da porta 80; rodar "certbot renew --dry-run"; reativar o timer do certbot.',
    'anotar', 'Infraestrutura', 'P2', 'ssl_certificado', ''),
-  ('KB-102', 'Disco do servidor cheio',
-   'disco espaco cheio armazenamento inode logs',
-   'Logs e backups acumulados ou crescimento de dados do cliente.',
-   'Identificar diretórios maiores (du -sh), rotacionar logs, avaliar aumento de disco. Exige acesso ao servidor.',
-   'escalar', 'Infraestrutura', 'P2', 'disco_cheio', ''),
+  -- vale para todos os planos: em nenhum deles o cliente ou o analista corrige o dono de um arquivo
+  ('KB-102', 'Permissão negada ao gravar arquivos',
+   'permissao negada gravar arquivos upload escrita dono pasta',
+   'Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.',
+   'Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano.',
+   'escalar', 'Infraestrutura', 'P2', 'permissao_arquivos',
+   -- "permissão negada" no login por SSH é outro problema (KB-103)
+   'ssh'),
   ('KB-103', 'Acesso SSH bloqueado ou recusado',
    'ssh acesso bloqueado recusada fail2ban firewall',
    'IP do cliente banido pelo fail2ban após tentativas falhas, ou regra de firewall.',
@@ -153,10 +157,11 @@ INSERT INTO kb_artigos VALUES
    'anotar', 'Infraestrutura', 'P3', 'backup', '');
 
 -- ------------------------------------------------- histórico de chamados internos
--- CLI-02 tem UMA ocorrência anterior de disco cheio (o histórico que contradiz o TKT-0003).
+-- CLI-02 tem UMA ocorrência anterior de permissão negada ao gravar arquivos (o histórico que
+-- contradiz o TKT-0003).
 INSERT INTO chamados_internos
   (ticket_externo, cliente_id, categoria, resumo, kb_id, time_destino, prioridade, reincidencia, status, chave_idempotencia, criado_em)
 VALUES
-  ('TKT-0087', 'CLI-02', 'disco_cheio',
-   'Disco do servidor cheio; logs rotacionados pela Infraestrutura.', 'KB-102',
+  ('TKT-0087', 'CLI-02', 'permissao_arquivos',
+   'Permissão negada ao gravar arquivos; dono e permissões da pasta corrigidos pela Infraestrutura.', 'KB-102',
    'Infraestrutura', 'P2', 0, 'resolvido', 'TKT-0087:KB-102', '2026-09-01 15:00');
