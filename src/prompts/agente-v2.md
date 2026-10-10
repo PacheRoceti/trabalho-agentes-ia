@@ -1,6 +1,6 @@
 <!--
 prompt:            agente-triagem
-versão:            v2  (a v1 continua em prompts/agente-v1.md, como histórico)
+versão:            v2  (a v1 continua em src/prompts/agente-v1.md, como histórico)
 carimbo:           prompt × modelo × parâmetros
                    agente-v1 × ministral-8b-latest × temperature=0  -> 5 de 7 casos (rodada 1)
                    agente-v2 × ministral-8b-latest × temperature=0  -> 3 de 7 casos (rodada 2)
