@@ -14,6 +14,8 @@ if len(sys.argv) < 2:
 
 d = json.load(open(sys.argv[1], encoding="utf-8"))
 print(f"{d['id_ticket']} | modelo: {d['modelo']} | prompt: {d.get('prompt', '?')}")
+print(f"executado em: {d.get('executado_em', '?')} | commit: {d.get('commit', '?')}")
+print(f"entrada: {d.get('entrada', '?')}")
 print(f"término: {d['termino']} | motivo: {d['motivo']} | lembretes: {d.get('lembretes', 0)}")
 print(f"tokens: {d['tokens_entrada'] + d['tokens_saida']} | custo simulado: US$ {d['custo_usd']}")
 print(f"scores da base nesta execução: {d['scores_kb'] or 'nenhuma busca'}")
@@ -27,4 +29,9 @@ for p in d["passos"]:
         achados = [(r["kb_id"], r["score"]) for r in p["resultado"].get("resultados", [])]
         print(f"       -> artigos (kb_id, score): {achados or 'nenhum'}")
 print(f"\ndesfecho: {d['desfecho']}")
+if d.get("saida"):
+    s = d["saida"]
+    print(f"saída: resultado={s['resultado']['acao']} | fonte={s['fonte']['tipo']} "
+          f"({s['fonte']['kb_id']}, score {s['fonte']['score']}) | "
+          f"suficiente={s['suficiencia']['suficiente']}: {s['suficiencia']['motivo']}")
 print(f"resposta final do modelo: {d['resposta']}")

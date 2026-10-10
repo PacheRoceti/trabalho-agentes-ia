@@ -57,14 +57,14 @@ ROTEIROS = {
                                mensagem="Divergência: o cliente relata Webmail fora do ar, mas o log anexado aponta falha de DNS.")),
                  turno(texto="Encaminhado à fila humana com a divergência sinalizada.")],
     "TKT-0003": [turno(chamada(1, "consultar_ticket", id_ticket="TKT-0003")),
-                 turno(chamada(2, "buscar_base_conhecimento", termos=["disco", "espaco", "cheio"])),
+                 turno(chamada(2, "buscar_base_conhecimento", termos=["permissao", "negada", "upload"])),
                  turno(chamada(3, "abrir_chamado_interno", id_ticket="TKT-0003", kb_id="KB-102",
-                               resumo="Disco cheio. Cliente afirma ser a 3a vez; o histórico do sistema confirma 1 ocorrência anterior (INC-0001).")),
+                               resumo="Permissão negada ao gravar arquivos. Cliente afirma ser a 3a vez; o histórico do sistema confirma 1 ocorrência anterior (INC-0001).")),
                  turno(texto="Chamado aberto para a Infraestrutura.")],
     "TKT-0007": [turno(chamada(1, "consultar_ticket", id_ticket="TKT-0007")),
-                 turno(chamada(2, "buscar_base_conhecimento", termos=["disco", "espaco", "cheio"])),
+                 turno(chamada(2, "buscar_base_conhecimento", termos=["permissao", "negada", "upload"])),
                  turno(chamada(3, "abrir_chamado_interno", id_ticket="TKT-0007", kb_id="KB-102",
-                               resumo="Disco do servidor cheio; sistemas pararam de gravar arquivos. Procedimento KB-102.")),
+                               resumo="Permissão negada ao gravar arquivos; todo upload do site falha. Procedimento KB-102.")),
                  turno(texto="Chamado aberto para a Infraestrutura.")],
     "TKT-0999": [turno(chamada(1, "consultar_ticket", id_ticket="TKT-0999")),
                  turno(chamada(2, "registrar_encaminhamento", id_ticket="TKT-0999", destino="fila_humana",
@@ -141,15 +141,15 @@ class TestAgente(unittest.TestCase):
     def test_resumo_que_so_repete_o_cliente_reprova_na_reincidencia(self):
         roteiro = list(ROTEIROS["TKT-0003"])
         roteiro[2] = turno(chamada(3, "abrir_chamado_interno", id_ticket="TKT-0003", kb_id="KB-102",
-                                   resumo="O cliente relata que é a terceira vez que o disco enche."))
+                                   resumo="O cliente relata que é a terceira vez que os uploads falham."))
         e = self.rodar("TKT-0003", roteiro=roteiro)
         ok, falhas = verificar("TKT-0003", e, self.con)
         self.assertFalse(ok)
         self.assertIn("histórico", falhas[0])
 
-    def test_busca_quebra_frases_e_casa_encheu_com_cheio(self):
-        for termos in (["disco", "encheu"], ["disco cheio", "gravar arquivos"],
-                       ["disco", "encheu", "sistemas", "pararam", "gravar"]):
+    def test_busca_quebra_frases_e_casa_salvar_com_gravar(self):
+        for termos in (["salvar", "upload"], ["permissão negada", "salvar arquivos"],
+                       ["upload", "salvar", "site", "parou", "permissao"]):
             with self.subTest(termos=termos):
                 melhor = db.buscar_kb(self.con, termos)[0]
                 self.assertEqual(melhor["kb_id"], "KB-102")
@@ -157,7 +157,7 @@ class TestAgente(unittest.TestCase):
 
     def test_um_termo_casado_nao_passa_do_limiar(self):
         self.assertLess(db.buscar_kb(self.con, ["site", "erro", "502"])[0]["score"], 0.5)
-        self.assertLess(db.buscar_kb(self.con, ["disco"])[0]["score"], 0.5)
+        self.assertLess(db.buscar_kb(self.con, ["upload"])[0]["score"], 0.5)
 
     def test_ressalva_do_procedimento_vem_do_texto_do_cliente(self):
         # termos que casam por inteiro com o KB-104; quem barra é o relato ("de vez em quando")
@@ -175,9 +175,9 @@ class TestAgente(unittest.TestCase):
         self.assertIn("limiar", e.passos[2].erro["erro"])
         self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0006"), 0)
 
-    def test_tkt_0007_abre_chamado_com_os_termos_das_rodadas_reais(self):
+    def test_tkt_0007_abre_chamado_com_as_palavras_do_relato(self):
         roteiro = list(ROTEIROS["TKT-0007"])
-        roteiro[1] = turno(chamada(2, "buscar_base_conhecimento", termos=["disco", "cheio", "arquivos", "gravar"]))
+        roteiro[1] = turno(chamada(2, "buscar_base_conhecimento", termos=["salvar", "arquivos", "upload", "permissao", "negada"]))
         e = self.rodar("TKT-0007", roteiro=roteiro)
         self.assertEqual(verificar("TKT-0007", e, self.con), (True, []))
 
@@ -269,6 +269,83 @@ class TestAgente(unittest.TestCase):
         n = e.n_chamadas_modelo
         self.assertEqual(e.tokens_entrada, 1000 * n)
         self.assertAlmostEqual(e.custo_usd, (1000 * n * 1.0 + 50 * n * 2.0) / 1e6)
+
+    def test_saida_validada_tem_resultado_fonte_e_suficiencia(self):
+        s = self.rodar("TKT-0001").saida                     # caminho feliz
+        self.assertEqual((s.resultado.acao, s.fonte.tipo, s.fonte.kb_id),
+                         ("anotacao_interna", "procedimento_da_base", "KB-101"))
+        self.assertGreaterEqual(s.fonte.score, 0.5)
+        self.assertTrue(s.suficiencia.suficiente)
+        self.assertIn("certbot", s.resultado.texto)
+        s = self.rodar("TKT-0006").saida                     # recusa
+        self.assertEqual((s.resultado.acao, s.fonte.tipo), ("fila_humana", "busca_sem_correspondencia"))
+        self.assertFalse(s.suficiencia.suficiente)
+        self.assertIn("abaixo do limiar", s.suficiencia.motivo)
+        s = self.rodar("TKT-0004").saida                     # fora do escopo
+        self.assertEqual((s.resultado.acao, s.fonte.registros), ("fila_comercial", ["TKT-0004"]))
+        self.assertTrue(s.suficiencia.suficiente)
+        s = self.rodar("TKT-0999").saida                     # id inexistente
+        self.assertEqual((s.fonte.tipo, s.fonte.ferramentas[0]), ("nenhuma", "consultar_ticket"))
+        self.assertFalse(s.suficiencia.suficiente)
+
+    def test_execucao_sem_desfecho_tem_saida_com_suficiencia_negativa(self):
+        e = self.rodar("TKT-0003", confirmador=NAO)
+        self.assertIsNone(e.saida.resultado.acao)
+        self.assertFalse(e.saida.suficiencia.suficiente)
+        self.assertIn("aguardando_humano", e.saida.suficiencia.motivo)
+
+    def test_schema_recusa_saida_incoerente(self):
+        from pydantic import ValidationError
+        from saida import Saida
+        dados = self.rodar("TKT-0006").saida.model_dump()
+        dados["suficiencia"]["suficiente"] = True            # recusa não pode ter suficiência positiva
+        with self.assertRaises(ValidationError):
+            Saida.model_validate(dados)
+        dados = self.rodar("TKT-0001").saida.model_dump()
+        dados["fonte"]["score"] = 0.3                        # anotação exige score >= limiar
+        with self.assertRaises(ValidationError):
+            Saida.model_validate(dados)
+
+    def test_log_grava_data_hora_commit_e_saida(self):
+        import tempfile
+        from datetime import datetime
+        with tempfile.TemporaryDirectory() as d:
+            self.rodar("TKT-0004", log_dir=Path(d))
+            dados = json.loads((Path(d) / "TKT-0004.json").read_text(encoding="utf-8"))
+        self.assertIsNotNone(datetime.fromisoformat(dados["executado_em"]).tzinfo)
+        self.assertIn("commit", dados)
+        self.assertIn("upgrade do meu plano", dados["entrada"])
+        self.assertEqual(set(dados["saida"]),
+                         {"id_ticket", "executado_em", "termino", "resultado", "fonte", "suficiencia"})
+
+    def test_texto_recebido_e_a_entrada_e_fica_gravado_no_chamado(self):
+        digitado = "meu site ta com erro de certficado ssl, venceu e nao renovou"   # com o erro de digitação
+        e = self.rodar("TKT-0001", texto=digitado)
+        self.assertEqual(e.entrada, digitado)
+        self.assertIn(digitado, e.historico[1]["content"])
+        self.assertNotIn("venceu ontem", e.historico[1]["content"])       # o texto do seed não vai
+        self.assertIn("CLI-01", e.historico[1]["content"])
+        self.assertEqual(db.buscar_ticket(self.con, "TKT-0001")["texto"], digitado)
+
+    def test_sem_texto_a_entrada_e_o_texto_registrado(self):
+        e = self.rodar("TKT-0004")
+        self.assertIn("upgrade do meu plano", e.entrada)
+
+    def test_texto_para_id_inexistente_nao_cria_chamado(self):
+        e = self.rodar("TKT-0999", texto="Meu site caiu.")
+        self.assertIn("Meu site caiu.", e.historico[1]["content"])
+        self.assertIn("não encontrado", e.passos[0].erro["erro"])
+        with self.assertRaises(db.RegistroNaoEncontrado):
+            db.buscar_ticket(self.con, "TKT-0999")
+
+    def test_ressalva_da_busca_usa_o_texto_recebido(self):
+        roteiro = [ROTEIROS["TKT-0007"][0],
+                   turno(chamada(2, "buscar_base_conhecimento", termos=["502", "deploy"])),
+                   turno(chamada(3, "registrar_encaminhamento", id_ticket="TKT-0007", destino="fila_humana",
+                                 mensagem="KB-104 não cobre falha intermitente.")),
+                   turno(texto="Encaminhado.")]
+        e = self.rodar("TKT-0007", roteiro=roteiro, texto="O site dá erro 502 de vez em quando desde o deploy.")
+        self.assertIn("ressalva", e.passos[1].resultado["resultados"][0])
 
     def test_log_da_trajetoria(self):
         import tempfile

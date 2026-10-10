@@ -16,16 +16,20 @@ Onde cada coisa decide (item 2.3 / 4.4 do enunciado):
 import inspect
 import json
 import os
+import subprocess
 import time
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
 from openai import APIConnectionError, APIStatusError, OpenAI, RateLimitError
+from pydantic import ValidationError
 
 import db
 from ferramentas import (FERRAMENTAS_DE_ESCRITA, FUNCOES, LIMIAR_CONFIANCA,
                          SCHEMAS, ErroFatal, ErroRecuperavel, PausaParaHumano)
+from saida import Saida, montar_saida
 
 RAIZ = Path(__file__).resolve().parent.parent
 PROMPTS = Path(__file__).resolve().parent / "prompts"
@@ -39,6 +43,24 @@ def _ler_prompt(arquivo: Path) -> str:
     if texto.lstrip().startswith("<!--"):
         texto = texto.split("-->", 1)[1]
     return texto.strip()
+
+
+def _agora() -> str:
+    """Data e hora da execução, com fuso (ISO 8601). Não é o "agora" fixo do banco simulado."""
+    return datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+def _commit() -> str | None:
+    """Commit do código que rodou, para o log poder ser ligado a uma versão. Marca quando há
+    alteração local em src/ ou dados/ ainda não commitada. None fora de um repositório git."""
+    def git(*args):
+        return subprocess.run(["git", *args], cwd=RAIZ, capture_output=True, text=True,
+                              timeout=5, check=True).stdout.strip()
+    try:
+        sujo = git("status", "--porcelain", "--", "src", "dados")
+        return git("rev-parse", "--short", "HEAD") + (" + alterações locais" if sujo else "")
+    except (OSError, subprocess.SubprocessError):
+        return None
 
 
 # ================================================================ TÉRMINO
@@ -67,6 +89,9 @@ class Estado:
     id_ticket: str
     modelo: str
     execucao_id: str = ""
+    executado_em: str = field(default_factory=_agora)      # início da execução (data, hora e fuso)
+    commit: str | None = None
+    entrada: str | None = None         # o texto do chamado, exatamente como chegou
     prompt: str = PROMPT_ARQUIVO.name      # a combinação em uso vai para o log
     temperatura: float | None = None
     passos: list[Passo] = field(default_factory=list)
@@ -84,6 +109,7 @@ class Estado:
     scores_kb: dict = field(default_factory=dict)
     n_buscas: int = 0                  # buscas na base feitas nesta execução (mesmo sem resultado)
     confirmacoes: list = field(default_factory=list)
+    saida: Saida | None = None         # o objeto validado do contrato (src/saida.py)
     historico: list = field(default_factory=list)          # transporte p/ API (derivado)
     _confirmador: object = field(default=None, repr=False)
 
@@ -107,6 +133,7 @@ class Estado:
     def para_dict(self) -> dict:
         return {
             "execucao_id": self.execucao_id, "id_ticket": self.id_ticket,
+            "executado_em": self.executado_em, "commit": self.commit, "entrada": self.entrada,
             "modelo": self.modelo, "prompt": self.prompt, "prompt_lembrete": LEMBRETE_ARQUIVO.name,
             "temperatura": self.temperatura, "termino": self.termino.value if self.termino else None,
             "motivo": self.motivo, "resposta": self.resposta, "desfecho": self.desfecho,
@@ -114,6 +141,7 @@ class Estado:
             "n_chamadas_modelo": self.n_chamadas_modelo, "lembretes": self.lembretes,
             "tokens_entrada": self.tokens_entrada, "tokens_saida": self.tokens_saida,
             "custo_usd": round(self.custo_usd, 6), "scores_kb": self.scores_kb,
+            "saida": self.saida.model_dump() if self.saida else None,
             "passos": [vars(p) for p in self.passos],
         }
 
@@ -191,26 +219,35 @@ def _chamar(client, estado: Estado, temperatura: float | None):
 
 # ================================================================ O LAÇO
 
-def _entrada(con, id_ticket: str) -> str:
+def _entrada(con, id_ticket: str, texto: str | None = None) -> tuple[str, str | None]:
     """A entrada do agente é o TEXTO do chamado, acompanhado do id do chamado e do id do cliente.
-    O programa simula o evento de abertura lendo o texto no banco; um id que não existe chega
-    sem texto, e é o consultar_ticket que devolve o erro ao modelo."""
+
+    Com `texto`, vale o que foi recebido (digitado em main.py): ele é gravado no chamado antes
+    da execução, para a busca e o registro usarem o mesmo texto. Sem `texto` (a demonstração
+    --todos e os testes), o programa simula o evento de abertura lendo o texto do banco.
+    Um id que não existe chega sem id de cliente, e é o consultar_ticket que devolve o erro
+    ao modelo. Devolve a mensagem de usuário e o texto de entrada, como chegou."""
+    if texto is not None:
+        db.registrar_texto(con, id_ticket, texto)
     try:
         ticket = db.buscar_ticket(con, id_ticket)
     except db.RegistroNaoEncontrado:
-        return f"Chamado externo a triar: {id_ticket}"
+        mensagem = f"Chamado externo a triar: {id_ticket}"
+        return (mensagem + f"\nTexto do cliente:\n{texto}" if texto else mensagem), texto
     return (f"Chamado externo a triar: {id_ticket}\nCliente: {ticket['_cliente_id']}\n"
-            f"Texto do cliente:\n{ticket['texto']}")
+            f"Texto do cliente:\n{ticket['texto']}"), ticket["texto"]
 
 
 def rodar(id_ticket: str, *, client, modelo: str, con, temperatura: float | None = 0.0,
           preco_usd_por_mtok: tuple[float, float] = (0.15, 0.15),
           orcamento: Orcamento | None = None, confirmador=None,
           log_dir: Path | None = None, verbose: bool = True,
-          prompt_arquivo: Path = PROMPT_ARQUIVO) -> Estado:
+          prompt_arquivo: Path = PROMPT_ARQUIVO, texto: str | None = None) -> Estado:
     orcamento = orcamento or Orcamento()
+    mensagem, entrada = _entrada(con, id_ticket, texto)
     e = Estado(id_ticket=id_ticket, modelo=modelo, _confirmador=confirmador,
-               prompt=prompt_arquivo.name, temperatura=temperatura,
+               prompt=prompt_arquivo.name, temperatura=temperatura, commit=_commit(),
+               entrada=entrada,
                execucao_id=f"{id_ticket}-{int(time.time()) % 100000}")
     e.historico = [
         # ETAPA "agente de triagem" — técnica: zero-shot + procedimento numerado + tool calling
@@ -219,7 +256,7 @@ def rodar(id_ticket: str, *, client, modelo: str, con, temperatura: float | None
         # temperature=0: classificação e escolha de ferramenta pedem o mesmo resultado a cada
         # execução (nota 03 da aula 02).
         {"role": "system", "content": carregar_prompt(prompt_arquivo)},
-        {"role": "user", "content": _entrada(con, id_ticket)},
+        {"role": "user", "content": mensagem},
     ]
     try:
         while True:
@@ -273,6 +310,11 @@ def rodar(id_ticket: str, *, client, modelo: str, con, temperatura: float | None
     finally:
         if e.termino is None:                            # nunca terminar sem dizer por quê
             e.termino, e.motivo = Termino.ERRO_FATAL, "interrupção inesperada"
+        try:                                             # toda saída passa pelo schema
+            e.saida = montar_saida(e)
+        except ValidationError as v:
+            e.termino = Termino.ERRO_FATAL
+            e.motivo = f"saída fora do contrato: {v.errors()[0]['msg']}"
         if log_dir is not None:
             log_dir.mkdir(parents=True, exist_ok=True)
             arquivo = log_dir / f"{id_ticket}.json"

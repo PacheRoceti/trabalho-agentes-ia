@@ -34,8 +34,9 @@ GENERICAS = {"servidor", "site", "problema", "erro", "cliente", "hospedagem",
 
 # Formas que o cliente usa e que não têm o mesmo radical da palavra-chave do procedimento.
 # Paliativo ASSUMIDO da busca por palavra (some com o RAG da Parte 2): a lista é curta, foi
-# escrita depois de ver o TKT-0007 falhar ("encheu" × "cheio") e não cobre o que não foi visto.
-SINONIMOS = {"encheu": "cheio", "lotado": "cheio", "expirou": "vencido", "caiu": "indisponivel"}
+# escrita depois de ver o TKT-0007 falhar por uma forma sem o mesmo radical e não cobre o que não
+# foi visto.
+SINONIMOS = {"salvar": "gravar", "expirou": "vencido", "caiu": "indisponivel"}
 
 # Fator aplicado ao score quando a correspondência não autoriza agir: um único termo casado, ou
 # um relato que cai numa ressalva do procedimento (coluna nao_cobre). Com ele o score máximo
@@ -133,7 +134,7 @@ def buscar_kb(con: sqlite3.Connection, termos: list[str], top: int = 3,
 
     Mede quanto da CONSULTA o artigo explica; cada termo que o artigo não tem pesa metade de
     um que tem. O tamanho da lista de palavras-chave do artigo não entra na conta: ela reúne
-    formas alternativas (disco/armazenamento, cheio/espaco), e nenhum relato usa todas. Na
+    formas alternativas (gravar/escrita, pasta/arquivos), e nenhum relato usa todas. Na
     fórmula anterior (Dice sobre a lista inteira) dois termos casados davam no máximo 0,5.
 
     Duas reduções (REDUTOR) deixam o score abaixo do limiar do portão:
@@ -235,6 +236,15 @@ def _resultado_chamado(linha, ja_existia: bool) -> dict:
         "reincidencias_confirmadas_no_sistema": linha["reincidencia"],
         "ja_existia": ja_existia,
     }
+
+
+def registrar_texto(con, id_ticket: str, texto: str) -> bool:
+    """Grava no chamado o texto que chegou como entrada (o que o cliente digitou). Vale o texto
+    recebido: a busca, o log e o registro passam a usar o mesmo. Devolve False se o id não
+    existe (nada é criado: o chamado nasce no sistema de tickets, não aqui)."""
+    cur = con.execute("UPDATE tickets_externos SET texto = ? WHERE id = ?", (texto, id_ticket))
+    con.commit()
+    return cur.rowcount == 1
 
 
 def registrar_encaminhamento(con, id_ticket: str, destino: str, mensagem: str,

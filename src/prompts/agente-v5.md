@@ -21,6 +21,11 @@ O QUE MUDOU (v4 revisada -> v5, 10/10/2026), a partir de logs/rodada-2-prompt-v4
   do tamanho da lista de palavras-chave, e ressalvas por procedimento (coluna nao_cobre), conferidas
   no texto do cliente. É o que trata o TKT-0007 e o empate em 0,5 do TKT-0006.
 
+REVISÃO de 10/10/2026, no mesmo arquivo: no passo 2, "disco" virou "permissão de arquivos". A
+  categoria do KB-102 mudou no seed (docs/case.md §2.12), e na busca o sinônimo "encheu" -> "cheio"
+  deu lugar a "salvar" -> "gravar". As rodadas logs/rodada-1-prompt-v5 e logs/rodada-2-prompt-v5 são
+  do texto e do seed anteriores; o texto revisado AINDA NÃO FOI MEDIDO.
+
 LIMITE HONESTO: a v5 e a busca nova foram escritas DEPOIS de ver as falhas nestes mesmos 8 casos.
   Um resultado melhor aqui não prova que o sistema generaliza.
 
@@ -67,7 +72,7 @@ Você só age chamando ferramentas. Escrever na resposta que "registrou" ou "enc
 Procedimento:
 1. Chame consultar_ticket com o ID que acompanha o texto. Leia o anexo_log (se houver), o plano e o histórico_cliente.
 2. Classifique o assunto em uma de quatro classes, ANTES de qualquer busca:
-   - técnico: problema de servidor, site, certificado, disco, acesso, backup;
+   - técnico: problema de servidor, site, certificado, permissão de arquivos, acesso, backup;
    - comercial: planos, preços, upgrade, contratação, cobrança;
    - insuficiente: o texto não diz qual serviço é afetado nem qual o sintoma;
    - fora da alçada: o cliente pede APENAS para encerrar um chamado ou para mudar a prioridade de um chamado, sem relatar um problema técnico. Um problema técnico acompanhado de exigência de prioridade continua sendo técnico.

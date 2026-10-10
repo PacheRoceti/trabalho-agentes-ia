@@ -1,7 +1,11 @@
 """Ponto de entrada.
 
-    python src/main.py TKT-0001                     um chamado (pede confirmação no terminal)
-    python src/main.py TKT-0002 --auto-aprovar      um chamado, sem perguntar (demonstração)
+    python src/main.py TKT-0001 "O certificado SSL do meu site venceu ontem..."
+                                                    a ENTRADA é o texto do chamado, acompanhado do id
+                                                    (pede confirmação no terminal antes de abrir chamado)
+    python src/main.py TKT-0001                     sem o texto, o programa pede que você o digite;
+                                                    Enter em branco usa o texto já registrado no chamado
+    python src/main.py TKT-0002 "..." --auto-aprovar   sem perguntar a confirmação (demonstração)
     python src/main.py --todos --auto-aprovar       os 8 casos, do banco zerado, com verificador
                                                     (grava também logs/saida-demonstracao.txt)
     python src/main.py --reset                      recria o banco de dados simulado
@@ -10,6 +14,7 @@
                                                     com --prompt, usa outro arquivo de src/prompts/
 """
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -54,19 +59,35 @@ def confirmador_auto(pendencia: dict):
     return True, "auto-aprovado (--auto-aprovar; só para demonstração)"
 
 
+def ler_texto(id_ticket: str, texto: str | None) -> str | None:
+    """O texto do chamado, como o usuário o digitou: no argumento ou, sem ele, no terminal.
+    Devolve None quando nada foi digitado (Enter em branco, ou execução sem terminal): aí o
+    programa usa o texto já registrado para o id, simulando o evento de abertura."""
+    if texto is None and sys.stdin.isatty():
+        texto = input(f"Texto do chamado {id_ticket} (Enter em branco usa o texto registrado):\n> ")
+    return texto if texto and texto.strip() else None
+
+
 def executar(id_ticket: str, client, modelo: str, precos, confirmador, con,
-             log_dir: Path = RAIZ / "logs", prompt_arquivo: Path = PROMPT_ARQUIVO) -> bool | None:
+             log_dir: Path = RAIZ / "logs", prompt_arquivo: Path = PROMPT_ARQUIVO,
+             texto: str | None = None) -> bool | None:
     caso = GABARITO.get(id_ticket, {}).get("caso", "sem gabarito")
     print(f"\n{'=' * 78}\n{id_ticket}  (caso: {caso})  modelo: {modelo}  prompt: {prompt_arquivo.name}\n")
     estado = rodar(id_ticket, client=client, modelo=modelo, con=con,
                    preco_usd_por_mtok=precos, orcamento=Orcamento(),
-                   confirmador=confirmador, log_dir=log_dir, prompt_arquivo=prompt_arquivo)
+                   confirmador=confirmador, log_dir=log_dir, prompt_arquivo=prompt_arquivo,
+                   texto=texto)
+    print(f"  ENTRADA: {estado.entrada if estado.entrada is not None else '(sem texto: id não encontrado)'}")
     print(f"\n  {estado.resumo()}")
     if estado.motivo:
         print(f"  motivo: {estado.motivo}")
     if estado.resposta:
         print(f"  resposta: {estado.resposta}")
-    if id_ticket in GABARITO:
+    if estado.saida:
+        print("  SAÍDA (objeto validado, src/saida.py):")
+        for linha in json.dumps(estado.saida.model_dump(), ensure_ascii=False, indent=2).splitlines():
+            print(f"    {linha}")
+    if id_ticket in GABARITO and texto is None:          # o gabarito vale para o texto do seed
         ok, falhas = verificar(id_ticket, estado, con)
         print(f"  VERIFICADOR: {'OK' if ok else 'FALHOU'}" + ("" if ok else " - " + "; ".join(falhas)))
         return ok
@@ -77,6 +98,8 @@ def main():
     load_dotenv(RAIZ / ".env")
     ap = argparse.ArgumentParser(description="Agente de triagem de chamados (Parte 1)")
     ap.add_argument("ticket", nargs="?", help="id do chamado externo, ex: TKT-0001")
+    ap.add_argument("texto", nargs="?",
+                    help="o texto do chamado, entre aspas; sem ele, o programa pede no terminal")
     ap.add_argument("--todos", action="store_true", help="roda os casos de demonstração")
     ap.add_argument("--auto-aprovar", action="store_true",
                     help="aprova sozinho as escritas irreversíveis (só demonstração)")
@@ -129,8 +152,9 @@ def main():
             saida.close()
         print(f"\nSaída completa gravada em {log_dir / 'saida-demonstracao.txt'} (UTF-8)")
     else:
+        texto = ler_texto(args.ticket, args.texto)
         con = db.conectar()
-        executar(args.ticket, client, modelo, precos, confirmador, con, log_dir, prompt_arquivo)
+        executar(args.ticket, client, modelo, precos, confirmador, con, log_dir, prompt_arquivo, texto)
         con.close()
 
 
