@@ -75,7 +75,7 @@ consistência.
 síntese — o sistema junta dado espalhado em várias fontes e produz um
 resumo estruturado para uma pessoa decidir. É o caso mais próximo do
 nosso projeto: não decide sozinho, mas consolida a informação que hoje
-está espalhada, para quem decide (no nosso caso, o gestor) enxergar de
+está espalhada, para quem decide enxergar de
 uma vez.
 
 **O que a divulgação não conta:** "4x mais rápido" comparado com qual

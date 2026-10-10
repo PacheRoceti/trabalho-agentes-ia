@@ -1,6 +1,6 @@
 # Case — Agente de Triagem e Abertura de Chamado Interno
 
-> Esta é a v2 do case, atualizada após a mudança de escopo: o projeto deixou de ser um agente gerador de dashboard de consolidação e passou a ser um agente que analisa o chamado do cliente, consulta a base de conhecimento interna e propõe uma solução ou abre um chamado interno. Mais detalhes em `docs/arquitetura-v1.md` (desenho no papel), `docs/arquitetura-v2.md` (o que foi construído na Parte 1) e `docs/base-de-conhecimento-v1.md`.
+> Esta é a v2 do case, atualizada após a mudança de escopo: o projeto deixou de ser um agente gerador de dashboard de consolidação e passou a ser um agente que analisa o chamado do cliente, consulta a base de conhecimento interna e propõe uma solução ou abre um chamado interno. Mais detalhes em `docs/arquitetura-v1.md` (desenho no papel), `docs/arquitetura-v2.md` (o que foi construído na Parte 1) e `docs/base-de-conhecimento-v2.md`.
 
 ## 2 O Tema e o Contexto
 
@@ -22,12 +22,13 @@
 - Ticket em status "aguardando cliente" pausa a contagem de SLA.
 - Reabertura de um ticket já fechado reabre o ticket original (não cria um novo) — e reincidência gera prioridade maior automaticamente.
 - Alçada: só o gestor pode reclassificar a prioridade de um ticket. Nenhum chamado pode ser encerrado, mesmo que tenha sido aberto com informação insuficiente — ele precisa permanecer aberto até ser de fato resolvido.
+- **O agente não interage diretamente com o cliente.** Tudo o que ele produz é registro interno (chamado interno, anotação ou encaminhamento); qualquer comunicação com o cliente é feita pelo analista de suporte.
 - **O agente tem acesso à documentação interna e pode ter informação suficiente para identificar a solução de um problema, mas não tem acesso administrador para executar a correção.** Ele nunca executa — apenas sugere, escala ou redireciona.
 - A partir da triagem, o agente sempre termina em uma de quatro ações:
-  1. **Escalonamento** — abre um chamado interno e informa ao cliente, de forma resumida, que o caso foi escalado.
-  2. **Redirecionamento** — quando o assunto é comercial ou fora do escopo da fila de suporte, redireciona o chamado para a fila comercial e informa ao cliente que o assunto foi redirecionado por estar fora do escopo.
-  3. **Correção sugerida, sem escalonamento** — quando o agente identifica a correção e não há necessidade de escalar, ele gera uma anotação interna com a correção sugerida, para validação/execução por um analista. Nesse caso não há uma mensagem automática ao cliente final — a resposta ao cliente, se houver, depende do analista após validar/executar a correção.
-  4. **Devolução ao cliente** — quando o chamado não tem informação suficiente para ser classificado, o agente devolve o chamado ao cliente, solicitando as informações que faltam. Nenhum chamado interno é aberto até que a informação chegue.
+  1. **Escalonamento** — abre um chamado interno para o time responsável, com o time e a prioridade definidos pelo procedimento da base de conhecimento.
+  2. **Redirecionamento** — quando o assunto é comercial ou fora do escopo da fila de suporte, redireciona o chamado para a fila comercial.
+  3. **Correção sugerida, sem escalonamento** — quando o agente identifica a correção e não há necessidade de escalar, ele gera uma anotação interna com a correção sugerida, para validação/execução por um analista. A resposta ao cliente, se houver, depende do analista após validar/executar a correção.
+  4. **Devolução ao cliente** — quando o chamado não tem informação suficiente para ser classificado, o agente registra a devolução com a lista das informações que faltam, e o analista a encaminha ao cliente. Nenhum chamado interno é aberto até que a informação chegue.
 
 *O que dá errado hoje — os casos difíceis:*
 
@@ -53,7 +54,7 @@
 |---|---|---|---|
 | Analista de suporte | Menos tempo gasto triando manualmente cada chamado; chamados internos já padronizados quando chegam para validar ou executar | Conhece o processo de triagem e os casos cobertos pela base de conhecimento | Valida e executa a correção sugerida pelo agente quando não há escalonamento; trata os casos que o agente não conseguiu resolver sozinho (baixa confiança, sem informação suficiente). Aprova abertura de chamados internos do agente |
 | Time interno (destino do chamado escalado) | Receber o chamado já classificado, resumido e com o parecer da base de conhecimento anexado | Conhece a área técnica ou comercial da sua especialidade | Recebe, executa e resolve o chamado interno escalonado; não decide prioridade sozinho |
-| Cliente externo | Ser respondido e direcionado corretamente | Só vê o próprio chamado, sem acesso a nada interno | Abre o chamado inicial (é o input do sistema); recebe as atualizações automáticas de escalonamento ou redirecionamento, quando existirem |
+| Cliente externo | Ser respondido e direcionado corretamente | Só vê o próprio chamado, sem acesso a nada interno | Abre o chamado inicial (é o input do sistema); recebe os retornos pelo analista de suporte, nunca diretamente do agente |
 
 **O usuário principal** é o **time interno** que recebe o chamado escalado — é para ele que a qualidade da classificação, do resumo e do parecer da base de conhecimento precisa ser boa; quando há conflito (ex.: o analista quer despachar rápido e isso significaria enviar informação incompleta ao time de destino), a prioridade do sistema é a qualidade da informação entregue ao time interno, não a velocidade percebida pelo analista.
 
@@ -61,40 +62,41 @@
 
 - **Por onde:** o agente é acionado por evento do sistema de chamados e entrega o resultado como registro nesse mesmo sistema (chamado interno, anotação ou encaminhamento), que o time interno e o analista leem.
 - **Quem começa:** o sistema. É um agente proativo, acordado pela criação do chamado externo.
-- **Quantas trocas:** nenhuma com o cliente na maioria dos casos (uma execução, de 3 a 5 passos). A única troca é a devolução ao cliente, quando falta informação.
+- **Quantas trocas:** nenhuma com o cliente: uma execução, de 3 a 5 passos. Quando falta informação, o agente registra o que pedir, e o pedido chega ao cliente pelo analista.
 - **O que devolve:** um desfecho gravado: chamado interno com resumo e prioridade, ou anotação com a correção sugerida, ou encaminhamento (fila comercial, fila humana ou devolução ao cliente) com mensagem em texto.
-- **Como termina:** quando dá certo, o chamado interno ou a anotação aparece com o procedimento da base anexado. Quando não resolve, vai para a fila humana com o motivo, ou volta ao cliente pedindo o que falta.
+- **Como termina:** quando dá certo, o chamado interno ou a anotação aparece com o procedimento da base anexado. Quando não resolve, vai para a fila humana com o motivo, ou fica registrado o pedido de informação que o analista encaminha ao cliente.
 
-Cinco diálogos de exemplo, cobrindo as ações possíveis (baseados no fluxo descrito em `docs/arquitetura-v1.md`):
+Cinco diálogos de exemplo, cobrindo as ações possíveis. As categorias são as do sistema (`ssl_certificado`, `disco_cheio`, `acesso_ssh`, `site_fora_do_ar`, `backup`, `outro_tecnico`); o score de correspondência é calculado pelo código, e o time e a prioridade vêm do procedimento recuperado. Nenhum diálogo tem mensagem do agente ao cliente: o agente só grava registros internos.
 
 *Caso 1 — escalonamento:*
 ```
-Cliente (chamado externo): "Não consigo exportar o relatório mensal em PDF, dá erro toda vez que tento."
+Cliente (chamado externo): "O disco do meu servidor encheu e os sistemas pararam de gravar arquivos.
+Preciso de ajuda para liberar espaço."
 
-[agente classifica: categoria = bug_funcional, confiança = 0.86, rota = conhecido]
-[agente busca na base de conhecimento: encontra KB-114, confiança do parecer = 0.74]
-[confiança acima do limiar -> Solicita abertura chamado interno]
+[agente consulta o chamado e o histórico do cliente: nenhuma ocorrência anterior de disco cheio]
+[agente classifica: assunto = técnico]
+[agente busca na base: KB-102 "Disco do servidor cheio", score acima do limiar (0,5), ação padrão = escalar]
+[procedimento define: time = Infraestrutura, prioridade = P2]
+[escrita irreversível -> pede confirmação ao analista de suporte -> confirmado]
 
-Agente -> Time interno (Engenharia - Relatórios):
-  "INC-4471 — Bug exportação PDF (KB-114 aplica). Cliente: Acme Corp.
-  Resumo: exportação de relatório mensal falha em PDF, módulo Relatórios.
-  Parecer da base de conhecimento anexado."
-
-Agente -> Cliente (atualização automática, resumida):
-  "Seu chamado foi registrado e escalado para o time responsável
-  (protocolo INC-4471). Em breve você receberá um retorno."
+Agente -> Time interno (Infraestrutura), chamado interno:
+  "Disco do servidor cheio (KB-102). Categoria: disco_cheio. Prioridade: P2.
+   Resumo: o cliente relata que o disco encheu e os sistemas pararam de gravar arquivos.
+   Sem ocorrência anterior no histórico. Procedimento: identificar diretórios maiores,
+   rotacionar logs e avaliar aumento de disco (exige acesso ao servidor)."
 ```
 
 *Caso 2 — redirecionamento (fora de escopo):*
 ```
-Cliente (chamado externo): "Quero saber sobre um upgrade do meu plano."
+Cliente (chamado externo): "Olá, quero fazer upgrade do meu plano para um servidor dedicado.
+Podem me passar valores e prazo de migração?"
 
-[agente classifica: categoria = fora_de_escopo (comercial)]
-[agente redireciona para a fila comercial]
+[agente classifica: assunto = comercial (upgrade de plano)]
+[agente não busca na base de procedimentos e não abre chamado interno]
 
-Agente -> Cliente (atualização automática):
-  "Identificamos que seu assunto é sobre plano/upgrade, fora do escopo
-  desta fila de suporte. Redirecionamos seu chamado para o time comercial."
+Agente -> Fila comercial (encaminhamento):
+  "Pedido de upgrade de Hospedagem Start para servidor dedicado, com valores e prazo de
+   migração. Assunto comercial, fora do escopo do suporte técnico."
 ```
 
 *Caso 3 — correção identificada, sem escalonamento:*
@@ -111,41 +113,43 @@ Agente -> Analista (anotação interna, sem mensagem automática ao cliente):
   anexada para validação e envio."
 ```
 
-*Caso 4 — devolução ao cliente (informação insuficiente):*
+*Caso 4 — informação insuficiente:*
 ```
 Cliente (chamado externo): "Meu servidor não está funcionando direito."
 
-[agente classifica: confiança de categoria abaixo do limiar — não há informação suficiente]
-[agente não abre chamado interno nem escala; devolve ao cliente]
+[agente classifica: assunto = insuficiente — não dá para saber o serviço afetado nem o sintoma]
+[agente não busca na base e não abre chamado interno]
 
-Agente -> Cliente (devolução automática, solicitando informação):
-  "Para conseguirmos direcionar seu chamado corretamente, precisamos
-  de mais detalhes: qual serviço ou servidor é afetado, qual erro
-  ou comportamento você está vendo, e desde quando isso acontece."
+Agente -> Analista (encaminhamento devolver_cliente, para o analista enviar ao cliente):
+  "Faltam informações para direcionar o chamado: qual serviço ou servidor é afetado,
+   qual erro ou comportamento aparece e desde quando isso acontece."
 ```
 
 *Caso 5 — divergência entre relato e evidência anexada:*
 ```
-Cliente (chamado externo, com log anexado): "Meu Webmail está fora do ar."
+Cliente (chamado externo, com log anexado): "Meu Webmail está fora do ar desde cedo,
+ninguém da empresa consegue ler e-mail."
 
-[agente classifica: categoria = indisponibilidade, confiança = 0.80]
-[agente lê o log anexado: evidência aponta falha no serviço de DNS, não no Webmail]
-[divergência entre relato do cliente e evidência técnica -> confiança do parecer cai abaixo do limiar]
-[agente escala para triagem humana, sinalizando a divergência]
+[agente classifica: assunto = técnico]
+[agente lê o log anexado: falha de resolução DNS (SERVFAIL, nameserver não responde);
+ o processo do webmail está ativo e a porta 443 responde]
+[a base tem KB-106 "Falha de resolução DNS" com score alto — é a armadilha:
+ agir sobre o log abriria um chamado P1 com base em algo que o cliente não relatou]
+[divergência entre relato e evidência -> não age sozinho]
 
 Agente -> Analista (fila humana, com divergência sinalizada):
-  "Chamado reporta falha no Webmail, mas o log anexado aponta o serviço de DNS.
-   Divergência entre relato e evidência — revisão humana necessária antes de
+  "O cliente relata falha no Webmail, mas o log anexado aponta falha de DNS no nameserver
+   do domínio, e o serviço de webmail responde. Revisão humana necessária antes de
    direcionar ao time responsável."
 ```
 
-Os diálogos são ilustrativos; os casos executáveis, com dados simulados, estão em `dados/README.md` (o Caso 5 é o `TKT-0002`, e o Caso 2 é parecido com o `TKT-0004`).
+Os casos 1, 2, 4 e 5 são os chamados simulados `TKT-0007`, `TKT-0004`, `TKT-0005` e `TKT-0002` (`dados/README.md`); o Caso 3 é ilustrativo e ainda não tem procedimento na base.
 
 **O que o usuário não informa de primeira, que o sistema precisa descobrir:** o cliente não diz se o problema já tem uma solução documentada, qual time interno deve resolver, nem se o assunto é de fato suporte técnico ou comercial — o agente precisa classificar o texto livre do chamado, buscar na base de conhecimento e decidir isso sozinho, sem que ninguém pergunte.
 
 **A complexidade da interação:**
 
-- **Quando o que o cliente diz contradiz o que o sistema encontra:** o agente não age sozinho. Envia à fila humana descrevendo a divergência (Caso 5). Afirmações do cliente sobre frequência ou prioridade ("é a terceira vez", "exijo prioridade máxima") são tratadas como afirmação a verificar contra o histórico do sistema, e a prioridade é calculada por regra em código.
+- **Quando o que o cliente diz contradiz o que o sistema encontra:** o agente não age sozinho. Envia à fila humana descrevendo a divergência (Caso 5). Afirmações do cliente sobre frequência ou prioridade ("é a terceira vez", "exijo prioridade máxima") são tratadas como afirmação a verificar contra o histórico do sistema; a prioridade vem do procedimento da base, e só a reincidência confirmada pelo histórico a ajusta.
 - **Como decide que já sabe o suficiente para agir:** quando a busca na base devolve um procedimento com score de correspondência ≥ 0,5. O portão é calculado em código, não informado pelo modelo. Abaixo disso, o agente não age sozinho.
 - **Quando para e chama um humano, e qual:** score baixo, id inexistente ou divergência entre relato e log levam à fila humana, lida pelo **analista de suporte**. A abertura de um chamado interno (ação irreversível) só acontece depois da **confirmação do analista de suporte**.
 
@@ -175,7 +179,7 @@ Os diálogos são ilustrativos; os casos executáveis, com dados simulados, est�
 
 ### 2.4 O Sistema
 
-- **O que o sistema faz:** recebe o id de um chamado externo, lê o texto e o log anexado, classifica o assunto, consulta a base de conhecimento e dá **um desfecho**: abrir chamado interno (com confirmação do analista), sugerir correção, redirecionar ao comercial, devolver ao cliente ou pedir olhar humano. Ele não resolve o problema do cliente, não decide prioridade (calculada por regra em código; só o gestor reclassifica) e nunca fecha um chamado.
+- **O que o sistema faz:** recebe o id de um chamado externo, lê o texto e o log anexado, classifica o assunto, consulta a base de conhecimento e dá **um desfecho**: abrir chamado interno (com confirmação do analista), sugerir correção, redirecionar ao comercial, devolver ao cliente ou pedir olhar humano. Ele não resolve o problema do cliente, não decide prioridade (vem do procedimento da base; só o gestor reclassifica) e nunca fecha um chamado.
 
 - **Nível de autonomia pretendido:** **roteador com laço curto de ferramentas** (3 a 5 passos), na fronteira do workflow. O nível abaixo (workflow fixo, com o modelo só classificando) não basta porque duas decisões acontecem em tempo de execução: refazer a busca com outros termos quando o score volta baixo, e corrigir a chamada quando uma ferramenta devolve erro (por exemplo, id inexistente). O nível acima (agente aberto) não se justifica: o caminho é quase sempre consultar, buscar e escrever, e tudo que é regra fica em código. Se o verificador mostrar que nenhum caso depende dessas duas decisões, o desenho correto é um workflow com duas chamadas ao modelo, e diremos isso na Parte 2.
 
@@ -185,14 +189,14 @@ Os diálogos são ilustrativos; os casos executáveis, com dados simulados, est�
   |:---|:---|:---|:---|:---|
   | `consultar_ticket` | lê o texto do cliente, o log anexado, o plano e o histórico de chamados internos do cliente | Leitura | NA | Sistema de chamados externo (mock em SQLite: `tickets_externos`, `clientes`, `chamados_internos`) |
   | `buscar_base_conhecimento` | busca procedimentos por palavras-chave e devolve até 3 artigos com score (vira RAG na Parte 2) | Leitura | NA | Base de conhecimento (mock em SQLite: `kb_artigos`) |
-  | `abrir_chamado_interno` | abre o chamado no time responsável; o time e a prioridade são definidos por código, o modelo só redige o resumo | Escrita | **Não** (idempotente por ticket + artigo; exige confirmação do analista) | API do sistema de tickets interno (mock em SQLite: `chamados_internos`) |
+  | `abrir_chamado_interno` | abre o chamado no time responsável; o time e a prioridade vêm do procedimento recuperado e são copiados pelo código; o modelo só redige o resumo | Escrita | **Não** (idempotente por ticket + artigo; exige confirmação do analista) | API do sistema de tickets interno (mock em SQLite: `chamados_internos`) |
   | `registrar_encaminhamento` | registra `fila_comercial`, `devolver_cliente`, `anotacao_interna` ou `fila_humana` | Escrita | Sim | Sistema de chamados (mock em SQLite: `encaminhamentos`) |
 
   Não existe ferramenta para encerrar chamado, alterar prioridade ou executar correção: a regra de domínio é garantida pela **ausência da ferramenta**.
 
 - **Estado:** o objeto `Estado` guarda passos, tokens, custo, scores da busca, desfecho e o motivo do término. O texto bruto do cliente não é repetido entre passos.
 - **Orçamento:** 8 passos, 30 mil tokens, US$ 0,05 e 90 s por chamado. O programa registra qual teto estourou. Término sempre registrado: `respondeu`, `orcamento_esgotado`, `erro_fatal` ou `aguardando_humano`.
-- **Salvaguardas em código:** portão de confiança (score ≥ 0,5), confirmação do analista na escrita irreversível, idempotência, prioridade calculada por regra e um lembrete quando o modelo encerra sem registrar desfecho (`docs/arquitetura-v2.md` §6).
+- **Salvaguardas em código:** portão de confiança (score ≥ 0,5), confirmação do analista na escrita irreversível, idempotência, time e prioridade copiados do procedimento (ajuste por reincidência em código) e um lembrete quando o modelo encerra sem registrar desfecho (`docs/arquitetura-v2.md` §6).
 - **Detalhes e o que mudou desde a v1:** `docs/arquitetura-v2.md`. A escolha do modelo está em `docs/modelos.md`.
 
 ### 2.5 A Justificativa de Negócio - A venda
@@ -207,8 +211,8 @@ classifica hoje é o analista lendo texto livre, e o nível abaixo do nosso — 
 roteador de uma chamada só — não se recupera quando a busca volta fraca nem quando
 uma ferramenta devolve erro. Nosso nível é **roteador com laço curto** (3 a 5
 passos): a autonomia está confinada a "escolher o desfecho" e "corrigir a chamada",
-e tudo que é regra (prioridade, portão de confiança, idempotência, confirmação)
-fica em código (`docs/arquitetura-v2.md`).
+time e prioridade vêm da documentação interna, e tudo que é regra (portão de confiança,
+idempotência, confirmação, ajuste por reincidência) fica em código (`docs/arquitetura-v2.md`).
 
 #### O ganho esperado, com a conta à vista
 
@@ -253,7 +257,7 @@ funcionando bem**: a média passa a ser calculada sobre um conjunto mais duro. P
 não punir o sistema por isso, o Eixo 1 deve ser medido **sobre a mesma composição de
 chamados** (mesmos tipos, mesma proporção) antes e depois, ou comparando o tempo do
 ingresso chamado a chamado, e não a vazão total do analista. Do lado do cliente, a
-devolução automática ("faltam informações") corta custo e pode piorar a experiência
+devolução ("faltam informações") corta custo e pode piorar a experiência
 de quem escreveu pouco por estar com pressa. É o padrão do caso Klarna visto em
 aula: a métrica acompanhada melhora enquanto a que importa piora. O que vigia isso
 é o limiar de confiança do portão (`LIMIAR_CONFIANCA`, `src/ferramentas.py`) e a
@@ -312,7 +316,7 @@ Nenhum dado sensível: todas as informações são sobre serviços e/ou funciona
 
 ### 2.10 Espaço Para o Que Ainda Vem
 
-- [x] **RAG** (Parte 2) — política de SLA e alçada, fichas dos times e guias de procedimento, esboçados em `docs/base-de-conhecimento-v1.md`. Hoje é a tabela `kb_artigos` (6 artigos, busca por palavra-chave); na Parte 2 vira índice vetorial, e o limiar de confiança (0,5, ajustado à mão) passa a ser calibrado com perguntas sem resposta na base. Motivo medido: três das quatro falhas distintas da Parte 1 nasceram da busca por palavra (`docs/modelos.md` §3.3-B).
+- [x] **RAG** (Parte 2) — o índice contém os procedimentos técnicos (com time e prioridade de cada caso) e o catálogo de planos, conforme `docs/base-de-conhecimento-v2.md`. A política de SLA e alçada e as fichas dos times ficam **fora** do índice: a política é aplicada em código, e as fichas servem só de lista de referência para validar o time de cada procedimento. Hoje a base é a tabela `kb_artigos` (6 artigos, busca por palavra-chave); na Parte 2 vira índice vetorial, e o limiar de confiança (0,5, ajustado à mão) passa a ser calibrado com perguntas sem resposta na base. Motivo medido: três das quatro falhas distintas da Parte 1 nasceram da busca por palavra (`docs/modelos.md` §3.3-B).
 - [x] **MCP** (Parte 2) — `src/db.py`, a camada que fala com o sistema de tickets (ler ticket e base, gravar chamado e encaminhamento). É a integração natural para virar servidor MCP: o agente deixa de importar o módulo e passa a chamar o serviço.
 - [x] **LangChain / LangGraph** (Parte 2) — a orquestração do laço (`rodar` e `_executar` em `src/agente.py`, cerca de 100 linhas). Cada passo do workflow vira um nó do grafo. A comparação pedida (o que o framework dá e o que tira) tem base concreta: as cerca de 100 linhas à mão.
 - [ ] **Multiagente** (Parte 3) — **[decisão do grupo]**. Candidata: um agente de triagem e outro de parecer (RAG), se o parecer crescer a ponto de precisar de contexto próprio. Se não crescer, escrever aqui que não se justifica e por quê.
@@ -321,4 +325,4 @@ Nenhum dado sensível: todas as informações são sobre serviços e/ou funciona
 
 Base de conhecimento onde o agente realiza as consultas não ser revisada após atualização de algum serviço, desencadeando uma sequência de chamados tratados de maneira incorreta, também é possível que a base fique indisponível por tempo indeterminado.
 
-**Plano B:** se a base estiver indisponível ou o score não passar do limiar, o agente **não responde pelo conhecimento do modelo**: o chamado vai para a fila humana. É o que o prompt (`prompts/agente-v3.md`) e o portão de confiança já fazem quando não há artigo com correspondência. Para o risco de base desatualizada, na Parte 2 cada trecho indexado carrega `data_publicacao` (já previsto em `base-de-conhecimento-v1.md`), com alerta quando um artigo passa de um prazo sem revisão.
+**Plano B:** se a base estiver indisponível ou o score não passar do limiar, o agente **não responde pelo conhecimento do modelo**: o chamado vai para a fila humana. É o que o prompt (`prompts/agente-v3.md`) e o portão de confiança já fazem quando não há artigo com correspondência. Para o risco de base desatualizada, na Parte 2 cada trecho indexado carrega `data_publicacao` (já previsto em `base-de-conhecimento-v2.md`), com alerta quando um artigo passa de um prazo sem revisão.

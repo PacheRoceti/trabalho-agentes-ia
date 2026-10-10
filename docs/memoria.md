@@ -1,4 +1,4 @@
-# Memória do agente (Exercício 8 / §4 da Parte 2)
+# Memória do agente (Exercício 8 / §5 da Parte 2)
 
 > Este documento não descreve código existente: o agente da Parte 1 **não tem
 > memória** — cada execução parte do zero, olha só o chamado que recebeu e
@@ -57,7 +57,7 @@ Total fixo + variável em operação normal: ≈ 6.500 tokens, dentro de uma jan
 | Tipo | O que guarda no case | Estrutura | Como é recuperada |
 |---|---|---|---|
 | **Episódica** | Um registro por execução concluída: `id_ticket`, categoria, `kb_id` usado, desfecho, se foi confirmado ou recusado pelo analista, e um resumo curto do que aconteceu (ex.: "TKT-0002: relato de webmail fora do ar, log mostrou DNS, foi para fila humana") | índice por similaridade (embedding do texto do chamado + resumo do desfecho) | por similaridade com o texto do chamado atual, no passo de busca — para achar precedentes parecidos, não só procedimentos da base |
-| **Semântica** | Fatos estáveis por cliente: plano contratado, time historicamente responsável por incidentes dele, e — a parte que mais importa — contagem de reincidência **por categoria**, hoje já calculada em SQL (`_reincidencia` em `src/db.py`) a partir da tabela `chamados_internos` | chave-valor, chave = `cliente_id` + categoria | por chave exata, uma consulta, não uma busca |
+| **Semântica** | Fatos estáveis por cliente: plano contratado e — a parte que mais importa — contagem de reincidência **por categoria**, hoje já calculada em SQL (`_reincidencia` em `src/db.py`) a partir da tabela `chamados_internos` | chave-valor, chave = `cliente_id` + categoria | por chave exata, uma consulta, não uma busca |
 | **Procedural** | Regras de triagem aprendidas a partir de correções do analista: quando o analista reverte uma decisão do agente (por exemplo, confirma um `fila_humana` que devia ter sido `abrir_chamado_interno`) repetidamente para o mesmo padrão de caso, isso vira candidato a regra no prompt | texto dentro do próprio *system prompt* (como as três versões `agente-v1/v2/v3.md` já são, hoje, versionadas manualmente) | sempre carregada, porque é o próprio prompt |
 
 A reincidência é o exemplo mais claro de por que a estrutura decorre do padrão de acesso: ela **já é semântica** hoje, só que recalculada a cada consulta em vez de armazenada — o que é a escolha certa (ver "o que é derivável", abaixo), então o item da tabela acima registra a decisão de **manter** assim, não de criar um novo armazenamento.
@@ -69,7 +69,7 @@ A reincidência é o exemplo mais claro de por que a estrutura decorre do padrã
 - **semântica**: o **código** também, por regra determinística (a mesma consulta SQL que já existe), nunca o modelo — um fato como "plano do cliente" tem peso de negócio demais para depender de o modelo tê-lo lido certo;
 - **procedural**: só o **humano** (analista ou o grupo), em revisão, nunca automático — é a lição da rodada 2: prompt mexido sem supervisão piorou o resultado de 5 para 3 em 7. Uma regra procedural só entra no prompt depois de aparecer em pelo menos 3 correções do mesmo padrão, revisadas por uma pessoa.
 
-**Volume por execução:** 1 registro episódico (≈150 a 250 tokens); 0 ou 1 atualização semântica (só quando um fato realmente muda — plano, time responsável; não a cada execução); 0 escritas procedurais por execução (é processo em lote, periódico, não por chamado).
+**Volume por execução:** 1 registro episódico (≈150 a 250 tokens); 0 ou 1 atualização semântica (só quando um fato realmente muda — o plano do cliente, por exemplo; não a cada execução); 0 escritas procedurais por execução (é processo em lote, periódico, não por chamado).
 
 **O que o sistema não guarda:**
 - **dado sensível não verificado** — o `anexo_log` do cliente (que pode conter hostname, IP, e por acidente uma credencial colada) não é gravado verbatim em nenhuma memória de longo prazo; só o resumo estruturado (categoria, KB usado) sobrevive à execução. O checkpoint, que guarda o log por inteiro enquanto a execução está viva, é apagado quando ela termina;
@@ -80,9 +80,11 @@ A reincidência é o exemplo mais claro de por que a estrutura decorre do padrã
 
 ### 2.1 Contradição — o fato que mudou
 
-O próprio repositório já tem um exemplo real, encontrado durante a Parte 1: o SLA de prioridade P1 aparece como **2h** em `docs/case.md` e como **4h** em `docs/base-de-conhecimento-v1.md` — dois documentos que, se ambos fossem indexados sem controle de tempo, responderiam à mesma pergunta ("qual o SLA de P1?") com valores diferentes, e a busca por similaridade não tem como saber qual é o vigente: os dois textos são igualmente parecidos com a pergunta.
+No case, o que mais pode se contradizer são os **procedimentos técnicos** (fonte D de `docs/base-de-conhecimento-v2.md`), porque é deles que vêm o time de destino e a prioridade de cada chamado. Exemplo: a versão antiga do procedimento de SSL mandava renovar o certificado manualmente pelo painel e escalar para a Segurança com P1; a versão vigente (KB-101) manda conferir o certbot e anotar para a Infraestrutura com P2. Os dois textos são igualmente parecidos com o relato "meu certificado SSL venceu", e a busca por similaridade não tem como saber qual vale. Se a versão antiga vencer, o erro não fica no texto: vira um chamado P1 aberto para o time errado.
 
-**Regra de desempate:** todo fato armazenado — nas fontes A (política de SLA) e D (procedimentos) da base de conhecimento — carrega um carimbo `data_publicacao` (já previsto em `base-de-conhecimento-v1.md`, hoje sem uso real). Na leitura, quando dois fatos concorrem para a mesma pergunta, vale `max(data_publicacao)`. Não é o modelo que decide: é uma comparação de datas em código, determinística e testável.
+O repositório já teve um caso real do mesmo tipo durante a Parte 1, entre documentos do grupo: o SLA de P2 aparece como **1 dia útil** em `docs/case.md` e como **24h** em `docs/base-de-conhecimento-v1.md` (o P1 é **2h** nos dois). A política de SLA não é indexada na v2 da base — é aplicada em código —, então essa contradição não chega ao agente, mas mostra que duas versões do mesmo fato convivem sem aviso quando ninguém marca qual é a vigente.
+
+**Regra de desempate:** todo trecho indexado — procedimentos técnicos e catálogo de planos — carrega `data_publicacao` e `revogado_por` (previstos em `docs/base-de-conhecimento-v2.md`). Um trecho com `revogado_por` preenchido é filtrado antes da busca; entre dois trechos vigentes que concorrem para o mesmo relato, vale `max(data_publicacao)`. Não é o modelo que decide: é um filtro e uma comparação de datas em código, determinísticos e testáveis.
 
 **O descarte é registrado**, não silencioso: quando um fato perde para outro mais recente, isso fica no log da busca (`buscar_base_conhecimento` passa a incluir, no resultado, os artigos descartados por contradição e a data que venceu), para que uma auditoria consiga distinguir "não achou nada" de "achou dois e escolheu o mais novo".
 
