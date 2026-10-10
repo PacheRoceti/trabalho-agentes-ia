@@ -42,8 +42,8 @@ documentou sobre cada problema e o que o cliente já teve antes.
 | Informação | Por que não está no modelo |
 |---|---|
 | Procedimentos de diagnóstico e resolução dos problemas recorrentes de hospedagem (SSL que não renovou, disco cheio, SSH recusado, erro 5xx após deploy, falha de DNS, backup que falhou), **cada um com a ação padrão, o time responsável e a prioridade** | **É específico demais.** O modelo sabe o que é um certificado vencido, mas não sabe o procedimento oficial desta empresa, se o caso é "anotar" ou "escalar", para qual time vai nem com que prioridade. |
-| Política de SLA e alçada (P1 = 2h, P2 = 1 dia útil, P3 = 3 dias úteis; reincidência sobe a prioridade em um nível; "aguardando cliente" pausa o SLA; só o gestor reclassifica; nenhum chamado é encerrado pelo agente) | **É privado.** É política interna, não convenção universal de mercado. |
-| Lista de times e filas válidos (Infraestrutura, Segurança, fila comercial, Suporte N1) | **É privado.** Muda com a organização da empresa. |
+| Política de SLA e alçada (P1 = 2h, P2 = 1 dia útil, P3 = 3 dias úteis; reincidência — mesmo cliente, mesma categoria, ocorrência anterior nos últimos 30 dias — sobe a prioridade em um nível, e P1 permanece P1; prioridade e SLA valem para o chamado interno, e em chamado redirecionado o prazo é do time que recebe; "aguardando cliente" pausa o SLA; só o gestor reclassifica; nenhum chamado é encerrado pelo agente) | **É privado.** É política interna, não convenção universal de mercado. |
+| Lista de times e filas válidos (Infraestrutura, Segurança — gravada sem acento, `Seguranca` —, `fila_comercial`, `fila_humana` — esta lida pelo analista de suporte) | **É privado.** Muda com a organização da empresa. |
 | O que cada plano inclui (Hospedagem Start, Business, VPS Pro) e até onde vai o suporte em cada um | **É privado.** Depende do contrato desta empresa. |
 | Estado de cada chamado e histórico do cliente (status, chamados internos anteriores, reincidência) | **É recente demais.** Muda a cada minuto; não existe versão "treinada" disso. |
 
@@ -112,13 +112,14 @@ de referência** que o sistema aplica ou valida, sem que o modelo precise lê-la
 
 **Fonte D — Procedimentos técnicos**
 - Unidade natural: um guia por sintoma, no template fixo: **sintoma, causa, solução,
-  ação padrão (`anotar` ou `escalar`), time de destino, prioridade base**. É o mesmo
+  ação padrão (`anotar` ou `escalar`), categoria, time de destino, prioridade base**. É o
   formato da tabela `kb_artigos`.
 - Corte: **um trecho por guia**. O template raramente passa de meia página. Um guia com
   subcenários (ex.: "erro 5xx após deploy" — constante × intermitente) é cortado por
   subcenário, repetindo o sintoma pai no início de cada trecho. Como time e prioridade
   podem variar entre subcenários, **cada trecho carrega os seus**: um 502 constante pode
-  ser P1 e um intermitente, P2.
+  ser P1 e um intermitente, P2 (exemplo hipotético: hoje o KB-104 cobre só a falha constante, e
+  o 502 intermitente vai à fila humana).
 - O que é embedado e o que é metadado: sintoma, causa e solução formam o texto do trecho
   (é o que se casa com o relato). `acao_padrao`, `categoria`, `time_destino` e `prioridade_base`
   ficam como **metadados estruturados** do trecho e não entram no texto embedado: são lidos por
@@ -136,9 +137,12 @@ de referência** que o sistema aplica ou valida, sem que o modelo precise lê-la
   não gerenciada, aplicação do cliente dentro ou fora).
 - Corte: um trecho por plano.
 - Metadados: `plano`, `data_vigencia`.
+- As fichas não têm ação padrão, categoria, time nem prioridade: servem de contexto sobre o
+  escopo do suporte e nunca autorizam, sozinhas, uma anotação ou a abertura de chamado. A regra
+  do §0 (campos obrigatórios) vale para os procedimentos da fonte D.
 
 **O documento revogado (exigência do §4.2 da Parte 2).** Proposta: incluir no corpus, de
-propósito, uma versão antiga do KB-101 (SSL), anterior à adoção do certbot, que manda
+propósito, uma versão antiga do KB-101 (SSL), com id próprio (`KB-101-A`), anterior à adoção do certbot, que manda
 **renovar o certificado manualmente pelo painel** e declara `acao_padrao = escalar`,
 `time_destino = Seguranca`, `prioridade_base = P1`, com `revogado_por = KB-101`. O KB-101
 vigente diz `anotar`, `Infraestrutura`, `P2`. As duas versões respondem ao mesmo relato,

@@ -21,7 +21,7 @@ libera.** Isso é uma limitação assumida, e a §3.4 diz o que mudaria com orç
 ## 3.1 Os candidatos, e por que estes eixos
 
 O caso é um processo **em segundo plano**, disparado pela abertura de um chamado; ninguém espera
-a resposta na frente da tela (teto de 30 s ponta a ponta, definido na arquitetura). Cada execução
+a resposta na frente da tela (teto de 90 s por chamado, definido no orçamento do laço). Cada execução
 faz **3 a 5 chamadas ao modelo** (o laço de ferramentas), com prompts de ~2 mil tokens.
 
 | Eixo | Pesa no nosso caso? | Por quê |

@@ -3,7 +3,7 @@ prompt:            agente-triagem
 versão:            v2  (a v1 continua em prompts/agente-v1.md, como histórico)
 carimbo:           prompt × modelo × parâmetros
                    agente-v1 × ministral-8b-latest × temperature=0  -> 5 de 7 casos (rodada 1)
-                   agente-v2 × ministral-8b-latest × temperature=0  -> [PREENCHER: resultado da rodada 2]
+                   agente-v2 × ministral-8b-latest × temperature=0  -> 3 de 7 casos (rodada 2)
 
 POR QUE EXISTE A v2 (evidência: logs/rodada-1-prompt-v1/):
   TKT-0999  o modelo recebeu o erro "chamado não encontrado" (com a sugestão de usar

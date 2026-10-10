@@ -155,11 +155,15 @@ def _prioridade(base: str, reincidencias: int) -> str:
     return PRIORIDADES[nivel]
 
 
-def abrir_chamado(con, ticket: dict, categoria: str, resumo: str, artigo: dict) -> dict:
+def abrir_chamado(con, ticket: dict, resumo: str, artigo: dict) -> dict:
     """Escrita IRREVERSÍVEL (não há 'apagar' nem 'encerrar' chamado por aqui).
+
+    Categoria, time e prioridade base vêm do artigo, não do modelo: é pela
+    categoria que a reincidência é contada.
 
     Idempotente: a chave ticket+artigo é UNIQUE, então repetir a chamada
     devolve o chamado existente em vez de duplicar."""
+    categoria = artigo["categoria"]
     chave = f"{ticket['id']}:{artigo['id']}"
     existente = con.execute(
         "SELECT * FROM chamados_internos WHERE chave_idempotencia = ?", (chave,)

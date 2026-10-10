@@ -14,6 +14,8 @@
  6. DESFECHO    5 saídas possíveis (ver tabela abaixo)                  [MODELO escolhe; CÓDIGO recusa o que viola regra]
  7. ESCRITA     abrir_chamado_interno    -> IRREVERSÍVEL, confirma o analista de suporte
                 registrar_encaminhamento -> REVERSÍVEL, uma linha em fila/anotação
+                                            (exceto devolver_cliente na Parte 2: a mensagem chega
+                                            ao cliente e exige confirmação do analista)
  8. TÉRMINO     registra POR QUE parou + log da trajetória              [CÓDIGO]
 ```
 
@@ -21,9 +23,9 @@
 |---|---|---|---|---|
 | `abrir_chamado_interno` | técnico, score ≥ 0.5, procedimento "escalar" | chamado no time responsável | **não** | analista de suporte (§2.2) |
 | `anotacao_interna` | técnico, score ≥ 0.5, procedimento "anotar" | correção sugerida para o analista | sim | — (o analista é quem lê e executa) |
-| `fila_humana` | técnico com score < 0.5 ou sem artigo; relato que contradiz o log anexado; ou id inexistente | pedido de olhar humano | sim | — |
+| `fila_humana` | técnico com score < 0.5 ou sem artigo; relato que contradiz o log anexado; id inexistente; pedido fora da alçada (fechar chamado, mudar prioridade); na Parte 2, resposta do cliente ainda insuficiente ou 3 dias úteis sem resposta | pedido de olhar humano | sim | — |
 | `fila_comercial` | assunto comercial | redireciona | sim | — |
-| `devolver_cliente` | informação insuficiente | pergunta ao cliente | sim | — |
+| `devolver_cliente` | informação insuficiente (no máximo uma vez por chamado) | pedido de informação ao cliente | sim na Parte 1 (só grava o pedido); **não** na Parte 2 (a mensagem chega ao cliente) | analista de suporte, a partir da Parte 2 |
 
 Nenhuma ferramenta encerra chamado, altera prioridade ou executa correção. A
 regra de domínio ("o agente nunca executa, nunca fecha, nunca reclassifica") é
@@ -88,8 +90,9 @@ passa a usar similaridade vetorial calibrada com perguntas sem resposta na base
 (exercício 6), em vez do limiar 0.5 ajustado à mão. A entrada do sistema passa a ser o **texto do
 chamado**, entregue pelo evento de abertura e acompanhado do id do chamado (`thread_id`) e do
 cliente; `consultar_ticket` fica para o histórico, o plano e o log anexado. A reincidência
-continua gerando um chamado interno novo (o anterior não é reaberto), com a prioridade um nível acima.
-O `devolver_cliente` passa a ser a única interação direta com o cliente: o agente envia um pedido de informação (no máximo um por
+continua gerando um chamado interno novo (o anterior não é reaberto), com a prioridade um nível acima
+(P1 permanece P1; conta a ocorrência anterior nos últimos 30 dias).
+O `devolver_cliente` passa a ser a única interação direta com o cliente: o agente envia, depois da confirmação do analista, um pedido de informação (no máximo um por
 chamado), o grafo pausa com `interrupt` e a resposta do cliente retoma a mesma conversa
 (`thread_id` = id do chamado) para refazer a triagem — o mesmo checkpointer da confirmação
 do analista.
@@ -97,7 +100,8 @@ do analista.
 ## 4. Prompt engineering (item 4.3)
 
 Um único ponto de chamada ao modelo — o laço em `src/agente.py` — com um único
-prompt, `prompts/agente-v1.md`. O cabeçalho do arquivo documenta a técnica
+prompt, `prompts/agente-v3.md` (v1 e v2 ficam como histórico do experimento, `docs/modelos.md` §3.3-A).
+O cabeçalho do arquivo documenta a técnica
 (zero-shot com procedimento numerado e tool calling), o contrato de saída (o
 resultado é a escrita da ferramenta, não o texto) e, linha por linha, o que cada
 regra impede. `temperature=0`: classificação e escolha de ferramenta pedem o mesmo
@@ -111,8 +115,9 @@ conjunto de teste (`dados/gabarito.json`) com exemplos do prompt.
 | Pipeline: triagem → agregação → parecer → decisão → registro, cada etapa uma chamada | Um laço com 4 ferramentas | O enunciado da Parte 1 exige laço com estado, erro de ferramenta como dado e orçamento; "agregação" e "parecer" viraram o resumo que o modelo escreve ao gravar |
 | `abrir_chamado_interno` automático e idempotente | Só depois da confirmação do analista; idempotência mantida | Regra do §2.3: escrita irreversível precisa de confirmação humana. Idempotência evita duplicata, não torna a escrita reversível |
 | Confiança = número que o modelo informa (`confianca_parecer`) | Confiança = score calculado pelo **código** a partir da base | Confiança autodeclarada pelo modelo é mal calibrada; o portão precisa de um número que o modelo não controla |
-| "Sem informação" → fila humana | "Sem informação" → `devolver_cliente` (como no case v2) | O case v2 define assim; a fila humana ficou para score baixo, id inexistente e ambiguidade |
+| "Sem informação" → fila humana | "Sem informação" → `devolver_cliente` (como no case v2) | O case v2 define assim; a fila humana ficou para score baixo, id inexistente e divergência entre relato e log |
 | Ação "correção sugerida" sem ferramenta | `anotacao_interna` dentro de `registrar_encaminhamento` | Estava no case v2 e faltava no desenho |
+| Categoria do chamado interno escolhida pelo modelo (argumento `categoria` de `abrir_chamado_interno`; é o que aparece nos logs da Parte 1) | Categoria copiada do procedimento (`kb_artigos.categoria`); o modelo só indica o `kb_id` e redige o resumo | A reincidência é contada por categoria: se o modelo a escolhesse, poderia mudar a prioridade. Alterado depois das rodadas da Parte 1; o resultado dos casos não muda |
 | Prioridade decidida na etapa de decisão | Prioridade calculada em código (base do procedimento + reincidência) | Só o gestor reclassifica: nem o modelo nem o cliente devem definir prioridade |
 
 ## 6. O que as rodadas de teste acrescentaram (medido em `ministral-8b-latest`)

@@ -4,7 +4,7 @@ versão:            v3  (v1 e v2 continuam em prompts/, como histórico do exper
 carimbo:           prompt × modelo × parâmetros × resultado
                    agente-v1 × ministral-8b-latest × temperature=0  -> 5 de 7   (rodada 1)
                    agente-v2 × ministral-8b-latest × temperature=0  -> 3 de 7   (rodada 2)
-                   agente-v3 × ministral-8b-latest × temperature=0  -> [PREENCHER: rodada 3]
+                   agente-v3 × ministral-8b-latest × temperature=0  -> 6 de 7   (rodada 3, com o lembrete no laço)
 
 HISTÓRICO (evidência em logs/rodada-1-prompt-v1/ e logs/rodada-2-prompt-v2/):
   v1 -> v2   adicionei 4 regras. Efeito: PIOROU (5 -> 3). "Chame SEMPRE a busca" fez o modelo
@@ -32,7 +32,7 @@ O que cada regra impede:
   "UM desfecho"                       impede duas escritas para o mesmo chamado
   passo 2 (classes de assunto)        impede tratar pedido comercial como bug (~15% do volume)
   passo 3 (termos em português)       impede busca com frase inteira, que dilui o score
-  passo 4 (tabela de desfecho)        impede desfechos fora dos quatro
+  passo 4 (tabela de desfecho)        impede desfechos fora dos cinco
   "score"                             espelha o portão de confiança do código
   "nunca executa/fecha/reclassifica"  espelha o que as ferramentas já não permitem
   "afirmação a verificar"             impede o cliente virar fato no chamado interno

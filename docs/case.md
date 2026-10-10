@@ -18,21 +18,23 @@
 
 *As regras do domínio:*
 
-- Prioridades por SLA: P1 crítico = 2h, P2 = 1 dia útil, P3 = 3 dias úteis.
-- Ticket em status "aguardando cliente" pausa a contagem de SLA.
-- **Reincidência:** quando um problema volta depois de um chamado já fechado, o agente **não reabre** o chamado anterior: abre um chamado interno **novo**, tratado como reincidência. A prioridade do procedimento sobe um nível, e o resumo cita o chamado anterior que o histórico do sistema confirma. Só conta como reincidência o que o histórico confirma (mesmo cliente, mesma categoria); a afirmação do cliente ("é a terceira vez") não basta.
+- Prioridades por SLA: P1 crítico = 2h, P2 = 1 dia útil, P3 = 3 dias úteis. Prioridade e SLA valem para o **chamado interno** que o agente abre. Quando o chamado é redirecionado (fila comercial, fila humana, anotação interna), o agente não define prioridade nem SLA: os prazos são definidos pelo time que recebe.
+- Ticket em status "aguardando cliente" pausa a contagem de SLA. Essa pausa é do sistema de chamados, sobre o prazo de atendimento do chamado externo; o agente só registra o status, não calcula o prazo.
+- **Reincidência:** quando o mesmo problema volta em **até 30 dias corridos** depois de uma ocorrência anterior, o agente **não reabre** o chamado anterior: abre um chamado interno **novo**, tratado como reincidência. A prioridade do procedimento sobe um nível (se já é P1, não há nível acima e permanece P1), e o resumo cita o chamado anterior que o histórico do sistema confirma. Só conta como reincidência o que o histórico confirma (mesmo cliente, mesma categoria, ocorrência anterior nos últimos 30 dias); a afirmação do cliente ("é a terceira vez") não basta. Hoje o histórico só registra chamados internos, então a regra alcança os procedimentos de escalonamento;
 - Alçada: só o gestor pode reclassificar a prioridade de um ticket. Nenhum chamado pode ser encerrado, mesmo que tenha sido aberto com informação insuficiente — ele precisa permanecer aberto até ser de fato resolvido.
-- **O agente interage diretamente com o cliente apenas para solicitar mais informações.** É a única mensagem que ele envia ao cliente; todo o resto que ele produz é registro interno (chamado interno, anotação ou encaminhamento), e qualquer outra comunicação com o cliente é feita pelo analista de suporte. O pedido de informação segue quatro regras:
+- **O agente interage diretamente com o cliente apenas para solicitar mais informações.** É a única mensagem que ele envia ao cliente; todo o resto que ele produz é registro interno (chamado interno, anotação ou encaminhamento), e qualquer outra comunicação com o cliente é feita pelo analista de suporte. O pedido de informação segue cinco regras:
   - **o que pode conter:** só a lista do que falta para classificar o chamado (serviço ou servidor afetado, erro ou comportamento observado, desde quando). É proibido prometer correção, prazo ou prioridade, e citar qualquer informação interna (procedimentos, times, scores);
+  - **quem confirma:** a mensagem chega ao cliente e não tem volta, então o envio só acontece depois da **confirmação do analista de suporte**, como toda ação irreversível;
   - **quantas vezes:** no máximo **um** pedido por chamado. Se a resposta do cliente ainda não bastar, o chamado vai para a fila humana — o agente não insiste;
   - **enquanto espera:** o chamado fica em "aguardando cliente", o que pausa o SLA;
   - **quando o cliente responde:** a resposta retoma a **mesma conversa** (identificada pelo id do chamado externo), e o agente refaz a triagem com o texto original mais a resposta. Sem resposta em 3 dias úteis, o chamado vai para a fila humana — o agente nunca encerra o chamado.
 - **O agente tem acesso à documentação interna e pode ter informação suficiente para identificar a solução de um problema, mas não tem acesso administrador para executar a correção.** Ele nunca executa — apenas sugere, escala ou redireciona.
-- A partir da triagem, o agente sempre termina em uma de quatro ações:
+- A partir da triagem, cada volta da triagem termina em uma de cinco ações:
   1. **Escalonamento** — abre um chamado interno para o time responsável, com o time e a prioridade definidos pelo procedimento da base de conhecimento.
   2. **Redirecionamento** — quando o assunto é comercial ou fora do escopo da fila de suporte, redireciona o chamado para a fila comercial.
   3. **Correção sugerida, sem escalonamento** — quando o agente identifica a correção e não há necessidade de escalar, ele gera uma anotação interna com a correção sugerida, para validação/execução por um analista. A resposta ao cliente, se houver, depende do analista após validar/executar a correção.
-  4. **Devolução ao cliente** — quando o chamado não tem informação suficiente para ser classificado, o agente envia ao cliente o pedido das informações que faltam e aguarda a resposta. Nenhum chamado interno é aberto até que a informação chegue; quando ela chega, a triagem recomeça na mesma conversa e termina em uma das outras três ações (ou na fila humana).
+  4. **Devolução ao cliente** — quando o chamado não tem informação suficiente para ser classificado, o agente envia ao cliente, depois da confirmação do analista, o pedido das informações que faltam e aguarda a resposta. Nenhum chamado interno é aberto até que a informação chegue; quando ela chega, a triagem recomeça na mesma conversa e termina em uma das outras quatro ações. A devolução é, portanto, o desfecho da primeira volta e uma pausa do chamado, não o seu fim.
+  5. **Fila humana** — quando o agente não tem confiança para agir sozinho (score abaixo do limiar ou sem procedimento, divergência entre relato e log, id inexistente, pedido fora da alçada, resposta do cliente ainda insuficiente ou prazo de resposta vencido), encaminha o chamado ao analista de suporte com o motivo.
 
 *O que dá errado hoje — os casos difíceis:*
 
@@ -56,9 +58,9 @@
 
 | Perfil | O que quer | O que sabe | O que pode fazer |
 |---|---|---|---|
-| Analista de suporte | Menos tempo gasto triando manualmente cada chamado; chamados internos já padronizados quando chegam para validar ou executar | Conhece o processo de triagem e os casos cobertos pela base de conhecimento | Valida e executa a correção sugerida pelo agente quando não há escalonamento; trata os casos que o agente não conseguiu resolver sozinho (baixa confiança, sem informação suficiente). Aprova abertura de chamados internos do agente |
+| Analista de suporte | Menos tempo gasto triando manualmente cada chamado; chamados internos já padronizados quando chegam para validar ou executar | Conhece o processo de triagem e os casos cobertos pela base de conhecimento | Valida e executa a correção sugerida pelo agente quando não há escalonamento; trata os casos que o agente não conseguiu resolver sozinho (baixa confiança, sem informação suficiente). Aprova a abertura de chamados internos e o envio do pedido de informação ao cliente |
 | Time interno (destino do chamado escalado) | Receber o chamado já classificado, resumido e com o parecer da base de conhecimento anexado | Conhece a área técnica ou comercial da sua especialidade | Recebe, executa e resolve o chamado interno escalonado; não decide prioridade sozinho |
-| Cliente externo | Ser respondido e direcionado corretamente | Só vê o próprio chamado, sem acesso a nada interno | Abre o chamado inicial (é o input do sistema); recebe os retornos pelo analista de suporte, nunca diretamente do agente |
+| Cliente externo | Ser respondido e direcionado corretamente | Só vê o próprio chamado, sem acesso a nada interno | Abre o chamado inicial (é o input do sistema); recebe do agente apenas o pedido de informação, quando falta algo para classificar o chamado (no máximo um por chamado); todos os outros retornos vêm do analista de suporte |
 
 **O usuário principal** é o **time interno** que recebe o chamado escalado — é para ele que a qualidade da classificação, do resumo e do parecer da base de conhecimento precisa ser boa; quando há conflito (ex.: o analista quer despachar rápido e isso significaria enviar informação incompleta ao time de destino), a prioridade do sistema é a qualidade da informação entregue ao time interno, não a velocidade percebida pelo analista.
 
@@ -68,7 +70,7 @@
 
 - **Por onde:** o agente é acionado por evento do sistema de chamados e entrega o resultado como registro nesse mesmo sistema (chamado interno, anotação ou encaminhamento), que o time interno e o analista leem.
 - **Quem começa:** o sistema. É um agente proativo, acordado pela criação do chamado externo.
-- **Quantas trocas:** na maioria dos chamados, nenhuma com o cliente (uma execução, de 3 a 5 passos). Quando falta informação, **no máximo uma**: o agente envia o pedido, a execução pausa, e a resposta do cliente a retoma.
+- **Quantas trocas:** na maioria dos chamados, nenhuma com o cliente (uma execução, de 3 a 5 passos). Quando falta informação, **no máximo uma**: o analista confirma o pedido, o agente o envia, a execução pausa, e a resposta do cliente a retoma.
 - **O que devolve:** um desfecho gravado: chamado interno com resumo e prioridade, ou anotação com a correção sugerida, ou encaminhamento (fila comercial, fila humana ou devolução ao cliente) com mensagem em texto.
 - **Como termina:** quando dá certo, o chamado interno ou a anotação aparece com o procedimento da base anexado. Quando não resolve, vai para a fila humana com o motivo. Quando falta informação, a execução pausa em "aguardando cliente" até a resposta (ou até o prazo de 3 dias úteis, quando vai para a fila humana).
 
@@ -109,12 +111,12 @@ Agente -> Fila comercial (encaminhamento):
 ```
 Cliente (chamado externo): "Como eu troco minha senha de acesso?"
 
-[agente classifica: categoria = duvida_rotineira, confiança alta]
-[agente busca na base: encontra procedimento exato, confiança alta, sem necessidade de escalonar]
+[agente classifica: assunto = técnico]
+[agente busca na base: procedimento com score acima do limiar (0,5), ação padrão = anotar]
 [agente gera anotação interna com a correção sugerida, para validação/execução]
 
 Agente -> Analista (anotação interna, sem mensagem automática ao cliente):
-  "Procedimento de troca de senha encontrado com alta confiança
+  "Procedimento de troca de senha encontrado com score acima do limiar
   (guia interno correspondente). Sugestão de resposta ao cliente
   anexada para validação e envio."
 ```
@@ -125,6 +127,7 @@ Cliente (chamado externo): "Meu servidor não está funcionando direito."
 
 [agente classifica: assunto = insuficiente — não dá para saber o serviço afetado nem o sintoma]
 [agente não busca na base e não abre chamado interno]
+[mensagem ao cliente é irreversível -> pede confirmação ao analista de suporte -> confirmado]
 
 Agente -> Cliente (pedido de informação, único permitido neste chamado):
   "Para direcionarmos seu chamado, precisamos de mais detalhes: qual serviço ou
@@ -175,13 +178,14 @@ Os casos 1, 2, 4 (primeira mensagem) e 5 são os chamados simulados `TKT-0007`, 
 
 - **Quando o que o cliente diz contradiz o que o sistema encontra:** o agente não age sozinho. Envia à fila humana descrevendo a divergência (Caso 5). Afirmações do cliente sobre frequência ou prioridade ("é a terceira vez", "exijo prioridade máxima") são tratadas como afirmação a verificar contra o histórico do sistema; a prioridade vem do procedimento da base, e só a reincidência confirmada pelo histórico a ajusta.
 - **Como decide que já sabe o suficiente para agir:** quando a busca na base devolve um procedimento com score de correspondência ≥ 0,5. O portão é calculado em código, não informado pelo modelo. Abaixo disso, o agente não age sozinho.
-- **Quando para e chama um humano, e qual:** score baixo, id inexistente ou divergência entre relato e log levam à fila humana, lida pelo **analista de suporte**. A abertura de um chamado interno (ação irreversível) só acontece depois da **confirmação do analista de suporte**.
+- **Quando para e chama um humano, e qual:** score baixo, id inexistente, divergência entre relato e log, pedido fora da alçada do agente (fechar um chamado, mudar prioridade), resposta do cliente que continua insuficiente ou 3 dias úteis sem resposta ao pedido de informação levam à fila humana, lida pelo **analista de suporte**. As duas ações irreversíveis — abrir um chamado interno e enviar o pedido de informação ao cliente — só acontecem depois da **confirmação do analista de suporte**.
 
 ### 2.3 O Workflow
 
 ```
 1. ENTRADA     texto livre do chamado, entregue pelo evento de abertura;
                acompanham: id do chamado (thread_id) e id do cliente     [CÓDIGO]
+               (Parte 2; na Parte 1 o programa recebe o id e simula o evento)
 2. CONSULTA    consultar_ticket(id): log anexado, plano, histórico     [MODELO chama; CÓDIGO valida o id e lê o banco]
 3. TRIAGEM     técnico | comercial | insuficiente | relato × log divergente  [MODELO]
 4. BUSCA       buscar_base_conhecimento(termos) -> top-3 com score     [MODELO escolhe os termos; CÓDIGO calcula o score]
@@ -189,8 +193,10 @@ Os casos 1, 2, 4 (primeira mensagem) e 5 são os chamados simulados `TKT-0007`, 
 6. DESFECHO    5 saídas (tabela abaixo)                                [MODELO escolhe; CÓDIGO recusa o que viola regra]
 7. ESCRITA     abrir_chamado_interno    -> IRREVERSÍVEL, confirmação do analista de suporte
                registrar_encaminhamento -> REVERSÍVEL (uma linha em fila/anotação)
-               devolver_cliente         -> envia o pedido de informação ao cliente (um por chamado)
+               devolver_cliente         -> IRREVERSÍVEL, confirmação do analista de suporte: envia o pedido
+                                           de informação ao cliente (um por chamado)
                                            e PAUSA até a resposta, que retoma a mesma conversa
+                                           (Parte 2; na Parte 1 só grava o pedido e termina)
 8. TÉRMINO     registra POR QUE parou + log da trajetória              [CÓDIGO]
 ```
 
@@ -198,15 +204,15 @@ Os casos 1, 2, 4 (primeira mensagem) e 5 são os chamados simulados `TKT-0007`, 
 |---|---|---|---|
 | `abrir_chamado_interno` | técnico, score ≥ 0.5, procedimento "escalar" | **não** | analista de suporte |
 | `anotacao_interna` | técnico, score ≥ 0.5, procedimento "anotar" | sim | — (o analista lê e executa) |
-| `fila_humana` | score < 0.5 ou sem artigo; relato que contradiz o log; id inexistente | sim | — |
+| `fila_humana` | score < 0.5 ou sem artigo; relato que contradiz o log; id inexistente; pedido fora da alçada (fechar chamado, mudar prioridade); resposta do cliente ainda insuficiente; 3 dias úteis sem resposta ao pedido de informação | sim | — |
 | `fila_comercial` | assunto comercial | sim | — |
-| `devolver_cliente` | informação insuficiente (no máximo uma vez por chamado) | **não** — a mensagem chega ao cliente | — (sem confirmação: só pede informação, sem promessa nem dado interno) |
+| `devolver_cliente` | informação insuficiente (no máximo uma vez por chamado) | **não** — a mensagem chega ao cliente (Parte 2; na Parte 1 só grava o pedido) | analista de suporte (a partir da Parte 2, quando a mensagem passa a ser enviada) |
 
-> OBS: no desenho anterior o passo 5 era "abrir automaticamente ou escalar humano". Foi alterado porque ações irreversíveis precisam de aprovação humana: a abertura do chamado interno só acontece depois da confirmação do analista.
+> OBS: no desenho anterior o passo 5 era "abrir automaticamente ou escalar humano". Foi alterado porque ações irreversíveis precisam de aprovação humana: a abertura do chamado interno e o envio do pedido de informação ao cliente só acontecem depois da confirmação do analista.
 
 ### 2.4 O Sistema
 
-- **O que o sistema faz:** recebe o texto de um chamado externo (com o id do chamado e do cliente), consulta o log anexado e o histórico, classifica o assunto, consulta a base de conhecimento e dá **um desfecho**: abrir chamado interno (com confirmação do analista), sugerir correção, redirecionar ao comercial, pedir ao cliente a informação que falta (sua única interação direta com o cliente) ou pedir olhar humano. Ele não resolve o problema do cliente, não decide prioridade (vem do procedimento da base; só o gestor reclassifica) e nunca fecha um chamado.
+- **O que o sistema faz:** recebe o texto de um chamado externo (com o id do chamado e do cliente), consulta o log anexado e o histórico, classifica o assunto, consulta a base de conhecimento e dá **um desfecho por volta da triagem**: abrir chamado interno (com confirmação do analista), sugerir correção, redirecionar ao comercial, pedir ao cliente a informação que falta (sua única interação direta com o cliente, também com confirmação do analista) ou pedir olhar humano. O pedido ao cliente é o desfecho da primeira volta: a resposta abre a segunda, que termina em um dos outros quatro. Ele não resolve o problema do cliente, não decide prioridade (vem do procedimento da base; só o gestor reclassifica) e nunca fecha um chamado.
 
 - **Nível de autonomia pretendido:** **roteador com laço curto de ferramentas** (3 a 5 passos), na fronteira do workflow. O nível abaixo (workflow fixo, com o modelo só classificando) não basta porque duas decisões acontecem em tempo de execução: refazer a busca com outros termos quando o score volta baixo, e corrigir a chamada quando uma ferramenta devolve erro (por exemplo, id inexistente). O nível acima (agente aberto) não se justifica: o caminho é quase sempre consultar, buscar e escrever, e tudo que é regra fica em código. Se o verificador mostrar que nenhum caso depende dessas duas decisões, o desenho correto é um workflow com duas chamadas ao modelo, e diremos isso na Parte 2.
 
@@ -217,14 +223,14 @@ Os casos 1, 2, 4 (primeira mensagem) e 5 são os chamados simulados `TKT-0007`, 
   | `consultar_ticket` | lê, pelo id que acompanha o texto, o log anexado, o plano e o histórico de chamados internos do cliente (o texto já chega como entrada) | Leitura | NA | Sistema de chamados externo (mock em SQLite: `tickets_externos`, `clientes`, `chamados_internos`) |
   | `buscar_base_conhecimento` | busca procedimentos por palavras-chave e devolve até 3 artigos com score (vira RAG na Parte 2) | Leitura | NA | Base de conhecimento (mock em SQLite: `kb_artigos`) |
   | `abrir_chamado_interno` | abre o chamado no time responsável; a categoria, o time e a prioridade vêm do procedimento recuperado e são copiados pelo código; o modelo só indica o procedimento (`kb_id`) e redige o resumo | Escrita | **Não** (idempotente por ticket + artigo; exige confirmação do analista) | API do sistema de tickets interno (mock em SQLite: `chamados_internos`) |
-  | `registrar_encaminhamento` | registra `fila_comercial`, `devolver_cliente`, `anotacao_interna` ou `fila_humana`; no destino `devolver_cliente`, a mensagem é o pedido de informação enviado ao cliente | Escrita | Sim, exceto `devolver_cliente` (a mensagem chega ao cliente; limitada a uma por chamado em código) | Sistema de chamados (mock em SQLite: `encaminhamentos`) |
+  | `registrar_encaminhamento` | registra `fila_comercial`, `devolver_cliente`, `anotacao_interna` ou `fila_humana`; no destino `devolver_cliente`, a mensagem é o pedido de informação enviado ao cliente | Escrita | Sim, exceto `devolver_cliente` (a mensagem chega ao cliente: exige confirmação do analista e é limitada a uma por chamado em código) | Sistema de chamados (mock em SQLite: `encaminhamentos`) |
 
   Não existe ferramenta para encerrar chamado, alterar prioridade ou executar correção: a regra de domínio é garantida pela **ausência da ferramenta**.
 
-  **Parte 1 × Parte 2.** Na Parte 1, `devolver_cliente` só grava o pedido na tabela `encaminhamentos` e a execução termina. O envio ao cliente, a pausa em `aguardando_cliente` e a retomada da mesma conversa com a resposta entram na Parte 2, com o checkpointer e o `interrupt` do grafo — o mesmo mecanismo da confirmação do analista.
+  **Parte 1 × Parte 2.** Na Parte 1, `devolver_cliente` só grava o pedido na tabela `encaminhamentos` e a execução termina. A confirmação do analista, o envio ao cliente, a pausa em `aguardando_cliente` e a retomada da mesma conversa com a resposta entram na Parte 2, com o checkpointer e o `interrupt` do grafo — o mesmo mecanismo da confirmação da abertura de chamado.
 
 - **Estado:** o objeto `Estado` guarda passos, tokens, custo, scores da busca, desfecho e o motivo do término. O texto bruto do cliente não é repetido entre passos.
-- **Orçamento:** 8 passos, 30 mil tokens, US$ 0,05 e 90 s por chamado. O programa registra qual teto estourou. Término sempre registrado: `respondeu`, `orcamento_esgotado`, `erro_fatal`, `aguardando_humano` ou `aguardando_cliente` (pausa até a resposta ao pedido de informação; o orçamento continua contando na retomada).
+- **Orçamento:** 8 passos, 30 mil tokens, US$ 0,05 e 90 s por chamado. O programa registra qual teto estourou. Término sempre registrado: `respondeu`, `orcamento_esgotado`, `erro_fatal`, `aguardando_humano` ou, a partir da Parte 2, `aguardando_cliente` (pausa até a resposta ao pedido de informação; passos, tokens e custo continuam contando na retomada, e o teto de 90 s conta só o tempo de execução, não a espera pelo cliente).
 - **Salvaguardas em código:** portão de confiança (score ≥ 0,5), confirmação do analista na escrita irreversível, idempotência, time e prioridade copiados do procedimento (ajuste por reincidência em código) e um lembrete quando o modelo encerra sem registrar desfecho (`docs/arquitetura-v2.md` §6).
 - **Detalhes e o que mudou desde a v1:** `docs/arquitetura-v2.md`. A escolha do modelo está em `docs/modelos.md`.
 
@@ -266,7 +272,9 @@ internos com SLA estourado por mês, sobre os chamados internos abertos no mês.
 | Alvo (estimado) | 15 estourados/mês = **30%** | 15 ÷ 50 |
 | Ganho | **−10 chamados/mês (−40%)** | (25 − 15) ÷ 25 |
 
-**É uma estimativa.** O alvo de 4 chamados/hora e o de 15 estourados/mês são
+**É uma estimativa, e é um teto.** A conta aplica os 9 minutos aos 433 chamados, mas os que vão
+à fila humana continuam custando ao analista o tempo de hoje, e anotações e aberturas ainda passam
+por ele para validar ou confirmar. O alvo de 4 chamados/hora e o de 15 estourados/mês são
 hipóteses do grupo, não resultados; a Parte 3 os confere contra o que o sistema
 entregar.
 
@@ -315,7 +323,7 @@ regra de que, na dúvida, o destino é a fila humana e não uma ação automáti
 
 ### 2.6 O Verificador
 
-O verificador é um **conjunto rotulado à mão** (`dados/gabarito.json`): para cada chamado simulado, o desfecho que o analista de suporte daria, derivado dos procedimentos da base de conhecimento (que dizem se o caso é "anotar" ou "escalar", para qual time e com qual prioridade base). Um programa (`src/verificar.py`) compara o gabarito com o que o agente **gravou no banco**, não com o texto que o modelo escreveu, e confere três regras de negócio: (1) nenhum chamado interno para os casos que não devem gerá-lo; (2) no máximo um encaminhamento por chamado; (3) no caso de divergência entre relato e log, a mensagem registrada cita o serviço relatado pelo cliente e a causa que o log mostra; no de reincidência, o resumo registra o que o histórico confirma em vez de repetir a afirmação do cliente. A Parte 1 tem **8 casos**; a Parte 2 amplia para ~40. Limite declarado: a regra (3) é uma checagem por palavras; a qualidade do texto só é julgada de fato por leitura humana do log.
+O verificador é um **conjunto rotulado à mão** (`dados/gabarito.json`): para cada chamado simulado, o desfecho que o analista de suporte daria, derivado dos procedimentos da base de conhecimento (que dizem se o caso é "anotar" ou "escalar", para qual time e com qual prioridade base). Um programa (`src/verificar.py`) compara o gabarito com o que o agente **gravou no banco**, não com o texto que o modelo escreveu, e confere três regras de negócio: (1) nenhum chamado interno para os casos que não devem gerá-lo; (2) no máximo um pedido de informação ao cliente (`devolver_cliente`) por chamado — o chamado que passa pela conversa tem dois registros legítimos, o pedido e o desfecho final; (3) no caso de divergência entre relato e log, a mensagem registrada cita o serviço relatado pelo cliente e a causa que o log mostra; no de reincidência, o resumo registra o que o histórico confirma em vez de repetir a afirmação do cliente. A Parte 1 tem **8 casos**; a Parte 2 amplia para ~40. Limite declarado: a regra (3) é uma checagem por palavras; a qualidade do texto só é julgada de fato por leitura humana do log.
 
 Exemplo (do grupo): se o chamado é sobre uma falha no serviço FTP e a documentação interna diz que o erro cód. 550 deve virar ticket interno com assunto, prazo e responsável específicos, o gabarito registra esse desfecho, e o verificador confere se o agente o gravou.
 
@@ -324,13 +332,13 @@ Exemplo (do grupo): se o chamado é sobre uma falha no serviço FTP e a document
 O custo do erro é **assimétrico**: abrir chamado interno indevidamente (o time errado perde tempo, e a ação é irreversível) é pior que mandar um caso à fila humana (o analista faz o que faria hoje). Por isso são duas métricas:
 
 1. **Parte 1:** acerta o desfecho em **≥ 6 de 8** casos rotulados (75%, a mesma proporção dos 30 de 40 do grupo). **Parte 2:** ≥ 30 de 40, incluindo os três tipos do grupo: retorna chamados incompletos ao cliente; redireciona chamado aberto na fila errada; faz a interação interna com proposta de resolução ou abre ticket interno baseado na KB correta.
-2. **Em ambas:** **0 chamados internos abertos indevidamente** nos casos em que o gabarito manda não abrir (`TKT-0002`, `TKT-0004`, `TKT-0005`, `TKT-0006`, `TKT-0999`). No `TKT-0005`, isso vale para a primeira volta: nenhum chamado é aberto antes da resposta do cliente ao pedido de informação.
+2. **Em ambas:** **0 chamados internos abertos indevidamente** nos casos em que o gabarito manda não abrir (`TKT-0001`, `TKT-0002`, `TKT-0004`, `TKT-0005`, `TKT-0006`, `TKT-0999`). No `TKT-0005`, isso vale para a primeira volta: nenhum chamado é aberto antes da resposta do cliente ao pedido de informação.
 
-**Resultado medido na Parte 1** (rodada 4, `ministral-8b-latest`, `logs/`): **6 de 8** e **0 chamados abertos indevidamente**: os dois critérios foram atingidos. Falharam `TKT-0003` (o modelo vai à fila humana por causa da afirmação "terceira vez") e `TKT-0007` (a busca por palavra não casou "encheu" com "cheio"). Na comparação de modelos, o `ministral-14b-latest` abriu um chamado indevido no `TKT-0006` (com aprovação automática) e não atingiu o critério 2. Detalhes em `docs/modelos.md` §3.3.
+**Resultado medido na Parte 1** (rodada 4, `ministral-8b-latest`, `logs/`): **6 de 8** e **0 chamados abertos indevidamente**: os dois critérios foram atingidos. Falharam `TKT-0003` (o modelo vai à fila humana por causa da afirmação "terceira vez") e `TKT-0007` (a busca por palavra não casou "encheu" com "cheio"). Na comparação de modelos, o `ministral-14b-latest` abriu um chamado indevido no `TKT-0006` (com aprovação automática) e não atingiu o critério 2. Detalhes em `docs/modelos.md` §3.3. Limite do critério: os dois casos que falharam são os únicos de escalonamento, então os critérios foram atingidos sem nenhuma abertura correta de chamado interno; o resultado mostra que o agente não age quando não deve, mas ainda não que escala quando deve.
 
 ### 2.8 Dados
 
-Todos os dados são **simulados** (`dados/seed.sql`, SQLite), sem informação real. A dificuldade se preserva porque os casos foram escritos a partir das exceções do domínio e o gabarito foi escrito **antes** de qualquer prompt. Casos nomeados (detalhe em `dados/README.md`):
+Todos os dados são **simulados** (`dados/seed.sql`, SQLite), sem informação real. A dificuldade se preserva porque os casos foram escritos a partir das exceções do domínio e o gabarito dos 7 casos originais foi escrito **antes** de qualquer prompt (o `TKT-0007` e a regra de texto do `TKT-0002` vieram depois, como registrado em `docs/modelos.md` §3.3). Casos nomeados (detalhe em `dados/README.md`):
 
 - **Divergência:** `TKT-0002` — o cliente relata "Webmail fora do ar", mas o log anexado mostra falha de **DNS**. Existe procedimento de DNS na base com score alto: é a armadilha (agir sobre o log é errar; o certo é sinalizar a divergência à fila humana).
 - **Registro inexistente:** `TKT-0999` — id que não existe no sistema de tickets.

@@ -19,8 +19,6 @@ import db
 
 LIMIAR_CONFIANCA = 0.5   # abaixo disso, o agente NÃO age sozinho (vai à fila humana)
 
-CATEGORIAS = ["ssl_certificado", "disco_cheio", "acesso_ssh", "site_fora_do_ar",
-              "backup", "outro_tecnico"]
 DESTINOS = ["fila_comercial", "devolver_cliente", "anotacao_interna", "fila_humana"]
 
 
@@ -104,14 +102,11 @@ def _exigir_sem_desfecho(estado):
             sugestao="não registre outro; responda com o resumo final")
 
 
-def abrir_chamado_interno(estado, con, id_ticket: str, categoria: str,
-                          resumo: str, kb_id: str) -> dict:
+def abrir_chamado_interno(estado, con, id_ticket: str, resumo: str, kb_id: str) -> dict:
     _exigir_sem_desfecho(estado)
     if estado.ticket is None or estado.ticket["id"] != id_ticket:
         raise ErroRecuperavel("chame consultar_ticket para este id antes de abrir chamado",
                               recebido=id_ticket)
-    if categoria not in CATEGORIAS:
-        raise ErroRecuperavel("categoria inválida", recebido=categoria, esperado=CATEGORIAS)
     if not resumo or len(resumo.strip()) < 20:
         raise ErroRecuperavel("resumo curto demais", esperado="pelo menos 20 caracteres")
     artigo = _exigir_confianca(estado, con, kb_id)
@@ -122,12 +117,12 @@ def abrir_chamado_interno(estado, con, id_ticket: str, categoria: str,
 
     # Ação irreversível: quem confirma é o ANALISTA DE SUPORTE (perfil da §2.2).
     pendencia = {"ferramenta": "abrir_chamado_interno", "id_ticket": id_ticket,
-                 "categoria": categoria, "resumo": resumo,
+                 "categoria": artigo["categoria"], "resumo": resumo,
                  "time_destino": artigo["time_destino"], "kb_id": kb_id}
     if not estado.confirmar(pendencia):
         raise PausaParaHumano(pendencia)
 
-    resultado = db.abrir_chamado(con, estado.ticket, categoria, resumo.strip(), artigo)
+    resultado = db.abrir_chamado(con, estado.ticket, resumo.strip(), artigo)
     estado.desfecho = {"acao": "abrir_chamado_interno", "kb_id": kb_id, **resultado}
     return resultado
 
@@ -187,15 +182,15 @@ SCHEMAS = [
         "name": "abrir_chamado_interno",
         "description": "ESCRITA IRREVERSÍVEL. Abre chamado interno para o time responsável. "
                        "Só para procedimentos de escalonamento com score >= limiar. "
-                       "Requer confirmação do analista. Time e prioridade são definidos pelo sistema.",
+                       "Requer confirmação do analista. Categoria, time e prioridade são "
+                       "definidos pelo sistema, a partir do artigo.",
         "parameters": {"type": "object", "properties": {
             "id_ticket": {"type": "string"},
-            "categoria": {"type": "string", "enum": CATEGORIAS},
             "resumo": {"type": "string",
                        "description": "resumo objetivo do problema para o time interno; "
                                       "afirmações do cliente devem ser marcadas como tal"},
             "kb_id": {"type": "string", "description": "artigo devolvido pela busca"}},
-            "required": ["id_ticket", "categoria", "resumo", "kb_id"]}}},
+            "required": ["id_ticket", "resumo", "kb_id"]}}},
     {"type": "function", "function": {
         "name": "registrar_encaminhamento",
         "description": "ESCRITA REVERSÍVEL. Registra o desfecho que não abre chamado: "

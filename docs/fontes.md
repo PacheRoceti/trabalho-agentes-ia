@@ -73,9 +73,9 @@ consistência.
 
 **Padrão de arquitetura provável:** orquestrador-trabalhador ou chain de
 síntese — o sistema junta dado espalhado em várias fontes e produz um
-resumo estruturado para uma pessoa decidir. É o caso mais próximo do
-nosso projeto: não decide sozinho, mas consolida a informação que hoje
-está espalhada, para quem decide enxergar de uma vez.
+resumo estruturado para uma pessoa decidir. É comparável à etapa do nosso
+agente que busca na base de conhecimento e redige o resumo para quem vai
+validar ou executar; o caso mais próximo do nosso projeto é a CEGID (item 1).
 
 **O que a divulgação não conta:** "4x mais rápido" comparado com qual
 processo exatamente (só a leitura do caso, ou o processo de decisão

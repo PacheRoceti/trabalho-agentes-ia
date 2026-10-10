@@ -25,7 +25,8 @@ real ou pessoal entra no repositório nem no contexto do modelo.
 **Por que a dificuldade se mantém em dado simulado:** os casos foram escritos a
 partir das exceções do domínio (reincidência, comercial disfarçado de técnico,
 informação insuficiente, correspondência incerta na base), e o gabarito foi
-escrito **antes** de qualquer prompt. O `TKT-0002`, o `TKT-0003` e o `TKT-0006` só
+escrito **antes** de qualquer prompt (nos 7 casos originais; o `TKT-0007` e a
+regra de texto do `TKT-0002` vieram depois). O `TKT-0002`, o `TKT-0003` e o `TKT-0006` só
 passam se o sistema tratar o caso difícil de fato.
 
 **Limite honesto:** 8 casos não são um conjunto de avaliação. Na Parte 2 o

@@ -95,18 +95,19 @@ TKT-0002  (caso: divergencia)  modelo: ministral-8b-latest
 
 Como ler: o agente consultou o chamado (passo 0), buscou na base duas vezes (passos 1 e 2), viu que o log aponta DNS enquanto o cliente fala de Webmail, e **não agiu sozinho**: registrou o encaminhamento à fila humana, sinalizando a divergência (passo 3, uma escrita reversível). `TERMINO: respondeu` quer dizer que registrou um desfecho; `VERIFICADOR: OK` que o desfecho gravado no banco é o que o analista humano daria. O custo é o simulado a preço de lista; no plano gratuito o gasto real é zero.
 
-**O que ele não faz.** Não executa correções, não encerra chamados, não altera prioridade (só o gestor reclassifica) e só fala diretamente com o cliente para pedir a informação que falta (`devolver_cliente`, no máximo um pedido por chamado). Na Parte 1 o pedido fica gravado em `encaminhamentos` e a execução termina; o envio ao cliente e a retomada da mesma conversa com a resposta entram na Parte 2. A base de conhecimento é uma busca por palavras-chave (Parte 1): ela não entende sinônimos, e é a razão de alguns chamados ficarem na `fila_humana` mesmo com procedimento existente.
+**O que ele não faz.** Não executa correções, não encerra chamados, não altera prioridade (só o gestor reclassifica) e só fala diretamente com o cliente para pedir a informação que falta (`devolver_cliente`, no máximo um pedido por chamado). Na Parte 1 o pedido fica gravado em `encaminhamentos` e a execução termina; o envio ao cliente (que, por ser irreversível, exige a confirmação do analista) e a retomada da mesma conversa com a resposta entram na Parte 2. A base de conhecimento é uma busca por palavras-chave (Parte 1): ela não entende sinônimos, e é a razão de alguns chamados ficarem na `fila_humana` mesmo com procedimento existente.
 
-**Quando ele não sabe.** Não chuta: o score da base abaixo de 0,5, um id inexistente ou um assunto ambíguo terminam em `fila_humana`, com uma mensagem que diz o que foi encontrado e por que um humano deve olhar.
+**Quando ele não sabe.** Não chuta: o score da base abaixo de 0,5, um id inexistente ou um relato que contradiz o log anexado terminam em `fila_humana`, com uma mensagem que diz o que foi encontrado e por que um humano deve olhar.
 
 ## Estrutura
 
 ```
 src/         agente.py (laço, estado, orçamento) · ferramentas.py · db.py (SQLite) · verificar.py
              main.py · comparar_modelos.py (item 3.3)
-prompts/     agente-v1.md  (técnica, contrato e o que cada regra impede)
+prompts/     agente-v3.md  (o prompt em uso: técnica, contrato e o que cada regra impede)
+             agente-v1.md e agente-v2.md (histórico do experimento de prompts)
 dados/       seed.sql · gabarito.json · README.md (casos difíceis nomeados)
 tests/       testes offline (sem chave)
-docs/        case.md · modelos.md · arquitetura-v2.md · base-de-conhecimento-v2.md · memoria.md · fontes.md
+docs/        case.md · modelos.md · modelos-tabela-3.3.md · arquitetura-v2.md · base-de-conhecimento-v2.md · memoria.md · fontes.md
 logs/        trajetória de cada execução demonstrada (JSON)
 ```

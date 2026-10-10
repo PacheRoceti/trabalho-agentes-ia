@@ -45,7 +45,8 @@ CREATE TABLE kb_artigos (
     solucao         TEXT NOT NULL,
     acao_padrao     TEXT NOT NULL CHECK (acao_padrao IN ('anotar', 'escalar')),
     time_destino    TEXT NOT NULL,
-    prioridade_base TEXT NOT NULL CHECK (prioridade_base IN ('P1', 'P2', 'P3'))
+    prioridade_base TEXT NOT NULL CHECK (prioridade_base IN ('P1', 'P2', 'P3')),
+    categoria       TEXT NOT NULL          -- copiada para o chamado interno; conta a reincidência
 );
 
 CREATE TABLE chamados_internos (
@@ -117,32 +118,32 @@ INSERT INTO kb_artigos VALUES
    'certificado ssl renovacao vencido certbot https',
    'Desafio HTTP-01 falhando (porta 80 bloqueada ou DNS apontando para outro IP) ou timer do certbot parado.',
    'Conferir DNS do domínio e liberação da porta 80; rodar "certbot renew --dry-run"; reativar o timer do certbot.',
-   'anotar', 'Infraestrutura', 'P2'),
+   'anotar', 'Infraestrutura', 'P2', 'ssl_certificado'),
   ('KB-102', 'Disco do servidor cheio',
    'disco espaco cheio armazenamento inode logs',
    'Logs e backups acumulados ou crescimento de dados do cliente.',
    'Identificar diretórios maiores (du -sh), rotacionar logs, avaliar aumento de disco. Exige acesso ao servidor.',
-   'escalar', 'Infraestrutura', 'P2'),
+   'escalar', 'Infraestrutura', 'P2', 'disco_cheio'),
   ('KB-103', 'Acesso SSH bloqueado ou recusado',
    'ssh acesso bloqueado recusada fail2ban firewall',
    'IP do cliente banido pelo fail2ban após tentativas falhas, ou regra de firewall.',
    'Verificar se o IP do cliente está banido no fail2ban e liberar; conferir porta e regras do firewall.',
-   'anotar', 'Seguranca', 'P2'),
+   'anotar', 'Seguranca', 'P2', 'acesso_ssh'),
   ('KB-104', 'Site fora do ar com erro 5xx após deploy',
    '502 503 5xx deploy nginx indisponivel',
    'Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).',
    'Reiniciar o processo da aplicação, validar a configuração do nginx e reverter o deploy se necessário.',
-   'escalar', 'Infraestrutura', 'P1'),
+   'escalar', 'Infraestrutura', 'P1', 'site_fora_do_ar'),
   ('KB-106', 'Falha de resolução DNS do domínio',
    'dns resolucao nameserver dominio zona',
    'Nameserver do domínio fora do ar ou zona DNS com registro inválido.',
    'Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS.',
-   'escalar', 'Infraestrutura', 'P1'),
+   'escalar', 'Infraestrutura', 'P1', 'dns_dominio'),
   ('KB-105', 'Backup diário falhou',
    'backup falhou diario restauracao agendamento snapshot',
    'Cota de armazenamento de backup excedida ou janela de backup sobreposta a outra tarefa.',
    'Conferir a cota do storage de backup e o agendamento; reexecutar o job manualmente.',
-   'anotar', 'Infraestrutura', 'P3');
+   'anotar', 'Infraestrutura', 'P3', 'backup');
 
 -- ------------------------------------------------- histórico de chamados internos
 -- CLI-02 tem UMA ocorrência anterior de disco cheio (o histórico que contradiz o TKT-0003).

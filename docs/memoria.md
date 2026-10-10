@@ -26,7 +26,7 @@
 - `id_ticket`, `execucao_id`, `historico` (as mensagens já trocadas com o modelo) — para retomar sem reconstruir o contexto do zero;
 - `passos` já executados, com seus resultados — para **não repetir** uma leitura já feita (`consultar_ticket`, `buscar_base_conhecimento`) nem, mais importante, uma escrita: a chave de idempotência do `abrir_chamado_interno` (`ticket:kb_id`) já impede duplicata mesmo sem checkpoint, mas o checkpoint evita a chamada redundante que geraria custo e log confuso;
 - `pendencia` — os argumentos exatos da ação irreversível que aguarda confirmação, para o analista poder aprovar **horas depois**, de outro processo (hoje `confirmar()` é síncrona: espera a resposta no mesmo terminal; um checkpoint é o que torna a confirmação assíncrona possível);
-- `n_chamadas_modelo`, `tokens`, `custo_usd`, o instante de início — para o orçamento continuar contando certo na retomada, em vez de reiniciar e permitir um caso que já gastou 25 dos 30 mil tokens permitidos continuar por mais 30 mil;
+- `n_chamadas_modelo`, `tokens`, `custo_usd`, o tempo de execução já gasto (não o instante de início: a espera pelo cliente ou pelo analista não conta para o teto de 90 s) — para o orçamento continuar contando certo na retomada, em vez de reiniciar e permitir um caso que já gastou 25 dos 30 mil tokens permitidos continuar por mais 30 mil;
 - `scores_kb` — para não recalcular a busca e, principalmente, para a decisão de reabrir ou não a busca (score abaixo do limiar) ser auditável depois;
 - `pedido_cliente` — se o pedido de informação já foi enviado, quando, e a resposta do cliente quando chegar. É o que garante, na retomada, que o pedido **não é enviado de novo** (a mensagem chega ao cliente e não tem volta) e que um segundo pedido seja recusado em código;
 - `desfecho`, se já existir — para o caso de a execução cair **depois** de já ter escrito no banco (o registro venceu, o processo caiu): retomar não deve tentar escrever de novo.
@@ -35,7 +35,7 @@ Isso responde às três perguntas do enunciado: (a) retomável sem reaplicar efe
 
 ### 1.2 O orçamento da janela
 
-Cinco fontes disputam a janela de uma chamada ao modelo. Medido a partir do `prompts/agente-v3.md` e dos schemas em `src/ferramentas.py`:
+Seis fontes disputam a janela de uma chamada ao modelo. Medido a partir do `prompts/agente-v3.md` e dos schemas em `src/ferramentas.py`:
 
 | Fonte | Teto (tokens) | Medido / justificativa |
 |---|---|---|
@@ -46,7 +46,7 @@ Cinco fontes disputam a janela de uma chamada ao modelo. Medido a partir do `pro
 | Trechos recuperados (top-3 da busca) | 500 | ~110 a 150 tokens por artigo, medido; 3 artigos cabem com folga |
 | Memória de longo prazo (recall episódico + semântico) | 700 | orçamento novo, proposto: 1 a 2 episódios similares (~250 tokens cada) + fatos semânticos do cliente (~100 tokens) |
 
-Total fixo + variável em operação normal: ≈ 6.500 tokens, dentro de uma janela de trabalho assumida de 8.000 tokens (número conservador; os modelos usados no plano gratuito da conta suportam mais, mas o laço deve caber com folga mesmo num provedor mais restrito).
+Soma dos tetos: 6.000 tokens, dentro de uma janela de trabalho assumida de 8.000 tokens (número conservador; os modelos usados no plano gratuito da conta suportam mais, mas o laço deve caber com folga mesmo num provedor mais restrito).
 
 **O que é descartado primeiro quando o total estoura, nesta ordem:**
 1. memória de longo prazo (é a mais nova, a mais opcional, e a Parte 1 inteira já funcionou sem ela);
@@ -58,7 +58,7 @@ Total fixo + variável em operação normal: ≈ 6.500 tokens, dentro de uma jan
 | Tipo | O que guarda no case | Estrutura | Como é recuperada |
 |---|---|---|---|
 | **Episódica** | Um registro por execução concluída: `id_ticket`, categoria, `kb_id` usado, desfecho, se foi confirmado ou recusado pelo analista, e um resumo curto do que aconteceu (ex.: "TKT-0002: relato de webmail fora do ar, log mostrou DNS, foi para fila humana") | índice por similaridade (embedding do texto do chamado + resumo do desfecho) | por similaridade com o texto do chamado atual, no passo de busca — para achar precedentes parecidos, não só procedimentos da base |
-| **Semântica** | Fatos estáveis por cliente: plano contratado e — a parte que mais importa — contagem de reincidência **por categoria**, hoje já calculada em SQL (`_reincidencia` em `src/db.py`) a partir da tabela `chamados_internos` | chave-valor, chave = `cliente_id` + categoria | por chave exata, uma consulta, não uma busca |
+| **Semântica** | Fatos estáveis por cliente: plano contratado e — a parte que mais importa — a reincidência **por categoria** (se o cliente teve ocorrência anterior da mesma categoria nos últimos 30 dias), hoje já calculada em SQL (`_reincidencia` em `src/db.py`) a partir da tabela `chamados_internos` | chave-valor, chave = `cliente_id` + categoria | por chave exata, uma consulta, não uma busca |
 | **Procedural** | Regras de triagem aprendidas a partir de correções do analista: quando o analista reverte uma decisão do agente (por exemplo, confirma um `fila_humana` que devia ter sido `abrir_chamado_interno`) repetidamente para o mesmo padrão de caso, isso vira candidato a regra no prompt | texto dentro do próprio *system prompt* (como as três versões `agente-v1/v2/v3.md` já são, hoje, versionadas manualmente) | sempre carregada, porque é o próprio prompt |
 
 A reincidência é o exemplo mais claro de por que a estrutura decorre do padrão de acesso: ela **já é semântica** hoje, só que recalculada a cada consulta em vez de armazenada — o que é a escolha certa (ver "o que é derivável", abaixo), então o item da tabela acima registra a decisão de **manter** assim, não de criar um novo armazenamento.
@@ -66,20 +66,20 @@ A reincidência é o exemplo mais claro de por que a estrutura decorre do padrã
 ### 1.4 Quem escreve, o volume, e o que não entra
 
 **Quem escreve:**
-- **episódica**: o **código** extrai, ao fim de cada execução (`Termino.RESPONDEU`), os campos estruturados do `Estado` — nunca o texto livre que o modelo escreveu como resposta final, porque texto livre é exatamente o que a rodada 2 mostrou não ser confiável ("registrei" sem ter registrado);
+- **episódica**: o **código** extrai, ao fim de cada execução (qualquer término, inclusive `aguardando_humano` quando o analista recusa), os campos estruturados do `Estado` — nunca o texto livre que o modelo escreveu como resposta final, porque texto livre é exatamente o que a rodada 2 mostrou não ser confiável ("registrei" sem ter registrado);
 - **semântica**: o **código** também, por regra determinística (a mesma consulta SQL que já existe), nunca o modelo — um fato como "plano do cliente" tem peso de negócio demais para depender de o modelo tê-lo lido certo;
 - **procedural**: só o **humano** (analista ou o grupo), em revisão, nunca automático — é a lição da rodada 2: prompt mexido sem supervisão piorou o resultado de 5 para 3 em 7. Uma regra procedural só entra no prompt depois de aparecer em pelo menos 3 correções do mesmo padrão, revisadas por uma pessoa.
 
 **Volume por execução:** 1 registro episódico (≈150 a 250 tokens); 0 ou 1 atualização semântica (só quando um fato realmente muda — o plano do cliente, por exemplo; não a cada execução); 0 escritas procedurais por execução (é processo em lote, periódico, não por chamado).
 
 **O que o sistema não guarda:**
-- **dado sensível não verificado** — o `anexo_log` do cliente (que pode conter hostname, IP, e por acidente uma credencial colada) não é gravado verbatim em nenhuma memória de longo prazo; só o resumo estruturado (categoria, KB usado) sobrevive à execução. O checkpoint, que guarda o log por inteiro enquanto a execução está viva, é apagado quando ela termina;
+- **dado sensível não verificado** — o `anexo_log` do cliente (que pode conter hostname, IP, e por acidente uma credencial colada) não é gravado verbatim em nenhuma memória de longo prazo; só o resumo estruturado (categoria, KB usado) sobrevive à execução. O checkpoint, que guarda o log por inteiro enquanto a execução está viva, é apagado quando ela termina. Pendência: hoje o `logs/TKT-xxxx.json` grava o resultado de `consultar_ticket` com o anexo inteiro; para esta regra valer, o campo `anexo_log` precisa ser redigido no log ao fim da execução;
 - **conteúdo não verificado vindo de fora** — a afirmação do próprio cliente ("é a terceira vez", "prioridade máxima") nunca vira fato semântico. É exatamente a regra que o prompt já aplica ("afirmação a verificar", em `agente-v3.md`): só o que o **histórico do sistema** confirma pode virar memória de longo prazo; a alegação do cliente fica só no registro episódico daquela execução específica, nunca promovida a fato sobre o cliente;
-- **o que é derivável** — a contagem de reincidência, como já dito, nunca é armazenada como valor fixo: é recalculada por consulta. Guardar um número que pode ficar desatualizado (e nenhum mecanismo de decaimento cobrindo justamente ele) seria dívida sem necessidade.
+- **o que é derivável** — a reincidência, como já dito, nunca é armazenada como valor fixo: é recalculada por consulta, porque depende da janela de 30 dias. Guardar um valor que pode ficar desatualizado (e nenhum mecanismo de decaimento cobrindo justamente ele) seria dívida sem necessidade.
 
 ### 1.5 A conversa com o cliente (§5.5)
 
-O agente só conversa com o cliente em um caso: quando falta informação para classificar o chamado, ele envia **um** pedido e espera a resposta (regra em `docs/case.md` §2.1). As quatro decisões da conversa, nesse cenário:
+O agente só conversa com o cliente em um caso: quando falta informação para classificar o chamado, ele envia **um** pedido, depois da confirmação do analista, e espera a resposta (regra em `docs/case.md` §2.1). As quatro decisões da conversa, nesse cenário:
 
 **O que identifica uma conversa.** `thread_id` = id do chamado externo (`TKT-xxxx`). Cada chamado é uma conversa: a mesma pessoa com dois chamados abertos ao mesmo tempo tem duas conversas independentes, e a resposta de um não contamina a triagem do outro. A resposta do cliente chega pelo próprio chamado, então ela já carrega o id que a leva de volta à conversa certa.
 
@@ -95,7 +95,7 @@ O agente só conversa com o cliente em um caso: quando falta informação para c
 
 No case, o que mais pode se contradizer são os **procedimentos técnicos** (fonte D de `docs/base-de-conhecimento-v2.md`), porque é deles que vêm o time de destino e a prioridade de cada chamado. Exemplo: a versão antiga do procedimento de SSL mandava renovar o certificado manualmente pelo painel e escalar para a Segurança com P1; a versão vigente (KB-101) manda conferir o certbot e anotar para a Infraestrutura com P2. Os dois textos são igualmente parecidos com o relato "meu certificado SSL venceu", e a busca por similaridade não tem como saber qual vale. Se a versão antiga vencer, o erro não fica no texto: vira um chamado P1 aberto para o time errado.
 
-**Regra de desempate:** todo trecho indexado — procedimentos técnicos e catálogo de planos — carrega `data_publicacao` e `revogado_por` (previstos em `docs/base-de-conhecimento-v2.md`). Um trecho com `revogado_por` preenchido é filtrado antes da busca; entre dois trechos vigentes que concorrem para o mesmo relato, vale `max(data_publicacao)`. Não é o modelo que decide: é um filtro e uma comparação de datas em código, determinísticos e testáveis.
+**Regra de desempate:** todo trecho indexado — procedimentos técnicos e catálogo de planos — carrega `data_publicacao` e `revogado_por` (previstos em `docs/base-de-conhecimento-v2.md`). Um trecho com `revogado_por` preenchido é filtrado antes da busca; entre duas versões vigentes do **mesmo procedimento** (mesmo `kb_id`), vale `max(data_publicacao)`. Trechos de procedimentos ou subcenários diferentes não são desempatados por data: concorrem pelo score. Não é o modelo que decide: é um filtro e uma comparação de datas em código, determinísticos e testáveis.
 
 **O descarte é registrado**, não silencioso: quando um fato perde para outro mais recente, isso fica no log da busca (`buscar_base_conhecimento` passa a incluir, no resultado, os artigos descartados por contradição e a data que venceu), para que uma auditoria consiga distinguir "não achou nada" de "achou dois e escolheu o mais novo".
 
@@ -131,6 +131,6 @@ Isso tem um custo concreto para a avaliação (aula 11, e para o próprio verifi
 
 ## O que o agente não guarda, e o que perde quando perde
 
-O agente **não guarda**: o conteúdo bruto dos anexos de log depois que a execução termina; qualquer afirmação do cliente não confirmada pelo histórico do sistema; e qualquer fato recalculável, como a contagem de reincidência.
+O agente **não guarda**: o conteúdo bruto dos anexos de log depois que a execução termina (com a redação do `anexo_log` nos arquivos de log, pendência do §1.4); qualquer afirmação do cliente não confirmada pelo histórico do sistema; e qualquer fato recalculável, como a reincidência.
 
 **O que ele perde, por não guardar isso:** perde a capacidade de, meses depois, reconstruir *por que* um chamado antigo foi tratado de um jeito específico a partir do log bruto original — só o resumo estruturado sobrevive, então um detalhe do log original que não entrou no resumo da época está perdido para sempre, mesmo que o chamado continue relevante. É uma perda aceita conscientemente: o custo de manter dado potencialmente sensível "só por garantia" pesa mais do que essa perda pontual de detalhe, e é o mesmo princípio já aplicado no resto do case — na dúvida, o sistema erra para o lado que preserva menos, não mais.
