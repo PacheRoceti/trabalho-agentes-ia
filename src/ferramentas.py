@@ -15,11 +15,24 @@ Regra de erro: o que o modelo pode contornar vira ErroRecuperavel (volta como
 dado, com "esperado" e "sugestao"); o que nenhuma decisão dele resolve vira
 ErroFatal e derruba o laço.
 """
+import re
+import unicodedata
+
 import db
 
 LIMIAR_CONFIANCA = 0.5   # abaixo disso, o agente NÃO age sozinho (vai à fila humana)
 
 DESTINOS = ["fila_comercial", "devolver_cliente", "anotacao_interna", "fila_humana"]
+
+# Motivos que dispensam a busca na base antes da fila humana: o pedido não é um problema técnico.
+MOTIVOS_SEM_BUSCA = ["fora_da_alcada"]
+
+# O pedido de informação é a única mensagem que chega ao cliente: não pode citar informação
+# interna (procedimentos, times, filas, scores) nem falar de prioridade ou SLA. Checagem por
+# palavras, sobre o texto em minúsculas e sem acento; os nomes dos times vêm da base.
+TERMOS_INTERNOS = re.compile(
+    r"\bkb-?\d+|\binc-?\d+|\bscores?\b|\blimiar\b|\bbase de conhecimento\b|\bprocedimentos?\b"
+    r"|\bfila[ _](humana|comercial)\b|\bchamados? internos?\b|\bprioridade\b|\bsla\b|\bp[123]\b")
 
 
 class ErroRecuperavel(Exception):
@@ -61,7 +74,8 @@ def consultar_ticket(estado, con, id_ticket: str) -> dict:
             sugestao="não tente outros ids. Chame registrar_encaminhamento com "
                      "destino 'fila_humana' e explique na mensagem que o id não existe")
     estado.ticket = ticket
-    return {k: v for k, v in ticket.items() if not k.startswith("_")}
+    # O texto do cliente já chegou como entrada (agente._entrada): não é repetido aqui.
+    return {k: v for k, v in ticket.items() if not k.startswith("_") and k != "texto"}
 
 
 def buscar_base_conhecimento(estado, con, termos: list[str]) -> dict:
@@ -69,12 +83,18 @@ def buscar_base_conhecimento(estado, con, termos: list[str]) -> dict:
         raise ErroRecuperavel(
             "termos deve ser uma lista não vazia de palavras", recebido=termos,
             esperado='lista com 2 a 5 palavras, ex: ["certificado", "ssl", "vencido"]')
-    resultados = db.buscar_kb(con, termos)
+    # O texto do cliente vai junto só para conferir as ressalvas dos procedimentos (nao_cobre).
+    relato = estado.ticket["texto"] if estado.ticket else None
+    resultados = db.buscar_kb(con, termos, relato=relato)
+    estado.n_buscas += 1
     for r in resultados:
         estado.scores_kb[r["kb_id"]] = r["score"]   # o portão de confiança confere depois
     if not resultados:
         return {"resultados": [],
-                "aviso": "nenhum procedimento da base tem correspondência com esses termos"}
+                "aviso": "nenhum procedimento da base tem correspondência com esses termos",
+                "sugestao": ("tente UMA nova busca com outras palavras soltas do relato (o serviço "
+                             "e o sintoma)" if estado.n_buscas == 1 else
+                             "não busque de novo: registre 'fila_humana' explicando o que foi buscado")}
     return {"resultados": resultados, "limiar_para_agir_sozinho": LIMIAR_CONFIANCA}
 
 
@@ -93,6 +113,22 @@ def _exigir_confianca(estado, con, kb_id: str | None) -> dict:
             sugestao="não aja sozinho: chame registrar_encaminhamento com "
                      "destino 'fila_humana'")
     return db.buscar_artigo(con, kb_id)
+
+
+def _normalizar(texto: str) -> str:
+    return unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode().lower()
+
+
+def _exigir_pedido_sem_informacao_interna(con, mensagem: str) -> None:
+    texto = _normalizar(mensagem)
+    achados = sorted({m.group(0) for m in TERMOS_INTERNOS.finditer(texto)})
+    achados += [t for t in db.times_destino(con) if re.search(rf"\b{re.escape(_normalizar(t))}\b", texto)]
+    if achados:
+        raise ErroRecuperavel(
+            "o pedido ao cliente cita informação interna ou promete prioridade", recebido=achados,
+            esperado="só a lista do que falta: serviço ou servidor afetado, erro ou "
+                     "comportamento observado e desde quando ocorre",
+            sugestao="reescreva a mensagem sem esses termos e chame de novo")
 
 
 def _exigir_sem_desfecho(estado):
@@ -127,8 +163,8 @@ def abrir_chamado_interno(estado, con, id_ticket: str, resumo: str, kb_id: str) 
     return resultado
 
 
-def registrar_encaminhamento(estado, con, id_ticket: str, destino: str,
-                             mensagem: str, kb_id: str | None = None) -> dict:
+def registrar_encaminhamento(estado, con, id_ticket: str, destino: str, mensagem: str,
+                             kb_id: str | None = None, motivo: str | None = None) -> dict:
     _exigir_sem_desfecho(estado)
     if destino not in DESTINOS:
         raise ErroRecuperavel("destino inválido", recebido=destino, esperado=DESTINOS)
@@ -137,6 +173,25 @@ def registrar_encaminhamento(estado, con, id_ticket: str, destino: str,
     if destino != "fila_humana" and (estado.ticket is None or estado.ticket["id"] != id_ticket):
         raise ErroRecuperavel("chame consultar_ticket para este id antes de encaminhar",
                               recebido=id_ticket)
+    if destino != "fila_humana":
+        motivo = None
+    elif motivo is not None and motivo not in MOTIVOS_SEM_BUSCA:
+        raise ErroRecuperavel("motivo inválido", recebido=motivo,
+                              esperado=MOTIVOS_SEM_BUSCA + ["(ou omita o campo)"])
+    # Fila humana para um chamado que EXISTE só depois de olhar a base: impede desistir do
+    # procedimento por causa de uma afirmação do cliente (TKT-0003). Id inexistente e pedido
+    # fora da alçada não são problema técnico e dispensam a busca.
+    if (destino == "fila_humana" and motivo is None and estado.n_buscas == 0
+            and estado.ticket is not None and estado.ticket["id"] == id_ticket):
+        raise ErroRecuperavel(
+            "fila_humana sem nenhuma busca na base para este chamado",
+            esperado="uma chamada de buscar_base_conhecimento antes de desistir de agir",
+            sugestao="se o chamado relata um problema técnico, busque na base e escolha o desfecho "
+                     "pelo artigo e pelo score (afirmação do cliente que o histórico não confirma "
+                     "não é motivo de fila_humana). Se o cliente pede APENAS para encerrar um "
+                     "chamado ou mudar prioridade, repita com motivo 'fora_da_alcada'")
+    if destino == "devolver_cliente":
+        _exigir_pedido_sem_informacao_interna(con, mensagem)
     if destino == "anotacao_interna":
         artigo = _exigir_confianca(estado, con, kb_id)
         if artigo["acao_padrao"] != "anotar":
@@ -145,8 +200,17 @@ def registrar_encaminhamento(estado, con, id_ticket: str, destino: str,
                 sugestao="use abrir_chamado_interno")
     else:
         kb_id = None
+    # Um pedido de informação por chamado: conferido no BANCO, para valer entre execuções.
+    if destino == "devolver_cliente" and db.contar_pedidos_cliente(con, id_ticket) > 0:
+        raise ErroRecuperavel(
+            "este chamado já recebeu um pedido de informação ao cliente",
+            esperado="no máximo um devolver_cliente por chamado",
+            sugestao="não peça de novo: chame registrar_encaminhamento com destino "
+                     "'fila_humana' e explique o que ainda falta")
     resultado = db.registrar_encaminhamento(con, id_ticket, destino, mensagem.strip(), kb_id)
     estado.desfecho = {"acao": destino, "kb_id": kb_id, **resultado}
+    if motivo:
+        estado.desfecho["motivo"] = motivo
     return resultado
 
 
@@ -163,9 +227,9 @@ FERRAMENTAS_DE_ESCRITA = {"abrir_chamado_interno", "registrar_encaminhamento"}
 SCHEMAS = [
     {"type": "function", "function": {
         "name": "consultar_ticket",
-        "description": "Lê o chamado externo no sistema de tickets: texto do cliente, "
-                       "log anexado (se houver), plano e o histórico de chamados internos "
-                       "do cliente. Só leitura.",
+        "description": "Lê o registro do chamado externo no sistema de tickets: log anexado "
+                       "(se houver), plano e o histórico de chamados internos do cliente. "
+                       "O texto do cliente já vem na entrada. Só leitura.",
         "parameters": {"type": "object", "properties": {
             "id_ticket": {"type": "string", "description": "ex: TKT-0042"}},
             "required": ["id_ticket"]}}},
@@ -193,15 +257,21 @@ SCHEMAS = [
             "required": ["id_ticket", "resumo", "kb_id"]}}},
     {"type": "function", "function": {
         "name": "registrar_encaminhamento",
-        "description": "ESCRITA REVERSÍVEL. Registra o desfecho que não abre chamado: "
-                       "fila_comercial, devolver_cliente (mensagem = o que pedir ao cliente), "
+        "description": "ESCRITA. Registra o desfecho que não abre chamado: fila_comercial, "
+                       "devolver_cliente (a mensagem é ENVIADA AO CLIENTE, no máximo uma vez por "
+                       "chamado: só a lista do que falta, sem informação interna nem promessa), "
                        "anotacao_interna (mensagem = correção sugerida, exige kb_id de "
-                       "procedimento 'anotar') ou fila_humana (mensagem = por que um humano deve olhar).",
+                       "procedimento 'anotar') ou fila_humana (mensagem = por que um humano deve "
+                       "olhar; para chamado existente, só depois de buscar na base).",
         "parameters": {"type": "object", "properties": {
             "id_ticket": {"type": "string"},
             "destino": {"type": "string", "enum": DESTINOS},
             "mensagem": {"type": "string"},
-            "kb_id": {"type": "string", "description": "só para anotacao_interna"}},
+            "kb_id": {"type": "string", "description": "só para anotacao_interna"},
+            "motivo": {"type": "string", "enum": MOTIVOS_SEM_BUSCA,
+                       "description": "só para fila_humana SEM busca: 'fora_da_alcada' quando o "
+                                      "cliente pede apenas para encerrar um chamado ou mudar a "
+                                      "prioridade"}},
             "required": ["id_ticket", "destino", "mensagem"]}}},
 ]
 

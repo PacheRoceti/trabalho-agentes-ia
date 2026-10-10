@@ -20,7 +20,7 @@ real ou pessoal entra no repositório nem no contexto do modelo.
 | `TKT-0999` | **registro inexistente** | o id não existe: a ferramenta devolve erro que ensina a contornar | `fila_humana` |
 | `TKT-0004` | **não deve disparar a ação principal** | pedido comercial: nenhum chamado interno pode ser aberto | `fila_comercial` |
 | `TKT-0005` | informação insuficiente | "Meu servidor não está funcionando direito." | `devolver_cliente` |
-| `TKT-0006` | correspondência parcial | KB-104 cobre 502 **constante**; o relato é **intermitente**. O portão de confiança (score 0.44 < 0.5) impede a abertura automática | `fila_humana` |
+| `TKT-0006` | correspondência parcial | KB-104 cobre 502 **constante**; o relato é **intermitente**. O KB-104 declara que não cobre falha intermitente (coluna `nao_cobre`): a busca reduz o score para abaixo de 0.5 e o portão de confiança impede a abertura automática | `fila_humana` |
 
 **Por que a dificuldade se mantém em dado simulado:** os casos foram escritos a
 partir das exceções do domínio (reincidência, comercial disfarçado de técnico,

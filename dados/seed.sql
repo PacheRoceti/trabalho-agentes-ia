@@ -46,7 +46,9 @@ CREATE TABLE kb_artigos (
     acao_padrao     TEXT NOT NULL CHECK (acao_padrao IN ('anotar', 'escalar')),
     time_destino    TEXT NOT NULL,
     prioridade_base TEXT NOT NULL CHECK (prioridade_base IN ('P1', 'P2', 'P3')),
-    categoria       TEXT NOT NULL          -- copiada para o chamado interno; conta a reincidência
+    categoria       TEXT NOT NULL,         -- copiada para o chamado interno; conta a reincidência
+    nao_cobre       TEXT NOT NULL DEFAULT ''   -- ressalvas: situações que o guia NÃO cobre, em frases
+                                               -- sem acento separadas por ';' (reduzem o score)
 );
 
 CREATE TABLE chamados_internos (
@@ -80,7 +82,9 @@ INSERT INTO clientes VALUES
     ('CLI-03', 'Gama Cursos Online',   'Hospedagem Start'),
     ('CLI-04', 'Delta Restaurantes',   'Hospedagem Start'),
     ('CLI-05', 'Epsilon Studio',       'VPS Pro'),
-    ('CLI-06', 'Zeta Imóveis',         'Hospedagem Business');
+    ('CLI-06', 'Zeta Imóveis',         'Hospedagem Business'),
+    -- VPS Pro sem histórico: o disco cheio do TKT-0007 é disco de servidor, não cota de conta
+    ('CLI-07', 'Eta Engenharia',       'VPS Pro');
 
 -- ---------------------------------------------------------------- tickets
 INSERT INTO tickets_externos VALUES
@@ -90,7 +94,8 @@ INSERT INTO tickets_externos VALUES
   ('TKT-0002', 'CLI-06',
    'Meu Webmail está fora do ar desde cedo, ninguém da empresa consegue ler e-mail.',
    '2026-09-21 09:15', 'novo',
-   '2026-09-21 09:31:07 ERRO resolver: falha de resolução DNS para mail.zeta.com.br (SERVFAIL); nameserver ns1.zeta.com.br não responde. Serviço webmail: processo ativo, porta 443 respondendo.'),
+   -- log que o próprio cliente consegue obter (consultas feitas do computador dele, antes de abrir o chamado)
+   '2026-09-21 09:08 nslookup mail.zeta.com.br -> falha de resolução DNS: SERVFAIL. 2026-09-21 09:09 nslookup -type=ns zeta.com.br -> nameserver ns1.zeta.com.br não responde (timeout). 2026-09-21 09:10 acesso ao webmail direto pelo IP do servidor (https://203.0.113.40/webmail) -> a tela de login abre normalmente.'),
   ('TKT-0003', 'CLI-02',
    'É a TERCEIRA vez que o meu servidor fica sem espaço em disco e os sistemas param! Exijo prioridade máxima agora.',
    '2026-09-21 09:40', 'novo', NULL),
@@ -103,7 +108,7 @@ INSERT INTO tickets_externos VALUES
   ('TKT-0006', 'CLI-05',
    'Meu site está dando erro 502 de vez em quando, mais ou menos desde o deploy de ontem. Às vezes funciona normal.',
    '2026-09-21 11:02', 'novo', NULL),
-  ('TKT-0007', 'CLI-01',
+  ('TKT-0007', 'CLI-07',
    'O disco do meu servidor encheu e os sistemas pararam de gravar arquivos. Preciso de ajuda para liberar espaço.',
    '2026-09-21 11:30', 'novo', NULL),
   -- ticket antigo, existe só para dar histórico ao CLI-02
@@ -118,32 +123,34 @@ INSERT INTO kb_artigos VALUES
    'certificado ssl renovacao vencido certbot https',
    'Desafio HTTP-01 falhando (porta 80 bloqueada ou DNS apontando para outro IP) ou timer do certbot parado.',
    'Conferir DNS do domínio e liberação da porta 80; rodar "certbot renew --dry-run"; reativar o timer do certbot.',
-   'anotar', 'Infraestrutura', 'P2', 'ssl_certificado'),
+   'anotar', 'Infraestrutura', 'P2', 'ssl_certificado', ''),
   ('KB-102', 'Disco do servidor cheio',
    'disco espaco cheio armazenamento inode logs',
    'Logs e backups acumulados ou crescimento de dados do cliente.',
    'Identificar diretórios maiores (du -sh), rotacionar logs, avaliar aumento de disco. Exige acesso ao servidor.',
-   'escalar', 'Infraestrutura', 'P2', 'disco_cheio'),
+   'escalar', 'Infraestrutura', 'P2', 'disco_cheio', ''),
   ('KB-103', 'Acesso SSH bloqueado ou recusado',
    'ssh acesso bloqueado recusada fail2ban firewall',
    'IP do cliente banido pelo fail2ban após tentativas falhas, ou regra de firewall.',
    'Verificar se o IP do cliente está banido no fail2ban e liberar; conferir porta e regras do firewall.',
-   'anotar', 'Seguranca', 'P2', 'acesso_ssh'),
+   'anotar', 'Seguranca', 'P2', 'acesso_ssh', ''),
   ('KB-104', 'Site fora do ar com erro 5xx após deploy',
    '502 503 5xx deploy nginx indisponivel',
    'Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).',
-   'Reiniciar o processo da aplicação, validar a configuração do nginx e reverter o deploy se necessário.',
-   'escalar', 'Infraestrutura', 'P1', 'site_fora_do_ar'),
+   'Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).',
+   'escalar', 'Infraestrutura', 'P1', 'site_fora_do_ar',
+   -- o guia cobre a falha CONSTANTE; o 502 intermitente não tem procedimento (TKT-0006)
+   'intermitente; as vezes; de vez em quando; oscila'),
   ('KB-106', 'Falha de resolução DNS do domínio',
    'dns resolucao nameserver dominio zona',
    'Nameserver do domínio fora do ar ou zona DNS com registro inválido.',
    'Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS.',
-   'escalar', 'Infraestrutura', 'P1', 'dns_dominio'),
+   'escalar', 'Infraestrutura', 'P1', 'dns_dominio', ''),
   ('KB-105', 'Backup diário falhou',
    'backup falhou diario restauracao agendamento snapshot',
    'Cota de armazenamento de backup excedida ou janela de backup sobreposta a outra tarefa.',
    'Conferir a cota do storage de backup e o agendamento; reexecutar o job manualmente.',
-   'anotar', 'Infraestrutura', 'P3', 'backup');
+   'anotar', 'Infraestrutura', 'P3', 'backup', '');
 
 -- ------------------------------------------------- histórico de chamados internos
 -- CLI-02 tem UMA ocorrência anterior de disco cheio (o histórico que contradiz o TKT-0003).

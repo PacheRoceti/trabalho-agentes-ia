@@ -26,9 +26,21 @@ JANELA_REINCIDENCIA_DIAS = 30
 
 PRIORIDADES = ["P3", "P2", "P1"]  # da menor para a maior
 
-# Palavras que aparecem em quase todo chamado e não discriminam nada.
+# Palavras que aparecem em quase todo chamado e não discriminam nada (as últimas são só
+# palavras de ligação, que chegam quando o modelo busca com frases).
 GENERICAS = {"servidor", "site", "problema", "erro", "cliente", "hospedagem",
-             "nao", "esta", "meu", "minha", "muito", "sistema", "ajuda"}
+             "nao", "esta", "meu", "minha", "muito", "sistema", "ajuda",
+             "fora", "desde", "para", "com", "sem", "que", "dos", "das", "uma", "por", "mais"}
+
+# Formas que o cliente usa e que não têm o mesmo radical da palavra-chave do procedimento.
+# Paliativo ASSUMIDO da busca por palavra (some com o RAG da Parte 2): a lista é curta, foi
+# escrita depois de ver o TKT-0007 falhar ("encheu" × "cheio") e não cobre o que não foi visto.
+SINONIMOS = {"encheu": "cheio", "lotado": "cheio", "expirou": "vencido", "caiu": "indisponivel"}
+
+# Fator aplicado ao score quando a correspondência não autoriza agir: um único termo casado, ou
+# um relato que cai numa ressalva do procedimento (coluna nao_cobre). Com ele o score máximo
+# fica em 0,4, abaixo do limiar do portão.
+REDUTOR = 0.4
 
 ID_TICKET = re.compile(r"^TKT-\d{4}$")
 
@@ -99,33 +111,63 @@ def _casa(termo: str, chave: str) -> bool:
     return len(termo) >= 5 and len(chave) >= 5 and termo[:4] == chave[:4]
 
 
-def buscar_kb(con: sqlite3.Connection, termos: list[str], top: int = 3) -> list[dict]:
-    """Busca por sobreposição de palavras-chave (coeficiente de Dice).
+def _palavras(termos: list[str]) -> list[str]:
+    """Os termos do modelo viram palavras: frases são quebradas, palavras genéricas e de até
+    2 letras saem, sinônimos conhecidos viram a palavra-chave, e não há repetição."""
+    palavras = []
+    for termo in termos:
+        for p in re.split(r"[^a-z0-9]+", _normalizar(str(termo))):
+            if len(p) < 3 or any(_casa(p, g) for g in GENERICAS):
+                continue
+            p = next((chave for forma, chave in SINONIMOS.items() if _casa(p, forma)), p)
+            if p not in palavras:
+                palavras.append(p)
+    return palavras
 
-    score = 2 * casados / (termos_da_consulta + chaves_do_artigo)
 
-    Um termo a mais na consulta derruba o score um pouco, mas não o zera
-    (Jaccard puniria mais); e poucos termos, ou termos que não estão no
-    artigo, deixam o score abaixo de 0.5.
+def buscar_kb(con: sqlite3.Connection, termos: list[str], top: int = 3,
+              relato: str | None = None) -> list[dict]:
+    """Busca por sobreposição de palavras-chave.
 
-    Deliberadamente simples e IMPERFEITA: só enxerga palavra, não sentido. É
-    o que a busca vetorial (RAG) resolve na Parte 2, e o limiar de 0.5 foi
-    calibrado à mão para os dados desta demonstração.
+    score = casados / (casados + nao_casados / 2)
+
+    Mede quanto da CONSULTA o artigo explica; cada termo que o artigo não tem pesa metade de
+    um que tem. O tamanho da lista de palavras-chave do artigo não entra na conta: ela reúne
+    formas alternativas (disco/armazenamento, cheio/espaco), e nenhum relato usa todas. Na
+    fórmula anterior (Dice sobre a lista inteira) dois termos casados davam no máximo 0,5.
+
+    Duas reduções (REDUTOR) deixam o score abaixo do limiar do portão:
+      - um único termo casado: uma palavra só não identifica um procedimento;
+      - o relato cai numa RESSALVA do procedimento (coluna nao_cobre, frases separadas por ';',
+        procuradas no texto do cliente e nos termos). O artigo volta com o campo 'ressalva'.
+
+    Continua IMPERFEITA: só enxerga palavra, não sentido. É o que a busca vetorial (RAG)
+    resolve na Parte 2, e o limiar de 0.5 foi ajustado à mão para os dados desta demonstração.
     """
-    consulta = [t for t in (_normalizar(t) for t in termos)
-                if t and t not in GENERICAS]
+    consulta = _palavras(termos)
+    contexto = _normalizar(" ".join([relato or ""] + [str(t) for t in termos]))
     resultados = []
     for a in con.execute("SELECT * FROM kb_artigos").fetchall():
         chaves = a["palavras_chave"].split()
         casados = sum(1 for t in consulta if any(_casa(t, c) for c in chaves))
         if casados == 0:
             continue
-        score = 2 * casados / (len(consulta) + len(chaves))
-        resultados.append({
+        score = casados / (casados + (len(consulta) - casados) / 2)
+        if casados < 2:
+            score *= REDUTOR
+        ressalva = next((f.strip() for f in a["nao_cobre"].split(";")
+                         if f.strip() and f.strip() in contexto), None)
+        if ressalva:
+            score *= REDUTOR
+        resultado = {
             "kb_id": a["id"], "titulo": a["titulo"], "score": round(score, 2),
             "causa": a["causa"], "solucao": a["solucao"],
             "acao_padrao": a["acao_padrao"], "time_destino": a["time_destino"],
-        })
+        }
+        if ressalva:
+            resultado["ressalva"] = (f"este procedimento NÃO cobre o caso relatado "
+                                     f"('{ressalva}'): o score foi reduzido")
+        resultados.append(resultado)
     resultados.sort(key=lambda r: r["score"], reverse=True)
     return resultados[:top]
 
@@ -204,6 +246,20 @@ def registrar_encaminhamento(con, id_ticket: str, destino: str, mensagem: str,
            VALUES (?, ?, ?, ?, ?)""", (id_ticket, destino, mensagem, kb_id, AGORA))
     con.commit()
     return {"encaminhamento": cur.lastrowid, "destino": destino}
+
+
+def times_destino(con) -> list[str]:
+    """Os times citados nos procedimentos da base (lista de referência dos nomes internos)."""
+    return [r[0] for r in con.execute("SELECT DISTINCT time_destino FROM kb_artigos")]
+
+
+def contar_pedidos_cliente(con, id_ticket: str) -> int:
+    """Quantos pedidos de informação (devolver_cliente) o chamado já recebeu.
+    A regra de domínio é no máximo UM por chamado, em qualquer execução."""
+    return con.execute(
+        """SELECT COUNT(*) FROM encaminhamentos
+           WHERE ticket_externo = ? AND destino = 'devolver_cliente'""", (id_ticket,)
+    ).fetchone()[0]
 
 
 def contar(con, tabela: str, id_ticket: str) -> int:

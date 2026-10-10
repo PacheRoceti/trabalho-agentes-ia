@@ -78,13 +78,14 @@ ROTEIROS = {
                  turno(chamada(2, "registrar_encaminhamento", id_ticket="TKT-0005", destino="devolver_cliente",
                                mensagem="Informe o serviço afetado, o erro observado e desde quando ocorre.")),
                  turno(texto="Devolvido ao cliente.")],
-    # o modelo TENTA abrir chamado com score 0.44 (< 0.5): o portão recusa e ele se corrige
+    # o modelo TENTA abrir chamado, mas o KB-104 não cobre falha intermitente (ressalva): o score
+    # vem reduzido, o portão recusa e ele se corrige
     "TKT-0006": [turno(chamada(1, "consultar_ticket", id_ticket="TKT-0006")),
                  turno(chamada(2, "buscar_base_conhecimento", termos=["502", "erro", "deploy", "intermitente"])),
                  turno(chamada(3, "abrir_chamado_interno", id_ticket="TKT-0006", kb_id="KB-104",
                                resumo="Erro 502 intermitente após deploy, procedimento KB-104.")),
                  turno(chamada(4, "registrar_encaminhamento", id_ticket="TKT-0006", destino="fila_humana",
-                               mensagem="KB-104 cobre falha constante; o relato é intermitente (score 0.44).")),
+                               mensagem="KB-104 cobre falha constante; o relato é intermitente (score abaixo do limiar).")),
                  turno(texto="Encaminhado à fila humana.")],
 }
 
@@ -115,6 +116,98 @@ class TestAgente(unittest.TestCase):
     def test_modelo_recebe_o_anexo_de_log(self):
         e = self.rodar("TKT-0002")
         self.assertIn("DNS", e.passos[0].resultado["anexo_log"])
+
+    def test_entrada_e_o_texto_e_consultar_ticket_nao_o_repete(self):
+        e = self.rodar("TKT-0002")
+        entrada = e.historico[1]["content"]
+        self.assertIn("Meu Webmail está fora do ar", entrada)
+        self.assertIn("TKT-0002", entrada)
+        self.assertIn("CLI-06", entrada)
+        self.assertNotIn("texto", e.passos[0].resultado)
+
+    def test_um_pedido_de_informacao_por_chamado(self):
+        self.rodar("TKT-0005")
+        e = self.rodar("TKT-0005")                           # outra execução, mesmo chamado
+        self.assertIn("já recebeu um pedido", e.passos[1].erro["erro"])
+        self.assertEqual(db.contar_pedidos_cliente(self.con, "TKT-0005"), 1)
+
+    def test_verificador_aceita_pedido_mais_desfecho_final(self):
+        e = self.rodar("TKT-0005")
+        db.registrar_encaminhamento(self.con, "TKT-0005", "fila_humana", "Resposta do cliente ainda insuficiente.", None)
+        self.assertEqual(verificar("TKT-0005", e, self.con), (True, []))
+        db.registrar_encaminhamento(self.con, "TKT-0005", "devolver_cliente", "Segundo pedido, indevido.", None)
+        self.assertIn("pedidos de informação", verificar("TKT-0005", e, self.con)[1][0])
+
+    def test_resumo_que_so_repete_o_cliente_reprova_na_reincidencia(self):
+        roteiro = list(ROTEIROS["TKT-0003"])
+        roteiro[2] = turno(chamada(3, "abrir_chamado_interno", id_ticket="TKT-0003", kb_id="KB-102",
+                                   resumo="O cliente relata que é a terceira vez que o disco enche."))
+        e = self.rodar("TKT-0003", roteiro=roteiro)
+        ok, falhas = verificar("TKT-0003", e, self.con)
+        self.assertFalse(ok)
+        self.assertIn("histórico", falhas[0])
+
+    def test_busca_quebra_frases_e_casa_encheu_com_cheio(self):
+        for termos in (["disco", "encheu"], ["disco cheio", "gravar arquivos"],
+                       ["disco", "encheu", "sistemas", "pararam", "gravar"]):
+            with self.subTest(termos=termos):
+                melhor = db.buscar_kb(self.con, termos)[0]
+                self.assertEqual(melhor["kb_id"], "KB-102")
+                self.assertGreaterEqual(melhor["score"], 0.5)
+
+    def test_um_termo_casado_nao_passa_do_limiar(self):
+        self.assertLess(db.buscar_kb(self.con, ["site", "erro", "502"])[0]["score"], 0.5)
+        self.assertLess(db.buscar_kb(self.con, ["disco"])[0]["score"], 0.5)
+
+    def test_ressalva_do_procedimento_vem_do_texto_do_cliente(self):
+        # termos que casam por inteiro com o KB-104; quem barra é o relato ("de vez em quando")
+        relato = db.buscar_ticket(self.con, "TKT-0006")["texto"]
+        sem = db.buscar_kb(self.con, ["502", "deploy"])[0]
+        com = db.buscar_kb(self.con, ["502", "deploy"], relato=relato)[0]
+        self.assertGreaterEqual(sem["score"], 0.5)
+        self.assertLess(com["score"], 0.5)
+        self.assertIn("NÃO cobre", com["ressalva"])
+
+    def test_chamado_indevido_do_tkt_0006_e_barrado_mesmo_com_termos_que_casam(self):
+        roteiro = list(ROTEIROS["TKT-0006"])
+        roteiro[1] = turno(chamada(2, "buscar_base_conhecimento", termos=["erro", "502", "deploy"]))
+        e = self.rodar("TKT-0006", roteiro=roteiro)
+        self.assertIn("limiar", e.passos[2].erro["erro"])
+        self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0006"), 0)
+
+    def test_tkt_0007_abre_chamado_com_os_termos_das_rodadas_reais(self):
+        roteiro = list(ROTEIROS["TKT-0007"])
+        roteiro[1] = turno(chamada(2, "buscar_base_conhecimento", termos=["disco", "cheio", "arquivos", "gravar"]))
+        e = self.rodar("TKT-0007", roteiro=roteiro)
+        self.assertEqual(verificar("TKT-0007", e, self.con), (True, []))
+
+    def test_fila_humana_sem_busca_e_recusada_para_chamado_existente(self):
+        fila = turno(chamada(2, "registrar_encaminhamento", id_ticket="TKT-0003", destino="fila_humana",
+                             mensagem="Cliente afirma terceira vez; o histórico mostra uma."))
+        roteiro = [ROTEIROS["TKT-0003"][0], fila] + ROTEIROS["TKT-0003"][1:]
+        e = self.rodar("TKT-0003", roteiro=roteiro)
+        self.assertIn("sem nenhuma busca", e.passos[1].erro["erro"])
+        self.assertEqual(e.desfecho["acao"], "abrir_chamado_interno")   # seguiu o procedimento
+
+    def test_pedido_fora_da_alcada_vai_a_fila_humana_sem_busca(self):
+        roteiro = [ROTEIROS["TKT-0003"][0],
+                   turno(chamada(2, "registrar_encaminhamento", id_ticket="TKT-0003", destino="fila_humana",
+                                 motivo="fora_da_alcada", mensagem="O cliente pede só a mudança de prioridade.")),
+                   turno(texto="Encaminhado à fila humana.")]
+        e = self.rodar("TKT-0003", roteiro=roteiro)
+        self.assertEqual(e.termino, Termino.RESPONDEU)
+        self.assertEqual(e.desfecho["motivo"], "fora_da_alcada")
+        self.assertEqual(e.n_buscas, 0)
+
+    def test_pedido_ao_cliente_nao_cita_informacao_interna(self):
+        vazado = turno(chamada(2, "registrar_encaminhamento", id_ticket="TKT-0005", destino="devolver_cliente",
+                               mensagem="Sem detalhes não achamos procedimento (KB-102); a Infraestrutura dará prioridade."))
+        roteiro = [ROTEIROS["TKT-0005"][0], vazado] + ROTEIROS["TKT-0005"][1:]
+        e = self.rodar("TKT-0005", roteiro=roteiro)
+        for termo in ("kb-102", "procedimento", "prioridade", "Infraestrutura"):
+            self.assertIn(termo, e.passos[1].erro["recebido"])
+        self.assertEqual(e.desfecho["acao"], "devolver_cliente")
+        self.assertEqual(db.contar_pedidos_cliente(self.con, "TKT-0005"), 1)
 
     def test_erro_de_ferramenta_volta_como_dado(self):
         e = self.rodar("TKT-0999")

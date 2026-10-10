@@ -34,14 +34,19 @@ def verificar(id_ticket: str, estado, con) -> tuple[bool, list[str]]:
     n_encam = db.contar(con, "encaminhamentos", id_ticket)
     if n_chamados != (1 if esperado["chamado_interno"] else 0):
         falhas.append(f"{n_chamados} chamado(s) interno(s) gravado(s) para {id_ticket}")
-    if n_encam > 1:
-        falhas.append(f"{n_encam} encaminhamentos gravados (esperado no máximo 1)")
+    # No máximo UM pedido ao cliente por chamado; o chamado que passa pela conversa tem dois
+    # registros legítimos (o pedido e o desfecho final), então o pedido é contado à parte.
+    n_pedidos = db.contar_pedidos_cliente(con, id_ticket)
+    if n_pedidos > 1:
+        falhas.append(f"{n_pedidos} pedidos de informação ao cliente (esperado no máximo 1)")
+    if n_encam - n_pedidos > 1:
+        falhas.append(f"{n_encam - n_pedidos} encaminhamentos de desfecho gravados (esperado no máximo 1)")
 
     if "resumo_menciona_algum" in esperado and n_chamados:
         resumo = con.execute("SELECT resumo FROM chamados_internos WHERE ticket_externo = ?",
                              (id_ticket,)).fetchone()["resumo"]
         if not any(p in _norm(resumo) for p in esperado["resumo_menciona_algum"]):
-            falhas.append("resumo não registra a divergência entre o cliente e o histórico")
+            falhas.append("o resumo não registra o que o histórico do sistema confirma")
     if "mensagem_menciona_algum" in esperado and n_encam:
         msg = con.execute("SELECT mensagem FROM encaminhamentos WHERE ticket_externo = ?",
                           (id_ticket,)).fetchone()["mensagem"]

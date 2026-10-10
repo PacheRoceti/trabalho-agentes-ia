@@ -2,9 +2,12 @@
 
     python src/main.py TKT-0001                     um chamado (pede confirmação no terminal)
     python src/main.py TKT-0002 --auto-aprovar      um chamado, sem perguntar (demonstração)
-    python src/main.py --todos --auto-aprovar       os 7 casos, do banco zerado, com verificador
+    python src/main.py --todos --auto-aprovar       os 8 casos, do banco zerado, com verificador
                                                     (grava também logs/saida-demonstracao.txt)
     python src/main.py --reset                      recria o banco de dados simulado
+    python src/main.py --todos --auto-aprovar --rodada NOME [--prompt ARQUIVO]
+                                                    grava em logs/NOME/ (não sobrescreve logs/) e,
+                                                    com --prompt, usa outro arquivo de src/prompts/
 """
 import argparse
 import os
@@ -14,7 +17,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 import db
-from agente import Orcamento, criar_cliente, rodar
+from agente import PROMPT_ARQUIVO, PROMPTS, Orcamento, criar_cliente, rodar
 from verificar import GABARITO, verificar
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -51,12 +54,13 @@ def confirmador_auto(pendencia: dict):
     return True, "auto-aprovado (--auto-aprovar; só para demonstração)"
 
 
-def executar(id_ticket: str, client, modelo: str, precos, confirmador, con) -> bool | None:
+def executar(id_ticket: str, client, modelo: str, precos, confirmador, con,
+             log_dir: Path = RAIZ / "logs", prompt_arquivo: Path = PROMPT_ARQUIVO) -> bool | None:
     caso = GABARITO.get(id_ticket, {}).get("caso", "sem gabarito")
-    print(f"\n{'=' * 78}\n{id_ticket}  (caso: {caso})  modelo: {modelo}\n")
+    print(f"\n{'=' * 78}\n{id_ticket}  (caso: {caso})  modelo: {modelo}  prompt: {prompt_arquivo.name}\n")
     estado = rodar(id_ticket, client=client, modelo=modelo, con=con,
                    preco_usd_por_mtok=precos, orcamento=Orcamento(),
-                   confirmador=confirmador, log_dir=RAIZ / "logs")
+                   confirmador=confirmador, log_dir=log_dir, prompt_arquivo=prompt_arquivo)
     print(f"\n  {estado.resumo()}")
     if estado.motivo:
         print(f"  motivo: {estado.motivo}")
@@ -77,6 +81,8 @@ def main():
     ap.add_argument("--auto-aprovar", action="store_true",
                     help="aprova sozinho as escritas irreversíveis (só demonstração)")
     ap.add_argument("--reset", action="store_true", help="recria o banco simulado")
+    ap.add_argument("--rodada", help="grava os logs em logs/<nome>/ em vez de logs/")
+    ap.add_argument("--prompt", help="arquivo de src/prompts/ a usar (padrão: o prompt em uso)")
     args = ap.parse_args()
 
     if args.reset:
@@ -93,20 +99,26 @@ def main():
             sys.exit(f"Falta a variável {var}. Copie .env.example para .env e preencha.")
     client = criar_cliente()
     modelo = os.environ["LLM_MODELO"]
-    # .env em branco vale como ausente; padrão = mistral-small (US$ por milhão de tokens)
+    # .env em branco vale como ausente; padrão = ministral-8b-latest (US$ por milhão de tokens)
     precos = (float(os.environ.get("PRECO_ENTRADA_USD") or "0.15"),
-              float(os.environ.get("PRECO_SAIDA_USD") or "0.60"))
+              float(os.environ.get("PRECO_SAIDA_USD") or "0.15"))
     confirmador = confirmador_auto if args.auto_aprovar else confirmador_terminal
+    log_dir = RAIZ / "logs" / args.rodada if args.rodada else RAIZ / "logs"
+    prompt_arquivo = PROMPTS / args.prompt if args.prompt else PROMPT_ARQUIVO
+    if not prompt_arquivo.exists():
+        sys.exit(f"Prompt não encontrado: {prompt_arquivo}")
+    log_dir.mkdir(parents=True, exist_ok=True)
 
     if args.todos:
-        saida = (RAIZ / "logs" / "saida-demonstracao.txt").open("w", encoding="utf-8")
+        saida = (log_dir / "saida-demonstracao.txt").open("w", encoding="utf-8")
         original, sys.stdout = sys.stdout, Tee(sys.stdout, saida)
         try:
             resultados = {}
             for id_ticket in CASOS:
                 db.recriar_banco()              # cada caso parte do mesmo estado inicial
                 con = db.conectar()
-                resultados[id_ticket] = executar(id_ticket, client, modelo, precos, confirmador, con)
+                resultados[id_ticket] = executar(id_ticket, client, modelo, precos, confirmador, con,
+                                                 log_dir, prompt_arquivo)
                 con.close()
             acertos = sum(1 for v in resultados.values() if v)
             print(f"\n{'=' * 78}\nRESULTADO: {acertos} de {len(resultados)} casos conferidos pelo verificador")
@@ -115,10 +127,10 @@ def main():
         finally:
             sys.stdout = original
             saida.close()
-        print("\nSaída completa gravada em logs/saida-demonstracao.txt (UTF-8)")
+        print(f"\nSaída completa gravada em {log_dir / 'saida-demonstracao.txt'} (UTF-8)")
     else:
         con = db.conectar()
-        executar(args.ticket, client, modelo, precos, confirmador, con)
+        executar(args.ticket, client, modelo, precos, confirmador, con, log_dir, prompt_arquivo)
         con.close()
 
 

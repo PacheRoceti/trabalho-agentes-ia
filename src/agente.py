@@ -28,7 +28,17 @@ from ferramentas import (FERRAMENTAS_DE_ESCRITA, FUNCOES, LIMIAR_CONFIANCA,
                          SCHEMAS, ErroFatal, ErroRecuperavel, PausaParaHumano)
 
 RAIZ = Path(__file__).resolve().parent.parent
-PROMPT_ARQUIVO = RAIZ / "prompts" / "agente-v3.md"
+PROMPTS = Path(__file__).resolve().parent / "prompts"
+PROMPT_ARQUIVO = PROMPTS / "agente-v5.md"
+LEMBRETE_ARQUIVO = PROMPTS / "lembrete-v1.md"
+
+
+def _ler_prompt(arquivo: Path) -> str:
+    """Lê um prompt de src/prompts/ e descarta o bloco <!-- --> de documentação."""
+    texto = arquivo.read_text(encoding="utf-8")
+    if texto.lstrip().startswith("<!--"):
+        texto = texto.split("-->", 1)[1]
+    return texto.strip()
 
 
 # ================================================================ TÉRMINO
@@ -57,6 +67,8 @@ class Estado:
     id_ticket: str
     modelo: str
     execucao_id: str = ""
+    prompt: str = PROMPT_ARQUIVO.name      # a combinação em uso vai para o log
+    temperatura: float | None = None
     passos: list[Passo] = field(default_factory=list)
     n_chamadas_modelo: int = 0
     lembretes: int = 0                 # vezes que o laço lembrou o modelo de registrar o desfecho
@@ -70,6 +82,7 @@ class Estado:
     desfecho: dict | None = None       # preenchido pela ferramenta de escrita que deu certo
     ticket: dict | None = None
     scores_kb: dict = field(default_factory=dict)
+    n_buscas: int = 0                  # buscas na base feitas nesta execução (mesmo sem resultado)
     confirmacoes: list = field(default_factory=list)
     historico: list = field(default_factory=list)          # transporte p/ API (derivado)
     _confirmador: object = field(default=None, repr=False)
@@ -94,7 +107,8 @@ class Estado:
     def para_dict(self) -> dict:
         return {
             "execucao_id": self.execucao_id, "id_ticket": self.id_ticket,
-            "modelo": self.modelo, "prompt": PROMPT_ARQUIVO.name, "termino": self.termino.value if self.termino else None,
+            "modelo": self.modelo, "prompt": self.prompt, "prompt_lembrete": LEMBRETE_ARQUIVO.name,
+            "temperatura": self.temperatura, "termino": self.termino.value if self.termino else None,
             "motivo": self.motivo, "resposta": self.resposta, "desfecho": self.desfecho,
             "pendencia": self.pendencia, "confirmacoes": self.confirmacoes,
             "n_chamadas_modelo": self.n_chamadas_modelo, "lembretes": self.lembretes,
@@ -112,9 +126,7 @@ class Estado:
 
 
 MAX_LEMBRETES = 2
-LEMBRETE = ("Você ainda NÃO registrou nenhum desfecho: escrever no texto que registrou ou "
-            "encaminhou não registra nada. Chame agora a ferramenta de escrita correta "
-            "(abrir_chamado_interno ou registrar_encaminhamento), seguindo o procedimento.")
+LEMBRETE = _ler_prompt(LEMBRETE_ARQUIVO)
 
 
 @dataclass
@@ -141,13 +153,10 @@ class Orcamento:
 
 # ================================================================ PROMPT
 
-def carregar_prompt() -> str:
-    """Lê o arquivo PROMPT_ARQUIVO (prompts/agente-v3.md), descarta o bloco <!-- --> de documentação e
+def carregar_prompt(arquivo: Path = PROMPT_ARQUIVO) -> str:
+    """Lê o prompt de sistema (padrão: PROMPT_ARQUIVO), descarta o bloco <!-- --> de documentação e
     injeta o limiar do portão (uma fonte só: o código)."""
-    texto = PROMPT_ARQUIVO.read_text(encoding="utf-8")
-    if texto.lstrip().startswith("<!--"):
-        texto = texto.split("-->", 1)[1]
-    return texto.strip().replace("{LIMIAR}", str(LIMIAR_CONFIANCA))
+    return _ler_prompt(arquivo).replace("{LIMIAR}", str(LIMIAR_CONFIANCA))
 
 
 def criar_cliente(base_url: str | None = None, api_key: str | None = None) -> OpenAI:
@@ -182,21 +191,35 @@ def _chamar(client, estado: Estado, temperatura: float | None):
 
 # ================================================================ O LAÇO
 
+def _entrada(con, id_ticket: str) -> str:
+    """A entrada do agente é o TEXTO do chamado, acompanhado do id do chamado e do id do cliente.
+    O programa simula o evento de abertura lendo o texto no banco; um id que não existe chega
+    sem texto, e é o consultar_ticket que devolve o erro ao modelo."""
+    try:
+        ticket = db.buscar_ticket(con, id_ticket)
+    except db.RegistroNaoEncontrado:
+        return f"Chamado externo a triar: {id_ticket}"
+    return (f"Chamado externo a triar: {id_ticket}\nCliente: {ticket['_cliente_id']}\n"
+            f"Texto do cliente:\n{ticket['texto']}")
+
+
 def rodar(id_ticket: str, *, client, modelo: str, con, temperatura: float | None = 0.0,
-          preco_usd_por_mtok: tuple[float, float] = (0.15, 0.60),
+          preco_usd_por_mtok: tuple[float, float] = (0.15, 0.15),
           orcamento: Orcamento | None = None, confirmador=None,
-          log_dir: Path | None = None, verbose: bool = True) -> Estado:
+          log_dir: Path | None = None, verbose: bool = True,
+          prompt_arquivo: Path = PROMPT_ARQUIVO) -> Estado:
     orcamento = orcamento or Orcamento()
     e = Estado(id_ticket=id_ticket, modelo=modelo, _confirmador=confirmador,
+               prompt=prompt_arquivo.name, temperatura=temperatura,
                execucao_id=f"{id_ticket}-{int(time.time()) % 100000}")
     e.historico = [
         # ETAPA "agente de triagem" — técnica: zero-shot + procedimento numerado + tool calling
-        # (detalhes e o que cada regra impede: prompts/agente-v1.md).
+        # (detalhes e o que cada regra impede: cabeçalho do arquivo em src/prompts/).
         # Contrato de saída: o resultado é a escrita de UMA ferramenta; o texto é só um resumo.
         # temperature=0: classificação e escolha de ferramenta pedem o mesmo resultado a cada
         # execução (nota 03 da aula 02).
-        {"role": "system", "content": carregar_prompt()},
-        {"role": "user", "content": f"Chamado externo a triar: {id_ticket}"},
+        {"role": "system", "content": carregar_prompt(prompt_arquivo)},
+        {"role": "user", "content": _entrada(con, id_ticket)},
     ]
     try:
         while True:

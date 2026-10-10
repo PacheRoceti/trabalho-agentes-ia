@@ -24,15 +24,10 @@
     "prioridade": "P1",
     "chamado_interno": true,
     "resumo_menciona_algum": [
-      "historico",
-      "anterior",
-      "inc-",
-      "segundo o cliente",
-      "cliente afirma",
-      "cliente alega",
-      "cliente diz",
-      "cliente relata"
-    ]
+      "inc-0001",
+      "historico"
+    ],
+    "_nota": "Regra apertada em 10/10/2026: a lista anterior aceitava também 'cliente relata', 'cliente diz', 'cliente afirma', 'cliente alega', 'segundo o cliente' e 'anterior', e um resumo que só repetisse a afirmação do cliente ('o cliente relata que é a terceira vez') passava. A regra do case (§2.1 e §2.6) é o resumo registrar o que o HISTÓRICO confirma: agora exige o chamado anterior (INC-0001) ou a menção ao histórico. A mudança só torna o verificador mais exigente; o único resumo já aprovado neste caso (logs/regra-da-frase/v4-sem-frase-b) continua passando."
   },
   "TKT-0999": {
     "caso": "registro_inexistente",
