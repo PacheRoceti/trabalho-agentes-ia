@@ -17,10 +17,17 @@ ErroFatal e derruba o laço.
 """
 import re
 import unicodedata
+from datetime import datetime, timedelta
 
 import db
 
 LIMIAR_CONFIANCA = 0.5   # abaixo disso, o agente NÃO age sozinho (vai à fila humana)
+
+# Prazo do analista para confirmar ou rejeitar uma ação irreversível, contado do pedido de
+# confirmação (docs/case.md §2.1). Vencido, a ação NÃO é executada: o chamado vai para a fila
+# humana com as considerações do agente. O silêncio nunca vira aprovação.
+PRAZO_CONFIRMACAO_MIN = 20
+MOTIVO_PRAZO_VENCIDO = "confirmacao_nao_recebida"
 
 DESTINOS = ["fila_comercial", "devolver_cliente", "anotacao_interna", "fila_humana"]
 
@@ -48,7 +55,8 @@ class ErroFatal(Exception):
 
 
 class PausaParaHumano(Exception):
-    """Ação irreversível não confirmada: o agente para e devolve o controle."""
+    """Ação irreversível não confirmada: o agente para e devolve o controle. Quando ninguém
+    respondeu ainda, a pendência leva `pedido_em` e `vence_em` e fica gravada no banco."""
 
     def __init__(self, pendencia: dict):
         super().__init__("ação irreversível aguardando confirmação humana")
@@ -155,12 +163,53 @@ def abrir_chamado_interno(estado, con, id_ticket: str, resumo: str, kb_id: str) 
     pendencia = {"ferramenta": "abrir_chamado_interno", "id_ticket": id_ticket,
                  "categoria": artigo["categoria"], "resumo": resumo,
                  "time_destino": artigo["time_destino"], "kb_id": kb_id}
-    if not estado.confirmar(pendencia):
+    resposta = estado.confirmar(pendencia)
+    if resposta is None:
+        # Ninguém respondeu agora: a espera é assíncrona e tem prazo. A pendência fica no banco
+        # e a execução pausa; aprovar_pendencia ou encaminhar_pendencia_vencida a concluem depois.
+        pedido_em = datetime.now().astimezone()
+        vence_em = pedido_em + timedelta(minutes=estado.prazo_confirmacao_min)
+        pendencia = {**pendencia, "pedido_em": pedido_em.isoformat(timespec="seconds"),
+                     "vence_em": vence_em.isoformat(timespec="seconds")}
+        estado.pendencia_id = db.criar_pendencia(con, id_ticket, pendencia,
+                                                 pendencia["pedido_em"], pendencia["vence_em"])
+        raise PausaParaHumano(pendencia)
+    if not resposta:
         raise PausaParaHumano(pendencia)
 
     resultado = db.abrir_chamado(con, estado.ticket, resumo.strip(), artigo)
     estado.desfecho = {"acao": "abrir_chamado_interno", "kb_id": kb_id, **resultado}
     return resultado
+
+
+# ---------------------------------------------------------------- depois da pausa
+# As duas saídas de uma pendência que não foi rejeitada. Não são ferramentas do modelo: quem as
+# chama é a retomada (agente.retomar), com a ação que já passou por todos os portões.
+
+def aprovar_pendencia(estado, con, acao: dict) -> dict:
+    """O analista aprovou dentro do prazo: executa a escrita que estava pendente."""
+    artigo = db.buscar_artigo(con, acao["kb_id"])
+    resultado = db.abrir_chamado(con, estado.ticket, acao["resumo"].strip(), artigo)
+    estado.desfecho = {"acao": "abrir_chamado_interno", "kb_id": acao["kb_id"], **resultado}
+    return resultado
+
+
+def encaminhar_pendencia_vencida(estado, con, acao: dict) -> tuple[dict, dict]:
+    """O prazo venceu sem resposta: a ação NÃO é executada e o CÓDIGO encaminha o chamado à fila
+    humana com as considerações do agente (ação proposta, procedimento, score e texto redigido).
+    Devolve os argumentos e o resultado da escrita, para a trajetória."""
+    prazo = f"{estado.prazo_confirmacao_min:g} minutos"
+    mensagem = (
+        f"Confirmação não recebida em {prazo}. Ação proposta pelo agente e NÃO executada: "
+        f"abrir chamado interno para {acao['time_destino']} (categoria {acao['categoria']}). "
+        f"Sustentação: procedimento {acao['kb_id']}, score {estado.scores_kb.get(acao['kb_id'])}. "
+        f"Resumo redigido: {acao['resumo'].strip()}")
+    resultado = db.registrar_encaminhamento(con, acao["id_ticket"], "fila_humana", mensagem, None)
+    estado.desfecho = {"acao": "fila_humana", "kb_id": None, **resultado,
+                       "motivo": MOTIVO_PRAZO_VENCIDO}
+    argumentos = {"id_ticket": acao["id_ticket"], "destino": "fila_humana", "mensagem": mensagem,
+                  "motivo": MOTIVO_PRAZO_VENCIDO}
+    return argumentos, {**resultado, "registrado_por": f"código: prazo de {prazo} vencido"}
 
 
 def registrar_encaminhamento(estado, con, id_ticket: str, destino: str, mensagem: str,
@@ -276,4 +325,5 @@ SCHEMAS = [
 ]
 
 __all__ = ["FUNCOES", "SCHEMAS", "FERRAMENTAS_DE_ESCRITA", "ErroRecuperavel",
-           "ErroFatal", "PausaParaHumano", "LIMIAR_CONFIANCA"]
+           "ErroFatal", "PausaParaHumano", "LIMIAR_CONFIANCA", "PRAZO_CONFIRMACAO_MIN",
+           "MOTIVO_PRAZO_VENCIDO", "aprovar_pendencia", "encaminhar_pendencia_vencida"]

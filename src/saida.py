@@ -18,7 +18,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from ferramentas import FERRAMENTAS_DE_ESCRITA, LIMIAR_CONFIANCA
+from ferramentas import FERRAMENTAS_DE_ESCRITA, LIMIAR_CONFIANCA, MOTIVO_PRAZO_VENCIDO
 
 Acao = Literal["abrir_chamado_interno", "anotacao_interna", "fila_comercial",
                "devolver_cliente", "fila_humana"]
@@ -138,6 +138,9 @@ def _suficiencia(estado, acao, desfecho, melhor) -> tuple[bool, str]:
                        "o pedido de informação ao cliente foi registrado")
     if desfecho.get("motivo") == "fora_da_alcada":
         return False, "pedido fora da alçada do agente (encerrar chamado ou mudar prioridade)"
+    if desfecho.get("motivo") == MOTIVO_PRAZO_VENCIDO:
+        return False, (f"a confirmação do analista não chegou em {estado.prazo_confirmacao_min:g} "
+                       f"minutos: a ação proposta não foi executada")
     if estado.ticket is None:
         return False, "o chamado não foi encontrado no sistema de tickets"
     if score is None:

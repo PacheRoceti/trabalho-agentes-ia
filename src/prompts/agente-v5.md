@@ -24,7 +24,7 @@ O QUE MUDOU (v4 revisada -> v5, 10/10/2026), a partir de logs/rodada-2-prompt-v4
 REVISÃO de 10/10/2026, no mesmo arquivo: no passo 2, "disco" virou "permissão de arquivos". A
   categoria do KB-102 mudou no seed (docs/case.md §2.12), e na busca o sinônimo "encheu" -> "cheio"
   deu lugar a "salvar" -> "gravar". As rodadas logs/rodada-1-prompt-v5 e logs/rodada-2-prompt-v5 são
-  do texto e do seed anteriores; o texto revisado AINDA NÃO FOI MEDIDO.
+  do texto e do seed anteriores;
 
 LIMITE HONESTO: a v5 e a busca nova foram escritas DEPOIS de ver as falhas nestes mesmos 8 casos.
   Um resultado melhor aqui não prova que o sistema generaliza.

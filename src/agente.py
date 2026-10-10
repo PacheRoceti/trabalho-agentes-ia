@@ -11,7 +11,8 @@ Onde cada coisa decide (item 2.3 / 4.4 do enunciado):
             ferramenta devolve erro, redige o resumo do chamado.
     CÓDIGO  valida formato de id, calcula o score da base, aplica o portão de
             confiança, define time e prioridade, garante idempotência, pede a
-            confirmação humana, impõe o orçamento e registra por que parou.
+            confirmação humana e aplica o prazo dela, impõe o orçamento e registra
+            por que parou.
 """
 import inspect
 import json
@@ -28,7 +29,8 @@ from pydantic import ValidationError
 
 import db
 from ferramentas import (FERRAMENTAS_DE_ESCRITA, FUNCOES, LIMIAR_CONFIANCA,
-                         SCHEMAS, ErroFatal, ErroRecuperavel, PausaParaHumano)
+                         PRAZO_CONFIRMACAO_MIN, SCHEMAS, ErroFatal, ErroRecuperavel,
+                         PausaParaHumano, aprovar_pendencia, encaminhar_pendencia_vencida)
 from saida import Saida, montar_saida
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -109,6 +111,8 @@ class Estado:
     scores_kb: dict = field(default_factory=dict)
     n_buscas: int = 0                  # buscas na base feitas nesta execução (mesmo sem resultado)
     confirmacoes: list = field(default_factory=list)
+    prazo_confirmacao_min: float = PRAZO_CONFIRMACAO_MIN   # prazo do analista, em minutos
+    pendencia_id: int | None = None    # linha de `pendencias` quando a execução pausa à espera dele
     saida: Saida | None = None         # o objeto validado do contrato (src/saida.py)
     historico: list = field(default_factory=list)          # transporte p/ API (derivado)
     _confirmador: object = field(default=None, repr=False)
@@ -121,14 +125,32 @@ class Estado:
     def tokens(self) -> int:
         return self.tokens_entrada + self.tokens_saida
 
-    def confirmar(self, pendencia: dict) -> bool:
-        """Pede confirmação humana. Sem confirmador configurado, NEGA (seguro por padrão)."""
+    def confirmar(self, pendencia: dict) -> bool | None:
+        """Pede confirmação humana. Com confirmador, a resposta vem na hora (True ou False).
+        Sem confirmador devolve None: ninguém respondeu ainda, e a ação NÃO é executada (seguro
+        por padrão). A ferramenta grava a pendência, com prazo, e a execução pausa."""
         if self._confirmador is None:
-            ok, quem = False, "nenhum confirmador configurado"
-        else:
-            ok, quem = self._confirmador(pendencia)
+            return None
+        ok, quem = self._confirmador(pendencia)
         self.confirmacoes.append({"pendencia": pendencia, "aprovado": ok, "por": quem})
         return ok
+
+    def checkpoint(self, **extra) -> dict:
+        """Tudo o que a retomada precisa para continuar a execução pausada em outro processo:
+        o que vai para o log mais o que só vive na memória (chamado lido, buscas, mensagens)."""
+        return {**self.para_dict(), "ticket": self.ticket, "n_buscas": self.n_buscas,
+                "historico": self.historico, "prazo_confirmacao_min": self.prazo_confirmacao_min,
+                "pendencia_id": self.pendencia_id, **extra}
+
+    @classmethod
+    def de_checkpoint(cls, d: dict) -> "Estado":
+        e = cls(**{c: d[c] for c in (
+            "id_ticket", "modelo", "execucao_id", "executado_em", "commit", "entrada", "prompt",
+            "temperatura", "n_chamadas_modelo", "lembretes", "tokens_entrada", "tokens_saida",
+            "custo_usd", "resposta", "ticket", "scores_kb", "n_buscas", "confirmacoes",
+            "prazo_confirmacao_min", "pendencia_id", "historico")})
+        e.passos = [Passo(**p) for p in d["passos"]]
+        return e
 
     def para_dict(self) -> dict:
         return {
@@ -242,12 +264,13 @@ def rodar(id_ticket: str, *, client, modelo: str, con, temperatura: float | None
           preco_usd_por_mtok: tuple[float, float] = (0.15, 0.15),
           orcamento: Orcamento | None = None, confirmador=None,
           log_dir: Path | None = None, verbose: bool = True,
-          prompt_arquivo: Path = PROMPT_ARQUIVO, texto: str | None = None) -> Estado:
+          prompt_arquivo: Path = PROMPT_ARQUIVO, texto: str | None = None,
+          prazo_confirmacao_min: float = PRAZO_CONFIRMACAO_MIN) -> Estado:
     orcamento = orcamento or Orcamento()
     mensagem, entrada = _entrada(con, id_ticket, texto)
     e = Estado(id_ticket=id_ticket, modelo=modelo, _confirmador=confirmador,
                prompt=prompt_arquivo.name, temperatura=temperatura, commit=_commit(),
-               entrada=entrada,
+               entrada=entrada, prazo_confirmacao_min=prazo_confirmacao_min,
                execucao_id=f"{id_ticket}-{int(time.time()) % 100000}")
     e.historico = [
         # ETAPA "agente de triagem" — técnica: zero-shot + procedimento numerado + tool calling
@@ -258,6 +281,15 @@ def rodar(id_ticket: str, *, client, modelo: str, con, temperatura: float | None
         {"role": "system", "content": carregar_prompt(prompt_arquivo)},
         {"role": "user", "content": mensagem},
     ]
+    return _laco(e, client=client, con=con, temperatura=temperatura,
+                 preco_usd_por_mtok=preco_usd_por_mtok, orcamento=orcamento,
+                 log_dir=log_dir, verbose=verbose)
+
+
+def _laco(e: Estado, *, client, con, temperatura: float | None,
+          preco_usd_por_mtok: tuple[float, float], orcamento: Orcamento,
+          log_dir: Path | None, verbose: bool) -> Estado:
+    """O laço de ferramentas. Serve à execução nova (rodar) e à que volta de uma pausa (retomar)."""
     try:
         while True:
             motivo = orcamento.excedido(e)
@@ -304,23 +336,130 @@ def rodar(id_ticket: str, *, client, modelo: str, con, temperatura: float | None
                                     "name": chamada.function.name,
                                     "content": json.dumps(observacao, ensure_ascii=False)})
     except PausaParaHumano as p:
-        e.termino, e.motivo, e.pendencia = Termino.HUMANO, "analista não confirmou a ação", p.pendencia
+        e.termino, e.pendencia = Termino.HUMANO, p.pendencia
+        if e.pendencia_id is None:
+            e.motivo = "analista não confirmou a ação"
+        else:
+            # Ninguém respondeu ainda: a execução fica guardada para continuar depois (retomar).
+            # O tempo já gasto vai junto, e a espera pelo analista não entra no teto de tempo.
+            e.motivo = (f"aguardando a confirmação do analista até {p.pendencia['vence_em']} "
+                        f"(prazo de {e.prazo_confirmacao_min:g} minutos)")
+            db.gravar_checkpoint(con, e.pendencia_id, e.checkpoint(
+                preco_usd_por_mtok=list(preco_usd_por_mtok),
+                segundos=time.monotonic() - orcamento.inicio))
     except ErroFatal as f:
         e.termino, e.motivo = Termino.ERRO_FATAL, str(f)
     finally:
         if e.termino is None:                            # nunca terminar sem dizer por quê
             e.termino, e.motivo = Termino.ERRO_FATAL, "interrupção inesperada"
-        try:                                             # toda saída passa pelo schema
-            e.saida = montar_saida(e)
-        except ValidationError as v:
-            e.termino = Termino.ERRO_FATAL
-            e.motivo = f"saída fora do contrato: {v.errors()[0]['msg']}"
-        if log_dir is not None:
-            log_dir.mkdir(parents=True, exist_ok=True)
-            arquivo = log_dir / f"{id_ticket}.json"
-            arquivo.write_text(json.dumps(e.para_dict(), ensure_ascii=False, indent=2),
-                               encoding="utf-8")
+        _finalizar(e, log_dir)
     return e
+
+
+def _finalizar(e: Estado, log_dir: Path | None) -> None:
+    try:                                                 # toda saída passa pelo schema
+        e.saida = montar_saida(e)
+    except ValidationError as v:
+        e.termino = Termino.ERRO_FATAL
+        e.motivo = f"saída fora do contrato: {v.errors()[0]['msg']}"
+    if log_dir is not None:
+        log_dir.mkdir(parents=True, exist_ok=True)
+        arquivo = log_dir / f"{e.id_ticket}.json"
+        arquivo.write_text(json.dumps(e.para_dict(), ensure_ascii=False, indent=2),
+                           encoding="utf-8")
+
+
+# ================================================================ A RETOMADA
+
+def retomar(id_ticket: str, decisao: str, *, client, con, por: str = "analista de suporte",
+            agora: datetime | None = None, orcamento: Orcamento | None = None,
+            log_dir: Path | None = None, verbose: bool = True) -> Estado | None:
+    """Conclui a ação irreversível que ficou à espera do analista e continua a execução pausada.
+
+    `decisao` é "aprovar", "rejeitar" ou "vencer" (só aplica o prazo, sem resposta de ninguém).
+    Quem decide o que acontece é o relógio antes da pessoa: passado o `vence_em`, qualquer decisão
+    vira prazo vencido, a ação não é executada e o código encaminha o chamado à fila humana com
+    as considerações do agente. Dentro do prazo, aprovar executa a escrita e rejeitar não grava
+    nada. Depois de uma escrita o laço continua, para o modelo dar a frase final.
+
+    Devolve None quando não há o que fazer: nenhuma pendência aguardando, "vencer" antes do
+    prazo, ou pendência que outra chamada já resolveu (a segunda aprovação não repete nada)."""
+    if decisao not in ("aprovar", "rejeitar", "vencer"):
+        raise ValueError(f"decisão inválida: {decisao}")
+    registros = db.pendencias_aguardando(con, id_ticket)
+    if not registros:
+        return None
+    registro = registros[-1]
+    agora = agora or datetime.now().astimezone()
+    vencida = agora >= datetime.fromisoformat(registro["vence_em"])
+    if decisao == "vencer" and not vencida:
+        return None
+    status = "vencida" if vencida else {"aprovar": "aprovada", "rejeitar": "rejeitada"}[decisao]
+    if vencida:
+        por = "ninguém: prazo vencido"
+    quando = agora.isoformat(timespec="seconds")
+    if not db.resolver_pendencia(con, registro["id"], status, quando, por):
+        return None
+
+    ck, acao = registro["checkpoint"], registro["acao"]
+    e = Estado.de_checkpoint(ck)
+    e.confirmacoes.append({"pendencia": acao, "aprovado": status == "aprovada", "por": por,
+                           "status": status, "resolvido_em": quando})
+    pausado = e.passos[-1]                               # o abrir_chamado_interno que pausou
+    if status == "rejeitada":
+        pausado.erro = {"erro": "o analista rejeitou a ação"}
+        e.termino, e.motivo, e.pendencia = Termino.HUMANO, "analista rejeitou a ação", acao
+        _finalizar(e, log_dir)
+        return e
+
+    if status == "aprovada":
+        pausado.erro, pausado.resultado = None, aprovar_pendencia(e, con, acao)
+        observacao = pausado.resultado
+    else:
+        prazo = f"{e.prazo_confirmacao_min:g} minutos"
+        pausado.erro = {"erro": f"confirmação do analista não recebida em {prazo}"}
+        argumentos, resultado = encaminhar_pendencia_vencida(e, con, acao)
+        e.passos.append(Passo(indice=e.n_passos, ferramenta="registrar_encaminhamento",
+                              argumentos=argumentos, resultado=resultado))
+        observacao = {
+            **resultado,
+            "aviso": f"o analista não confirmou em {prazo}: o chamado interno NÃO foi aberto, e o "
+                     f"sistema encaminhou o chamado à fila humana com a ação proposta",
+            "sugestao": "não registre outro desfecho; responda com UMA frase dizendo isso"}
+    if verbose:
+        print(f"  retomada [{status}] {pausado.ferramenta} -> {e.desfecho['acao']}")
+
+    # A observação que faltava volta ao modelo. Se ele pediu outras ferramentas na mesma
+    # resposta, elas não rodaram: cada uma recebe um erro, porque a API exige uma resposta por id.
+    pedidas = next(m for m in reversed(e.historico) if m.get("tool_calls"))["tool_calls"]
+    respondidas = {m["tool_call_id"] for m in e.historico if m["role"] == "tool"}
+    faltam = [c for c in pedidas if c["id"] not in respondidas]
+    for i, chamada in enumerate(faltam):
+        conteudo = observacao if i == 0 else {
+            "erro": "chamada não executada: a execução pausou para a confirmação do analista",
+            "sugestao": "se ainda for necessária, chame de novo"}
+        e.historico.append({"role": "tool", "tool_call_id": chamada["id"],
+                            "name": chamada["function"]["name"],
+                            "content": json.dumps(conteudo, ensure_ascii=False)})
+
+    orcamento = orcamento or Orcamento()
+    orcamento.inicio = time.monotonic() - ck["segundos"]      # a espera não conta no teto de tempo
+    return _laco(e, client=client, con=con, temperatura=e.temperatura,
+                 preco_usd_por_mtok=tuple(ck["preco_usd_por_mtok"]), orcamento=orcamento,
+                 log_dir=log_dir, verbose=verbose)
+
+
+def vencer_pendencias(*, client, con, agora: datetime | None = None,
+                      log_dir: Path | None = None, verbose: bool = True) -> list[Estado]:
+    """Aplica o prazo a todas as pendências que venceram sem resposta. Não há processo em segundo
+    plano: quem chama é o ponto de entrada, antes de qualquer outro comando."""
+    vencidos = []
+    for id_ticket in dict.fromkeys(p["ticket_externo"] for p in db.pendencias_aguardando(con)):
+        e = retomar(id_ticket, "vencer", client=client, con=con, agora=agora,
+                    log_dir=log_dir, verbose=verbose)
+        if e is not None:
+            vencidos.append(e)
+    return vencidos
 
 
 def _executar(e: Estado, con, chamada, verbose: bool) -> dict:

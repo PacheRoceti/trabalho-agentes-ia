@@ -9,13 +9,14 @@ ferramentas certas — isso é o que src/main.py --todos mede, com o modelo de v
 import json
 import sys
 import unittest
+from datetime import datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace as NS
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 import db                                    # noqa: E402
-from agente import Orcamento, Termino, rodar  # noqa: E402
+from agente import Orcamento, Termino, retomar, rodar, vencer_pendencias  # noqa: E402
 from verificar import verificar              # noqa: E402
 
 
@@ -225,6 +226,75 @@ class TestAgente(unittest.TestCase):
         self.assertEqual(e.termino, Termino.HUMANO)
         self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0003"), 0)
         self.assertEqual(e.pendencia["ferramenta"], "abrir_chamado_interno")
+
+    # ---- o prazo de 20 minutos do analista (espera assíncrona, pendência no banco)
+
+    def retomar(self, ticket, decisao, minutos=0, frase="Concluído."):
+        agora = datetime.now().astimezone() + timedelta(minutes=minutos)
+        return retomar(ticket, decisao, client=ModeloRoteirizado([turno(texto=frase)]),
+                       con=self.con, agora=agora, verbose=False)
+
+    def test_sem_resposta_do_analista_a_execucao_pausa_com_prazo(self):
+        e = self.rodar("TKT-0007", confirmador=None)
+        self.assertEqual(e.termino, Termino.HUMANO)
+        self.assertIn("20 minutos", e.motivo)
+        self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0007"), 0)
+        self.assertEqual(db.contar(self.con, "encaminhamentos", "TKT-0007"), 0)
+        (p,) = db.pendencias_aguardando(self.con, "TKT-0007")
+        self.assertEqual(p["acao"]["kb_id"], "KB-102")
+        prazo = datetime.fromisoformat(p["vence_em"]) - datetime.fromisoformat(p["pedido_em"])
+        self.assertEqual(prazo, timedelta(minutes=20))
+
+    def test_aprovacao_dentro_do_prazo_abre_o_chamado_e_conclui(self):
+        self.rodar("TKT-0007", confirmador=None)
+        e = self.retomar("TKT-0007", "aprovar", minutos=19)
+        self.assertEqual(e.termino, Termino.RESPONDEU)
+        self.assertEqual(e.resposta, "Concluído.")
+        self.assertEqual(verificar("TKT-0007", e, self.con), (True, []))
+        self.assertTrue(e.confirmacoes[-1]["aprovado"])
+        self.assertIsNone(self.retomar("TKT-0007", "aprovar"))        # aprovar duas vezes
+        self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0007"), 1)
+
+    def test_prazo_vencido_vai_a_fila_humana_com_as_consideracoes_do_agente(self):
+        self.rodar("TKT-0007", confirmador=None)
+        self.assertIsNone(self.retomar("TKT-0007", "vencer", minutos=19))   # ainda no prazo
+        e = self.retomar("TKT-0007", "vencer", minutos=21)
+        self.assertEqual(e.termino, Termino.RESPONDEU)                # a espera não gasta o teto de 90 s
+        self.assertEqual((e.desfecho["acao"], e.desfecho["motivo"]), ("fila_humana", "confirmacao_nao_recebida"))
+        self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0007"), 0)
+        msg = self.con.execute("SELECT mensagem FROM encaminhamentos WHERE ticket_externo = 'TKT-0007'").fetchone()[0]
+        for trecho in ("não recebida em 20 minutos", "NÃO executada", "Infraestrutura", "KB-102",
+                       f"score {e.scores_kb['KB-102']}", "todo upload do site falha"):
+            self.assertIn(trecho, msg)
+        self.assertEqual(e.saida.resultado.texto, msg)
+        self.assertFalse(e.saida.suficiencia.suficiente)
+        self.assertIn("20 minutos", e.saida.suficiencia.motivo)
+        self.assertEqual([p.ferramenta for p in e.passos][-2:], ["abrir_chamado_interno", "registrar_encaminhamento"])
+        self.assertIn("não recebida", e.passos[-2].erro["erro"])
+
+    def test_aprovacao_depois_do_prazo_nao_abre_chamado(self):
+        self.rodar("TKT-0007", confirmador=None)
+        e = self.retomar("TKT-0007", "aprovar", minutos=21)           # o silêncio não vira aprovação
+        self.assertEqual(e.desfecho["acao"], "fila_humana")
+        self.assertFalse(e.confirmacoes[-1]["aprovado"])
+        self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0007"), 0)
+
+    def test_rejeicao_dentro_do_prazo_nao_grava_nada(self):
+        self.rodar("TKT-0007", confirmador=None)
+        e = self.retomar("TKT-0007", "rejeitar", minutos=5)
+        self.assertEqual((e.termino, e.motivo), (Termino.HUMANO, "analista rejeitou a ação"))
+        self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0007"), 0)
+        self.assertEqual(db.contar(self.con, "encaminhamentos", "TKT-0007"), 0)
+        self.assertEqual(db.pendencias_aguardando(self.con), [])
+
+    def test_prazo_configuravel_e_vencimento_de_todas_as_pendencias(self):
+        self.rodar("TKT-0007", confirmador=None, prazo_confirmacao_min=1)
+        self.rodar("TKT-0003", confirmador=None)
+        vencidos = vencer_pendencias(client=ModeloRoteirizado([turno(texto="Encaminhado.")]), con=self.con,
+                                     agora=datetime.now().astimezone() + timedelta(minutes=2), verbose=False)
+        self.assertEqual([e.id_ticket for e in vencidos], ["TKT-0007"])
+        self.assertIn("em 1 minutos", vencidos[0].passos[-1].argumentos["mensagem"])
+        self.assertEqual([p["ticket_externo"] for p in db.pendencias_aguardando(self.con)], ["TKT-0003"])
 
     def test_reincidencia_sobe_prioridade_no_codigo_nao_no_modelo(self):
         e = self.rodar("TKT-0003")

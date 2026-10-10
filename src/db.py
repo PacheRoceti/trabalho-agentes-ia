@@ -10,6 +10,7 @@ SQLite porque não exige servidor: o projeto precisa rodar do zero em <5 min.
 Na Parte 2 esta camada vira servidor MCP; trocar SQLite por outro banco
 (MySQL, Postgres) é mexer só neste arquivo.
 """
+import json
 import re
 import sqlite3
 import unicodedata
@@ -45,6 +46,23 @@ REDUTOR = 0.4
 
 ID_TICKET = re.compile(r"^TKT-\d{4}$")
 
+# Ações irreversíveis à espera do analista. Não é dado do seed: é estado que as execuções criam,
+# por isso a tabela nasce aqui (e também em bancos criados antes de ela existir). As datas são
+# do relógio de verdade, e não o AGORA fixo: o prazo de confirmação conta em tempo real.
+SQL_PENDENCIAS = """
+CREATE TABLE IF NOT EXISTS pendencias (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticket_externo TEXT NOT NULL,
+    acao           TEXT NOT NULL,              -- JSON: a ação proposta, como o analista a vê
+    pedido_em      TEXT NOT NULL,              -- ISO 8601 com fuso
+    vence_em       TEXT NOT NULL,
+    status         TEXT NOT NULL DEFAULT 'aguardando',
+                   -- aguardando | aprovada | rejeitada | vencida | substituida
+    resolvido_em   TEXT,
+    resolvido_por  TEXT,
+    checkpoint     TEXT                        -- JSON: o Estado da execução pausada
+)"""
+
 
 class RegistroNaoEncontrado(Exception):
     """A consulta foi válida, mas o registro não existe no sistema."""
@@ -55,6 +73,7 @@ def conectar() -> sqlite3.Connection:
         recriar_banco()
     con = sqlite3.connect(DB_PATH)
     con.row_factory = sqlite3.Row
+    con.execute(SQL_PENDENCIAS)
     return con
 
 
@@ -70,6 +89,7 @@ def recriar_banco() -> None:
     for t in tabelas:
         con.execute(f"DROP TABLE IF EXISTS {t}")
     con.executescript(SEED.read_text(encoding="utf-8"))
+    con.execute(SQL_PENDENCIAS)
     con.commit()
     con.close()
 
@@ -256,6 +276,49 @@ def registrar_encaminhamento(con, id_ticket: str, destino: str, mensagem: str,
            VALUES (?, ?, ?, ?, ?)""", (id_ticket, destino, mensagem, kb_id, AGORA))
     con.commit()
     return {"encaminhamento": cur.lastrowid, "destino": destino}
+
+
+# ------------------------------------------------------------------ pendências
+
+def criar_pendencia(con, id_ticket: str, acao: dict, pedido_em: str, vence_em: str) -> int:
+    """Registra a ação irreversível que aguarda o analista. Nada do que ela propõe é gravado
+    aqui. Uma pendência anterior do mesmo chamado deixa de valer: só a última pode ser aprovada."""
+    con.execute("""UPDATE pendencias SET status = 'substituida'
+                   WHERE ticket_externo = ? AND status = 'aguardando'""", (id_ticket,))
+    cur = con.execute(
+        """INSERT INTO pendencias (ticket_externo, acao, pedido_em, vence_em)
+           VALUES (?, ?, ?, ?)""",
+        (id_ticket, json.dumps(acao, ensure_ascii=False), pedido_em, vence_em))
+    con.commit()
+    return cur.lastrowid
+
+
+def gravar_checkpoint(con, id_pendencia: int, checkpoint: dict) -> None:
+    con.execute("UPDATE pendencias SET checkpoint = ? WHERE id = ?",
+                (json.dumps(checkpoint, ensure_ascii=False), id_pendencia))
+    con.commit()
+
+
+def pendencias_aguardando(con, id_ticket: str | None = None) -> list[dict]:
+    """As pendências sem resposta, da mais antiga para a mais nova (de um chamado, ou todas)."""
+    sql = "SELECT * FROM pendencias WHERE status = 'aguardando'"
+    args = ()
+    if id_ticket is not None:
+        sql, args = sql + " AND ticket_externo = ?", (id_ticket,)
+    linhas = con.execute(sql + " ORDER BY id", args).fetchall()
+    return [{**dict(l), "acao": json.loads(l["acao"]),
+             "checkpoint": json.loads(l["checkpoint"]) if l["checkpoint"] else None}
+            for l in linhas]
+
+
+def resolver_pendencia(con, id_pendencia: int, status: str, quando: str, por: str) -> bool:
+    """Fecha a pendência. Devolve False se ela já tinha sido resolvida: é o que impede a
+    segunda aprovação de repetir a escrita."""
+    cur = con.execute(
+        """UPDATE pendencias SET status = ?, resolvido_em = ?, resolvido_por = ?
+           WHERE id = ? AND status = 'aguardando'""", (status, quando, por, id_pendencia))
+    con.commit()
+    return cur.rowcount == 1
 
 
 def times_destino(con) -> list[str]:

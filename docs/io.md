@@ -2,8 +2,8 @@
 
 > **Estado deste documento.** O contrato de saída (§2) **está implementado** em `src/saida.py`
 > (Pydantic), e o log passou a gravar data, hora e commit de cada execução (10/10/2026). O contrato
-> de entrada (§1) **também**: o programa recebe o texto do chamado, digitado, junto do id. Os quatro
-> exemplos (§3) são **execuções reais de 10/10/2026**, no schema novo, copiadas de `logs/`.
+> de entrada (§1) **também**: o programa recebe o texto do chamado, digitado, junto do id. Os cinco
+> exemplos (§3) são **execuções reais de 10/10/2026**, do commit `861a948`, copiadas de `logs/`.
 
 ## 1. A entrada
 
@@ -94,15 +94,13 @@ fora do contrato. O log grava também `executado_em` e `commit`; o commit vem co
 
 ## 3. Os exemplos
 
-Os quatro exemplos são execuções reais de 10/10/2026, com `ministral-8b-latest`, prompt
-`agente-v5.md` e `temperature=0`. Cada um traz a entrada como chegou, o objeto de saída completo
-(com os campos nulos), a data e a hora da execução, o commit e o log correspondente em `logs/`. O
-log tem ainda a trajetória (`passos`), que não faz parte do contrato de saída.
+Os cinco exemplos são execuções reais de 10/10/2026, do commit `861a948`, com `ministral-8b-latest`,
+prompt `agente-v5.md` e `temperature=0`. Cada um traz a entrada como chegou, o objeto de saída
+completo (com os campos nulos), a data e a hora da execução, o commit e o log correspondente em
+`logs/`. O log tem ainda a trajetória (`passos`), que não faz parte do contrato de saída.
 
-Limite: o commit gravado nos quatro logs é `5d5fdeb + alterações locais`. A marca "+ alterações locais" quer dizer
-que o código de `src/` ou `dados/` tinha mudanças ainda não commitadas quando as execuções foram
-feitas, então o commit sozinho não reproduz o que rodou. O "agora" do banco simulado é fixo
-(`2026-09-21 12:00`, em `src/db.py`) e não é a data da execução.
+Limite: o "agora" do banco simulado é fixo (`2026-09-21 12:00`, em `src/db.py`) e não é a data da
+execução, que está em `executado_em`.
 
 ### 3.1 O caminho feliz: `TKT-0001`
 
@@ -117,11 +115,11 @@ O certificado SSL do meu site venceu ontem e a renovação automática não rodo
 ```json
 {
   "id_ticket": "TKT-0001",
-  "executado_em": "2026-10-10T15:26:06-03:00",
+  "executado_em": "2026-10-10T15:45:26-03:00",
   "termino": "respondeu",
   "resultado": {
     "acao": "anotacao_interna",
-    "texto": "Certificado SSL venceu e a renovação automática não ocorreu. Sugestão: verificar desafio HTTP-01 (porta 80 bloqueada ou DNS incorreto) e rodar \"certbot renew --dry-run\" para testar a renovação.",
+    "texto": "Certificado SSL não renovou automaticamente. Sugestão: conferir DNS do domínio e liberação da porta 80; rodar \"certbot renew --dry-run\"; reativar o timer do certbot.",
     "chamado_interno": null,
     "time_destino": null,
     "prioridade": null
@@ -129,7 +127,7 @@ O certificado SSL do meu site venceu ontem e a renovação automática não rodo
   "fonte": {
     "tipo": "procedimento_da_base",
     "kb_id": "KB-101",
-    "score": 0.89,
+    "score": 0.62,
     "registros": [
       "TKT-0001"
     ],
@@ -141,15 +139,15 @@ O certificado SSL do meu site venceu ontem e a renovação automática não rodo
   },
   "suficiencia": {
     "suficiente": true,
-    "motivo": "procedimento KB-101 com score 0.89, igual ou acima do limiar 0.5"
+    "motivo": "procedimento KB-101 com score 0.62, igual ou acima do limiar 0.5"
   }
 }
 ```
 
-Execução de `2026-10-10T15:26:06-03:00`, commit `5d5fdeb + alterações locais`, log em `logs/TKT-0001.json` (4 chamadas ao modelo, 8813 tokens).
+Execução de `2026-10-10T15:45:26-03:00`, commit `861a948`, log em `logs/TKT-0001.json` (4 chamadas ao modelo, 8822 tokens).
 
 **O que ler aqui:** `suficiencia.suficiente` é `true` porque `fonte` aponta o procedimento KB-101
-com score 0,89, acima do limiar de 0,5. O procedimento é "anotar", então `resultado.acao` é
+com score 0,62, acima do limiar de 0,5. O procedimento é "anotar", então `resultado.acao` é
 `anotacao_interna` e os três campos do chamado interno ficam nulos: nenhum chamado foi aberto. O
 `resultado.texto` traz os passos do KB-101, sem nada acrescentado.
 
@@ -166,11 +164,11 @@ Meu site está dando erro 502 de vez em quando, mais ou menos desde o deploy de 
 ```json
 {
   "id_ticket": "TKT-0006",
-  "executado_em": "2026-10-10T15:26:29-03:00",
+  "executado_em": "2026-10-10T15:48:21-03:00",
   "termino": "respondeu",
   "resultado": {
     "acao": "fila_humana",
-    "texto": "O cliente relata erro 502 intermitente após deploy, mas o artigo encontrado (KB-104) tem ressalva: não cobre casos em que o erro ocorre 'às vezes'. O anexo_log não está disponível para análise. Um analista deve verificar o comportamento do servidor e o log de erros para identificar a causa real.",
+    "texto": "O cliente relata erro 502 intermitente após deploy, mas o artigo encontrado (KB-104) tem ressalva: não cobre casos em que o erro ocorre 'às vezes'. O anexo_log não está disponível para análise. Um analista deve verificar o comportamento do site e os logs para identificar a causa real.",
     "chamado_interno": null,
     "time_destino": null,
     "prioridade": null
@@ -195,7 +193,7 @@ Meu site está dando erro 502 de vez em quando, mais ou menos desde o deploy de 
 }
 ```
 
-Execução de `2026-10-10T15:26:29-03:00`, commit `5d5fdeb + alterações locais`, log em `logs/TKT-0006.json` (4 chamadas ao modelo, 8826 tokens).
+Execução de `2026-10-10T15:48:21-03:00`, commit `861a948`, log em `logs/TKT-0006.json` (4 chamadas ao modelo, 8825 tokens).
 
 **O que ler aqui:** `suficiencia.suficiente` é `false`, e o motivo diz por quê: o melhor
 procedimento (KB-104) ficou com score 0,4, abaixo do limiar. Em vez de uma correção, o sistema
@@ -219,11 +217,11 @@ Olá, quero fazer upgrade do meu plano para um servidor dedicado. Podem me passa
 ```json
 {
   "id_ticket": "TKT-0004",
-  "executado_em": "2026-10-10T15:26:50-03:00",
+  "executado_em": "2026-10-10T15:48:10-03:00",
   "termino": "respondeu",
   "resultado": {
     "acao": "fila_comercial",
-    "texto": "Cliente solicitou upgrade para servidor dedicado, pedindo valores e prazo de migração.",
+    "texto": "Cliente solicitou upgrade para servidor dedicado, com informações sobre valores e prazo de migração.",
     "chamado_interno": null,
     "time_destino": null,
     "prioridade": null
@@ -247,14 +245,67 @@ Olá, quero fazer upgrade do meu plano para um servidor dedicado. Podem me passa
 }
 ```
 
-Execução de `2026-10-10T15:26:50-03:00`, commit `5d5fdeb + alterações locais`, log em `logs/TKT-0004.json` (3 chamadas ao modelo, 6199 tokens).
+Execução de `2026-10-10T15:48:10-03:00`, commit `861a948`, log em `logs/TKT-0004.json` (3 chamadas ao modelo, 6201 tokens).
 
 **O que ler aqui:** `resultado.acao` é `fila_comercial` e `fonte.ferramentas` tem só
 `consultar_ticket` e `registrar_encaminhamento`: o agente reconheceu o assunto como comercial, não
 consultou a base de procedimentos e não tratou o pedido como defeito. A suficiência é positiva
 porque a classificação dispensa a base. É o caso que não deve disparar a ação principal.
 
-### 3.4 Entrada ambígua: `TKT-0002`
+### 3.4 Entrada incompleta: `TKT-0005`
+
+**Entrada** (comando: `python src/main.py TKT-0005 --auto-aprovar`; o texto é o campo `entrada` do log):
+
+```
+Meu servidor não está funcionando direito.
+```
+
+**Saída** (campo `saida` de `logs/TKT-0005.json`, completo):
+
+```json
+{
+  "id_ticket": "TKT-0005",
+  "executado_em": "2026-10-10T15:48:52-03:00",
+  "termino": "respondeu",
+  "resultado": {
+    "acao": "devolver_cliente",
+    "texto": "O serviço ou servidor afetado; o erro ou comportamento observado; desde quando ocorre.",
+    "chamado_interno": null,
+    "time_destino": null,
+    "prioridade": null
+  },
+  "fonte": {
+    "tipo": "registro_do_chamado",
+    "kb_id": null,
+    "score": null,
+    "registros": [
+      "TKT-0005"
+    ],
+    "ferramentas": [
+      "consultar_ticket",
+      "registrar_encaminhamento"
+    ]
+  },
+  "suficiencia": {
+    "suficiente": false,
+    "motivo": "o texto do chamado não informa o serviço afetado nem o sintoma; o pedido de informação ao cliente foi registrado"
+  }
+}
+```
+
+Execução de `2026-10-10T15:48:52-03:00`, commit `861a948`, log em `logs/TKT-0005.json` (3 chamadas ao modelo, 6162 tokens).
+
+**O que ler aqui:** o texto não diz qual serviço é afetado nem qual o sintoma. `resultado.acao` é
+`devolver_cliente`, com suficiência negativa, e `resultado.texto` é o pedido ao cliente: só a lista
+do que falta (serviço ou servidor afetado, erro ou comportamento, desde quando), sem promessa e
+sem informação interna. `fonte.ferramentas` mostra que o agente não buscou na base: classificou
+antes, e um relato sem serviço nem sintoma não vai à busca. Nenhum chamado interno foi aberto.
+
+Limite: nesta versão o pedido fica gravado e a execução termina. A confirmação do analista antes
+do envio, a pausa em "aguardando cliente" e a retomada da mesma conversa com a resposta ainda não
+estão implementadas (`docs/case.md` §2.4).
+
+### 3.5 Entrada ambígua: `TKT-0002`
 
 O relato fala de um serviço (webmail) e o log anexado aponta a causa em outro (DNS). Há na base um
 procedimento de DNS que casa bem com o log e abriria um chamado P1; o sistema não escolhe sozinho
@@ -271,11 +322,11 @@ Meu Webmail está fora do ar desde cedo, ninguém da empresa consegue ler e-mail
 ```json
 {
   "id_ticket": "TKT-0002",
-  "executado_em": "2026-10-10T15:35:59-03:00",
+  "executado_em": "2026-10-10T15:47:35-03:00",
   "termino": "respondeu",
   "resultado": {
     "acao": "fila_humana",
-    "texto": "O cliente relata que o webmail está fora do ar, mas o anexo_log aponta falha de resolução DNS no domínio `mail.zeta.com.br` e no nameserver `ns1.zeta.com.br`. A busca na base de conhecimento confirmou que o problema pode estar relacionado a nameservers fora do ar ou registros DNS inválidos (artigo KB-106, score 0.67). O acesso direto ao webmail pelo IP do servidor funciona, o que reforça a suspeita de um problema de DNS. Recomenda-se verificar a configuração DNS e escalar para o time de infraestrutura.",
+    "texto": "Divergência entre relato do cliente e anexo_log: o cliente relata que o webmail está fora do ar, mas o log mostra falha de resolução DNS no domínio zeta.com.br (SERVFAIL) e nameserver não respondendo. Verificar se o problema é restrito ao DNS ou afeta outros serviços.",
     "chamado_interno": null,
     "time_destino": null,
     "prioridade": null
@@ -289,7 +340,6 @@ Meu Webmail está fora do ar desde cedo, ninguém da empresa consegue ler e-mail
     ],
     "ferramentas": [
       "consultar_ticket",
-      "registrar_encaminhamento",
       "buscar_base_conhecimento",
       "registrar_encaminhamento"
     ]
@@ -301,33 +351,28 @@ Meu Webmail está fora do ar desde cedo, ninguém da empresa consegue ler e-mail
 }
 ```
 
-Execução de `2026-10-10T15:35:59-03:00`, commit `5d5fdeb + alterações locais`, log em `logs/TKT-0002.json` (5 chamadas ao modelo, 13238 tokens).
+Execução de `2026-10-10T15:47:35-03:00`, commit `861a948`, log em `logs/TKT-0002.json` (4 chamadas ao modelo, 9943 tokens).
 
 **O que ler aqui:** havia um procedimento acima do limiar (`fonte.kb_id` KB-106, score 0,67) e
 mesmo assim `resultado.acao` é `fila_humana`, com suficiência negativa: o motivo diz que o agente
 não agiu sozinho, e `resultado.texto` declara as duas leituras (o cliente relata o webmail fora do
-ar; o log mostra falha de DNS, e o webmail abre pelo IP). `fonte.tipo` é `registro_do_chamado`
-porque o que sustenta a decisão é o log anexado ao chamado, não o procedimento.
+ar; o log mostra falha de resolução DNS e o nameserver sem resposta). `fonte.tipo` é
+`registro_do_chamado` porque o que sustenta a decisão é o log anexado ao chamado, não o
+procedimento. Nenhum chamado interno foi aberto.
 
-Ressalvas sobre este exemplo, lidas no log:
-
-- `fonte.ferramentas` mostra `registrar_encaminhamento` duas vezes. Na primeira, o modelo tentou a
-  fila humana sem ter buscado na base, e o código recusou (erro recuperável); ele buscou e
-  registrou na segunda. O desfecho é o mesmo, com uma chamada a mais.
-- O texto registrado termina recomendando "escalar para o time de infraestrutura". A decisão de
-  não abrir o chamado está certa, mas essa recomendação vai além do que o agente deveria dizer:
-  quem confirma a relação entre o sintoma e a causa é o analista (`docs/case.md` §2.12).
+Ressalva sobre este exemplo: neste caso só o prompt impede o agente de agir sobre o log. O score do
+KB-106 passa do portão de confiança, e em uma execução anterior do mesmo chamado, no mesmo dia, o
+agente chegou a abrir o chamado indevido (o log dessa execução foi sobrescrito).
 
 ## 4. A entrada que não dá para atender (§1.4)
 
 | Situação | O que o sistema faz | Exemplo real |
 |---|---|---|
 | **fora do escopo** | redireciona à fila comercial, sem consultar a base e sem abrir chamado | `TKT-0004`, §3.3 |
-| **incompleta** | pede ao cliente o serviço afetado, o sintoma e desde quando (`devolver_cliente`), no máximo uma vez | `TKT-0005`: ainda sem execução no schema novo. O `logs/TKT-0005.json` é de 06/10/2026, anterior ao objeto `saida` (Parte 1: só grava o pedido; o envio e a retomada entram na Parte 2) |
-| **ambígua** | não age sozinho: envia à fila humana declarando as duas leituras | `TKT-0002`, §3.4 |
+| **incompleta** | pede ao cliente o serviço afetado, o sintoma e desde quando (`devolver_cliente`), no máximo uma vez | `TKT-0005`, §3.4 |
+| **ambígua** | não age sozinho: envia à fila humana declarando as duas leituras | `TKT-0002`, §3.5 |
 
 ## 5. O que falta para este item
 
-- Refazer as quatro execuções a partir de um commit sem alterações locais, para o commit gravado no
-  log reproduzir o que rodou.
-- Executar o `TKT-0005` no schema novo, para a entrada incompleta ter exemplo com data, commit e log.
+- Nada pendente no contrato de entrada e de saída. O que falta está fora deste item: a confirmação
+  do analista, o envio do pedido ao cliente e a retomada da conversa (§3.4).

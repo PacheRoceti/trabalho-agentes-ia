@@ -100,7 +100,7 @@ do analista.
 ## 4. Prompt engineering (item 4.3)
 
 Um único ponto de chamada ao modelo — o laço em `src/agente.py` — com um único
-prompt, `src/prompts/agente-v3.md` (v1 e v2 ficam como histórico do experimento, `docs/modelos.md` §3.3-A).
+prompt, `src/prompts/agente-v5.md` (v1 e v2 ficam como histórico do experimento, `docs/modelos.md` §3.3-A).
 O cabeçalho do arquivo documenta a técnica
 (zero-shot com procedimento numerado e tool calling), o contrato de saída (o
 resultado é a escrita da ferramenta, não o texto) e, linha por linha, o que cada

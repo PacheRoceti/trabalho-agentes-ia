@@ -1,10 +1,13 @@
 # Arquitetura do agente (Parte 2, item 3)
 
-> **O que este documento descreve.** O sistema **como ele está hoje**, no commit `5d5fdeb`
-> (10/10/2026): o laço da Parte 1, com o prompt `agente-v5.md` e a entrada em texto livre. O grafo
-> em LangGraph, o índice vetorial, a memória e o checkpoint **ainda não existem no código**; onde
+> **O que este documento descreve.** O sistema **como ele está hoje**, no commit `861a948`
+> (10/10/2026): o laço da Parte 1, com o prompt `agente-v5.md`, a entrada em texto digitado e a
+> saída validada (`src/saida.py`). O grafo
+> em LangGraph, o índice vetorial, a memória e o checkpointer **ainda não existem no código**
+> (a pausa pela confirmação do analista tem uma retomada própria, sobre o SQLite: §7); onde
 > o enunciado pede um deles, o documento diz o que há no lugar. O que falta entrar aqui está
-> listado no §9.
+> listado no §9. O desenho proposto para o grafo está em [`grafo.md`](grafo.md), a recuperação em
+> [`rag.md`](rag.md) e os pontos de parada em [`humano.md`](humano.md).
 >
 > O histórico da decisão (v1 no papel → v2 construída) continua em
 > [`arquitetura-v2.md`](arquitetura-v2.md).
@@ -18,7 +21,7 @@ LEGENDA   [M] o modelo decide    [C] o código decide    [H] o sistema para e es
 
 ENTRADA
   texto livre do cliente + id do chamado (TKT-0000) + id do cliente                    [C]
-  (src/main.py simula o evento de abertura: recebe o id e lê o texto na tabela tickets)
+  (src/main.py recebe o texto digitado junto do id; sem texto, usa o já registrado para o id)
       │
       ▼
 LAÇO   src/agente.py · rodar()                       uma volta = uma chamada ao modelo
@@ -75,11 +78,12 @@ ESCRITA   uma por execução (■G1)
 
   abrir_chamado_interno       IRREVERSÍVEL
       [C]  categoria, time e prioridade vêm do artigo; reincidência em 30 dias sobe um nível
-      [H1] o ANALISTA DE SUPORTE confirma no terminal, antes do INSERT
-             sim                    → grava; a chave ticket:kb_id impede duplicata
-             não, ou sem terminal   → nada é gravado ───────────────────────────────► ●T4
-             sem resposta em 20 min → fila_humana, com as considerações do agente
-                                      (regra definida; AINDA NÃO IMPLEMENTADA: hoje espera sem prazo)
+      [H1] o ANALISTA DE SUPORTE confirma antes do INSERT; a ação fica em `pendencias`,
+           com prazo de 20 min, e a execução pausa ──────────────────────────────────► ●T4
+             aprova no prazo        → grava; a chave ticket:kb_id impede duplicata ──► ●T1
+             rejeita no prazo       → nada é gravado ───────────────────────────────► ●T4
+             sem resposta em 20 min → [C] grava fila_humana, com as considerações
+                                      do agente ────────────────────────────────────► ●T1
 
   registrar_encaminhamento    reversível: uma linha na tabela encaminhamentos
       destinos: fila_comercial · devolver_cliente · anotacao_interna · fila_humana
@@ -92,10 +96,13 @@ DADOS   dados/tickets.db (SQLite), acessado só por src/db.py
   kb_artigos .......... o "ÍNDICE" de hoje: não há índice vetorial, só busca por palavra-chave
   chamados_internos ... escrito por abrir_chamado_interno; relido para contar a reincidência
   encaminhamentos ..... escrito por registrar_encaminhamento; relido para o ■G6
+  pendencias .......... a ação irreversível à espera do analista, o prazo e o Estado da
+                        execução pausada; criada em src/db.py, e não no seed
 
 
 MEMÓRIA   nenhuma entre execuções: cada execução parte do zero
-  O que atravessa execuções é registro do banco (as duas releituras acima).
+  O que atravessa execuções é registro do banco (as duas releituras acima) e, na pausa do
+  [H1], o Estado guardado em `pendencias` para a mesma execução continuar depois.
   logs/TKT-0000.json guarda a trajetória; o agente grava e nunca lê.
 
 
@@ -169,7 +176,9 @@ nunca das mensagens.
 
 | Campo | Tipo | Quem escreve | Quem lê |
 |---|---|---|---|
-| `id_ticket`, `modelo`, `prompt`, `temperatura`, `execucao_id` | texto, número | `rodar()`, na criação | o log |
+| `id_ticket`, `modelo`, `prompt`, `temperatura`, `execucao_id`, `executado_em`, `commit` | texto, número | `rodar()`, na criação | o log |
+| `entrada` | texto | `rodar()`, na criação: o texto do chamado, como chegou | o log |
+| `saida` | objeto validado (`Saida`, em `src/saida.py`) | o laço, ao terminar (`montar_saida`) | `main.py` e o log |
 | `ticket` | dict ou `None` | `consultar_ticket` | a busca (texto do cliente, para as ressalvas) e os portões ■G2 e ■G5 |
 | `scores_kb` | dict `kb_id → score` | `buscar_base_conhecimento` | o portão ■G3 |
 | `n_buscas` | inteiro | `buscar_base_conhecimento` | o portão ■G5 e a sugestão de nova busca |
@@ -178,8 +187,10 @@ nunca das mensagens.
 | `tokens_entrada`, `tokens_saida`, `custo_usd` | número | o laço, depois de cada chamada ao modelo | o orçamento |
 | `n_chamadas_modelo` | inteiro | o laço | o log |
 | `lembretes` | inteiro | a etapa (d) do laço | a etapa (d) do laço |
-| `confirmacoes` | lista | `Estado.confirmar()` | o log |
+| `confirmacoes` | lista | `Estado.confirmar()` e a retomada (`retomar()`) | o log |
 | `pendencia` | dict ou `None` | o laço, ao capturar `PausaParaHumano` | o log |
+| `prazo_confirmacao_min` | número (padrão 20) | `rodar()`, na criação | `abrir_chamado_interno`, para calcular o `vence_em`; a retomada, para o texto do encaminhamento |
+| `pendencia_id` | inteiro ou `None` | `abrir_chamado_interno`, ao gravar a pendência | o laço, para guardar o checkpoint |
 | `termino`, `motivo`, `resposta` | enum, texto | o laço | `main.py`, o verificador e o log |
 | `historico` | lista de mensagens | o laço | só a chamada ao modelo |
 
@@ -217,14 +228,16 @@ modelo quando a falha é de transporte (limite de requisições ou conexão).
 **O que impede uma execução de não acabar** é o teto de passos e o de lembretes: cada volta
 consome um dos dois ou termina.
 
-Três limites conhecidos:
+**A espera pelo analista não conta no teto de tempo.** A execução pausa e guarda os segundos já
+gastos; a retomada continua o relógio desse ponto (§7). Passos, tokens e custo seguem somando no
+mesmo estado. A espera tem o seu próprio limite, que é o prazo de 20 minutos.
+
+Dois limites conhecidos:
 
 - **A conferência é entre voltas.** Se o modelo pedir várias ferramentas na mesma resposta, todas
   executam antes da próxima conferência, e a execução pode passar de 8 passos.
 - **O teto de tempo não interrompe nada em andamento.** Ele não corta uma chamada ao modelo que
-  demora nem a espera pelo analista (§7).
-- **A espera pelo analista conta no relógio.** Se ele levar mais de 90 s para confirmar, o chamado
-  é gravado e a execução termina, na volta seguinte, como `orcamento_esgotado`.
+  demora.
 
 ## 6. O término
 
@@ -232,10 +245,13 @@ Toda execução grava por que parou (`Estado.termino` e `Estado.motivo`). São q
 
 | Término | Quando | O que ficou gravado no banco |
 |---|---|---|
-| ●T1 `respondeu` | o modelo respondeu só com texto e há desfecho gravado | o desfecho |
+| ●T1 `respondeu` | o modelo respondeu só com texto e há desfecho gravado. Inclui a execução retomada: o analista aprovou, ou o prazo venceu e o código gravou a `fila_humana` | o desfecho |
 | ●T2 `orcamento_esgotado` | um dos quatro tetos estourou; o motivo diz qual (`passos: 8/8`, `tempo: 91s/90s`) | nada, **ou** o desfecho, se o teto estourou depois da escrita e antes da resposta final |
 | ●T3 `erro_fatal` | (1) API indisponível depois de 5 tentativas; (2) a API recusou a chamada (chave ou modelo inválido, erro do provedor); (3) o modelo encerrou sem desfecho depois de 2 lembretes; (4) interrupção inesperada | nada, salvo no caso (4), se a interrupção vier depois da escrita |
-| ●T4 `aguardando_humano` | o analista não confirmou a abertura do chamado interno | nada; os argumentos da ação ficam no campo `pendencia` do log |
+| ●T4 `aguardando_humano` | a abertura do chamado interno espera o analista, ou ele a rejeitou; o `motivo` diz qual | nada em `chamados_internos` nem em `encaminhamentos`. Na espera, a ação e o prazo ficam na tabela `pendencias`; os argumentos da ação ficam também no campo `pendencia` do log |
+
+O ●T4 da espera não é um fim: é o único término que a mesma execução pode trocar depois, por
+●T1, quando o analista aprova ou o prazo vence (§7).
 
 Consequência do ●T2: para saber se o chamado teve desfecho, vale o campo `desfecho`, e não o
 término. O verificador (`src/verificar.py`) confere o banco.
@@ -253,38 +269,51 @@ levanta erro fatal: os casos (1) e (2) do ●T3 vêm da chamada ao modelo.
 | Onde | dentro de `abrir_chamado_interno`, depois de todos os portões e antes do INSERT |
 | Critério | ação irreversível |
 | Quem é chamado | o **analista de suporte** (perfil do `case.md` §2.2) |
-| O que ele vê | a ferramenta, o id do chamado, a categoria, o resumo, o time de destino e o `kb_id`. A prioridade não aparece: ela é calculada depois da confirmação |
-| O que ele devolve | `s` aprova; qualquer outra resposta rejeita. Não há aprovação com edição |
-| Se aprova | o chamado é gravado e o laço continua |
-| Se rejeita | nada é gravado; término ●T4, com a pendência no log |
+| O que ele vê | a ferramenta, o id do chamado, a categoria, o resumo, o time de destino, o `kb_id`, a hora do pedido, a hora em que o prazo vence e quantos minutos faltam (`python src/main.py --pendencias`). A prioridade não aparece: ela é calculada depois da confirmação |
+| O que ele devolve | `--aprovar TKT-0000` ou `--rejeitar TKT-0000`. Não há aprovação com edição |
+| Se aprova no prazo | o chamado é gravado e a execução pausada continua: o modelo recebe o resultado e dá a frase final; término ●T1 |
+| Se rejeita no prazo | nada é gravado; término ●T4, com motivo "analista rejeitou a ação" |
+| Se não responde em 20 minutos | o chamado interno **não** é aberto; o código grava `fila_humana` com as considerações do agente; término ●T1 |
 
-**Se ele não responder: a regra.** O analista tem **20 minutos** para confirmar ou rejeitar,
-contados do pedido de confirmação (`case.md` §2.1). Vencido o prazo, a ação não é executada e o
-chamado vai para a `fila_humana` com as considerações do agente: a ação que ele propôs, o
-procedimento e o score que a sustentam, o resumo já redigido e o motivo "confirmação não recebida
-em 20 minutos". O silêncio nunca vira aprovação.
+**A espera é assíncrona.** `abrir_chamado_interno` não fica parado esperando: grava a ação na
+tabela `pendencias`, com `pedido_em` e `vence_em`, e levanta `PausaParaHumano`. O laço guarda na
+mesma linha o `Estado` da execução (chamado lido, scores, passos, mensagens, tokens e os segundos
+já gastos) e termina em ●T4. Nada é escrito em `chamados_internos` antes da resposta. O analista
+responde de outro processo, minutos depois, e `retomar()` (em `src/agente.py`) continua a mesma
+execução: não há nova triagem nem nova busca.
 
-**Se ele não responder: o código de hoje.** A regra ainda não está implementada, e o que acontece
-depende de como o programa foi chamado:
+**O prazo.** O analista tem **20 minutos** para confirmar ou rejeitar, contados do pedido de
+confirmação (`case.md` §2.1; constante `PRAZO_CONFIRMACAO_MIN`, em `src/ferramentas.py`). Vencido
+o prazo, a ação não é executada e o código, sem consultar o modelo, grava um encaminhamento à
+`fila_humana` com as considerações do agente: a ação que ele propôs, o procedimento e o score que
+a sustentam, o resumo já redigido e o motivo "confirmação não recebida em 20 minutos". O desfecho
+leva `motivo: confirmacao_nao_recebida`, e a `suficiencia` da saída é negativa. Depois da
+gravação o modelo é chamado uma vez, só para a frase final.
 
-- **sem terminal interativo** (ou sem confirmador configurado): o código nega na hora, e a
-  execução termina em ●T4. É o padrão seguro;
-- **com terminal**: o programa fica parado no `input()`, sem prazo. O teto de 90 s não é
-  conferido durante a espera. **É o estado sem saída que o enunciado descreve, e hoje ele
-  existe.**
+**O relógio vale antes da pessoa.** Uma aprovação que chega depois do `vence_em` é tratada como
+prazo vencido: o chamado não é aberto. O silêncio nunca vira aprovação, e a aprovação tardia
+também não.
 
-O que falta implementar:
+**Aprovar duas vezes** não repete nada: a pendência só é resolvida uma vez (`resolver_pendencia`,
+em `src/db.py`, confere o status no mesmo `UPDATE`), e a segunda chamada não encontra o que
+aprovar.
 
-- o prazo de 20 minutos e o encaminhamento à `fila_humana` quando ele vence. O teto de tempo da
-  execução (90 s) é menor que o prazo, então a espera pelo analista precisa sair da conta do
-  orçamento (§5);
-- a retomada. ●T4 hoje é um fim: rodar o mesmo chamado de novo recomeça do zero, com novas
-  chamadas ao modelo. Rejeitar e não responder dão o mesmo término;
-- a pausa assíncrona, que depende de checkpoint (`memoria.md` §1.1).
+Três limites do que foi implementado:
+
+- **O prazo é conferido, não cronometrado.** Não há processo em segundo plano. As pendências
+  vencidas são encaminhadas no começo do próximo comando do `main.py` (`vencer_pendencias`). Se
+  ninguém rodar nada, o chamado fica na pausa até alguém rodar: a regra garante que a ação
+  vencida nunca é executada, mas não garante que a fila humana a receba no minuto 20.
+- **Só o [H1] tem prazo.** A confirmação do pedido ao cliente (`devolver_cliente`) ainda não
+  existe; quando existir, usa o mesmo prazo.
+- **Não é o checkpointer do grafo.** O `Estado` é guardado como JSON numa coluna, por uma função
+  escrita à mão, e serve só a esta pausa. `--reset` e `--todos` recriam o banco e apagam as
+  pendências; por isso `--todos` exige `--auto-aprovar`.
 
 `--auto-aprovar` troca o analista por uma aprovação automática e existe só para a demonstração.
-Todos os logs em `logs/` foram gerados com ele: a recusa do analista está coberta por teste
-offline (`test_sem_confirmacao_do_analista_nada_e_gravado`), e não por uma execução registrada.
+Todos os logs em `logs/` foram gerados com ele: a espera, a aprovação, a rejeição e o prazo
+vencido estão cobertos por testes offline (`tests/test_offline.py`, bloco "o prazo de 20 minutos
+do analista"), e não por uma execução registrada com o modelo real.
 
 **Onde uma pessoa entra sem que o sistema espere por ela.** Os quatro destinos de
 `registrar_encaminhamento` entregam o chamado a alguém, mas a execução termina antes:
