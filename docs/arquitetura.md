@@ -49,8 +49,17 @@ GRAFO   src/grafo.py · objeto GRAFO, compilado uma vez · thread_id = id do cha
       ◇ a classe       [M] decide a rota; o código só lê o valor
       ├─ comercial · insuficiente · fora_da_alcada ────────────────────► [decidir]
       ▼ tecnico
-  [buscar]             [C] busca por palavra-chave em kb_artigos, com os termos      leitura
-      │                    da triagem; devolve até 3 procedimentos, com score
+  [buscar]             [C] busca VETORIAL em kb_artigos: o cosseno do relato (mistral-embed,
+      │                    1024 dimensões) com cada guia; devolve até 3, com score       leitura
+      │
+      ◇ o 1º guia passa de 0,5, não tem ressalva literal e declara situações que não cobre?
+      ├─ não ──────────────────────────────────────────────────────────► [decidir]
+      ▼ sim
+  [conferir_ressalva]  [M] UMA chamada · ressalva-v1.md · temperature=0 · JSON validado
+      │                ◆D6 o relato cai numa das situações que o guia NÃO cobre? (sim ou não)
+      │                [C] só BAIXA o score (× 0,4), e só com uma frase da lista do guia
+      │                [C] antes da chamada: os mesmos tetos ───────────────────────► ●T2
+      │                [C] API fora, ou JSON fora do contrato 2 vezes ─────────────► ●T3
       ▼
   [decidir]            [C] escolhe o desfecho; é o portão de confiança (limiar 0,5)
       │                    id inexistente ........................... fila_humana
@@ -101,13 +110,13 @@ GRAFO   src/grafo.py · objeto GRAFO, compilado uma vez · thread_id = id do cha
 
 FORA DOS NÓS
   LIMITE_SUPERPASSOS = 20 (o recursion_limit, declarado no código); estourado ─────► ●T2
-  O caminho mais longo tem 13 superpassos; o mais curto, 7.
+  O caminho mais longo tem 14 superpassos; o mais curto, 7.
 
 
 DADOS   dados/tickets.db (SQLite), acessado só por src/db.py
 
   tickets ............. lido por [consultar]
-  kb_artigos .......... o "ÍNDICE" de hoje: não há índice vetorial, só busca por palavra-chave
+  kb_artigos .......... o corpus; kb_vetores: o índice vetorial (um vetor por guia, em memória)
   chamados_internos ... escrito por [gravar]; relido para contar a reincidência
   encaminhamentos ..... escrito por [gravar]; relido por [decidir] (um pedido por chamado)
   pendencias .......... a fila do analista: a ação irreversível à espera e o prazo;
@@ -131,7 +140,7 @@ O mesmo grafo, nó a nó e com as chaves de cada aresta, está no §9.1, ao lado
 `conferir_grafo.py`. O diagrama do laço da Parte 1, com os portões ■G1 a ■G6, foi para o
 [`arquitetura-v2.md`](arquitetura-v2.md) §7.
 
-**As decisões do modelo são três, em duas chamadas.** ◆D1 e ◆D3 decidem o caminho; ◆D2 e ◆D5
+**As decisões do modelo são quatro, em três chamadas** (a de ressalva só roda quando o primeiro guia declara situações que não cobre). ◆D1 e ◆D3 decidem o caminho; ◆D6 só pode baixar o score; ◆D2 e ◆D5
 decidem conteúdo (termos e texto). A marca ◆D4 do laço (buscar de novo quando o score vem baixo)
 não existe no grafo: a busca roda uma vez.
 
@@ -144,7 +153,7 @@ divergência, termos, texto) e o código faz a leitura e a escrita.
 | Operação | O que faz | Quem chama, no grafo | Leitura ou escrita | Reversível? |
 |---|---|---|---|---|
 | consultar o chamado (`db.buscar_ticket`) | Lê o registro do chamado: log anexado, plano e histórico de chamados internos do cliente | nó `consultar`, em toda execução | leitura | não se aplica |
-| buscar na base (`db.buscar_kb`) | Busca procedimentos por palavras e devolve até 3 artigos, cada um com score de 0 a 1 e, quando o procedimento não cobre o caso relatado, uma `ressalva` | nó `buscar`, só na rota técnica | leitura | não se aplica |
+| buscar na base (`vetorial.buscar`; `db.buscar_kb` é a busca por palavra, que ela usa e que o laço mantém) | Busca procedimentos por vetor e por palavras e devolve até 3 artigos, cada um com score de 0 a 1 e, quando o procedimento não cobre o caso relatado, uma `ressalva` | nó `buscar`, só na rota técnica | leitura | não se aplica |
 | abrir chamado interno (`db.abrir_chamado`) | Abre um chamado para o time responsável. O texto é o que o modelo redigiu; o `kb_id` vem da busca; categoria, time e prioridade são calculados pelo código | nó `gravar`, depois da aprovação no [H1] | escrita | **não**: não existe operação para apagar ou encerrar um chamado. A chave `ticket:kb_id` evita duplicata, mas não desfaz a abertura |
 | registrar encaminhamento (`db.registrar_encaminhamento`) | Registra um dos quatro desfechos que não abrem chamado: `fila_comercial`, `devolver_cliente`, `anotacao_interna`, `fila_humana` | nó `gravar` | escrita | sim: é uma linha em fila ou anotação, que uma pessoa lê e pode desconsiderar |
 
@@ -221,7 +230,8 @@ dele. **Não há lista de mensagens no estado.**
 | `classe` | `str` | `triagem` | a aresta de `triagem`, `decidir` | o modelo (◆D1) | nenhum |
 | `log_diverge` | `bool` | `triagem` | `decidir` | o modelo (◆D3) | nenhum |
 | `termos` | `list[str]` | `triagem` | `buscar`, `redigir` | o modelo (◆D2) | nenhum |
-| `candidatos` | `list[dict]` | `buscar` | `decidir`, `redigir`, `gravar`, a saída | a tabela `kb_artigos`, com o score calculado | nenhum |
+| `candidatos` | `list[dict]` | `buscar`; `conferir_ressalva` (só baixa o score do 1º) | `decidir`, `redigir`, `gravar`, a saída | a tabela `kb_artigos`, com o score calculado | nenhum |
+| `ressalvas_do_melhor` | `list[str]` | `buscar` | a aresta de `buscar`, `conferir_ressalva` | as frases de `nao_cobre` do 1º guia | nenhum |
 | `desfecho_proposto` | `dict` (`acao`, `kb_id`, `motivo`) | `decidir` | `redigir`, `validar`, a aresta de `validar`, `pedir_confirmacao`, `gravar` | regra em código | nenhum |
 | `texto_redigido` | `str` ou `None` | `redigir` | `validar`, `pedir_confirmacao`, `gravar` | o modelo (◆D5) | nenhum |
 | `erro_validacao` | `dict` ou `None` | `validar` | a aresta de `validar`, `redigir`, `finalizar` | regra em código | nenhum |
@@ -232,7 +242,8 @@ dele. **Não há lista de mensagens no estado.**
 | `saida` | `dict` | `finalizar` | quem chama o grafo | `montar_saida` (`src/saida.py`) | nenhum |
 | `passos` | `list[dict]` | os nós que registram um passo | o log e a saída | cada nó | `operator.add` (concatena) |
 | `tentativas_redacao` | `int` | `redigir` | a aresta de `validar` | contagem | `operator.add` (soma) |
-| `n_chamadas_modelo`, `tokens_entrada`, `tokens_saida`, `custo_usd` | número | `triagem`, `redigir` | os tetos; o log | o campo `usage` da resposta da API | `operator.add` (soma) |
+| `n_chamadas_modelo`, `tokens_entrada`, `tokens_saida`, `custo_usd` | número | `triagem`, `conferir_ressalva`, `redigir` | os tetos; o log | o campo `usage` da resposta da API | `operator.add` (soma) |
+| `tokens_embedding` | número | `buscar` | o log (não entra nos tetos) | o campo `usage` da API de embedding; inclui a indexação dos guias quando o índice está vazio | `operator.add` (soma) |
 | `segundos_gastos` | `float` | todos os nós, pelo embrulho `_no()` | o teto de tempo | o relógio | `operator.add` (soma) |
 
 A coluna do reducer confere com a saída de `conferir_grafo.py` (§9.2).
@@ -546,7 +557,7 @@ vez (objeto `GRAFO`), com `langgraph==1.2.14` e `langgraph-checkpoint-sqlite==3.
 `requirements.txt`. É o caminho padrão do `main.py`; o laço dos §1 a §7 roda com `--laco`, para
 os dois serem comparados nos mesmos casos. Foi medido três vezes com o modelo real, 8 de 8 no
 verificador nas três (§8; `grafo.md` §6), e a pausa do [H1] foi demonstrada entre processos
-(§7). O que é do código está provado por 30 testes offline (`tests/test_grafo.py`).
+(§7). O que é do código está provado por 39 testes offline (`tests/test_grafo.py`).
 
 O §1 mostra o sistema inteiro (entrada, dados, checkpoint, términos). Esta seção mostra o mesmo
 grafo nó a nó, com a chave de cada aresta condicional, para ser conferido contra o código.
@@ -632,18 +643,19 @@ Os nós, as arestas condicionais com quem decide cada uma e os términos estão 
 
 ### 9.2 A conferência contra o código (§6.4)
 
-Saída de `python conferir_grafo.py`, de 10/10/2026. O script está na raiz e importa o objeto
+Saída de `python conferir_grafo.py`, de 11/10/2026 (com o nó `conferir_ressalva`). O script está na raiz e importa o objeto
 `GRAFO` de `src/grafo.py`, o mesmo que o `main.py` executa.
 
 ```
 langgraph 1.2.14
 checkpointer: SqliteSaver   recursion_limit declarado: 20
 
-NÓS (11)
+NÓS (12)
   entrada
   consultar
   triagem
   buscar
+  conferir_ressalva
   decidir
   redigir
   validar
@@ -652,9 +664,8 @@ NÓS (11)
   gravar
   finalizar
 
-ARESTAS FIXAS (8)
+ARESTAS FIXAS (7)
   __start__          -> entrada
-  buscar             -> decidir
   confirmar          -> gravar
   decidir            -> redigir
   entrada            -> consultar
@@ -662,7 +673,11 @@ ARESTAS FIXAS (8)
   pedir_confirmacao  -> confirmar
   finalizar          -> __end__
 
-ARESTAS CONDICIONAIS (11), com a chave do mapa de destinos
+ARESTAS CONDICIONAIS (15), com a chave do mapa de destinos
+  buscar             -> conferir_ressalva  [conferir]
+  buscar             -> decidir            [None]
+  conferir_ressalva  -> decidir            [None]
+  conferir_ressalva  -> finalizar          [encerrar]
   consultar          -> decidir            [nao_existe]
   consultar          -> triagem            [existe]
   redigir            -> finalizar          [encerrar]
@@ -690,6 +705,7 @@ CAMPOS DO ESTADO, e o reducer de cada um
   log_diverge            (sobrescreve)
   termos                 (sobrescreve)
   candidatos             (sobrescreve)
+  ressalvas_do_melhor    (sobrescreve)
   desfecho_proposto      (sobrescreve)
   texto_redigido         (sobrescreve)
   erro_validacao         (sobrescreve)
@@ -705,6 +721,7 @@ CAMPOS DO ESTADO, e o reducer de cada um
   n_chamadas_modelo      add
   tokens_entrada         add
   tokens_saida           add
+  tokens_embedding       add
   custo_usd              add
   segundos_gastos        add
 
@@ -720,6 +737,7 @@ graph TD;
 	consultar(consultar)
 	triagem(triagem)
 	buscar(buscar)
+	conferir_ressalva(conferir_ressalva)
 	decidir(decidir)
 	redigir(redigir)
 	validar(validar)
@@ -729,7 +747,10 @@ graph TD;
 	finalizar(finalizar)
 	__end__([<p>__end__</p>]):::last
 	__start__ --> entrada;
-	buscar --> decidir;
+	buscar -. &nbsp;conferir&nbsp; .-> conferir_ressalva;
+	buscar -.-> decidir;
+	conferir_ressalva -.-> decidir;
+	conferir_ressalva -. &nbsp;encerrar&nbsp; .-> finalizar;
 	confirmar --> gravar;
 	consultar -. &nbsp;nao_existe&nbsp; .-> decidir;
 	consultar -. &nbsp;existe&nbsp; .-> triagem;
@@ -754,9 +775,9 @@ graph TD;
 
 **O que a conferência mostra, contra o desenho:**
 
-- os 11 nós do desenho são os 11 nós do grafo compilado;
-- as 8 arestas fixas e as 11 condicionais (quatro pontos de decisão) são as do desenho, com as
-  mesmas chaves;
+- os 12 nós do desenho são os 12 nós do grafo compilado;
+- as 7 arestas fixas e as 15 condicionais (seis pontos de decisão) são as do desenho, com as
+  mesmas chaves (a chave `None` que a saída mostra é a chave igual ao nome do destino, `decidir`);
 - não há aresta condicional depois de `confirmar`: a resposta do analista é lida por `gravar`,
   como o desenho diz.
 

@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 import db                                    # noqa: E402
 from agente import EdicaoRecusada, Orcamento, Termino, retomar, vencer_pendencias  # noqa: E402
+import grafo as grafo_mod                  # noqa: E402
 from grafo import GRAFO, LIMITE_SUPERPASSOS, retomar_grafo, rodar_grafo  # noqa: E402
 from verificar import verificar              # noqa: E402
 
@@ -48,6 +49,14 @@ def texto(t):
     return json.dumps({"texto": t}, ensure_ascii=False)
 
 
+def ressalva(cai, frase="", motivo="teste"):
+    """A resposta do nó `conferir_ressalva` (o modelo lê as situações que o guia não cobre)."""
+    return json.dumps({"cai_na_ressalva": cai, "frase": frase, "motivo": motivo}, ensure_ascii=False)
+
+
+NAO_CAI = ressalva(False)
+
+
 SIM = lambda p: (True, "teste")
 NAO = lambda p: (False, "teste")
 UPLOAD = ("permissao", "negada", "upload")
@@ -58,10 +67,11 @@ ROTEIROS = {
     # o KB-106 volta com score alto (a armadilha): quem manda à fila humana é o sinal de divergência
     "TKT-0002": [triagem("tecnico", diverge=True, termos=("dns", "resolucao", "nameserver", "dominio")),
                  texto("Divergência: o cliente relata Webmail fora do ar, mas o log anexado aponta falha de DNS.")],
-    "TKT-0003": [triagem("tecnico", termos=UPLOAD),
+    # o KB-102 declara uma situação que não cobre (ssh): o nó `conferir_ressalva` roda, e aqui o modelo diz que não cai
+    "TKT-0003": [triagem("tecnico", termos=UPLOAD), NAO_CAI,
                  texto("Permissão negada ao gravar arquivos. Cliente afirma ser a 3a vez; o histórico "
                        "do sistema confirma 1 ocorrência anterior (INC-0001).")],
-    "TKT-0007": [triagem("tecnico", termos=UPLOAD),
+    "TKT-0007": [triagem("tecnico", termos=UPLOAD), NAO_CAI,
                  texto("Permissão negada ao gravar arquivos; todo upload do site falha. Procedimento KB-102.")],
     "TKT-0999": [texto("Id TKT-0999 não existe no sistema de tickets.")],
     "TKT-0004": [triagem("comercial"), texto("Pedido de upgrade de plano: assunto comercial.")],
@@ -77,8 +87,12 @@ class TestGrafo(unittest.TestCase):
     def setUp(self):
         db.recriar_banco()
         self.con = db.conectar()
+        # Estes testes provam o grafo, e não chamam a API de embedding: a busca é a por palavra.
+        # A busca híbrida tem os seus testes, com um embedder de mentira (tests/test_vetorial.py).
+        self._busca, grafo_mod.BUSCA = grafo_mod.BUSCA, "palavra"
 
     def tearDown(self):
+        grafo_mod.BUSCA = self._busca
         self.con.close()
 
     def rodar(self, ticket, roteiro=None, **kw):
@@ -98,8 +112,8 @@ class TestGrafo(unittest.TestCase):
 
     def test_grafo_compilado_tem_os_nos_e_o_checkpointer(self):
         nos = {n for n in GRAFO.get_graph().nodes if not n.startswith("__")}
-        self.assertEqual(nos, {"entrada", "consultar", "triagem", "buscar", "decidir", "redigir",
-                               "validar", "pedir_confirmacao", "confirmar", "gravar", "finalizar"})
+        self.assertEqual(nos, {"entrada", "consultar", "triagem", "buscar", "conferir_ressalva",
+                               "decidir", "redigir", "validar", "pedir_confirmacao", "confirmar", "gravar", "finalizar"})
         self.assertIsNotNone(GRAFO.checkpointer)
 
     # ---- os 8 casos, e as rotas
@@ -219,6 +233,64 @@ class TestGrafo(unittest.TestCase):
         self.assertIn("recusado em 2 tentativas", e.motivo)
         self.assertEqual(db.contar(self.con, "encaminhamentos", "TKT-0005"), 0)
 
+    # ---- a ressalva lida pelo modelo (docs/rag.md §4.2): o nó `conferir_ressalva`
+
+    def passo(self, e, ferramenta):
+        return next((p for p in e.passos if p.ferramenta == ferramenta), None)
+
+    def test_a_ressalva_so_e_conferida_quando_ha_o_que_conferir(self):
+        # KB-101-A não declara situação que não cobre; no TKT-0006 a ressalva literal já derrubou o score
+        for ticket in ("TKT-0001", "TKT-0006"):
+            with self.subTest(ticket=ticket):
+                self.assertIsNone(self.passo(self.rodar(ticket), "conferir_ressalva"))
+        e = self.rodar("TKT-0003")                              # KB-102 declara "ssh"
+        self.assertEqual(self.passo(e, "conferir_ressalva").argumentos,
+                         {"kb_id": "KB-102", "situacoes": ["ssh"]})
+
+    def test_modelo_diz_que_o_relato_cai_na_ressalva_e_o_codigo_baixa_o_score(self):
+        roteiro = [triagem("tecnico", termos=UPLOAD), ressalva(True, "ssh", "o relato fala de ssh"),
+                   texto("O guia não cobre o caso relatado; encaminhar a um analista.")]
+        e = self.rodar("TKT-0003", roteiro)
+        r = self.passo(e, "conferir_ressalva").resultado
+        self.assertEqual(r["score_depois"], round(r["score_antes"] * db.REDUTOR, 2))
+        self.assertLess(r["score_depois"], 0.5)
+        melhor = self.passo(e, "buscar_base_conhecimento").resultado["resultados"][0]
+        self.assertNotIn("ressalva_por", melhor)                # o log da busca é o da busca
+        self.assertEqual(e.desfecho["acao"], "fila_humana")
+        self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0003"), 0)
+        self.assertIn("abaixo do limiar", e.saida.suficiencia.motivo)    # e a saída diz por quê
+        self.assertIn("conferir_ressalva", e.saida.fonte.ferramentas)
+
+    def test_modelo_diz_que_nao_cai_e_nada_muda(self):
+        e = self.rodar("TKT-0003")
+        r = self.passo(e, "conferir_ressalva").resultado
+        self.assertEqual((r["cai_na_ressalva"], r["score_antes"]), (False, r["score_depois"]))
+        self.assertEqual(e.desfecho["acao"], "abrir_chamado_interno")
+
+    def test_o_modelo_nao_cria_uma_excecao_que_o_guia_nao_declara(self):
+        roteiro = [triagem("tecnico", termos=UPLOAD), ressalva(True, "intermitente"),
+                   ressalva(True, "ssh"), texto("Encaminhado.")]
+        e = self.rodar("TKT-0003", roteiro)                     # 1a resposta: frase fora da lista; 2a: certa
+        self.assertEqual(e.n_chamadas_modelo, 4)
+        self.assertEqual(self.passo(e, "conferir_ressalva").resultado["frase"], "ssh")
+        self.assertIn("situações da lista", self.modelo.pedidos[2]["messages"][1]["content"])
+
+    def test_ressalva_fora_do_contrato_duas_vezes_termina_em_erro_fatal_sem_gravar(self):
+        for ruim in (ressalva(True, "intermitente"), "isto não é JSON"):
+            with self.subTest(ruim=ruim[:20]):
+                self.con.close()
+                db.recriar_banco()
+                self.con = db.conectar()
+                e = self.rodar("TKT-0003", [triagem("tecnico", termos=UPLOAD), ruim, ruim])
+                self.assertEqual(e.termino, Termino.ERRO_FATAL)
+                self.assertIn("ressalva", e.motivo)
+                self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0003"), 0)
+
+    def test_o_teto_de_tokens_vale_tambem_no_no_da_ressalva(self):
+        e = self.rodar("TKT-0003", orcamento=Orcamento(max_tokens=1000))
+        self.assertEqual(e.termino, Termino.ORCAMENTO)
+        self.assertIsNone(self.passo(e, "conferir_ressalva"))
+
     # ---- os tetos
 
     def test_teto_de_tokens_termina_antes_da_redacao(self):
@@ -248,7 +320,7 @@ class TestGrafo(unittest.TestCase):
         self.assertEqual(e.termino, Termino.RESPONDEU)
         self.assertEqual(verificar("TKT-0007", e, self.con), (True, []))
         self.assertEqual(e.confirmacoes[-1]["status"], "aprovada")
-        self.assertEqual(e.n_chamadas_modelo, 2)                       # a retomada não chama o modelo
+        self.assertEqual(e.n_chamadas_modelo, 3)                       # triagem, ressalva, redação: a retomada não chama o modelo
         self.assertIsNone(self.retomar("TKT-0007", "aprovar"))        # aprovar duas vezes
         self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0007"), 1)
         self.assertEqual(db.pendencias_aguardando(self.con), [])
@@ -296,6 +368,31 @@ class TestGrafo(unittest.TestCase):
                      for p in db.pendencias_aguardando(self.con)}
         self.assertEqual(previstas, {"TKT-0003": "P1", "TKT-0007": "P2"})   # reincidência sobe um nível
 
+    def test_a_tela_da_pausa_mostra_a_data_do_guia_o_que_ele_nao_cobre_e_o_plano(self):
+        # o analista é a última barreira quando o modelo diz que o relato não cai numa ressalva
+        e = self.rodar("TKT-0007", confirmador=None)
+        p = e.pendencia
+        self.assertEqual(p["guia_publicado_em"], "2026-10-06")
+        self.assertEqual(p["guia_nao_cobre"], ["ssh"])
+        self.assertEqual(p["plano"], "VPS Pro")
+        self.assertIn("aplicação instalada pelo cliente", p["escopo_do_plano"])
+        (guardada,) = db.pendencias_aguardando(self.con, "TKT-0007")
+        self.assertEqual(guardada["acao"]["guia_nao_cobre"], ["ssh"])     # e vai para a tabela, não só para a tela
+
+    def test_a_tela_nao_traz_ressalvas_quando_o_guia_nao_declara_nenhuma(self):
+        self.con.execute("UPDATE kb_artigos SET nao_cobre = '' WHERE id = 'KB-102'")
+        p = self.rodar("TKT-0007", [triagem("tecnico", termos=UPLOAD), texto("Permissão negada ao gravar.")],
+                       confirmador=None).pendencia
+        self.assertEqual(p["guia_nao_cobre"], [])
+
+    def test_a_ficha_do_plano_vai_a_redacao_so_na_rota_tecnica_e_nao_muda_o_desfecho(self):
+        e = self.rodar("TKT-0007")
+        redacao = self.modelo.pedidos[-1]["messages"][1]["content"]
+        self.assertIn("Escopo do plano do cliente (VPS Pro)", redacao)
+        self.assertEqual(verificar("TKT-0007", e, self.con), (True, []))
+        self.rodar("TKT-0004")                                            # comercial: sem ficha
+        self.assertNotIn("Escopo do plano", self.modelo.pedidos[-1]["messages"][1]["content"])
+
     def test_aprovar_editando_grava_o_resumo_do_analista_e_guarda_o_do_modelo(self):
         pausado = self.rodar("TKT-0007", confirmador=None)
         original = pausado.pendencia["resumo"]
@@ -311,7 +408,7 @@ class TestGrafo(unittest.TestCase):
         self.assertEqual(gravado, self.CORRIGIDO)
         # o que o código garante não é editável: time e prioridade continuam vindo do procedimento
         self.assertEqual((e.desfecho["time_destino"], e.desfecho["prioridade"]), ("Infraestrutura", "P2"))
-        self.assertEqual(e.n_chamadas_modelo, 2)                            # editar não chama o modelo
+        self.assertEqual(e.n_chamadas_modelo, 3)                            # triagem, ressalva, redação: editar não chama o modelo
 
     def test_aprovar_editando_duas_vezes_nao_duplica(self):
         self.rodar("TKT-0007", confirmador=None)

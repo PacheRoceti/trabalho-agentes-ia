@@ -1,0 +1,556 @@
+{
+  "_nota": "Conjunto de perguntas do RAG (enunciado da Parte 2, §4.3). As dez primeiras (P1 a P10) são as de docs/rag.md §3. As demais (A*, N*) foram escritas em 11/10/2026 para calibrar a busca vetorial: paráfrases com resposta (A), situações de exceção (X) e perguntas sem resposta na base (N). Foram escritas por nós, depois de ver o corpus: são poucas e o limiar calibrado com elas é o limite desta medição. 'forma' diz qual forma de recuperar responde; só 'assunto' e 'termo' passam pela busca vetorial/palavra. 'esperado' é o guia que responde (null = não há). 'excecao' marca a pergunta cuja resposta depende de uma ressalva (coluna nao_cobre) do guia indicado em 'ressalva_de'. Em 11/10/2026, ANTES da medição do nó conferir_ressalva (docs/rag.md §4.2), entraram X4 e X5 (exceções sem a frase literal de nao_cobre) e C1 a C3 (controles: o guia cobre o caso, e o nó não deve barrar). Em 11/10/2026, depois de a primeira medição do nó conferir_ressalva falhar no KB-102 e ANTES de rodar o ressalva-v2.md, entraram X6 e X7 (exceções do KB-102 sobre SSH, escritas sem copiar as anteriores) e C4 e C5 (controles). Valem como perguntas que o v2 não viu ao ser escrito. Em 11/10/2026 o corpus passou de 7 para 16 guias (KB-107 a KB-115, mais 3 fichas de plano) e as perguntas abaixo foram escritas ANTES de qualquer medição no corpus novo: A8 a A16 (paráfrases dos guias novos) e N8 a N14 (sem resposta; várias são quase-acertos, perto de um guia mas fora dele) entram na calibração do limiar; X8 a X11 (exceções dos guias novos) e C6 a C8 (controles) testam a ressalva; F1 a F3 (forma 'ficha') perguntam o escopo de um plano e devem achar a ficha, e não um guia (campo 'esperado_ficha'). Em 11/10/2026, para refazer a calibração do limiar depois de ela deixar de separar as duas classes, entraram A17 a A24 (paráfrases com resposta) e N15 a N31 (sem resposta: comerciais, instruções que a base não tem, relatos vagos, pedidos fora da alçada e um assunto alheio), escritas ANTES de medir. As N também passam pela triagem (`python src/medir_rag.py triagem`): a pergunta só chega à busca se a triagem a classificar como técnica.",
+  "perguntas": [
+    {
+      "id": "P1",
+      "forma": "assunto",
+      "texto": "O certificado SSL do meu site venceu e a renovação automática não rodou.",
+      "esperado": "KB-101-A"
+    },
+    {
+      "id": "P2",
+      "forma": "assunto",
+      "texto": "Todo upload do meu site falha com permissão negada, não consigo salvar arquivos.",
+      "esperado": "KB-102"
+    },
+    {
+      "id": "P3",
+      "forma": "registro",
+      "texto": "Este cliente já teve chamado interno desta categoria nos últimos 30 dias?",
+      "esperado": null
+    },
+    {
+      "id": "P4",
+      "forma": "registro",
+      "texto": "Qual é o plano do cliente que abriu o chamado?",
+      "esperado": null
+    },
+    {
+      "id": "P5",
+      "forma": "registro",
+      "texto": "Para qual time vai uma falha de DNS, e com que prioridade?",
+      "esperado": null
+    },
+    {
+      "id": "P6",
+      "forma": "assunto",
+      "texto": "Meu site dá erro 502 de vez em quando desde o deploy de ontem.",
+      "esperado": "KB-104",
+      "excecao": true,
+      "ressalva_de": "KB-104"
+    },
+    {
+      "id": "P7",
+      "forma": "assunto",
+      "texto": "Recebo permissão negada quando tento entrar por SSH no servidor.",
+      "esperado": "KB-103",
+      "excecao": true,
+      "ressalva_de": "KB-102"
+    },
+    {
+      "id": "P8",
+      "forma": "termo",
+      "texto": "fail2ban",
+      "esperado": "KB-103"
+    },
+    {
+      "id": "P9",
+      "forma": "relação",
+      "texto": "Que guia substitui a versão antiga do procedimento de SSL?",
+      "esperado": null
+    },
+    {
+      "id": "P10",
+      "forma": "assunto",
+      "texto": "Como instalo o WordPress no meu site?",
+      "esperado": null
+    },
+    {
+      "id": "A1",
+      "forma": "assunto",
+      "texto": "O navegador diz que o certificado do meu domínio expirou e o site aparece como inseguro.",
+      "esperado": "KB-101-A"
+    },
+    {
+      "id": "A2",
+      "forma": "assunto",
+      "texto": "Não consigo enviar imagens para o site, dá erro de permissão ao gravar.",
+      "esperado": "KB-102"
+    },
+    {
+      "id": "A3",
+      "forma": "assunto",
+      "texto": "Minha conexão SSH com o servidor é recusada, acho que fui bloqueado.",
+      "esperado": "KB-103"
+    },
+    {
+      "id": "A4",
+      "forma": "assunto",
+      "texto": "Desde que publiquei a nova versão o site fica fora do ar com erro 503.",
+      "esperado": "KB-104"
+    },
+    {
+      "id": "A5",
+      "forma": "assunto",
+      "texto": "O meu domínio não resolve e o e-mail da empresa parou de chegar.",
+      "esperado": "KB-106"
+    },
+    {
+      "id": "A6",
+      "forma": "assunto",
+      "texto": "O backup de ontem à noite não foi feito.",
+      "esperado": "KB-105"
+    },
+    {
+      "id": "A7",
+      "forma": "assunto",
+      "texto": "Não consigo logar no servidor por SSH, fico esperando e depois sou barrado.",
+      "esperado": "KB-103"
+    },
+    {
+      "id": "A8",
+      "forma": "assunto",
+      "texto": "O site não conecta ao banco de dados, a conexão é recusada.",
+      "esperado": "KB-107"
+    },
+    {
+      "id": "A9",
+      "forma": "assunto",
+      "texto": "A cota de armazenamento da conta estourou, o disco está cheio.",
+      "esperado": "KB-108"
+    },
+    {
+      "id": "A10",
+      "forma": "assunto",
+      "texto": "O meu script agendado no cron parou de rodar, não executa mais no horário.",
+      "esperado": "KB-109"
+    },
+    {
+      "id": "A11",
+      "forma": "assunto",
+      "texto": "O navegador diz que a página redireciona muitas vezes e nunca carrega.",
+      "esperado": "KB-110"
+    },
+    {
+      "id": "A12",
+      "forma": "assunto",
+      "texto": "Os e-mails que envio pelo meu domínio voltam rejeitados ou caem no spam.",
+      "esperado": "KB-111"
+    },
+    {
+      "id": "A13",
+      "forma": "assunto",
+      "texto": "Meus visitantes tomam erro 403 em páginas normais do site, parece bloqueio do firewall.",
+      "esperado": "KB-112"
+    },
+    {
+      "id": "A14",
+      "forma": "assunto",
+      "texto": "O PHP do meu site acusa memória esgotada e a página não carrega.",
+      "esperado": "KB-113"
+    },
+    {
+      "id": "A15",
+      "forma": "assunto",
+      "texto": "Não consigo entrar por FTP, a senha é recusada.",
+      "esperado": "KB-114"
+    },
+    {
+      "id": "A16",
+      "forma": "assunto",
+      "texto": "O servidor está lentíssimo, a CPU está no limite o tempo todo.",
+      "esperado": "KB-115"
+    },
+    {
+      "id": "A17",
+      "forma": "assunto",
+      "texto": "O cadeado do site sumiu hoje, o certificado venceu e o renovador automático falhou.",
+      "esperado": "KB-101-A"
+    },
+    {
+      "id": "A18",
+      "forma": "assunto",
+      "texto": "Depois de restaurar o site, ninguém consegue gravar arquivos na pasta de mídia: permissão negada.",
+      "esperado": "KB-102"
+    },
+    {
+      "id": "A19",
+      "forma": "assunto",
+      "texto": "Tomei ban depois de errar a senha do SSH e agora o servidor nem responde para mim.",
+      "esperado": "KB-103"
+    },
+    {
+      "id": "A20",
+      "forma": "assunto",
+      "texto": "Apareceu erro 502 em todas as páginas logo depois que publiquei a nova versão da aplicação.",
+      "esperado": "KB-104"
+    },
+    {
+      "id": "A21",
+      "forma": "assunto",
+      "texto": "O domínio da empresa não resolve de jeito nenhum, parece que o nameserver caiu.",
+      "esperado": "KB-106"
+    },
+    {
+      "id": "A22",
+      "forma": "assunto",
+      "texto": "O backup noturno não rodou ontem e a cota do armazenamento de backup está cheia.",
+      "esperado": "KB-105"
+    },
+    {
+      "id": "A23",
+      "forma": "assunto",
+      "texto": "O firewall de aplicação está bloqueando um formulário legítimo do site com erro 403.",
+      "esperado": "KB-112"
+    },
+    {
+      "id": "A24",
+      "forma": "assunto",
+      "texto": "A rotina do cron que gera meus relatórios deixou de executar depois da migração.",
+      "esperado": "KB-109"
+    },
+    {
+      "id": "X1",
+      "forma": "assunto",
+      "texto": "Meu site dá erro 502 às vezes, oscila durante o dia.",
+      "esperado": "KB-104",
+      "excecao": true,
+      "ressalva_de": "KB-104"
+    },
+    {
+      "id": "X2",
+      "forma": "assunto",
+      "texto": "Aparece permissão negada no login por SSH, mas só com a minha chave.",
+      "esperado": "KB-103",
+      "excecao": true,
+      "ressalva_de": "KB-102"
+    },
+    {
+      "id": "X3",
+      "forma": "assunto",
+      "texto": "O site cai e volta sozinho, o erro 502 vai e vem.",
+      "esperado": "KB-104",
+      "excecao": true,
+      "ressalva_de": "KB-104"
+    },
+    {
+      "id": "X4",
+      "forma": "assunto",
+      "texto": "O erro 502 aparece e some, não é sempre.",
+      "esperado": "KB-104",
+      "excecao": true,
+      "ressalva_de": "KB-104"
+    },
+    {
+      "id": "X5",
+      "forma": "assunto",
+      "texto": "Dá permissão negada quando tento acessar o servidor por terminal remoto.",
+      "esperado": "KB-103",
+      "excecao": true,
+      "ressalva_de": "KB-102"
+    },
+    {
+      "id": "X6",
+      "forma": "assunto",
+      "texto": "A minha conexão por SSH dá permissão negada, mesmo com a chave que sempre usei.",
+      "esperado": "KB-103",
+      "excecao": true,
+      "ressalva_de": "KB-102"
+    },
+    {
+      "id": "X7",
+      "forma": "assunto",
+      "texto": "Ao fazer login no servidor pelo terminal aparece permissão negada.",
+      "esperado": "KB-103",
+      "excecao": true,
+      "ressalva_de": "KB-102"
+    },
+    {
+      "id": "X8",
+      "forma": "assunto",
+      "texto": "O banco de dados está respondendo muito devagar, as consultas demoram.",
+      "esperado": "KB-107",
+      "excecao": true,
+      "ressalva_de": "KB-107"
+    },
+    {
+      "id": "X9",
+      "forma": "assunto",
+      "texto": "O servidor fica lento de vez em quando e depois volta ao normal.",
+      "esperado": "KB-115",
+      "excecao": true,
+      "ressalva_de": "KB-115"
+    },
+    {
+      "id": "X10",
+      "forma": "assunto",
+      "texto": "A lentidão aparece em alguns momentos do dia e depois some sozinha.",
+      "esperado": "KB-115",
+      "excecao": true,
+      "ressalva_de": "KB-115"
+    },
+    {
+      "id": "X11",
+      "forma": "assunto",
+      "texto": "Os e-mails que a empresa espera dos clientes não chegam na caixa de entrada.",
+      "esperado": "KB-111",
+      "excecao": true,
+      "ressalva_de": "KB-111"
+    },
+    {
+      "id": "C1",
+      "forma": "assunto",
+      "texto": "O site está fora do ar com erro 502 o tempo todo desde o deploy.",
+      "esperado": "KB-104"
+    },
+    {
+      "id": "C2",
+      "forma": "assunto",
+      "texto": "Todos os uploads de imagens do site falham com permissão negada na pasta de arquivos.",
+      "esperado": "KB-102"
+    },
+    {
+      "id": "C3",
+      "forma": "assunto",
+      "texto": "Não consigo gravar arquivos no servidor: permissão negada desde a migração.",
+      "esperado": "KB-102"
+    },
+    {
+      "id": "C4",
+      "forma": "assunto",
+      "texto": "Depois que migrei meu blog, os uploads de fotos falham com permissão negada.",
+      "esperado": "KB-102"
+    },
+    {
+      "id": "C5",
+      "forma": "assunto",
+      "texto": "Desde o deploy de hoje o site não abre e dá erro 502 em todas as páginas.",
+      "esperado": "KB-104"
+    },
+    {
+      "id": "C6",
+      "forma": "assunto",
+      "texto": "A aplicação mostra erro de conexão com o banco de dados desde o reinício do servidor.",
+      "esperado": "KB-107"
+    },
+    {
+      "id": "C7",
+      "forma": "assunto",
+      "texto": "A CPU do servidor está em 100% o tempo todo e o site está lento.",
+      "esperado": "KB-115"
+    },
+    {
+      "id": "C8",
+      "forma": "assunto",
+      "texto": "O e-mail que mando aos clientes é rejeitado com erro de SPF.",
+      "esperado": "KB-111"
+    },
+    {
+      "id": "N1",
+      "forma": "assunto",
+      "texto": "Quanto custa o plano VPS Pro por mês?",
+      "esperado": null
+    },
+    {
+      "id": "N2",
+      "forma": "assunto",
+      "texto": "Como configuro minha conta de e-mail no celular?",
+      "esperado": null
+    },
+    {
+      "id": "N3",
+      "forma": "assunto",
+      "texto": "Quero cancelar o meu contrato.",
+      "esperado": null
+    },
+    {
+      "id": "N4",
+      "forma": "assunto",
+      "texto": "Como faço para migrar meu site de outro provedor para vocês?",
+      "esperado": null
+    },
+    {
+      "id": "N5",
+      "forma": "assunto",
+      "texto": "Esqueci a senha do painel de controle.",
+      "esperado": null
+    },
+    {
+      "id": "N6",
+      "forma": "assunto",
+      "texto": "Meu servidor não está funcionando direito.",
+      "esperado": null
+    },
+    {
+      "id": "N7",
+      "forma": "assunto",
+      "texto": "Preciso de uma nota fiscal da última fatura.",
+      "esperado": null
+    },
+    {
+      "id": "N8",
+      "forma": "assunto",
+      "texto": "Como faço um backup manual do meu site agora?",
+      "esperado": null
+    },
+    {
+      "id": "N9",
+      "forma": "assunto",
+      "texto": "Como crio uma nova conta de e-mail para um funcionário?",
+      "esperado": null
+    },
+    {
+      "id": "N10",
+      "forma": "assunto",
+      "texto": "Como troco a versão do PHP do meu site para a mais nova?",
+      "esperado": null
+    },
+    {
+      "id": "N11",
+      "forma": "assunto",
+      "texto": "Quero renovar o registro do meu domínio, que está vencendo.",
+      "esperado": null
+    },
+    {
+      "id": "N12",
+      "forma": "assunto",
+      "texto": "Como configuro um certificado SSL que comprei de outra empresa?",
+      "esperado": null
+    },
+    {
+      "id": "N13",
+      "forma": "assunto",
+      "texto": "Quero ampliar o espaço em disco da minha conta, quanto custa?",
+      "esperado": null
+    },
+    {
+      "id": "N14",
+      "forma": "assunto",
+      "texto": "Preciso de um servidor maior para o meu site, o que vocês oferecem?",
+      "esperado": null
+    },
+    {
+      "id": "N15",
+      "forma": "assunto",
+      "texto": "Quanto custa migrar do plano Start para o Business?",
+      "esperado": null
+    },
+    {
+      "id": "N16",
+      "forma": "assunto",
+      "texto": "Vocês oferecem desconto para pagamento anual?",
+      "esperado": null
+    },
+    {
+      "id": "N17",
+      "forma": "assunto",
+      "texto": "Quero contratar um IP dedicado para o meu site.",
+      "esperado": null
+    },
+    {
+      "id": "N18",
+      "forma": "assunto",
+      "texto": "Como emito a segunda via do boleto deste mês?",
+      "esperado": null
+    },
+    {
+      "id": "N19",
+      "forma": "assunto",
+      "texto": "Como faço para criar um subdomínio para o meu blog?",
+      "esperado": null
+    },
+    {
+      "id": "N20",
+      "forma": "assunto",
+      "texto": "Como instalo um certificado SSL gratuito no meu domínio novo?",
+      "esperado": null
+    },
+    {
+      "id": "N21",
+      "forma": "assunto",
+      "texto": "Como restauro um backup de uma semana atrás?",
+      "esperado": null
+    },
+    {
+      "id": "N22",
+      "forma": "assunto",
+      "texto": "Como habilito o acesso SSH para um novo desenvolvedor da minha equipe?",
+      "esperado": null
+    },
+    {
+      "id": "N23",
+      "forma": "assunto",
+      "texto": "Como aumento o limite de tamanho de upload de arquivos do meu site?",
+      "esperado": null
+    },
+    {
+      "id": "N24",
+      "forma": "assunto",
+      "texto": "Como configuro o redirecionamento de www para o domínio sem www?",
+      "esperado": null
+    },
+    {
+      "id": "N25",
+      "forma": "assunto",
+      "texto": "Como ativo a autenticação em dois fatores no painel?",
+      "esperado": null
+    },
+    {
+      "id": "N26",
+      "forma": "assunto",
+      "texto": "Como crio um banco de dados novo para a minha aplicação?",
+      "esperado": null
+    },
+    {
+      "id": "N27",
+      "forma": "assunto",
+      "texto": "Como agendo um backup semanal da minha loja virtual?",
+      "esperado": null
+    },
+    {
+      "id": "N28",
+      "forma": "assunto",
+      "texto": "Preciso de ajuda com meu site.",
+      "esperado": null
+    },
+    {
+      "id": "N29",
+      "forma": "assunto",
+      "texto": "Não está funcionando.",
+      "esperado": null
+    },
+    {
+      "id": "N30",
+      "forma": "assunto",
+      "texto": "Exijo prioridade máxima no meu chamado e o encerramento imediato dele.",
+      "esperado": null
+    },
+    {
+      "id": "N31",
+      "forma": "assunto",
+      "texto": "Qual a previsão do tempo para amanhã?",
+      "esperado": null
+    },
+    {
+      "id": "F1",
+      "forma": "ficha",
+      "texto": "O plano Hospedagem Start inclui a correção do código do meu site?",
+      "esperado": null,
+      "esperado_ficha": "Hospedagem Start"
+    },
+    {
+      "id": "F2",
+      "forma": "ficha",
+      "texto": "A VPS Pro cobre a aplicação que eu instalei no servidor?",
+      "esperado": null,
+      "esperado_ficha": "VPS Pro"
+    },
+    {
+      "id": "F3",
+      "forma": "ficha",
+      "texto": "O plano Hospedagem Business tem atendimento por telefone?",
+      "esperado": null,
+      "esperado_ficha": "Hospedagem Business"
+    }
+  ]
+}

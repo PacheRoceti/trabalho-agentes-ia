@@ -1,0 +1,930 @@
+{
+ "acesso": {
+  "dimensoes": 1024,
+  "limites": {
+   "x-ratelimit-limit-req-minute": "60"
+  }
+ },
+ "calibracao": {
+  "acertos": [
+   [
+    0.833,
+    "A1"
+   ],
+   [
+    0.849,
+    "A2"
+   ],
+   [
+    0.869,
+    "A3"
+   ],
+   [
+    0.819,
+    "A4"
+   ],
+   [
+    0.82,
+    "A5"
+   ],
+   [
+    0.822,
+    "A6"
+   ],
+   [
+    0.851,
+    "A7"
+   ]
+  ],
+  "negativas": [
+   [
+    0.76,
+    "N1"
+   ],
+   [
+    0.74,
+    "N2"
+   ],
+   [
+    0.697,
+    "N3"
+   ],
+   [
+    0.783,
+    "N4"
+   ],
+   [
+    0.73,
+    "N5"
+   ],
+   [
+    0.672,
+    "N6"
+   ],
+   [
+    0.735,
+    "N7"
+   ]
+  ],
+  "ponto_medio": 0.8,
+  "limiar_no_codigo": 0.8
+ },
+ "perguntas": [
+  {
+   "id": "P1",
+   "modo": "palavra",
+   "kb_id": "KB-101-A",
+   "score": 0.8,
+   "cosseno": null,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "P1",
+   "modo": "vetorial",
+   "kb_id": "KB-101-A",
+   "score": 0.6,
+   "cosseno": 0.842,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "P1",
+   "modo": "hibrida",
+   "kb_id": "KB-101-A",
+   "score": 0.6,
+   "cosseno": 0.842,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "P2",
+   "modo": "palavra",
+   "kb_id": "KB-102",
+   "score": 0.77,
+   "cosseno": null,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "P2",
+   "modo": "vetorial",
+   "kb_id": "KB-102",
+   "score": 0.66,
+   "cosseno": 0.863,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "P2",
+   "modo": "hibrida",
+   "kb_id": "KB-102",
+   "score": 0.66,
+   "cosseno": 0.863,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "P6",
+   "modo": "palavra",
+   "kb_id": "KB-104",
+   "score": 0.23,
+   "cosseno": null,
+   "ressalva": true,
+   "veredito": "certo"
+  },
+  {
+   "id": "P6",
+   "modo": "vetorial",
+   "kb_id": "KB-104",
+   "score": 0.22,
+   "cosseno": 0.817,
+   "ressalva": true,
+   "veredito": "certo"
+  },
+  {
+   "id": "P6",
+   "modo": "hibrida",
+   "kb_id": "KB-104",
+   "score": 0.22,
+   "cosseno": 0.817,
+   "ressalva": true,
+   "veredito": "certo"
+  },
+  {
+   "id": "P7",
+   "modo": "palavra",
+   "kb_id": "KB-102",
+   "score": 0.18,
+   "cosseno": null,
+   "ressalva": true,
+   "veredito": "parcial"
+  },
+  {
+   "id": "P7",
+   "modo": "vetorial",
+   "kb_id": "KB-103",
+   "score": 0.56,
+   "cosseno": 0.826,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "P7",
+   "modo": "hibrida",
+   "kb_id": "KB-103",
+   "score": 0.56,
+   "cosseno": 0.826,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "P8",
+   "modo": "palavra",
+   "kb_id": "KB-103",
+   "score": 0.4,
+   "cosseno": null,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "P8",
+   "modo": "vetorial",
+   "kb_id": "KB-103",
+   "score": 0.39,
+   "cosseno": 0.756,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "P8",
+   "modo": "hibrida",
+   "kb_id": "KB-103",
+   "score": 0.39,
+   "cosseno": 0.756,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "P10",
+   "modo": "palavra",
+   "kb_id": null,
+   "score": null,
+   "cosseno": null,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "P10",
+   "modo": "vetorial",
+   "kb_id": "KB-102",
+   "score": 0.41,
+   "cosseno": 0.763,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "P10",
+   "modo": "hibrida",
+   "kb_id": "KB-102",
+   "score": 0.41,
+   "cosseno": 0.763,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "A1",
+   "modo": "palavra",
+   "kb_id": "KB-101-A",
+   "score": 0.4,
+   "cosseno": null,
+   "ressalva": false,
+   "veredito": "errado"
+  },
+  {
+   "id": "A1",
+   "modo": "vetorial",
+   "kb_id": "KB-101-A",
+   "score": 0.58,
+   "cosseno": 0.833,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "A1",
+   "modo": "hibrida",
+   "kb_id": "KB-101-A",
+   "score": 0.58,
+   "cosseno": 0.833,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "A2",
+   "modo": "palavra",
+   "kb_id": "KB-102",
+   "score": 0.57,
+   "cosseno": null,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "A2",
+   "modo": "vetorial",
+   "kb_id": "KB-102",
+   "score": 0.62,
+   "cosseno": 0.849,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "A2",
+   "modo": "hibrida",
+   "kb_id": "KB-102",
+   "score": 0.62,
+   "cosseno": 0.849,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "A3",
+   "modo": "palavra",
+   "kb_id": "KB-103",
+   "score": 0.67,
+   "cosseno": null,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "A3",
+   "modo": "vetorial",
+   "kb_id": "KB-103",
+   "score": 0.67,
+   "cosseno": 0.869,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "A3",
+   "modo": "hibrida",
+   "kb_id": "KB-103",
+   "score": 0.67,
+   "cosseno": 0.869,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "A4",
+   "modo": "palavra",
+   "kb_id": "KB-104",
+   "score": 0.13,
+   "cosseno": null,
+   "ressalva": false,
+   "veredito": "errado"
+  },
+  {
+   "id": "A4",
+   "modo": "vetorial",
+   "kb_id": "KB-104",
+   "score": 0.55,
+   "cosseno": 0.819,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "A4",
+   "modo": "hibrida",
+   "kb_id": "KB-104",
+   "score": 0.55,
+   "cosseno": 0.819,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "A5",
+   "modo": "palavra",
+   "kb_id": "KB-106",
+   "score": 0.5,
+   "cosseno": null,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "A5",
+   "modo": "vetorial",
+   "kb_id": "KB-106",
+   "score": 0.55,
+   "cosseno": 0.82,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "A5",
+   "modo": "hibrida",
+   "kb_id": "KB-106",
+   "score": 0.55,
+   "cosseno": 0.82,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "A6",
+   "modo": "palavra",
+   "kb_id": "KB-105",
+   "score": 0.13,
+   "cosseno": null,
+   "ressalva": false,
+   "veredito": "errado"
+  },
+  {
+   "id": "A6",
+   "modo": "vetorial",
+   "kb_id": "KB-105",
+   "score": 0.55,
+   "cosseno": 0.822,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "A6",
+   "modo": "hibrida",
+   "kb_id": "KB-105",
+   "score": 0.55,
+   "cosseno": 0.822,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "A7",
+   "modo": "palavra",
+   "kb_id": "KB-103",
+   "score": 0.09,
+   "cosseno": null,
+   "ressalva": false,
+   "veredito": "errado"
+  },
+  {
+   "id": "A7",
+   "modo": "vetorial",
+   "kb_id": "KB-103",
+   "score": 0.63,
+   "cosseno": 0.851,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "A7",
+   "modo": "hibrida",
+   "kb_id": "KB-103",
+   "score": 0.63,
+   "cosseno": 0.851,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "X1",
+   "modo": "palavra",
+   "kb_id": "KB-104",
+   "score": 0.05,
+   "cosseno": null,
+   "ressalva": true,
+   "veredito": "certo"
+  },
+  {
+   "id": "X1",
+   "modo": "vetorial",
+   "kb_id": "KB-104",
+   "score": 0.18,
+   "cosseno": 0.786,
+   "ressalva": true,
+   "veredito": "certo"
+  },
+  {
+   "id": "X1",
+   "modo": "hibrida",
+   "kb_id": "KB-104",
+   "score": 0.18,
+   "cosseno": 0.786,
+   "ressalva": true,
+   "veredito": "certo"
+  },
+  {
+   "id": "X2",
+   "modo": "palavra",
+   "kb_id": "KB-102",
+   "score": 0.18,
+   "cosseno": null,
+   "ressalva": true,
+   "veredito": "parcial"
+  },
+  {
+   "id": "X2",
+   "modo": "vetorial",
+   "kb_id": "KB-103",
+   "score": 0.49,
+   "cosseno": 0.798,
+   "ressalva": false,
+   "veredito": "parcial"
+  },
+  {
+   "id": "X2",
+   "modo": "hibrida",
+   "kb_id": "KB-103",
+   "score": 0.49,
+   "cosseno": 0.798,
+   "ressalva": false,
+   "veredito": "parcial"
+  },
+  {
+   "id": "X3",
+   "modo": "palavra",
+   "kb_id": "KB-104",
+   "score": 0.11,
+   "cosseno": null,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "X3",
+   "modo": "vetorial",
+   "kb_id": "KB-104",
+   "score": 0.52,
+   "cosseno": 0.807,
+   "ressalva": false,
+   "veredito": "errado"
+  },
+  {
+   "id": "X3",
+   "modo": "hibrida",
+   "kb_id": "KB-104",
+   "score": 0.52,
+   "cosseno": 0.807,
+   "ressalva": false,
+   "veredito": "errado"
+  },
+  {
+   "id": "N1",
+   "modo": "palavra",
+   "kb_id": null,
+   "score": null,
+   "cosseno": null,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N1",
+   "modo": "vetorial",
+   "kb_id": "KB-102",
+   "score": 0.4,
+   "cosseno": 0.76,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N1",
+   "modo": "hibrida",
+   "kb_id": "KB-102",
+   "score": 0.4,
+   "cosseno": 0.76,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N2",
+   "modo": "palavra",
+   "kb_id": null,
+   "score": null,
+   "cosseno": null,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N2",
+   "modo": "vetorial",
+   "kb_id": "KB-102",
+   "score": 0.35,
+   "cosseno": 0.74,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N2",
+   "modo": "hibrida",
+   "kb_id": "KB-102",
+   "score": 0.35,
+   "cosseno": 0.74,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N3",
+   "modo": "palavra",
+   "kb_id": null,
+   "score": null,
+   "cosseno": null,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N3",
+   "modo": "vetorial",
+   "kb_id": "KB-105",
+   "score": 0.24,
+   "cosseno": 0.697,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N3",
+   "modo": "hibrida",
+   "kb_id": "KB-105",
+   "score": 0.24,
+   "cosseno": 0.697,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N4",
+   "modo": "palavra",
+   "kb_id": null,
+   "score": null,
+   "cosseno": null,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N4",
+   "modo": "vetorial",
+   "kb_id": "KB-102",
+   "score": 0.46,
+   "cosseno": 0.783,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N4",
+   "modo": "hibrida",
+   "kb_id": "KB-102",
+   "score": 0.46,
+   "cosseno": 0.783,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N5",
+   "modo": "palavra",
+   "kb_id": null,
+   "score": null,
+   "cosseno": null,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N5",
+   "modo": "vetorial",
+   "kb_id": "KB-102",
+   "score": 0.32,
+   "cosseno": 0.73,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N5",
+   "modo": "hibrida",
+   "kb_id": "KB-102",
+   "score": 0.32,
+   "cosseno": 0.73,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N6",
+   "modo": "palavra",
+   "kb_id": null,
+   "score": null,
+   "cosseno": null,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N6",
+   "modo": "vetorial",
+   "kb_id": "KB-106",
+   "score": 0.18,
+   "cosseno": 0.672,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N6",
+   "modo": "hibrida",
+   "kb_id": "KB-106",
+   "score": 0.18,
+   "cosseno": 0.672,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N7",
+   "modo": "palavra",
+   "kb_id": null,
+   "score": null,
+   "cosseno": null,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N7",
+   "modo": "vetorial",
+   "kb_id": "KB-105",
+   "score": 0.34,
+   "cosseno": 0.735,
+   "ressalva": false,
+   "veredito": "certo"
+  },
+  {
+   "id": "N7",
+   "modo": "hibrida",
+   "kb_id": "KB-105",
+   "score": 0.34,
+   "cosseno": 0.735,
+   "ressalva": false,
+   "veredito": "certo"
+  }
+ ],
+ "sem_curadoria": {
+  "P1": [
+   [
+    "KB-101",
+    0.853
+   ],
+   [
+    "KB-101-A",
+    0.842
+   ]
+  ],
+  "A1": [
+   [
+    "KB-101",
+    0.846
+   ],
+   [
+    "KB-101-A",
+    0.833
+   ]
+  ]
+ },
+ "ressalvas": [
+  {
+   "kb_id": "KB-102",
+   "frase": "ssh",
+   "forma": "pergunta inteira x frase",
+   "excecoes": [
+    0.7507175252126864,
+    0.7344202780925667
+   ],
+   "normais": [
+    0.6345121456681757,
+    0.6260506936908707
+   ],
+   "folga": 0.099908132424391
+  },
+  {
+   "kb_id": "KB-102",
+   "frase": "ssh",
+   "forma": "pergunta inteira x frase descrita",
+   "excecoes": [
+    0.8517410106785648,
+    0.8089490174909857
+   ],
+   "normais": [
+    0.7919770163986438,
+    0.793019038555276
+   ],
+   "folga": 0.015929978935709688
+  },
+  {
+   "kb_id": "KB-102",
+   "frase": "ssh",
+   "forma": "melhor janela de 1 a 4 palavras x frase",
+   "excecoes": [
+    1.0,
+    1.0
+   ],
+   "normais": [
+    0.6940510256955852,
+    0.7036733335137314
+   ],
+   "folga": 0.2963266664862686
+  },
+  {
+   "kb_id": "KB-104",
+   "frase": "intermitente",
+   "forma": "pergunta inteira x frase",
+   "excecoes": [
+    0.6719057663478242,
+    0.6819566337436149,
+    0.6918415171137459
+   ],
+   "normais": [
+    0.6789589802989383
+   ],
+   "folga": -0.0070532139511141345
+  },
+  {
+   "kb_id": "KB-104",
+   "frase": "intermitente",
+   "forma": "pergunta inteira x frase descrita",
+   "excecoes": [
+    0.8147831295179759,
+    0.8237279789358661,
+    0.8411400877886123
+   ],
+   "normais": [
+    0.8148340371176307
+   ],
+   "folga": -5.090759965475922e-05
+  },
+  {
+   "kb_id": "KB-104",
+   "frase": "intermitente",
+   "forma": "melhor janela de 1 a 4 palavras x frase",
+   "excecoes": [
+    0.7161977432776439,
+    0.7552212888125797,
+    0.7161084351529586
+   ],
+   "normais": [
+    0.701066203000973
+   ],
+   "folga": 0.015042232151985635
+  },
+  {
+   "kb_id": "KB-104",
+   "frase": "as vezes",
+   "forma": "pergunta inteira x frase",
+   "excecoes": [
+    0.6834197901607242,
+    0.6902752334885867,
+    0.7057753828864556
+   ],
+   "normais": [
+    0.6886888361090994
+   ],
+   "folga": -0.005269045948375184
+  },
+  {
+   "kb_id": "KB-104",
+   "frase": "as vezes",
+   "forma": "pergunta inteira x frase descrita",
+   "excecoes": [
+    0.7833417220888452,
+    0.7843984282385894,
+    0.7914024945291028
+   ],
+   "normais": [
+    0.7772965021340927
+   ],
+   "folga": 0.00604521995475249
+  },
+  {
+   "kb_id": "KB-104",
+   "frase": "as vezes",
+   "forma": "melhor janela de 1 a 4 palavras x frase",
+   "excecoes": [
+    0.8764868773034398,
+    0.9467018309801971,
+    0.7866786624209554
+   ],
+   "normais": [
+    0.7701790195759555
+   ],
+   "folga": 0.01649964284499994
+  },
+  {
+   "kb_id": "KB-104",
+   "frase": "de vez em quando",
+   "forma": "pergunta inteira x frase",
+   "excecoes": [
+    0.7080515774217739,
+    0.6927670313422913,
+    0.6991589872226518
+   ],
+   "normais": [
+    0.6791603420167593
+   ],
+   "folga": 0.013606689325531995
+  },
+  {
+   "kb_id": "KB-104",
+   "frase": "de vez em quando",
+   "forma": "pergunta inteira x frase descrita",
+   "excecoes": [
+    0.8063870926233411,
+    0.7950223758295478,
+    0.8050198611365833
+   ],
+   "normais": [
+    0.7860369358799584
+   ],
+   "folga": 0.008985439949589447
+  },
+  {
+   "kb_id": "KB-104",
+   "frase": "de vez em quando",
+   "forma": "melhor janela de 1 a 4 palavras x frase",
+   "excecoes": [
+    1.0,
+    0.8638568912850937,
+    0.7629645982938439
+   ],
+   "normais": [
+    0.7336117556412551
+   ],
+   "folga": 0.02935284265258875
+  },
+  {
+   "kb_id": "KB-104",
+   "frase": "oscila",
+   "forma": "pergunta inteira x frase",
+   "excecoes": [
+    0.5717915817562891,
+    0.6333232175095191,
+    0.6325296541168187
+   ],
+   "normais": [
+    0.60983965603941
+   ],
+   "folga": -0.03804807428312096
+  },
+  {
+   "kb_id": "KB-104",
+   "frase": "oscila",
+   "forma": "pergunta inteira x frase descrita",
+   "excecoes": [
+    0.7487177401808583,
+    0.7930442545301397,
+    0.7964037009312375
+   ],
+   "normais": [
+    0.7467507775443938
+   ],
+   "folga": 0.0019669626364645643
+  },
+  {
+   "kb_id": "KB-104",
+   "frase": "oscila",
+   "forma": "melhor janela de 1 a 4 palavras x frase",
+   "excecoes": [
+    0.6972069733748287,
+    1.0,
+    0.6972069733748287
+   ],
+   "normais": [
+    0.6972069733748287
+   ],
+   "folga": 0.0
+  }
+ ],
+ "tokens_embedding": 3949
+}

@@ -56,6 +56,15 @@ CREATE TABLE kb_artigos (
                                                -- Guia revogado não entra na busca (db.buscar_kb)
 );
 
+-- Fonte E (docs/base-de-conhecimento-v2.md §2): uma ficha por plano, com o escopo do suporte. NÃO é
+-- procedimento: não tem ação, time nem prioridade e nunca autoriza uma escrita. Serve de contexto à
+-- redação e à tela do analista (o plano do cliente vem de clientes.plano) e entra no índice vetorial.
+CREATE TABLE planos_fichas (
+    plano          TEXT PRIMARY KEY,      -- igual a clientes.plano
+    escopo         TEXT NOT NULL,         -- o que o suporte cobre e o que não cobre
+    data_vigencia  TEXT NOT NULL          -- AAAA-MM-DD (fictícia)
+);
+
 CREATE TABLE chamados_internos (
     id                 INTEGER PRIMARY KEY AUTOINCREMENT,
     ticket_externo     TEXT NOT NULL,
@@ -170,7 +179,79 @@ INSERT INTO kb_artigos VALUES
    'backup falhou diario restauracao agendamento snapshot',
    'Cota de armazenamento de backup excedida ou janela de backup sobreposta a outra tarefa.',
    'Conferir a cota do storage de backup e o agendamento; reexecutar o job manualmente.',
-   'anotar', 'Infraestrutura', 'P3', 'backup', '', '2026-04-08', NULL);
+   'anotar', 'Infraestrutura', 'P3', 'backup', '', '2026-04-08', NULL),
+  -- OS GUIAS DE 11/10/2026 (KB-107 a KB-115): ampliam o corpus de 7 para 16 guias (15 vigentes). Foram
+  -- escritos sem responder às perguntas sem resposta de dados/perguntas-rag.json (WordPress, preço,
+  -- cancelamento, senha do painel...), e nenhum compartilha palavra-chave com os 8 chamados do gabarito.
+  ('KB-107', 'Banco de dados recusando conexões',
+   'banco dados mysql conexao recusada limite conexoes',
+   'Limite de conexões simultâneas do servidor de banco de dados atingido, ou serviço do banco parado depois do reinício do servidor.',
+   'Conferir se o serviço do banco está ativo e quantas conexões estão abertas; reiniciar o serviço e ajustar o limite de conexões da conta.',
+   'escalar', 'Infraestrutura', 'P1', 'banco_dados',
+   -- o guia cobre a recusa de conexão; consulta lenta é outro problema
+   'lento; lentidao; consulta demorada', '2026-04-22', NULL),
+  ('KB-108', 'Disco ou cota de armazenamento cheia',
+   'disco cheio cota armazenamento espaco inodes',
+   'Cota de disco da conta excedida por logs, caches ou cópias antigas acumulados.',
+   'Listar os diretórios que mais ocupam espaço, remover logs e caches antigos e conferir se a cota de inodes também se esgotou.',
+   'anotar', 'Infraestrutura', 'P3', 'cota_disco', '', '2026-03-02', NULL),
+  ('KB-109', 'Tarefa agendada (cron) não executa',
+   'cron crontab tarefa rotina programada script',
+   'Entrada do crontab com sintaxe inválida, caminho do script errado ou usuário sem direito de execução sobre o script.',
+   'Conferir a sintaxe da entrada no crontab, o caminho absoluto do script e o registro de execução do cron; testar o script à mão com o mesmo usuário.',
+   'anotar', 'Infraestrutura', 'P3', 'cron_tarefas', '', '2026-05-12', NULL),
+  ('KB-110', 'Site em laço de redirecionamentos',
+   'redirecionamento redirecionamentos loop ciclo',
+   'Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.',
+   'Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos.',
+   'anotar', 'Infraestrutura', 'P2', 'redirecionamento', '', '2026-06-09', NULL),
+  ('KB-111', 'Envio de e-mail rejeitado ou marcado como spam',
+   'email smtp envio spf dkim rejeitado spam',
+   'Registros SPF ou DKIM do domínio ausentes ou incorretos, ou IP de envio em lista de bloqueio.',
+   'Conferir os registros SPF e DKIM da zona do domínio e consultar as listas de bloqueio para o IP de envio; corrigir a zona e reenviar uma mensagem de teste.',
+   'anotar', 'Infraestrutura', 'P2', 'email_envio',
+   -- o guia cobre o ENVIO; mensagem que não chega ao cliente é outro problema
+   'recebimento; nao recebe; nao chega', '2026-07-14', NULL),
+  ('KB-112', 'Bloqueio indevido pelo firewall de aplicação (WAF)',
+   'waf firewall aplicacao bloqueio 403 falso positivo regra',
+   'Regra do firewall de aplicação classificou como ataque uma requisição legítima do site e passou a devolver 403.',
+   'Localizar no registro do WAF a regra acionada, liberar a requisição legítima com uma exceção restrita à URL e reavaliar a regra.',
+   'escalar', 'Seguranca', 'P2', 'waf_bloqueio',
+   -- ataque de verdade é incidente de segurança, outro procedimento
+   'ataque; ddos; invasao', '2026-08-03', NULL),
+  ('KB-113', 'Aplicação PHP esgotando a memória',
+   'php memoria limite esgotada aplicacao script',
+   'Limite de memória do PHP da conta menor que o necessário para o script, ou script com consumo anormal.',
+   'Conferir no registro de erros a mensagem de memória esgotada, ajustar o limite de memória da conta dentro do teto do plano e identificar o script de maior consumo.',
+   'anotar', 'Infraestrutura', 'P3', 'php_limites',
+   -- este guia não ensina a instalar nem a trocar a versão do PHP
+   'instalacao; instalar; atualizar versao', '2026-02-17', NULL),
+  ('KB-114', 'Login por FTP ou SFTP falhando',
+   'ftp sftp login senha conexao autenticacao',
+   'Senha do usuário de FTP expirada ou alterada, ou IP do cliente barrado depois de tentativas de login sem sucesso.',
+   'Redefinir a senha do usuário de FTP, conferir o registro de autenticação e liberar o IP do cliente se ele estiver barrado.',
+   'anotar', 'Infraestrutura', 'P3', 'ftp_acesso',
+   -- login por SSH é o KB-103
+   'ssh', '2026-03-25', NULL),
+  ('KB-115', 'Servidor com CPU ou memória saturada',
+   'lento lentidao cpu carga saturacao processos',
+   'Processo da aplicação consumindo CPU ou memória do servidor além da capacidade, em geral depois de um pico de acessos ou de um laço no código.',
+   'Identificar o processo de maior consumo, reiniciar o serviço afetado e registrar a lentidão para a Infraestrutura avaliar o dimensionamento.',
+   'escalar', 'Infraestrutura', 'P2', 'servidor_saturado',
+   -- o guia cobre a saturação contínua; a lentidão que vem e vai não tem procedimento
+   'intermitente; as vezes; de vez em quando', '2026-09-02', NULL);
+
+-- ------------------------------------------------- fichas de plano (fonte E)
+INSERT INTO planos_fichas VALUES
+  ('Hospedagem Start',
+   'Hospedagem compartilhada de entrada. O suporte cobre o ambiente do servidor: a conta, os certificados, o DNS, o e-mail e os arquivos do site. Não cobre desenvolvimento, correção ou depuração do código do site do cliente. Atendimento por chamado, em horário comercial.',
+   '2026-01-10'),
+  ('Hospedagem Business',
+   'Hospedagem compartilhada com mais contas de e-mail e mais espaço em disco que o Start. O suporte cobre o ambiente do servidor e acompanha a configuração de domínio e de e-mail da empresa. Não cobre o código do site do cliente. Atendimento por chamado e por telefone, em horário comercial.',
+   '2026-01-10'),
+  ('VPS Pro',
+   'Servidor virtual gerenciado pela empresa. O suporte cobre o sistema operacional, a rede, os certificados, o firewall e os backups da VPS. A aplicação instalada pelo cliente dentro da VPS está fora do escopo do suporte. Atendimento por chamado, em horário comercial.',
+   '2026-01-10');
 
 -- ------------------------------------------------- histórico de chamados internos
 -- CLI-02 tem UMA ocorrência anterior de permissão negada ao gravar arquivos (o histórico que

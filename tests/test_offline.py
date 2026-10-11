@@ -220,6 +220,26 @@ class TestAgente(unittest.TestCase):
         ids = {r["kb_id"] for r in db.buscar_kb(self.con, ["ssh", "acesso", "permissao", "negada"])}
         self.assertEqual(ids, {"KB-102", "KB-103"})
 
+    def test_os_guias_do_seed_seguem_a_regra_do_documento(self):
+        # base-de-conhecimento-v2.md §0 e §4: sem categoria, time ou prioridade válidos, o guia não entra
+        times = {"Infraestrutura", "Seguranca"}
+        guias = self.con.execute("SELECT * FROM kb_artigos").fetchall()
+        self.assertEqual(len(guias), 16)                          # 15 vigentes e o KB-101, revogado
+        for g in guias:
+            self.assertIn(g["time_destino"], times, g["id"])
+            self.assertIn(g["prioridade_base"], ("P1", "P2", "P3"), g["id"])
+            self.assertTrue(g["categoria"], g["id"])
+            self.assertIn(g["acao_padrao"], ("anotar", "escalar"), g["id"])
+
+    def test_cada_plano_de_cliente_tem_a_sua_ficha_e_a_ficha_nao_tem_acao(self):
+        planos = {r[0] for r in self.con.execute("SELECT DISTINCT plano FROM clientes")}
+        fichas = {r["plano"]: r for r in self.con.execute("SELECT * FROM planos_fichas")}
+        self.assertEqual(planos, set(fichas))
+        self.assertEqual(db.ficha_do_plano(self.con, "VPS Pro")["plano"], "VPS Pro")
+        self.assertIsNone(db.ficha_do_plano(self.con, "Plano Inexistente"))
+        colunas = {c[1] for c in self.con.execute("PRAGMA table_info(planos_fichas)")}
+        self.assertEqual(colunas, {"plano", "escopo", "data_vigencia"})   # sem ação, time nem prioridade
+
     def test_as_versoes_do_seed_sao_coerentes(self):
         artigos = {a["id"]: a for a in self.con.execute("SELECT * FROM kb_artigos")}
         revogados = [a for a in artigos.values() if a["revogado_por"]]

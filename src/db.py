@@ -93,6 +93,17 @@ class RegistroNaoEncontrado(Exception):
     """A consulta foi válida, mas o registro não existe no sistema."""
 
 
+# Índice da busca vetorial (src/vetorial.py): um vetor por guia, com o hash do texto que o gerou.
+# Nasce aqui, como pendencias: não é do seed. Texto do guia mudou = hash diferente = vetor refeito.
+SQL_VETORES = """
+CREATE TABLE IF NOT EXISTS kb_vetores (
+    kb_id       TEXT PRIMARY KEY,
+    texto_hash  TEXT NOT NULL,
+    modelo      TEXT NOT NULL,
+    vetor       TEXT NOT NULL            -- lista JSON de floats
+)"""
+
+
 def conectar() -> sqlite3.Connection:
     if not DB_PATH.exists():
         recriar_banco()
@@ -100,6 +111,7 @@ def conectar() -> sqlite3.Connection:
     con.row_factory = sqlite3.Row
     con.execute(SQL_PENDENCIAS)
     con.execute(SQL_AVISOS_GESTOR)
+    con.execute(SQL_VETORES)
     return con
 
 
@@ -117,6 +129,7 @@ def recriar_banco() -> None:
     con.executescript(SEED.read_text(encoding="utf-8"))
     con.execute(SQL_PENDENCIAS)
     con.execute(SQL_AVISOS_GESTOR)
+    con.execute(SQL_VETORES)
     con.commit()
     con.close()
 
@@ -172,6 +185,27 @@ def _ordem_de_versao(artigo) -> tuple[str, str]:
     return artigo["data_publicacao"], (m.group(2) or "") if m else ""
 
 
+def _mais_nova(artigos) -> dict:
+    """Procedimento -> a versão de maior data de publicação (a que vale)."""
+    mais_nova = {}
+    for a in artigos:
+        p = _procedimento(a["id"])
+        if p not in mais_nova or _ordem_de_versao(a) > _ordem_de_versao(mais_nova[p]):
+            mais_nova[p] = a
+    return mais_nova
+
+
+def _contexto(relato: str | None, termos: list[str]) -> str:
+    """O texto contra o qual as ressalvas (coluna nao_cobre) são procuradas."""
+    return _normalizar(" ".join([relato or ""] + [str(t) for t in termos]))
+
+
+def _ressalva(artigo, contexto: str) -> str | None:
+    """A frase de nao_cobre do guia que aparece no relato, se houver."""
+    return next((f.strip() for f in artigo["nao_cobre"].split(";")
+                 if f.strip() and f.strip() in contexto), None)
+
+
 def _palavras(termos: list[str]) -> list[str]:
     """Os termos do modelo viram palavras: frases são quebradas, palavras genéricas e de até
     2 letras saem, sinônimos conhecidos viram a palavra-chave, e não há repetição."""
@@ -221,15 +255,11 @@ def buscar_kb(con: sqlite3.Connection, termos: list[str], top: int = 3,
     if desempatar_por_data is None:
         desempatar_por_data = DESEMPATAR_POR_DATA
     consulta = _palavras(termos)
-    contexto = _normalizar(" ".join([relato or ""] + [str(t) for t in termos]))
+    contexto = _contexto(relato, termos)
     resultados = []
     sql = "SELECT * FROM kb_artigos" + ("" if incluir_revogados else " WHERE revogado_por IS NULL")
     artigos = con.execute(sql).fetchall()
-    mais_nova = {}                       # procedimento -> a versão de maior data_publicacao
-    for a in artigos:
-        p = _procedimento(a["id"])
-        if p not in mais_nova or _ordem_de_versao(a) > _ordem_de_versao(mais_nova[p]):
-            mais_nova[p] = a
+    mais_nova = _mais_nova(artigos)      # procedimento -> a versão de maior data_publicacao
     descartadas = {}                     # id da versão que ficou -> antigas que também casavam
     for a in artigos:
         chaves = a["palavras_chave"].split()
@@ -244,8 +274,7 @@ def buscar_kb(con: sqlite3.Connection, termos: list[str], top: int = 3,
         score = casados / (casados + (len(consulta) - casados) / 2)
         if casados < 2:
             score *= REDUTOR
-        ressalva = next((f.strip() for f in a["nao_cobre"].split(";")
-                         if f.strip() and f.strip() in contexto), None)
+        ressalva = _ressalva(a, contexto)
         if ressalva:
             score *= REDUTOR
         resultado = {
@@ -263,6 +292,14 @@ def buscar_kb(con: sqlite3.Connection, termos: list[str], top: int = 3,
             r["versoes_descartadas"] = descartadas[r["kb_id"]]
     resultados.sort(key=lambda r: r["score"], reverse=True)
     return resultados[:top]
+
+
+def ficha_do_plano(con: sqlite3.Connection, plano: str | None) -> dict | None:
+    """A ficha do plano do cliente (fonte E, tabela planos_fichas), por consulta estruturada: o
+    plano vem de clientes.plano e a ficha é a de mesmo nome. Contexto da redação e da tela do
+    analista; nunca autoriza escrita (a ficha não tem ação, time nem prioridade)."""
+    linha = con.execute("SELECT * FROM planos_fichas WHERE plano = ?", (plano,)).fetchone()
+    return dict(linha) if linha else None
 
 
 def buscar_artigo(con: sqlite3.Connection, kb_id: str) -> dict | None:

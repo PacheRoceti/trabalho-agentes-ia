@@ -1,0 +1,50 @@
+5. A RESSALVA LIDA PELO MODELO  prompt: ressalva-v2.md  modelo de chat: ministral-8b-latest  11/10/2026  3 repetições, temperature=0
+
+   a) o nó isolado: o relato cai numa ressalva do guia?  (esperado: exceção = sim, controle = não)
+   P6  exceção  guia KB-104 respostas ['sim', 'sim', 'sim']  certas 3/3  (a frase literal já a pegaria)
+   P7  exceção  guia KB-102 respostas ['sim', 'sim', 'sim']  certas 3/3  (a frase literal já a pegaria)
+   X1  exceção  guia KB-104 respostas ['sim', 'sim', 'sim']  certas 3/3  (a frase literal já a pegaria)
+   X2  exceção  guia KB-102 respostas ['não', 'não', 'não']  certas 0/3  (a frase literal já a pegaria)
+   X3  exceção  guia KB-104 respostas ['sim', 'sim', 'sim']  certas 3/3
+   X4  exceção  guia KB-104 respostas ['sim', 'sim', 'sim']  certas 3/3
+   X5  exceção  guia KB-102 respostas ['não', 'não', 'não']  certas 0/3
+   X6  exceção  guia KB-102 respostas ['sim', 'sim', 'sim']  certas 3/3  (a frase literal já a pegaria)
+   X7  exceção  guia KB-102 respostas ['não', 'não', 'não']  certas 0/3
+   P2  controle guia KB-102 respostas ['não', 'não', 'não']  certas 3/3
+   A2  controle guia KB-102 respostas ['não', 'não', 'não']  certas 3/3
+   A4  controle guia KB-104 respostas ['não', 'sim', 'sim']  certas 1/3
+   C1  controle guia KB-104 respostas ['não', 'não', 'não']  certas 3/3
+   C2  controle guia KB-102 respostas ['não', 'não', 'não']  certas 3/3
+   C3  controle guia KB-102 respostas ['não', 'não', 'não']  certas 3/3
+   C4  controle guia KB-102 respostas ['não', 'não', 'não']  certas 3/3
+   C5  controle guia KB-104 respostas ['não', 'não', 'não']  certas 3/3
+
+   exceção: 18 de 27 respostas certas
+   controle: 22 de 24 respostas certas
+
+   b) o sistema inteiro (busca vetorial, aresta, nó): o veredito de cada pergunta
+   #   melhor guia           nó rodou?   depois do nó      veredito (antes -> depois)
+   P1  KB-101-A 0.6          não         -                 certo -> certo
+   P2  KB-102 0.66           sim         não cai           certo -> certo
+   P6  KB-104 0.22           não         -                 certo -> certo
+   P7  KB-103 0.56           não         -                 certo -> certo
+   A2  KB-102 0.62           sim         não cai           certo -> certo
+   A4  KB-104 0.55           sim         cai               certo -> errado
+   X1  KB-104 0.18           não         -                 certo -> certo
+   X2  KB-103 0.49           não         -                 parcial -> parcial
+   X3  KB-104 0.52           sim         cai               errado -> certo
+   X4  KB-104 0.56           sim         cai               errado -> certo
+   X5  KB-102 0.58           sim         não cai           errado -> errado
+   X6  KB-103 0.57           não         -                 certo -> certo
+   X7  KB-102 0.59           sim         não cai           errado -> errado
+   C1  KB-104 0.62           sim         não cai           certo -> certo
+   C2  KB-102 0.64           sim         não cai           certo -> certo
+   C3  KB-102 0.71           sim         não cai           certo -> certo
+   C4  KB-102 0.6            sim         não cai           certo -> certo
+   C5  KB-104 0.58           sim         não cai           certo -> certo
+
+   certo: antes do nó 13, depois do nó 14
+   parcial: antes do nó 1, depois do nó 1
+   errado: antes do nó 4, depois do nó 3
+
+tokens de embedding: 453

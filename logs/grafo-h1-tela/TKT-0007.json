@@ -1,0 +1,268 @@
+{
+  "execucao_id": "TKT-0007-41968",
+  "id_ticket": "TKT-0007",
+  "executado_em": "2026-10-11T15:06:08-03:00",
+  "commit": "4c3ad53 + alterações locais",
+  "entrada": "Meu site parou de salvar arquivos: todo upload falha com a mensagem de permissão negada. Preciso de ajuda para voltar a publicar.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + ressalva-v1.md + redigir-v1.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana",
+    "motivo": "acao_rejeitada"
+  },
+  "pendencia": null,
+  "confirmacoes": [
+    {
+      "pendencia": {
+        "ferramenta": "abrir_chamado_interno",
+        "id_ticket": "TKT-0007",
+        "categoria": "permissao_arquivos",
+        "resumo": "Cliente Eta Engenharia (TKT-0007) relata que o site não está salvando arquivos, com falha de upload exibindo mensagem de 'permissão negada'. Não há histórico de chamados internos nem log anexado. O procedimento **KB-102** (score 0.73) sugere que a causa seja arquivos/pastas com dono ou permissões incorretos, comum após restauração ou migração. **Ação necessária**: Verificar e corrigir permissões (chown/chmod) no servidor, exigindo acesso de administrador. **Escopo**: Servidor VPS Pro (gerenciado) — fora do escopo: aplicação instalada pelo cliente.",
+        "time_destino": "Infraestrutura",
+        "kb_id": "KB-102",
+        "prioridade_prevista": "P2",
+        "guia_publicado_em": "2026-10-06",
+        "guia_nao_cobre": [
+          "ssh"
+        ],
+        "plano": "VPS Pro",
+        "escopo_do_plano": "Servidor virtual gerenciado pela empresa. O suporte cobre o sistema operacional, a rede, os certificados, o firewall e os backups da VPS. A aplicação instalada pelo cliente dentro da VPS está fora do escopo do suporte. Atendimento por chamado, em horário comercial.",
+        "pedido_em": "2026-10-11T15:06:14-03:00",
+        "vence_em": "2026-10-11T15:26:14-03:00"
+      },
+      "aprovado": false,
+      "por": "analista de suporte (terminal)",
+      "status": "rejeitada",
+      "resolvido_em": "2026-10-11T15:06:15-03:00",
+      "editado": false
+    }
+  ],
+  "n_chamadas_modelo": 3,
+  "lembretes": 0,
+  "tokens_entrada": 2067,
+  "tokens_saida": 318,
+  "custo_usd": 0.000358,
+  "scores_kb": {
+    "KB-102": 0.73,
+    "KB-114": 0.5,
+    "KB-104": 0.48
+  },
+  "saida": {
+    "id_ticket": "TKT-0007",
+    "executado_em": "2026-10-11T15:06:08-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "Ação rejeitada pelo analista de suporte. Ação proposta pelo agente e NÃO executada: abrir chamado interno para Infraestrutura (categoria permissao_arquivos, prioridade prevista P2). Sustentação: procedimento KB-102, score 0.73. Resumo redigido: Cliente Eta Engenharia (TKT-0007) relata que o site não está salvando arquivos, com falha de upload exibindo mensagem de 'permissão negada'. Não há histórico de chamados internos nem log anexado. O procedimento **KB-102** (score 0.73) sugere que a causa seja arquivos/pastas com dono ou permissões incorretos, comum após restauração ou migração. **Ação necessária**: Verificar e corrigir permissões (chown/chmod) no servidor, exigindo acesso de administrador. **Escopo**: Servidor VPS Pro (gerenciado) — fora do escopo: aplicação instalada pelo cliente.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "registro_do_chamado",
+      "kb_id": "KB-102",
+      "score": 0.73,
+      "registros": [
+        "TKT-0007"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "conferir_ressalva",
+        "decidir",
+        "redigir",
+        "confirmar",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o analista rejeitou a ação proposta: ela não foi executada"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0007"
+      },
+      "resultado": {
+        "id": "TKT-0007",
+        "aberto_em": "2026-09-21 11:30",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Eta Engenharia",
+        "plano": "VPS Pro",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "site",
+          "parou",
+          "salvar",
+          "arquivos",
+          "permissão"
+        ],
+        "justificativa": "O cliente relata falha específica em upload de arquivos no site, associada a permissão negada, indicando problema técnico no servidor ou configuração de acesso."
+      },
+      "erro": null,
+      "ms": 1271
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "site",
+          "parou",
+          "salvar",
+          "arquivos",
+          "permissão"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-102",
+            "titulo": "Permissão negada ao gravar arquivos",
+            "score": 0.73,
+            "cosseno": 0.892,
+            "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+            "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-114",
+            "titulo": "Login por FTP ou SFTP falhando",
+            "score": 0.5,
+            "cosseno": 0.8,
+            "causa": "Senha do usuário de FTP expirada ou alterada, ou IP do cliente barrado depois de tentativas de login sem sucesso.",
+            "solucao": "Redefinir a senha do usuário de FTP, conferir o registro de autenticação e liberar o IP do cliente se ele estiver barrado.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.48,
+            "cosseno": 0.791,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1795
+    },
+    {
+      "indice": 3,
+      "ferramenta": "conferir_ressalva",
+      "argumentos": {
+        "kb_id": "KB-102",
+        "situacoes": [
+          "ssh"
+        ]
+      },
+      "resultado": {
+        "cai_na_ressalva": false,
+        "frase": "",
+        "motivo": "O relato não menciona o uso de SSH ou qualquer situação relacionada a conexões remotas, apenas falha em permissão para salvar arquivos, sem referência à ressalva.",
+        "score_antes": 0.73,
+        "score_depois": 0.73
+      },
+      "erro": null,
+      "ms": 902
+    },
+    {
+      "indice": 4,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "abrir_chamado_interno",
+        "kb_id": "KB-102",
+        "motivo": "procedimento_escalar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 5,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "abrir_chamado_interno"
+      },
+      "resultado": {
+        "texto": "Cliente Eta Engenharia (TKT-0007) relata que o site não está salvando arquivos, com falha de upload exibindo mensagem de 'permissão negada'. Não há histórico de chamados internos nem log anexado. O procedimento **KB-102** (score 0.73) sugere que a causa seja arquivos/pastas com dono ou permissões incorretos, comum após restauração ou migração. **Ação necessária**: Verificar e corrigir permissões (chown/chmod) no servidor, exigindo acesso de administrador. **Escopo**: Servidor VPS Pro (gerenciado) — fora do escopo: aplicação instalada pelo cliente."
+      },
+      "erro": null,
+      "ms": 1747
+    },
+    {
+      "indice": 6,
+      "ferramenta": "confirmar",
+      "argumentos": {
+        "kb_id": "KB-102"
+      },
+      "resultado": {
+        "status": "rejeitada",
+        "por": "analista de suporte (terminal)",
+        "editado": false
+      },
+      "erro": null,
+      "ms": 13
+    },
+    {
+      "indice": 7,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0007",
+        "destino": "fila_humana",
+        "mensagem": "Ação rejeitada pelo analista de suporte. Ação proposta pelo agente e NÃO executada: abrir chamado interno para Infraestrutura (categoria permissao_arquivos, prioridade prevista P2). Sustentação: procedimento KB-102, score 0.73. Resumo redigido: Cliente Eta Engenharia (TKT-0007) relata que o site não está salvando arquivos, com falha de upload exibindo mensagem de 'permissão negada'. Não há histórico de chamados internos nem log anexado. O procedimento **KB-102** (score 0.73) sugere que a causa seja arquivos/pastas com dono ou permissões incorretos, comum após restauração ou migração. **Ação necessária**: Verificar e corrigir permissões (chown/chmod) no servidor, exigindo acesso de administrador. **Escopo**: Servidor VPS Pro (gerenciado) — fora do escopo: aplicação instalada pelo cliente.",
+        "motivo": "acao_rejeitada"
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana",
+        "registrado_por": "código: ação rejeitada pelo analista"
+      },
+      "erro": null,
+      "ms": 11
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-102",
+    "motivo": "procedimento_escalar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1771,
+  "segundos_gastos": 5.768
+}

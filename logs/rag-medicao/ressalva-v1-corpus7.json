@@ -1,0 +1,439 @@
+{
+ "ressalva_no": [
+  {
+   "id": "P6",
+   "grupo": "exceção",
+   "kb": "KB-104",
+   "votos": [
+    true,
+    true,
+    true
+   ],
+   "certas": 3,
+   "frases": [
+    "de vez em quando",
+    "de vez em quando",
+    "de vez em quando"
+   ],
+   "literal": true
+  },
+  {
+   "id": "P7",
+   "grupo": "exceção",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 0,
+   "frases": [
+    "O relato do cliente não menciona o uso de SSH como método de acesso, apenas menciona permissão negada em um contexto genérico.",
+    "O relato menciona permissão negada ao acessar o servidor via SSH, mas não menciona nenhuma das situações listadas na ressalva do procedimento.",
+    "O relato do cliente não menciona o uso de SSH como método de acesso, apenas menciona permissão negada em um contexto genérico."
+   ],
+   "literal": true
+  },
+  {
+   "id": "X1",
+   "grupo": "exceção",
+   "kb": "KB-104",
+   "votos": [
+    true,
+    true,
+    true
+   ],
+   "certas": 3,
+   "frases": [
+    "intermitente",
+    "intermitente",
+    "intermitente"
+   ],
+   "literal": true
+  },
+  {
+   "id": "X2",
+   "grupo": "exceção",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 0,
+   "frases": [
+    "O relato menciona permissão negada no login por SSH, mas não descreve uma situação específica que esteja listada nas ressalvas do procedimento. A ressalva mencionada é apenas 'ssh', mas o relato não indica que o problema seja exclusivo ou diretamente relacionado a uma situação não coberta como 'intermitente', 'constante', ou outras condições específicas.",
+    "O relato menciona permissão negada no login por SSH, mas não menciona nenhuma das situações listadas na ressalva do procedimento.",
+    "O relato menciona permissão negada no login por SSH, mas não menciona nenhuma das situações listadas como ressalvas do procedimento."
+   ],
+   "literal": true
+  },
+  {
+   "id": "X3",
+   "grupo": "exceção",
+   "kb": "KB-104",
+   "votos": [
+    true,
+    true,
+    true
+   ],
+   "certas": 3,
+   "frases": [
+    "intermitente",
+    "intermitente",
+    "intermitente"
+   ],
+   "literal": false
+  },
+  {
+   "id": "X4",
+   "grupo": "exceção",
+   "kb": "KB-104",
+   "votos": [
+    true,
+    true,
+    true
+   ],
+   "certas": 3,
+   "frases": [
+    "intermitente",
+    "intermitente",
+    "intermitente"
+   ],
+   "literal": false
+  },
+  {
+   "id": "X5",
+   "grupo": "exceção",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 0,
+   "frases": [
+    "O relato menciona acesso por terminal remoto, mas não menciona uso de SSH como meio de acesso ou conexão.",
+    "O relato menciona acesso por terminal remoto (RDP), não SSH, e não há menção a arquivos ou pastas com permissões incorretas ou restauração/migração.",
+    "O relato menciona acesso por terminal remoto, mas não menciona uso de SSH, que é a única ressalva listada no procedimento."
+   ],
+   "literal": false
+  },
+  {
+   "id": "X6",
+   "grupo": "exceção",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 0,
+   "frases": [
+    "O relato do cliente não menciona nenhuma situação relacionada à ressalva 'ssh'.",
+    "O relato do cliente não menciona nenhuma situação relacionada à conexão por SSH ou problemas intermitentes, apenas uma permissão negada em contexto genérico, sem relação com as ressalvas listadas.",
+    "O relato do cliente não menciona nenhuma situação relacionada à conexão por SSH ou uso de chaves SSH, apenas uma permissão negada em contexto genérico."
+   ],
+   "literal": true
+  },
+  {
+   "id": "X7",
+   "grupo": "exceção",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 0,
+   "frases": [
+    "O relato menciona apenas um erro de permissão ao fazer login via SSH, mas não menciona nenhuma das situações listadas como ressalvas. A ressalva 'ssh' não é aplicável aqui, pois o procedimento não cobre apenas casos de acesso via SSH, mas sim situações específicas relacionadas a arquivos ou permissões incorretas.",
+    "O relato menciona apenas um erro de permissão ao fazer login via SSH, mas não menciona nenhuma das situações listadas como ressalvas. A ressalva 'ssh' não é aplicável aqui porque o problema relatado não está relacionado a restrições de acesso por meio de SSH, mas sim ao acesso ao servidor via terminal (que pode ser SSH ou outro método).",
+    "O relato menciona apenas um erro de permissão ao fazer login via terminal, sem relação com conexão por SSH ou qualquer menção às situações listadas nas ressalvas."
+   ],
+   "literal": false
+  },
+  {
+   "id": "P2",
+   "grupo": "controle",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato não menciona acesso por SSH ou qualquer situação que esteja na lista de ressalvas do procedimento.",
+    "O relato não menciona nenhuma das situações listadas como ressalva, como uso de SSH ou outras situações específicas não abordadas no problema relatado.",
+    "O relato não menciona acesso por SSH ou qualquer situação que esteja na lista de ressalvas do procedimento."
+   ],
+   "literal": false
+  },
+  {
+   "id": "A2",
+   "grupo": "controle",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato não menciona nenhuma das situações listadas como ressalva, nem faz referência a acesso por linha de comando ou protocolos como SSH.",
+    "O relato não menciona nenhuma das situações listadas como ressalva, focando apenas em um erro de permissão ao gravar arquivos sem relação com SSH ou outras situações específicas da lista.",
+    "O relato não menciona nenhuma das situações listadas como ressalva, apenas descreve um erro de permissão ao gravar arquivos, sem relação com SSH ou outras situações não cobertas."
+   ],
+   "literal": false
+  },
+  {
+   "id": "A4",
+   "grupo": "controle",
+   "kb": "KB-104",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato não menciona nenhuma das situações de ressalva listadas (intermitente, às vezes, de vez em quando, oscila). O problema é descrito como constante (site fica fora do ar com erro 503 após o deploy, sem menção a periodicidade ou intermitência).",
+    "O relato menciona que o erro 503 ocorre 'desde que publiquei a nova versão', indicando uma falha constante após o deploy, não uma situação intermitente ou esporádica",
+    "O relato menciona que o site fica fora do ar com erro 503 desde a publicação da nova versão, mas não descreve nenhuma situação intermitente ou que ocorra esporadicamente, como 'às vezes' ou 'de vez em quando'. O problema é descrito como constante, não entrando em nenhuma ressalva."
+   ],
+   "literal": false
+  },
+  {
+   "id": "C1",
+   "grupo": "controle",
+   "kb": "KB-104",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato menciona que o erro 502 ocorre 'o tempo todo' desde o deploy, indicando que o problema é constante, não intermitente ou esporádico, conforme descrito nas ressalvas.",
+    "O relato menciona que o erro 502 ocorre 'o tempo todo' desde o deploy, indicando que o problema é constante, não intermitente ou esporádico, conforme descrito nas ressalvas.",
+    "O relato menciona que o erro 502 ocorre 'o tempo todo', indicando uma falha constante, não intermitente ou esporádica, que são as situações listadas como ressalvas."
+   ],
+   "literal": false
+  },
+  {
+   "id": "C2",
+   "grupo": "controle",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato não menciona nenhuma das situações listadas como ressalva, apenas descreve um problema de permissão negada sem detalhes adicionais que se encaixem nas restrições do procedimento.",
+    "O relato não menciona acesso remoto via SSH ou qualquer situação que esteja na lista de ressalvas.",
+    "O relato não menciona acesso remoto via SSH ou qualquer situação que esteja na lista de ressalvas."
+   ],
+   "literal": false
+  },
+  {
+   "id": "C3",
+   "grupo": "controle",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato não menciona nenhuma das situações listadas como ressalva, apenas descreve um problema de permissão negada após migração, sem referência a conexão por SSH.",
+    "O relato não menciona nenhuma das situações listadas como ressalva, focando apenas em permissão negada após migração, sem referência a conexões SSH ou outras situações específicas da lista.",
+    "O relato não menciona nenhuma das situações listadas como ressalva, apenas descreve um problema de permissão negada após migração, sem relação com SSH."
+   ],
+   "literal": false
+  },
+  {
+   "id": "C4",
+   "grupo": "controle",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato não menciona nenhuma das situações listadas como ressalva, apenas descreve um problema de permissão após migração, sem referência a SSH ou outras situações específicas não cobertas.",
+    "O relato não menciona nenhuma das situações listadas como ressalva, apenas descreve um problema de permissão após migração, sem referência a acesso via SSH.",
+    "O relato não menciona nenhuma das situações listadas como ressalva, apenas descreve um problema de permissão após migração, sem referência a acesso via SSH."
+   ],
+   "literal": false
+  },
+  {
+   "id": "C5",
+   "grupo": "controle",
+   "kb": "KB-104",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato menciona um erro constante (502 em todas as páginas) após o deploy, não descrevendo nenhuma das situações de ressalva listadas.",
+    "O relato menciona um erro constante (502 em todas as páginas) após o deploy, sem nenhuma menção a situações intermitentes ou oscilações, portanto não cai em nenhuma ressalva.",
+    "O relato menciona um erro constante (502 em todas as páginas) após o deploy, sem nenhuma menção a situações intermitentes ou oscilações, portanto não cai em nenhuma ressalva."
+   ],
+   "literal": false
+  }
+ ],
+ "ressalva_sistema": [
+  {
+   "id": "P1",
+   "kb_id": "KB-101-A",
+   "rodou": false,
+   "cai": null,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "P2",
+   "kb_id": "KB-102",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "P6",
+   "kb_id": "KB-104",
+   "rodou": false,
+   "cai": null,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "P7",
+   "kb_id": "KB-103",
+   "rodou": false,
+   "cai": null,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "A2",
+   "kb_id": "KB-102",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "A4",
+   "kb_id": "KB-104",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "X1",
+   "kb_id": "KB-104",
+   "rodou": false,
+   "cai": null,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "X2",
+   "kb_id": "KB-103",
+   "rodou": false,
+   "cai": null,
+   "antes": "parcial",
+   "depois": "parcial"
+  },
+  {
+   "id": "X3",
+   "kb_id": "KB-104",
+   "rodou": true,
+   "cai": true,
+   "antes": "errado",
+   "depois": "certo"
+  },
+  {
+   "id": "X4",
+   "kb_id": "KB-104",
+   "rodou": true,
+   "cai": true,
+   "antes": "errado",
+   "depois": "certo"
+  },
+  {
+   "id": "X5",
+   "kb_id": "KB-102",
+   "rodou": true,
+   "cai": false,
+   "antes": "errado",
+   "depois": "errado"
+  },
+  {
+   "id": "X6",
+   "kb_id": "KB-103",
+   "rodou": false,
+   "cai": null,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "X7",
+   "kb_id": "KB-102",
+   "rodou": true,
+   "cai": false,
+   "antes": "errado",
+   "depois": "errado"
+  },
+  {
+   "id": "C1",
+   "kb_id": "KB-104",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "C2",
+   "kb_id": "KB-102",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "C3",
+   "kb_id": "KB-102",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "C4",
+   "kb_id": "KB-102",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "C5",
+   "kb_id": "KB-104",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  }
+ ]
+}

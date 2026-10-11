@@ -7,7 +7,7 @@
 > [`arquitetura.md`](arquitetura.md) §9.
 >
 > **O que foi medido:** três execuções dos 8 casos com o modelo real, 8 de 8 no verificador nas
-> três, e uma pausa real no H1, retomada por outro processo (§6). O que é do código está provado por 30 testes offline
+> três, e uma pausa real no H1, retomada por outro processo (§6). O que é do código está provado por 39 testes offline
 > (`tests/test_grafo.py`), com modelo roteirizado.
 >
 > **O grafo é o caminho padrão do `main.py`** desde 10/10/2026, e grava em `logs/grafo/`. O laço
@@ -18,7 +18,8 @@
 
 O ponto de partida é a medição do `arquitetura.md` §8: o sistema é um roteador, e o que o modelo
 decide é a rota e a redação, não a sequência de passos. O grafo tira do modelo a escolha da
-próxima ferramenta e deixa com ele duas chamadas: a triagem e a redação.
+próxima ferramenta e deixa com ele a triagem, a redação e, quando o primeiro guia declara situações
+que não cobre, a leitura dessa ressalva (nó `conferir_ressalva`, 11/10/2026).
 
 ```
 LEGENDA   [nó]   ◇ aresta condicional, com a chave do mapa de destinos entre aspas
@@ -44,9 +45,18 @@ START
   ├─ "sem_busca"  comercial, insuficiente, fora_da_alcada ──► [decidir]
   └─ "tecnico"
         ▼
-[buscar]             código   busca os procedimentos com os termos da triagem; devolve o score
+[buscar]             código   busca os procedimentos pelo vetor do relato (cosseno); devolve o score
   │
-  ▼
+  ◇ _rota_buscar                                 decide: código
+  ├─ "decidir"    o 1º guia não passa de 0,5, já caiu numa ressalva literal, ou não declara ressalvas ──► [decidir]
+  └─ "conferir"
+        ▼
+[conferir_ressalva]  MODELO   JSON validado: cai_na_ressalva, frase, motivo. O código só BAIXA o score (x 0,4)
+  │
+  ◇ _rota_conferir                               decide: código
+  ├─ "encerrar"   teto, API fora ou JSON inválido 2 vezes ──► [finalizar]
+  └─ "decidir"
+        ▼
 [decidir]            código   escolhe o desfecho (regras de rota + portão de confiança):
   │                             id inexistente ........................... fila_humana
   │                             comercial ................................ fila_comercial
@@ -113,7 +123,8 @@ Fora dos nós:
 | `entrada` | fixa o texto do chamado: o digitado ou o registrado para o id | não | `_entrada`, em `src/agente.py` (a mesma função) |
 | `consultar` | lê chamado, plano, log anexado e histórico | não | ferramenta `consultar_ticket`. Deixou de ser escolha do modelo: toda execução consulta |
 | `triagem` | classifica o assunto, diz se o log aponta outro serviço e escolhe os termos de busca | **sim** | passos 2, 3 e 4 do `agente-v5.md` |
-| `buscar` | recupera os procedimentos, com score | não | ferramenta `buscar_base_conhecimento`. O modelo ainda escolhe os termos, mas não escolhe se busca |
+| `buscar` | recupera os procedimentos, com score (cosseno do relato com cada guia) | não | ferramenta `buscar_base_conhecimento`. O modelo ainda escolhe os termos (que alimentam o recuo para a busca por palavra), mas não escolhe se busca |
+| `conferir_ressalva` | o modelo lê as situações que o 1º guia não cobre (`nao_cobre`) e diz se o relato cai numa delas; o código baixa o score | **sim**, só o julgamento | o embedding não enxerga a exceção (`rag.md` §4.2). Só roda quando há o que conferir; só pode baixar o score |
 | `decidir` | escolhe o desfecho | não | o passo 4 do `agente-v5.md` (que era do modelo) e os portões de `src/ferramentas.py` |
 | `redigir` | redige o resumo do chamado ou a mensagem do encaminhamento | **sim** | argumento `resumo` ou `mensagem` das ferramentas de escrita |
 | `validar` | confere o texto redigido | não | validações de `src/ferramentas.py` |
@@ -130,6 +141,8 @@ São quatro, todas com o mapa de destinos escrito em `_construir()`.
 |---|---|---|---|---|
 | depois de `consultar` | `_rota_consultar` | `triagem`, `decidir` | regra em código | é um campo vazio: id que não existe não tem o que classificar |
 | depois de `triagem` | `_rota_triagem` | `buscar`, `decidir`, `finalizar` | **modelo**, com saída `Literal["tecnico", "comercial", "insuficiente", "fora_da_alcada"]`; o código só lê o valor | exige julgamento sobre texto livre. O schema garante uma classe válida, não a classe certa |
+| depois de `buscar` | `_rota_buscar` | `conferir_ressalva`, `decidir` | regra em código | o 1º guia passaria do limiar, não tem ressalva literal e declara situações que não cobre |
+| depois de `conferir_ressalva` | `_rota_conferir` | `decidir`, `finalizar` | regra em código | só confere se um teto estourou ou o contrato falhou |
 | depois de `redigir` | `_rota_redigir` | `validar`, `finalizar` | regra em código | só confere se um teto estourou ou a API falhou |
 | depois de `validar` | `_rota_validar` | `redigir`, `pedir_confirmacao`, `gravar`, `finalizar` | regra em código | texto reprovado, número de tentativas e tipo do desfecho são campos |
 
@@ -197,7 +210,8 @@ está em `arquitetura.md` §4; ao mudar um campo, as duas mudam juntas.
 | `classe` | `str` | `triagem` | `_rota_triagem`, `decidir` | nenhum. **Novo:** no laço a classe ficava só nas mensagens |
 | `log_diverge` | `bool` | `triagem` | `decidir` | nenhum. **Novo** |
 | `termos` | `list[str]` | `triagem` | `buscar`, `redigir` | nenhum |
-| `candidatos` | `list[dict]` | `buscar` | `decidir`, `redigir`, `gravar`, a saída | nenhum |
+| `candidatos` | `list[dict]` | `buscar`; `conferir_ressalva` (só baixa o score do 1º) | `decidir`, `redigir`, `gravar`, a saída | nenhum |
+| `ressalvas_do_melhor` | `list[str]` | `buscar` | a aresta de `buscar`, `conferir_ressalva` | nenhum |
 | `desfecho_proposto` | `dict` (`acao`, `kb_id`, `motivo`) | `decidir` | `redigir`, `validar`, `_rota_validar`, `pedir_confirmacao`, `gravar` | nenhum. **Novo** |
 | `texto_redigido` | `str` ou `None` | `redigir` | `validar`, `pedir_confirmacao`, `gravar` | nenhum |
 | `erro_validacao` | `dict` ou `None` | `validar` | `_rota_validar`, `redigir`, `finalizar` | nenhum |
@@ -208,7 +222,8 @@ está em `arquitetura.md` §4; ao mudar um campo, as duas mudam juntas.
 | `saida` | `dict` | `finalizar` | quem chama o grafo | nenhum |
 | `passos` | `list[dict]` | os nós que registram um passo | o log e a saída | `operator.add` (concatena) |
 | `tentativas_redacao` | `int` | `redigir` | `_rota_validar` | `operator.add` (soma) |
-| `n_chamadas_modelo`, `tokens_entrada`, `tokens_saida`, `custo_usd` | número | `triagem`, `redigir` | os tetos, o log | `operator.add` (soma) |
+| `n_chamadas_modelo`, `tokens_entrada`, `tokens_saida`, `custo_usd` | número | `triagem`, `conferir_ressalva`, `redigir` | os tetos, o log | `operator.add` (soma) |
+| `tokens_embedding` | número | `buscar` | o log (não entra nos tetos) | `operator.add` (soma) |
 | `segundos_gastos` | `float` | todos os nós | o teto de tempo | `operator.add` (soma) |
 
 `termino` e `motivo` têm mais de um escritor (`triagem`, `redigir`, `finalizar`), mas nunca na
@@ -277,8 +292,8 @@ padrão mudar numa troca de versão, uma execução presa passa a gastar mais, o
 nenhuma linha do projeto tenha sido alterada.
 
 Está declarado no código: a constante `LIMITE_SUPERPASSOS = 20`, em `src/grafo.py`, passada em
-toda invocação (`_config()`). O caminho mais longo do grafo tem 13 superpassos (rota técnica, com
-uma redação reprovada e a confirmação). Estourado, a execução termina como `orcamento_esgotado`,
+toda invocação (`_config()`). O caminho mais longo do grafo tem 14 superpassos (rota técnica, com
+a conferência da ressalva, uma redação reprovada e a confirmação). Estourado, a execução termina como `orcamento_esgotado`,
 com o motivo `superpassos`.
 
 Consequência: o teto de passos do laço deixou de existir como contagem de passos. O caminho
@@ -333,7 +348,7 @@ O que os logs mostram:
   `decidir` gravou a fila humana. No laço, com o mesmo artigo na mão, o modelo abriu o chamado em
   três de três execuções com o texto atual da v5 (rodada 3 e `prompts.md` §3.2).
 - **A diferença de tokens vem da forma, não do modelo.** O laço reenvia o histórico inteiro e os
-  schemas das ferramentas a cada volta; o grafo faz duas chamadas curtas, cada uma com o que
+  schemas das ferramentas a cada volta; o grafo faz duas ou três chamadas curtas, cada uma com o que
   aquele nó precisa.
 - **`TKT-0999`.** Uma chamada só, a da redação: o id inexistente é decidido por código, e o
   lembrete do laço deixou de ser necessário.

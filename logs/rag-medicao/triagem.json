@@ -1,0 +1,861 @@
+{
+ "triagem": {
+  "linhas": [
+   {
+    "id": "P1",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-101-A",
+    "topo": "KB-101-A",
+    "cos_topo": 0.842,
+    "cos_esperado": 0.842,
+    "erro": null
+   },
+   {
+    "id": "P2",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-102",
+    "topo": "KB-102",
+    "cos_topo": 0.863,
+    "cos_esperado": 0.863,
+    "erro": null
+   },
+   {
+    "id": "P6",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-104",
+    "topo": "KB-104",
+    "cos_topo": 0.817,
+    "cos_esperado": 0.817,
+    "erro": null
+   },
+   {
+    "id": "P7",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-103",
+    "topo": "KB-103",
+    "cos_topo": 0.826,
+    "cos_esperado": 0.826,
+    "erro": null
+   },
+   {
+    "id": "P10",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-102",
+    "cos_topo": 0.763,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "A1",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-101-A",
+    "topo": "KB-101-A",
+    "cos_topo": 0.833,
+    "cos_esperado": 0.833,
+    "erro": null
+   },
+   {
+    "id": "A2",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-102",
+    "topo": "KB-102",
+    "cos_topo": 0.849,
+    "cos_esperado": 0.849,
+    "erro": null
+   },
+   {
+    "id": "A3",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-103",
+    "topo": "KB-103",
+    "cos_topo": 0.869,
+    "cos_esperado": 0.869,
+    "erro": null
+   },
+   {
+    "id": "A4",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-104",
+    "topo": "KB-104",
+    "cos_topo": 0.819,
+    "cos_esperado": 0.819,
+    "erro": null
+   },
+   {
+    "id": "A5",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-106",
+    "topo": "KB-106",
+    "cos_topo": 0.82,
+    "cos_esperado": 0.82,
+    "erro": null
+   },
+   {
+    "id": "A6",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-105",
+    "topo": "KB-105",
+    "cos_topo": 0.822,
+    "cos_esperado": 0.822,
+    "erro": null
+   },
+   {
+    "id": "A7",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-103",
+    "topo": "KB-103",
+    "cos_topo": 0.851,
+    "cos_esperado": 0.851,
+    "erro": null
+   },
+   {
+    "id": "A8",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-107",
+    "topo": "KB-107",
+    "cos_topo": 0.866,
+    "cos_esperado": 0.866,
+    "erro": null
+   },
+   {
+    "id": "A9",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-108",
+    "topo": "KB-108",
+    "cos_topo": 0.898,
+    "cos_esperado": 0.898,
+    "erro": null
+   },
+   {
+    "id": "A10",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-109",
+    "topo": "KB-109",
+    "cos_topo": 0.868,
+    "cos_esperado": 0.868,
+    "erro": null
+   },
+   {
+    "id": "A11",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-110",
+    "topo": "KB-110",
+    "cos_topo": 0.849,
+    "cos_esperado": 0.849,
+    "erro": null
+   },
+   {
+    "id": "A12",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-111",
+    "topo": "KB-111",
+    "cos_topo": 0.863,
+    "cos_esperado": 0.863,
+    "erro": null
+   },
+   {
+    "id": "A13",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-112",
+    "topo": "KB-112",
+    "cos_topo": 0.888,
+    "cos_esperado": 0.888,
+    "erro": null
+   },
+   {
+    "id": "A14",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-113",
+    "topo": "KB-113",
+    "cos_topo": 0.861,
+    "cos_esperado": 0.861,
+    "erro": null
+   },
+   {
+    "id": "A15",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-114",
+    "topo": "KB-114",
+    "cos_topo": 0.847,
+    "cos_esperado": 0.847,
+    "erro": null
+   },
+   {
+    "id": "A16",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-115",
+    "topo": "KB-115",
+    "cos_topo": 0.867,
+    "cos_esperado": 0.867,
+    "erro": null
+   },
+   {
+    "id": "A17",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-101-A",
+    "topo": "KB-101-A",
+    "cos_topo": 0.828,
+    "cos_esperado": 0.828,
+    "erro": null
+   },
+   {
+    "id": "A18",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-102",
+    "topo": "KB-102",
+    "cos_topo": 0.892,
+    "cos_esperado": 0.892,
+    "erro": null
+   },
+   {
+    "id": "A19",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-103",
+    "topo": "KB-103",
+    "cos_topo": 0.832,
+    "cos_esperado": 0.832,
+    "erro": null
+   },
+   {
+    "id": "A20",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-104",
+    "topo": "KB-104",
+    "cos_topo": 0.846,
+    "cos_esperado": 0.846,
+    "erro": null
+   },
+   {
+    "id": "A21",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-106",
+    "topo": "KB-106",
+    "cos_topo": 0.874,
+    "cos_esperado": 0.874,
+    "erro": null
+   },
+   {
+    "id": "A22",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-105",
+    "topo": "KB-105",
+    "cos_topo": 0.884,
+    "cos_esperado": 0.884,
+    "erro": null
+   },
+   {
+    "id": "A23",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-112",
+    "topo": "KB-112",
+    "cos_topo": 0.929,
+    "cos_esperado": 0.929,
+    "erro": null
+   },
+   {
+    "id": "A24",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-109",
+    "topo": "KB-109",
+    "cos_topo": 0.824,
+    "cos_esperado": 0.824,
+    "erro": null
+   },
+   {
+    "id": "X1",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-104",
+    "topo": "KB-104",
+    "cos_topo": 0.785,
+    "cos_esperado": 0.785,
+    "erro": null
+   },
+   {
+    "id": "X2",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-103",
+    "topo": "KB-103",
+    "cos_topo": 0.798,
+    "cos_esperado": 0.798,
+    "erro": null
+   },
+   {
+    "id": "X3",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-104",
+    "topo": "KB-104",
+    "cos_topo": 0.807,
+    "cos_esperado": 0.807,
+    "erro": null
+   },
+   {
+    "id": "X4",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-104",
+    "topo": "KB-104",
+    "cos_topo": 0.822,
+    "cos_esperado": 0.822,
+    "erro": null
+   },
+   {
+    "id": "X5",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-103",
+    "topo": "KB-102",
+    "cos_topo": 0.832,
+    "cos_esperado": 0.815,
+    "erro": null
+   },
+   {
+    "id": "X6",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-103",
+    "topo": "KB-103",
+    "cos_topo": 0.828,
+    "cos_esperado": 0.828,
+    "erro": null
+   },
+   {
+    "id": "X7",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-103",
+    "topo": "KB-102",
+    "cos_topo": 0.836,
+    "cos_esperado": 0.792,
+    "erro": null
+   },
+   {
+    "id": "X8",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-107",
+    "topo": "KB-107",
+    "cos_topo": 0.829,
+    "cos_esperado": 0.829,
+    "erro": null
+   },
+   {
+    "id": "X9",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-115",
+    "topo": "KB-115",
+    "cos_topo": 0.815,
+    "cos_esperado": 0.815,
+    "erro": null
+   },
+   {
+    "id": "X10",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-115",
+    "topo": "KB-115",
+    "cos_topo": 0.781,
+    "cos_esperado": 0.781,
+    "erro": null
+   },
+   {
+    "id": "X11",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-111",
+    "topo": "KB-111",
+    "cos_topo": 0.81,
+    "cos_esperado": 0.81,
+    "erro": null
+   },
+   {
+    "id": "C1",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-104",
+    "topo": "KB-104",
+    "cos_topo": 0.849,
+    "cos_esperado": 0.849,
+    "erro": null
+   },
+   {
+    "id": "C2",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-102",
+    "topo": "KB-102",
+    "cos_topo": 0.858,
+    "cos_esperado": 0.858,
+    "erro": null
+   },
+   {
+    "id": "C3",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-102",
+    "topo": "KB-102",
+    "cos_topo": 0.883,
+    "cos_esperado": 0.883,
+    "erro": null
+   },
+   {
+    "id": "C4",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-102",
+    "topo": "KB-102",
+    "cos_topo": 0.84,
+    "cos_esperado": 0.84,
+    "erro": null
+   },
+   {
+    "id": "C5",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-104",
+    "topo": "KB-104",
+    "cos_topo": 0.831,
+    "cos_esperado": 0.831,
+    "erro": null
+   },
+   {
+    "id": "C6",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-107",
+    "topo": "KB-107",
+    "cos_topo": 0.867,
+    "cos_esperado": 0.867,
+    "erro": null
+   },
+   {
+    "id": "C7",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-115",
+    "topo": "KB-115",
+    "cos_topo": 0.848,
+    "cos_esperado": 0.848,
+    "erro": null
+   },
+   {
+    "id": "C8",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": "KB-111",
+    "topo": "KB-111",
+    "cos_topo": 0.867,
+    "cos_esperado": 0.867,
+    "erro": null
+   },
+   {
+    "id": "N1",
+    "classe": "comercial",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-113",
+    "cos_topo": 0.773,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N2",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-111",
+    "cos_topo": 0.788,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N3",
+    "classe": "fora_da_alcada",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-105",
+    "cos_topo": 0.698,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N4",
+    "classe": "comercial",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-110",
+    "cos_topo": 0.787,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N5",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-114",
+    "cos_topo": 0.752,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N6",
+    "classe": "insuficiente",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-115",
+    "cos_topo": 0.674,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N7",
+    "classe": "comercial",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-105",
+    "cos_topo": 0.735,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N8",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-105",
+    "cos_topo": 0.793,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N9",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-111",
+    "cos_topo": 0.775,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N10",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-113",
+    "cos_topo": 0.779,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N11",
+    "classe": "comercial",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-101-A",
+    "cos_topo": 0.799,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N12",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-101-A",
+    "cos_topo": 0.81,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N13",
+    "classe": "comercial",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-108",
+    "cos_topo": 0.835,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N14",
+    "classe": "comercial",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-115",
+    "cos_topo": 0.77,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N15",
+    "classe": "comercial",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-102",
+    "cos_topo": 0.742,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N16",
+    "classe": "comercial",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-101-A",
+    "cos_topo": 0.688,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N17",
+    "classe": "comercial",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-111",
+    "cos_topo": 0.728,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N18",
+    "classe": "comercial",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-105",
+    "cos_topo": 0.744,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N19",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-106",
+    "cos_topo": 0.76,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N20",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-101-A",
+    "cos_topo": 0.812,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N21",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-105",
+    "cos_topo": 0.794,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N22",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-103",
+    "cos_topo": 0.794,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N23",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-113",
+    "cos_topo": 0.821,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N24",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-110",
+    "cos_topo": 0.831,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N25",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-112",
+    "cos_topo": 0.762,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N26",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-107",
+    "cos_topo": 0.807,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N27",
+    "classe": "tecnico",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-105",
+    "cos_topo": 0.798,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N28",
+    "classe": "insuficiente",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-110",
+    "cos_topo": 0.689,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N29",
+    "classe": "insuficiente",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-106",
+    "cos_topo": 0.783,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N30",
+    "classe": "fora_da_alcada",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-105",
+    "cos_topo": 0.754,
+    "cos_esperado": null,
+    "erro": null
+   },
+   {
+    "id": "N31",
+    "classe": "insuficiente",
+    "diverge": false,
+    "esperado": null,
+    "topo": "KB-109",
+    "cos_topo": 0.742,
+    "cos_esperado": null,
+    "erro": null
+   }
+  ],
+  "tabela": [
+   {
+    "limiar": 0.78,
+    "fn_busca": 0,
+    "fp_busca": 14,
+    "fn_triagem": 0,
+    "fp_triagem": 10
+   },
+   {
+    "limiar": 0.79,
+    "fn_busca": 0,
+    "fp_busca": 11,
+    "fn_triagem": 0,
+    "fp_triagem": 9
+   },
+   {
+    "limiar": 0.8,
+    "fn_busca": 0,
+    "fp_busca": 6,
+    "fn_triagem": 0,
+    "fp_triagem": 5
+   },
+   {
+    "limiar": 0.81,
+    "fn_busca": 0,
+    "fp_busca": 5,
+    "fn_triagem": 0,
+    "fp_triagem": 4
+   },
+   {
+    "limiar": 0.82,
+    "fn_busca": 1,
+    "fp_busca": 3,
+    "fn_triagem": 1,
+    "fp_triagem": 2
+   },
+   {
+    "limiar": 0.83,
+    "fn_busca": 5,
+    "fp_busca": 2,
+    "fn_triagem": 5,
+    "fp_triagem": 1
+   },
+   {
+    "limiar": 0.84,
+    "fn_busca": 7,
+    "fp_busca": 0,
+    "fn_triagem": 7,
+    "fp_triagem": 0
+   },
+   {
+    "limiar": 0.85,
+    "fn_busca": 11,
+    "fp_busca": 0,
+    "fn_triagem": 11,
+    "fp_triagem": 0
+   },
+   {
+    "limiar": 0.86,
+    "fn_busca": 12,
+    "fp_busca": 0,
+    "fn_triagem": 12,
+    "fp_triagem": 0
+   }
+  ]
+ }
+}

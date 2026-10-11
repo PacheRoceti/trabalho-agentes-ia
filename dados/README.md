@@ -7,10 +7,11 @@ real ou pessoal entra no repositório nem no contexto do modelo.
   conhecimento (v0, por palavras-chave) e histórico de chamados internos.
   `python src/main.py --reset` recria `tickets.db` a partir dele.
   Na base, o guia com letra é uma atualização do guia sem letra (`KB-101`, depois `KB-101-A`;
-  quanto mais adiante no alfabeto, mais novo). Há 6 guias vigentes e **um revogado, posto de
+  quanto mais adiante no alfabeto, mais novo). Há 15 guias vigentes (KB-101-A, KB-102 a KB-115) e **um revogado, posto de
   propósito**: o `KB-101`, versão antiga do guia de SSL, com `revogado_por = KB-101-A`. Ele não
   entra na busca; o que acontece quando entra está em `docs/rag.md` §2.1. As datas de
   `data_publicacao` são fictícias.
+- `perguntas-rag.json` — o conjunto de perguntas do RAG (as dez do enunciado e as escritas para calibrar a busca vetorial), com o guia que responde a cada uma. Usado por `src/medir_rag.py`.
 - `gabarito.json` — a resposta que um analista humano daria para cada chamado.
   É o verificador (item 2.6): 8 casos rotulados à mão.
 
@@ -18,7 +19,7 @@ Dois arquivos são **gerados** e ignorados pelo git:
 
 - `tickets.db` — o banco simulado, criado a partir do `seed.sql`. Além das tabelas do seed
   (`clientes`, `tickets_externos`, `kb_artigos`, `chamados_internos`, `encaminhamentos`), tem duas
-  que **não estão no seed** e nascem em `src/db.py`, sempre vazias:
+  que **não estão no seed** e nascem em `src/db.py`, sempre vazias (e a `kb_vetores`, o índice da busca vetorial, que se enche na primeira busca):
   - `pendencias` — a fila do analista de suporte: a ação irreversível à espera de confirmação, a
     hora do pedido, a hora em que o prazo de 20 minutos vence e o status (`aguardando`,
     `aprovada`, `rejeitada`, `vencida`, `substituida`);

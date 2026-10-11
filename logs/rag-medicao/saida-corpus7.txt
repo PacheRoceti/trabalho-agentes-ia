@@ -1,0 +1,73 @@
+MEDIÇÃO DA RECUPERAÇÃO  modelo de embedding: mistral-embed  11/10/2026
+
+1. ACESSO
+   funcionou em 0.56s; 1024 dimensões; limite: {'x-ratelimit-limit-req-minute': '60'}
+
+2. CALIBRAÇÃO DO LIMIAR (perguntas A* e N*; as P* e X* ficam de fora)
+   cosseno com o guia certo, perguntas A*: de 0.819 (A4) a 0.869 (A3)
+   cosseno do melhor guia, perguntas N* (sem resposta): de 0.672 (N6) a 0.783 (N4)
+   ponto médio entre o pior acerto e a pior pergunta sem resposta: 0.8  (LIMIAR_COSSENO no código: 0.8)
+   folga: 0.036 entre o pior acerto e a pior negativa
+
+3. AS PERGUNTAS CONTRA AS TRÊS BUSCAS  (limiar do portão: 0,5; o termo da busca por palavra é a pergunta inteira; * = ressalva)
+   #   esperado  palavra (hoje)            só vetorial               híbrida                   
+   P1  KB-101-A  KB-101-A 0.8 certo        KB-101-A 0.6 certo        KB-101-A 0.6 certo        
+   P2  KB-102    KB-102 0.77 certo         KB-102 0.66 certo         KB-102 0.66 certo         
+   P6  KB-104    KB-104 0.23* certo        KB-104 0.22* certo        KB-104 0.22* certo        
+   P7  KB-103    KB-102 0.18* parcial      KB-103 0.56 certo         KB-103 0.56 certo         
+   P8  KB-103    KB-103 0.4 certo          KB-103 0.39 certo         KB-103 0.39 certo         
+   P10 -         -  certo                  KB-102 0.41 certo         KB-102 0.41 certo         
+   A1  KB-101-A  KB-101-A 0.4 errado       KB-101-A 0.58 certo       KB-101-A 0.58 certo       
+   A2  KB-102    KB-102 0.57 certo         KB-102 0.62 certo         KB-102 0.62 certo         
+   A3  KB-103    KB-103 0.67 certo         KB-103 0.67 certo         KB-103 0.67 certo         
+   A4  KB-104    KB-104 0.13 errado        KB-104 0.55 certo         KB-104 0.55 certo         
+   A5  KB-106    KB-106 0.5 certo          KB-106 0.55 certo         KB-106 0.55 certo         
+   A6  KB-105    KB-105 0.13 errado        KB-105 0.55 certo         KB-105 0.55 certo         
+   A7  KB-103    KB-103 0.09 errado        KB-103 0.63 certo         KB-103 0.63 certo         
+   X1  KB-104    KB-104 0.05* certo        KB-104 0.18* certo        KB-104 0.18* certo        
+   X2  KB-103    KB-102 0.18* parcial      KB-103 0.49 parcial       KB-103 0.49 parcial       
+   X3  KB-104    KB-104 0.11 certo         KB-104 0.52 errado        KB-104 0.52 errado        
+   N1  -         -  certo                  KB-102 0.4 certo          KB-102 0.4 certo          
+   N2  -         -  certo                  KB-102 0.35 certo         KB-102 0.35 certo         
+   N3  -         -  certo                  KB-105 0.24 certo         KB-105 0.24 certo         
+   N4  -         -  certo                  KB-102 0.46 certo         KB-102 0.46 certo         
+   N5  -         -  certo                  KB-102 0.32 certo         KB-102 0.32 certo         
+   N6  -         -  certo                  KB-106 0.18 certo         KB-106 0.18 certo         
+   N7  -         -  certo                  KB-105 0.34 certo         KB-105 0.34 certo         
+
+   enunciado (P1, P2, P6, P7, P8, P10):
+      palavra   certo 5  parcial 1  errado 0
+      vetorial  certo 6  parcial 0  errado 0
+      hibrida   certo 6  parcial 0  errado 0
+   exceções escritas depois (X1 a X3):
+      palavra   certo 2  parcial 1  errado 0
+      vetorial  certo 1  parcial 1  errado 1
+      hibrida   certo 1  parcial 1  errado 1
+   calibração (A*, N*), dentro da amostra:
+      palavra   certo 10  parcial 0  errado 4
+      vetorial  certo 14  parcial 0  errado 0
+      hibrida   certo 14  parcial 0  errado 0
+
+   As duas versões do guia de SSL, SEM curadoria, só vetorial (a busca vetorial acha as duas?)
+   P1: KB-101 cosseno 0.853; KB-101-A cosseno 0.842
+   A1: KB-101 cosseno 0.846; KB-101-A cosseno 0.833
+
+4. AS RESSALVAS (nao_cobre): o vetor separa a exceção do caso normal?
+   por frase: cosseno das perguntas que SÃO a exceção, e das que o guia cobre
+   KB-102 'ssh' [pergunta inteira x frase]: exceções 0.73-0.75  casos normais 0.63-0.63  -> separa (folga +0.10)
+   KB-102 'ssh' [pergunta inteira x frase descrita]: exceções 0.81-0.85  casos normais 0.79-0.79  -> separa (folga +0.02)
+   KB-102 'ssh' [melhor janela de 1 a 4 palavras x frase]: exceções 1.00-1.00  casos normais 0.69-0.70  -> separa (folga +0.30)
+   KB-104 'intermitente' [pergunta inteira x frase]: exceções 0.67-0.69  casos normais 0.68-0.68  -> NÃO separa (folga -0.01)
+   KB-104 'intermitente' [pergunta inteira x frase descrita]: exceções 0.81-0.84  casos normais 0.81-0.81  -> NÃO separa (folga -0.00)
+   KB-104 'intermitente' [melhor janela de 1 a 4 palavras x frase]: exceções 0.72-0.76  casos normais 0.70-0.70  -> separa (folga +0.02)
+   KB-104 'as vezes' [pergunta inteira x frase]: exceções 0.68-0.71  casos normais 0.69-0.69  -> NÃO separa (folga -0.01)
+   KB-104 'as vezes' [pergunta inteira x frase descrita]: exceções 0.78-0.79  casos normais 0.78-0.78  -> separa (folga +0.01)
+   KB-104 'as vezes' [melhor janela de 1 a 4 palavras x frase]: exceções 0.79-0.95  casos normais 0.77-0.77  -> separa (folga +0.02)
+   KB-104 'de vez em quando' [pergunta inteira x frase]: exceções 0.69-0.71  casos normais 0.68-0.68  -> separa (folga +0.01)
+   KB-104 'de vez em quando' [pergunta inteira x frase descrita]: exceções 0.80-0.81  casos normais 0.79-0.79  -> separa (folga +0.01)
+   KB-104 'de vez em quando' [melhor janela de 1 a 4 palavras x frase]: exceções 0.76-1.00  casos normais 0.73-0.73  -> separa (folga +0.03)
+   KB-104 'oscila' [pergunta inteira x frase]: exceções 0.57-0.63  casos normais 0.61-0.61  -> NÃO separa (folga -0.04)
+   KB-104 'oscila' [pergunta inteira x frase descrita]: exceções 0.75-0.80  casos normais 0.75-0.75  -> separa (folga +0.00)
+   KB-104 'oscila' [melhor janela de 1 a 4 palavras x frase]: exceções 0.70-1.00  casos normais 0.70-0.70  -> NÃO separa (folga +0.00)
+
+tokens de embedding gastos nesta medição: 3949

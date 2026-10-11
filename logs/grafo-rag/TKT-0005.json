@@ -1,0 +1,140 @@
+{
+  "execucao_id": "TKT-0005-35635",
+  "id_ticket": "TKT-0005",
+  "executado_em": "2026-10-11T13:20:35-03:00",
+  "commit": "4c3ad53 + alterações locais",
+  "entrada": "Meu servidor não está funcionando direito.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + redigir-v1.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "devolver_cliente",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "devolver_cliente"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1346,
+  "tokens_saida": 88,
+  "custo_usd": 0.000215,
+  "scores_kb": {},
+  "saida": {
+    "id_ticket": "TKT-0005",
+    "executado_em": "2026-10-11T13:20:35-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "devolver_cliente",
+      "texto": "O servidor do plano Hospedagem Start não está apresentando o comportamento esperado.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "registro_do_chamado",
+      "kb_id": null,
+      "score": null,
+      "registros": [
+        "TKT-0005"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o texto do chamado não informa o serviço afetado nem o sintoma; o pedido de informação ao cliente foi registrado"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0005"
+      },
+      "resultado": {
+        "id": "TKT-0005",
+        "aberto_em": "2026-09-21 10:31",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Delta Restaurantes",
+        "plano": "Hospedagem Start",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "insuficiente",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [],
+        "justificativa": "O texto não especifica qual serviço ou componente está afetado nem descreve sintomas claros para triagem técnica."
+      },
+      "erro": null,
+      "ms": 927
+    },
+    {
+      "indice": 2,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "devolver_cliente",
+        "kb_id": null,
+        "motivo": "informacao_insuficiente"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 3,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "devolver_cliente"
+      },
+      "resultado": {
+        "texto": "O servidor do plano Hospedagem Start não está apresentando o comportamento esperado."
+      },
+      "erro": null,
+      "ms": 796
+    },
+    {
+      "indice": 4,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0005",
+        "destino": "devolver_cliente",
+        "mensagem": "O servidor do plano Hospedagem Start não está apresentando o comportamento esperado."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "devolver_cliente"
+      },
+      "erro": null,
+      "ms": 15
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "insuficiente",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "devolver_cliente",
+    "kb_id": null,
+    "motivo": "informacao_insuficiente"
+  },
+  "tentativas_redacao": 1,
+  "segundos_gastos": 1.74
+}

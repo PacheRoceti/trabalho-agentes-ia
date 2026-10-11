@@ -81,10 +81,10 @@ funciona mais e (2) manda o chamado para o time e a prioridade que valiam antes.
 
 | Fonte | Volume hoje | Volume previsto | Unidades |
 |---|---|---|---|
-| D — Procedimentos técnicos | 6 guias vigentes (KB-101-A e KB-102 a KB-106) e 1 revogado (KB-101) | ~15 guias | 15 a 20 trechos |
-| E — Catálogo de planos | 0 | 3 fichas (Start, Business, VPS Pro) | 3 trechos |
+| D — Procedimentos técnicos | 15 guias vigentes (KB-101-A e KB-102 a KB-115) e 1 revogado (KB-101) | ~15 guias | 15 a 20 trechos |
+| E — Catálogo de planos | 3 fichas (Start, Business, VPS Pro), tabela `planos_fichas` | 3 fichas | 3 trechos |
 
-**Total previsto: ~23 trechos.** Um banco vetorial dedicado é desnecessário nessa escala:
+**Total previsto: ~23 trechos; hoje, 19 (16 guias, contando o revogado, e 3 fichas).** Um banco vetorial dedicado é desnecessário nessa escala:
 a lista de embeddings cabe em memória e é recalculada a cada revisão da fonte D.
 
 **Fica fora do índice:**

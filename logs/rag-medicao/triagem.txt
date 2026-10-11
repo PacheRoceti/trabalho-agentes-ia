@@ -1,0 +1,51 @@
+6. A TRIAGEM ANTES DA BUSCA  modelo de chat: ministral-8b-latest  11/10/2026  1 execução por pergunta, temperature=0, limiar do cosseno 0.8
+
+   a) perguntas SEM resposta: a classe que a triagem deu
+   N1  comercial       não chega      melhor guia KB-113 cosseno 0.773
+   N2  tecnico         CHEGA à busca  melhor guia KB-111 cosseno 0.788
+   N3  fora_da_alcada  não chega      melhor guia KB-105 cosseno 0.698
+   N4  comercial       não chega      melhor guia KB-110 cosseno 0.787
+   N5  tecnico         CHEGA à busca  melhor guia KB-114 cosseno 0.752
+   N6  insuficiente    não chega      melhor guia KB-115 cosseno 0.674
+   N7  comercial       não chega      melhor guia KB-105 cosseno 0.735
+   N8  tecnico         CHEGA à busca  melhor guia KB-105 cosseno 0.793
+   N9  tecnico         CHEGA à busca  melhor guia KB-111 cosseno 0.775
+   N10 tecnico         CHEGA à busca  melhor guia KB-113 cosseno 0.779
+   N11 comercial       não chega      melhor guia KB-101-A cosseno 0.799
+   N12 tecnico         CHEGA à busca  melhor guia KB-101-A cosseno 0.81  (age no limiar)
+   N13 comercial       não chega      melhor guia KB-108 cosseno 0.835
+   N14 comercial       não chega      melhor guia KB-115 cosseno 0.77
+   N15 comercial       não chega      melhor guia KB-102 cosseno 0.742
+   N16 comercial       não chega      melhor guia KB-101-A cosseno 0.688
+   N17 comercial       não chega      melhor guia KB-111 cosseno 0.728
+   N18 comercial       não chega      melhor guia KB-105 cosseno 0.744
+   N19 tecnico         CHEGA à busca  melhor guia KB-106 cosseno 0.76
+   N20 tecnico         CHEGA à busca  melhor guia KB-101-A cosseno 0.812  (age no limiar)
+   N21 tecnico         CHEGA à busca  melhor guia KB-105 cosseno 0.794
+   N22 tecnico         CHEGA à busca  melhor guia KB-103 cosseno 0.794
+   N23 tecnico         CHEGA à busca  melhor guia KB-113 cosseno 0.821  (age no limiar)
+   N24 tecnico         CHEGA à busca  melhor guia KB-110 cosseno 0.831  (age no limiar)
+   N25 tecnico         CHEGA à busca  melhor guia KB-112 cosseno 0.762
+   N26 tecnico         CHEGA à busca  melhor guia KB-107 cosseno 0.807  (age no limiar)
+   N27 tecnico         CHEGA à busca  melhor guia KB-105 cosseno 0.798
+   N28 insuficiente    não chega      melhor guia KB-110 cosseno 0.689
+   N29 insuficiente    não chega      melhor guia KB-106 cosseno 0.783
+   N30 fora_da_alcada  não chega      melhor guia KB-105 cosseno 0.754
+   N31 insuficiente    não chega      melhor guia KB-109 cosseno 0.742
+   classes: {'comercial': 10, 'tecnico': 15, 'fora_da_alcada': 2, 'insuficiente': 4}
+   chegam à busca: 15 de 31; das que chegam, agem (cosseno do melhor guia >= 0.8): 5
+
+   b) perguntas COM resposta (A*, C*, P1, P2, P6, P7, P10): a triagem as desvia da busca?
+   desviadas indevidamente: 0 de 36
+
+   c) erros por limiar, com a triagem na frente (acerto barrado = desviado pela triagem OU abaixo do limiar)
+   limiar  só a busca                  com a triagem               
+   0.78    0 de 24 barrados, 14 de 31 agem0 de 24 barrados, 10 de 31 agem
+   0.79    0 de 24 barrados, 11 de 31 agem0 de 24 barrados, 9 de 31 agem
+   0.8     0 de 24 barrados, 6 de 31 agem0 de 24 barrados, 5 de 31 agem
+   0.81    0 de 24 barrados, 5 de 31 agem0 de 24 barrados, 4 de 31 agem
+   0.82    1 de 24 barrados, 3 de 31 agem1 de 24 barrados, 2 de 31 agem
+   0.83    5 de 24 barrados, 2 de 31 agem5 de 24 barrados, 1 de 31 agem
+   0.84    7 de 24 barrados, 0 de 31 agem7 de 24 barrados, 0 de 31 agem
+   0.85    11 de 24 barrados, 0 de 31 agem11 de 24 barrados, 0 de 31 agem
+   0.86    12 de 24 barrados, 0 de 31 agem12 de 24 barrados, 0 de 31 agem

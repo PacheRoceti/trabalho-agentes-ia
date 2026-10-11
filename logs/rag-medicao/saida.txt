@@ -1,0 +1,182 @@
+MEDIÇÃO DA RECUPERAÇÃO  modelo de embedding: mistral-embed  11/10/2026
+
+1. ACESSO
+   funcionou em 0.57s; 1024 dimensões; limite: {'x-ratelimit-limit-req-minute': '60'}
+
+2. CALIBRAÇÃO DO LIMIAR (perguntas A* e N*; as P* e X* ficam de fora)
+   cosseno com o guia certo, perguntas A*: de 0.819 (A4) a 0.929 (A23)
+   cosseno do melhor guia, perguntas N* (sem resposta): de 0.674 (N6) a 0.835 (N13)
+   ponto médio entre o pior acerto e a pior pergunta sem resposta: 0.83  (LIMIAR_COSSENO no código: 0.8)
+   folga: -0.016 entre o pior acerto e a pior negativa
+
+   24 perguntas com resposta (A*) e 31 sem resposta (N*). Erros por limiar, só com a busca:
+   limiar  acertos barrados    perguntas sem resposta que passam
+   0.78    0                   14  ['N2', 'N4', 'N8', 'N11', 'N12', 'N13'] ...
+   0.79    0                   11  ['N8', 'N11', 'N12', 'N13', 'N20', 'N21'] ...
+   0.8     0                   6  ['N12', 'N13', 'N20', 'N23', 'N24', 'N26']
+   0.81    0                   5  ['N12', 'N13', 'N20', 'N23', 'N24']
+   0.82    1                   3  ['N13', 'N23', 'N24']
+   0.83    5                   2  ['N13', 'N24']
+   0.84    7                   0  []
+   0.85    11                  0  []
+   0.86    12                  0  []
+
+3. AS PERGUNTAS CONTRA AS TRÊS BUSCAS  (limiar do portão: 0,5; o termo da busca por palavra é a pergunta inteira; * = ressalva)
+   #   esperado  palavra (hoje)            só vetorial               híbrida                   
+   P1  KB-101-A  KB-101-A 0.8 certo        KB-101-A 0.6 certo        KB-101-A 0.6 certo        
+   P2  KB-102    KB-102 0.77 certo         KB-102 0.65 certo         KB-102 0.65 certo         
+   P6  KB-104    KB-104 0.23* certo        KB-104 0.22* certo        KB-104 0.22* certo        
+   P7  KB-103    KB-102 0.18* parcial      KB-103 0.56 certo         KB-103 0.56 certo         
+   P8  KB-103    KB-103 0.4 certo          KB-103 0.38 certo         KB-103 0.38 certo         
+   P10 -         -  certo                  KB-102 0.4 certo          KB-102 0.4 certo          
+   A1  KB-101-A  KB-101-A 0.4 errado       KB-101-A 0.58 certo       KB-101-A 0.58 certo       
+   A2  KB-102    KB-102 0.57 certo         KB-102 0.62 certo         KB-102 0.62 certo         
+   A3  KB-103    KB-103 0.67 certo         KB-103 0.67 certo         KB-103 0.67 certo         
+   A4  KB-104    KB-104 0.13 errado        KB-104 0.54 certo         KB-104 0.54 certo         
+   A5  KB-106    KB-106 0.5 certo          KB-106 0.55 certo         KB-106 0.55 certo         
+   A6  KB-105    KB-105 0.13 errado        KB-105 0.55 certo         KB-105 0.55 certo         
+   A7  KB-103    KB-103 0.09 errado        KB-103 0.62 certo         KB-103 0.62 certo         
+   A8  KB-107    KB-107 1.0 certo          KB-107 0.66 certo         KB-107 0.66 certo         
+   A9  KB-108    KB-108 0.8 certo          KB-108 0.74 certo         KB-108 0.74 certo         
+   A10 KB-109    KB-109 0.44 errado        KB-109 0.66 certo         KB-109 0.66 certo         
+   A11 KB-110    KB-110 0.1 errado         KB-110 0.62 certo         KB-110 0.62 certo         
+   A12 KB-111    KB-111 0.55 certo         KB-111 0.65 certo         KB-111 0.65 certo         
+   A13 KB-112    KB-112 0.5 certo          KB-112 0.72 certo         KB-112 0.72 certo         
+   A14 KB-113    KB-113 0.67 certo         KB-113 0.65 certo         KB-113 0.65 certo         
+   A15 KB-114    KB-114 0.57 certo         KB-114 0.61 certo         KB-114 0.61 certo         
+   A16 KB-115    KB-115 0.57 certo         KB-115 0.66 certo         KB-115 0.66 certo         
+   A17 KB-101-A  KB-101-A 0.55 certo       KB-101-A 0.57 certo       KB-101-A 0.57 certo       
+   A18 KB-102    KB-102 0.67 certo         KB-102 0.73 certo         KB-102 0.73 certo         
+   A19 KB-103    KB-103 0.07 errado        KB-103 0.58 certo         KB-103 0.58 certo         
+   A20 KB-104    KB-104 0.07 errado        KB-104 0.61 certo         KB-104 0.61 certo         
+   A21 KB-106    KB-106 0.55 certo         KB-106 0.68 certo         KB-106 0.68 certo         
+   A22 KB-105    KB-108 0.6 errado         KB-105 0.7 certo          KB-105 0.7 certo          
+   A23 KB-112    KB-112 0.8 certo          KB-112 0.82 certo         KB-112 0.82 certo         
+   A24 KB-109    KB-109 0.36 errado        KB-109 0.56 certo         KB-109 0.56 certo         
+   X1  KB-104    KB-104 0.05* certo        KB-104 0.18* certo        KB-104 0.18* certo        
+   X2  KB-103    KB-102 0.18* parcial      KB-103 0.49 parcial       KB-103 0.49 parcial       
+   X3  KB-104    KB-104 0.11 certo         KB-104 0.51 errado        KB-104 0.51 errado        
+   X4  KB-104    KB-104 0.16 certo         KB-104 0.55 errado        KB-104 0.55 errado        
+   X5  KB-103    KB-102 0.44 parcial       KB-102 0.57 errado        KB-102 0.57 errado        
+   X6  KB-103    KB-102 0.16* parcial      KB-103 0.57 certo         KB-103 0.57 certo         
+   X7  KB-103    KB-102 0.44 parcial       KB-102 0.58 errado        KB-102 0.58 errado        
+   X8  KB-107    KB-107 0.5 errado         KB-107 0.57 errado        KB-107 0.57 errado        
+   X9  KB-115    KB-115 0.04* certo        KB-115 0.21* certo        KB-115 0.21* certo        
+   X10 KB-115    KB-115 0.09 certo         KB-115 0.45 certo         KB-115 0.45 certo         
+   X11 KB-111    -  certo                  KB-111 0.21* certo        KB-111 0.21* certo        
+   C1  KB-104    KB-104 0.67 certo         KB-104 0.62 certo         KB-104 0.62 certo         
+   C2  KB-102    KB-102 0.77 certo         KB-102 0.64 certo         KB-102 0.64 certo         
+   C3  KB-102    KB-102 0.8 certo          KB-102 0.7 certo          KB-102 0.7 certo          
+   C4  KB-102    KB-102 0.55 certo         KB-102 0.59 certo         KB-102 0.59 certo         
+   C5  KB-104    KB-104 0.5 certo          KB-104 0.57 certo         KB-104 0.57 certo         
+   C6  KB-107    KB-107 0.67 certo         KB-107 0.66 certo         KB-107 0.66 certo         
+   C7  KB-115    KB-115 0.57 certo         KB-115 0.62 certo         KB-115 0.62 certo         
+   C8  KB-111    KB-111 0.57 certo         KB-111 0.66 certo         KB-111 0.66 certo         
+   N1  -         -  certo                  KB-113 0.43 certo         KB-113 0.43 certo         
+   N2  -         -  certo                  KB-111 0.47 certo         KB-111 0.47 certo         
+   N3  -         -  certo                  KB-105 0.24 certo         KB-105 0.24 certo         
+   N4  -         -  certo                  KB-110 0.46 certo         KB-110 0.46 certo         
+   N5  -         KB-114 0.16 certo         KB-114 0.37 certo         KB-114 0.38 certo         
+   N6  -         -  certo                  KB-115 0.18 certo         KB-115 0.18 certo         
+   N7  -         -  certo                  KB-105 0.33 certo         KB-105 0.33 certo         
+   N8  -         KB-105 0.13 certo         KB-105 0.48 certo         KB-105 0.48 certo         
+   N9  -         -  certo                  KB-111 0.43 certo         KB-111 0.43 certo         
+   N10 -         KB-113 0.13 certo         KB-113 0.44 certo         KB-113 0.44 certo         
+   N11 -         KB-101-A 0.57 errado      KB-101-A 0.49 certo       KB-101-A 0.49 certo       
+   N12 -         KB-101-A 0.44 certo       KB-101-A 0.52 errado      KB-101-A 0.52 errado      
+   N13 -         KB-108 0.44 certo         KB-108 0.58 errado        KB-108 0.58 errado        
+   N14 -         -  certo                  KB-115 0.42 certo         KB-115 0.42 certo         
+   N15 -         -  certo                  KB-102 0.35 certo         KB-102 0.35 certo         
+   N16 -         -  certo                  KB-101-A 0.22 certo       KB-101-A 0.22 certo       
+   N17 -         -  certo                  KB-111 0.32 certo         KB-111 0.32 certo         
+   N18 -         -  certo                  KB-105 0.35 certo         KB-105 0.35 certo         
+   N19 -         -  certo                  KB-106 0.39 certo         KB-106 0.39 certo         
+   N20 -         KB-101-A 0.44 certo       KB-101-A 0.52 errado      KB-101-A 0.52 errado      
+   N21 -         KB-105 0.57 errado        KB-105 0.48 certo         KB-105 0.48 certo         
+   N22 -         KB-103 0.44 certo         KB-103 0.48 certo         KB-103 0.48 certo         
+   N23 -         KB-102 0.5 errado         KB-113 0.55 errado        KB-102 0.51 errado        
+   N24 -         KB-106 0.13 certo         KB-110 0.57 errado        KB-110 0.57 errado        
+   N25 -         KB-114 0.11 certo         KB-112 0.4 certo          KB-114 0.39 certo         
+   N26 -         KB-107 0.5 errado         KB-107 0.51 errado        KB-107 0.51 errado        
+   N27 -         KB-105 0.5 errado         KB-105 0.49 certo         KB-105 0.49 certo         
+   N28 -         -  certo                  KB-110 0.22 certo         KB-110 0.22 certo         
+   N29 -         -  certo                  KB-106 0.45 certo         KB-106 0.45 certo         
+   N30 -         -  certo                  KB-105 0.38 certo         KB-105 0.38 certo         
+   N31 -         -  certo                  KB-109 0.35 certo         KB-109 0.35 certo         
+
+   enunciado (P1, P2, P6, P7, P8, P10):
+      palavra   certo 5  parcial 1  errado 0
+      vetorial  certo 6  parcial 0  errado 0
+      hibrida   certo 6  parcial 0  errado 0
+   exceções escritas depois (X*):
+      palavra   certo 6  parcial 4  errado 1
+      vetorial  certo 5  parcial 1  errado 5
+      hibrida   certo 5  parcial 1  errado 5
+   controles em que o guia cobre o caso (C*):
+      palavra   certo 8  parcial 0  errado 0
+      vetorial  certo 8  parcial 0  errado 0
+      hibrida   certo 8  parcial 0  errado 0
+   calibração (A*, N*), dentro da amostra:
+      palavra   certo 40  parcial 0  errado 15
+      vetorial  certo 49  parcial 0  errado 6
+      hibrida   certo 49  parcial 0  errado 6
+
+   As duas versões do guia de SSL, SEM curadoria, só vetorial (a busca vetorial acha as duas?)
+   P1: KB-101 cosseno 0.852; KB-101-A cosseno 0.841
+   A1: KB-101 cosseno 0.846; KB-101-A cosseno 0.833
+
+4. AS RESSALVAS (nao_cobre): o vetor separa a exceção do caso normal?
+   por frase: cosseno das perguntas que SÃO a exceção, e das que o guia cobre
+   KB-102 'ssh' [pergunta inteira x frase]: exceções 0.69-0.77  casos normais 0.61-0.64  -> separa (folga +0.06)
+   KB-102 'ssh' [pergunta inteira x frase descrita]: exceções 0.81-0.86  casos normais 0.77-0.79  -> separa (folga +0.01)
+   KB-102 'ssh' [melhor janela de 1 a 4 palavras x frase]: exceções 0.71-1.00  casos normais 0.69-0.71  -> separa (folga +0.01)
+   KB-104 'intermitente' [pergunta inteira x frase]: exceções 0.67-0.71  casos normais 0.65-0.68  -> NÃO separa (folga -0.01)
+   KB-104 'intermitente' [pergunta inteira x frase descrita]: exceções 0.81-0.87  casos normais 0.78-0.81  -> NÃO separa (folga -0.00)
+   KB-104 'intermitente' [melhor janela de 1 a 4 palavras x frase]: exceções 0.72-0.76  casos normais 0.70-0.71  -> separa (folga +0.00)
+   KB-104 'as vezes' [pergunta inteira x frase]: exceções 0.68-0.73  casos normais 0.64-0.69  -> NÃO separa (folga -0.01)
+   KB-104 'as vezes' [pergunta inteira x frase descrita]: exceções 0.78-0.84  casos normais 0.74-0.78  -> separa (folga +0.01)
+   KB-104 'as vezes' [melhor janela de 1 a 4 palavras x frase]: exceções 0.79-0.95  casos normais 0.76-0.78  -> separa (folga +0.01)
+   KB-104 'de vez em quando' [pergunta inteira x frase]: exceções 0.69-0.72  casos normais 0.66-0.69  -> separa (folga +0.00)
+   KB-104 'de vez em quando' [pergunta inteira x frase descrita]: exceções 0.80-0.84  casos normais 0.75-0.79  -> separa (folga +0.01)
+   KB-104 'de vez em quando' [melhor janela de 1 a 4 palavras x frase]: exceções 0.76-1.00  casos normais 0.73-0.78  -> NÃO separa (folga -0.01)
+   KB-104 'oscila' [pergunta inteira x frase]: exceções 0.57-0.63  casos normais 0.57-0.61  -> NÃO separa (folga -0.04)
+   KB-104 'oscila' [pergunta inteira x frase descrita]: exceções 0.75-0.80  casos normais 0.73-0.76  -> NÃO separa (folga -0.01)
+   KB-104 'oscila' [melhor janela de 1 a 4 palavras x frase]: exceções 0.70-1.00  casos normais 0.67-0.70  -> NÃO separa (folga +0.00)
+   KB-107 'lento' [pergunta inteira x frase]: exceções 0.66-0.66  casos normais 0.61-0.63  -> separa (folga +0.03)
+   KB-107 'lento' [pergunta inteira x frase descrita]: exceções 0.87-0.87  casos normais 0.77-0.77  -> separa (folga +0.10)
+   KB-107 'lento' [melhor janela de 1 a 4 palavras x frase]: exceções 0.73-0.73  casos normais 0.70-0.71  -> separa (folga +0.02)
+   KB-107 'lentidao' [pergunta inteira x frase]: exceções 0.65-0.65  casos normais 0.64-0.67  -> NÃO separa (folga -0.02)
+   KB-107 'lentidao' [pergunta inteira x frase descrita]: exceções 0.86-0.86  casos normais 0.76-0.77  -> separa (folga +0.10)
+   KB-107 'lentidao' [melhor janela de 1 a 4 palavras x frase]: exceções 0.69-0.69  casos normais 0.69-0.70  -> NÃO separa (folga -0.01)
+   KB-107 'consulta demorada' [pergunta inteira x frase]: exceções 0.80-0.80  casos normais 0.67-0.67  -> separa (folga +0.13)
+   KB-107 'consulta demorada' [pergunta inteira x frase descrita]: exceções 0.91-0.91  casos normais 0.78-0.79  -> separa (folga +0.13)
+   KB-107 'consulta demorada' [melhor janela de 1 a 4 palavras x frase]: exceções 0.94-0.94  casos normais 0.72-0.72  -> separa (folga +0.22)
+   KB-111 'recebimento' [pergunta inteira x frase]: exceções 0.73-0.73  casos normais 0.70-0.70  -> separa (folga +0.03)
+   KB-111 'recebimento' [pergunta inteira x frase descrita]: exceções 0.81-0.81  casos normais 0.78-0.78  -> separa (folga +0.03)
+   KB-111 'recebimento' [melhor janela de 1 a 4 palavras x frase]: exceções 0.76-0.76  casos normais 0.74-0.76  -> NÃO separa (folga -0.00)
+   KB-111 'nao recebe' [pergunta inteira x frase]: exceções 0.75-0.75  casos normais 0.71-0.72  -> separa (folga +0.03)
+   KB-111 'nao recebe' [pergunta inteira x frase descrita]: exceções 0.83-0.83  casos normais 0.79-0.80  -> separa (folga +0.03)
+   KB-111 'nao recebe' [melhor janela de 1 a 4 palavras x frase]: exceções 0.83-0.83  casos normais 0.77-0.80  -> separa (folga +0.03)
+   KB-111 'nao chega' [pergunta inteira x frase]: exceções 0.72-0.72  casos normais 0.66-0.68  -> separa (folga +0.03)
+   KB-111 'nao chega' [pergunta inteira x frase descrita]: exceções 0.83-0.83  casos normais 0.77-0.79  -> separa (folga +0.04)
+   KB-111 'nao chega' [melhor janela de 1 a 4 palavras x frase]: exceções 0.87-0.87  casos normais 0.73-0.75  -> separa (folga +0.11)
+   KB-112: sem exceção ou sem caso normal no conjunto: não medido
+   KB-113: sem exceção ou sem caso normal no conjunto: não medido
+   KB-114: sem exceção ou sem caso normal no conjunto: não medido
+   KB-115 'intermitente' [pergunta inteira x frase]: exceções 0.70-0.72  casos normais 0.66-0.67  -> separa (folga +0.03)
+   KB-115 'intermitente' [pergunta inteira x frase descrita]: exceções 0.86-0.88  casos normais 0.80-0.82  -> separa (folga +0.04)
+   KB-115 'intermitente' [melhor janela de 1 a 4 palavras x frase]: exceções 0.72-0.74  casos normais 0.73-0.74  -> NÃO separa (folga -0.02)
+   KB-115 'as vezes' [pergunta inteira x frase]: exceções 0.76-0.76  casos normais 0.69-0.70  -> separa (folga +0.06)
+   KB-115 'as vezes' [pergunta inteira x frase descrita]: exceções 0.85-0.85  casos normais 0.77-0.79  -> separa (folga +0.05)
+   KB-115 'as vezes' [melhor janela de 1 a 4 palavras x frase]: exceções 0.80-0.88  casos normais 0.74-0.76  -> separa (folga +0.04)
+   KB-115 'de vez em quando' [pergunta inteira x frase]: exceções 0.75-0.76  casos normais 0.68-0.69  -> separa (folga +0.07)
+   KB-115 'de vez em quando' [pergunta inteira x frase descrita]: exceções 0.83-0.86  casos normais 0.77-0.78  -> separa (folga +0.06)
+   KB-115 'de vez em quando' [melhor janela de 1 a 4 palavras x frase]: exceções 0.80-1.00  casos normais 0.74-0.75  -> separa (folga +0.05)
+
+4b. AS FICHAS DE PLANO (fonte E): a pergunta sobre um plano acha a ficha, e não um guia?
+   F1  esperada Hospedagem Start    1ª ficha Hospedagem Start (0.859), 2ª Hospedagem Business (0.844)  certo; melhor guia KB-110 com score 0.44 (não age)
+   F2  esperada VPS Pro             1ª ficha VPS Pro (0.85), 2ª Hospedagem Start (0.792)  certo; melhor guia KB-115 com score 0.46 (não age)
+   F3  esperada Hospedagem Business 1ª ficha Hospedagem Business (0.849), 2ª Hospedagem Start (0.82)  certo; melhor guia KB-115 com score 0.34 (não age)
+   3 de 3 fichas achadas
+
+tokens de embedding gastos nesta medição: 13894

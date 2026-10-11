@@ -1,0 +1,221 @@
+{
+  "execucao_id": "TKT-0006-37568",
+  "id_ticket": "TKT-0006",
+  "executado_em": "2026-10-11T13:52:48-03:00",
+  "commit": "4c3ad53 + alterações locais",
+  "entrada": "O site cai e volta sozinho, o erro 502 vai e vem.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + ressalva-v1.md + redigir-v1.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 3,
+  "lembretes": 0,
+  "tokens_entrada": 1956,
+  "tokens_saida": 259,
+  "custo_usd": 0.000332,
+  "scores_kb": {
+    "KB-104": 0.21,
+    "KB-106": 0.43,
+    "KB-101-A": 0.37
+  },
+  "saida": {
+    "id_ticket": "TKT-0006",
+    "executado_em": "2026-10-11T13:52:48-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O procedimento **KB-104** foi encontrado com score **0.21** (limiar: 0.5), mas possui **RESSALVA**: não cobre o caso relatado, pois o erro 502 é **intermitente** e não constante. Nenhum log foi anexado para análise técnica. O cliente relata que o site **cai e volta sozinho** com erro 502, mas não há histórico de chamados internos ou logs para confirmar a causa ou frequência real do problema.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "busca_sem_correspondencia",
+      "kb_id": "KB-106",
+      "score": 0.43,
+      "registros": [
+        "TKT-0006"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "conferir_ressalva",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o melhor procedimento encontrado (KB-106, score 0.43) ficou abaixo do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0006"
+      },
+      "resultado": {
+        "id": "TKT-0006",
+        "aberto_em": "2026-09-21 11:02",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Epsilon Studio",
+        "plano": "VPS Pro",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "site cai",
+          "erro 502"
+        ],
+        "justificativa": "O cliente relata um problema técnico com o site apresentando erro 502 e instabilidade de disponibilidade."
+      },
+      "erro": null,
+      "ms": 1010
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "site cai",
+          "erro 502"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.52,
+            "cosseno": 0.807,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-106",
+            "titulo": "Falha de resolução DNS do domínio",
+            "score": 0.43,
+            "cosseno": 0.771,
+            "causa": "Nameserver do domínio fora do ar ou zona DNS com registro inválido.",
+            "solucao": "Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-101-A",
+            "titulo": "Certificado SSL não renovou automaticamente",
+            "score": 0.37,
+            "cosseno": 0.747,
+            "causa": "Desafio HTTP-01 falhando (porta 80 bloqueada ou DNS apontando para outro IP) ou timer do certbot parado.",
+            "solucao": "Conferir DNS do domínio e liberação da porta 80; rodar \"certbot renew --dry-run\"; reativar o timer do certbot.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1793
+    },
+    {
+      "indice": 3,
+      "ferramenta": "conferir_ressalva",
+      "argumentos": {
+        "kb_id": "KB-104",
+        "situacoes": [
+          "intermitente",
+          "as vezes",
+          "de vez em quando",
+          "oscila"
+        ]
+      },
+      "resultado": {
+        "cai_na_ressalva": true,
+        "frase": "intermitente",
+        "motivo": "O relato menciona 'o erro 502 vai e vem', que corresponde à situação 'intermitente' na lista de ressalvas.",
+        "score_antes": 0.52,
+        "score_depois": 0.21
+      },
+      "erro": null,
+      "ms": 1434
+    },
+    {
+      "indice": 4,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "score_abaixo_do_limiar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 5,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "O procedimento **KB-104** foi encontrado com score **0.21** (limiar: 0.5), mas possui **RESSALVA**: não cobre o caso relatado, pois o erro 502 é **intermitente** e não constante. Nenhum log foi anexado para análise técnica. O cliente relata que o site **cai e volta sozinho** com erro 502, mas não há histórico de chamados internos ou logs para confirmar a causa ou frequência real do problema."
+      },
+      "erro": null,
+      "ms": 3073
+    },
+    {
+      "indice": 6,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0006",
+        "destino": "fila_humana",
+        "mensagem": "O procedimento **KB-104** foi encontrado com score **0.21** (limiar: 0.5), mas possui **RESSALVA**: não cobre o caso relatado, pois o erro 502 é **intermitente** e não constante. Nenhum log foi anexado para análise técnica. O cliente relata que o site **cai e volta sozinho** com erro 502, mas não há histórico de chamados internos ou logs para confirmar a causa ou frequência real do problema."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 15
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "score_abaixo_do_limiar"
+  },
+  "tentativas_redacao": 1,
+  "segundos_gastos": 7.341
+}

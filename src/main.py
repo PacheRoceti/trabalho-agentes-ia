@@ -31,7 +31,7 @@
                                                     grava em logs/NOME/ (não sobrescreve os logs
                                                     versionados). --prompt escolhe outro arquivo de
                                                     src/prompts/ para o LAÇO, e por isso já implica
-                                                    --laco: o grafo usa triagem-v1.md e redigir-v1.md
+                                                    --laco: o grafo usa triagem-v1.md, ressalva-v1.md e redigir-v1.md
 """
 import argparse
 import json
@@ -82,6 +82,9 @@ def mostrar_pendencia(pendencia: dict):
     print(f"     faltam: {max(resta, 0) / 60:.0f} min" if resta > 0 else "     PRAZO VENCIDO")
     id_ticket = pendencia["id_ticket"]
     prioridade = pendencia.get("prioridade_prevista")
+    if pendencia.get("guia_nao_cobre"):
+        print(f"     ATENÇÃO: o guia {pendencia['kb_id']} declara que NÃO cobre: "
+              f"{'; '.join(pendencia['guia_nao_cobre'])}. Confira se o relato cai numa dessas situações.")
     print(f"     se aprovada: abre um chamado interno para {pendencia.get('time_destino')}"
           + (f", com prioridade {prioridade}" if prioridade else "")
           + ". Não há como apagar nem encerrar o chamado por aqui")
@@ -126,7 +129,7 @@ def executar(id_ticket: str, client, modelo: str, precos, confirmador, con,
              prazo_confirmacao_min: float = PRAZO_CONFIRMACAO_MIN,
              grafo: bool = True) -> bool | None:
     caso = GABARITO.get(id_ticket, {}).get("caso", "sem gabarito")
-    prompt = "triagem-v1.md + redigir-v1.md (grafo)" if grafo else prompt_arquivo.name
+    prompt = "triagem-v1.md + ressalva-v1.md + redigir-v1.md (grafo)" if grafo else prompt_arquivo.name
     print(f"\n{'=' * 78}\n{id_ticket}  (caso: {caso})  modelo: {modelo}  prompt: {prompt}\n")
     desligadas = [nome for nome, ligada in (("o filtro de guias revogados", db.FILTRAR_REVOGADOS),
                                             ("o desempate por data", db.DESEMPATAR_POR_DATA))
@@ -134,7 +137,10 @@ def executar(id_ticket: str, client, modelo: str, precos, confirmador, con,
     if desligadas:
         print(f"  EXPERIMENTO: busca SEM {' e SEM '.join(desligadas)}\n")
     if grafo:
-        from grafo import rodar_grafo        # importado só aqui: --laco não depende do LangGraph
+        import grafo as modulo_grafo         # importado só aqui: --laco não depende do LangGraph
+        from grafo import rodar_grafo
+        if modulo_grafo.BUSCA == "palavra":
+            print("  EXPERIMENTO: busca só por palavra (sem a busca vetorial)\n")
         estado = rodar_grafo(id_ticket, client=client, modelo=modelo, con=con,
                              preco_usd_por_mtok=precos, orcamento=Orcamento(),
                              confirmador=confirmador, log_dir=log_dir, texto=texto,
@@ -185,6 +191,9 @@ def main():
     ap.add_argument("--sem-desempate-data", action="store_true",
                     help="EXPERIMENTO: desliga o desempate por data de publicação entre as versões "
                          "de um mesmo procedimento (docs/rag.md §2.1). Exige --rodada")
+    ap.add_argument("--busca", choices=["vetorial", "palavra"], default="vetorial",
+                    help="como o grafo recupera os guias: vetorial (o cosseno do relato; padrão) ou "
+                         "palavra (a busca da Parte 1). 'palavra' é experimento: exige --rodada")
     args = ap.parse_args()
 
     if args.reset:
@@ -206,6 +215,14 @@ def main():
                      "--rodada NOME, para não sobrescrever os logs citados na documentação.")
         db.FILTRAR_REVOGADOS = not args.sem_filtro_revogados
         db.DESEMPATAR_POR_DATA = not args.sem_desempate_data
+    if args.busca == "palavra":
+        if not args.rodada:
+            sys.exit("--busca palavra é experimento: use --rodada NOME, para não sobrescrever os "
+                     "logs citados na documentação.")
+        if args.laco or args.prompt:
+            sys.exit("--busca vale só para o grafo: o laço da Parte 1 sempre busca por palavra.")
+        import grafo as modulo_grafo
+        modulo_grafo.BUSCA = "palavra"
     if args.todos and not args.auto_aprovar:
         sys.exit("--todos recria o banco a cada caso, e uma ação pendente se perderia: "
                  "use --todos --auto-aprovar.")
@@ -222,7 +239,7 @@ def main():
     confirmador = confirmador_auto if args.auto_aprovar else None
     if args.grafo and (args.laco or args.prompt):
         sys.exit("--grafo não combina com --laco nem com --prompt: --prompt vale só para o laço "
-                 "(o grafo usa triagem-v1.md e redigir-v1.md).")
+                 "(o grafo usa triagem-v1.md, ressalva-v1.md e redigir-v1.md).")
     # O grafo é o caminho padrão. --prompt escolhe um prompt do laço, e por isso implica --laco.
     usar_grafo = not (args.laco or args.prompt)
     # O grafo nunca grava em logs/: é lá que estão os logs do laço citados no README e no io.md.

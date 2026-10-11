@@ -39,6 +39,7 @@ from openai import APIConnectionError, APIStatusError, RateLimitError
 from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
 
 import db
+import vetorial
 from agente import (PROMPTS, EdicaoRecusada, Estado, Orcamento, Passo, Termino, _agora, _commit,
                     _entrada, _ler_prompt)
 from ferramentas import (LIMIAR_CONFIANCA, MOTIVO_PRAZO_VENCIDO, MOTIVO_REJEITADA,
@@ -49,15 +50,18 @@ from saida import montar_saida
 RAIZ = Path(__file__).resolve().parent.parent
 PROMPT_TRIAGEM = PROMPTS / "triagem-v1.md"
 PROMPT_REDIGIR = PROMPTS / "redigir-v1.md"
+PROMPT_RESSALVA = PROMPTS / "ressalva-v1.md"
 
 MAX_TENTATIVAS_TRIAGEM = 2     # saída fora do contrato volta ao modelo uma vez
 MAX_REDACOES = 2               # texto reprovado pelo nó `validar` volta ao modelo uma vez
+MAX_TENTATIVAS_RESSALVA = 2    # saída fora do contrato volta ao modelo uma vez
 
 # A DECISÃO QUE VIROU PARÂMETRO (item 6.6). No laço, o limite de voltas é nosso: `max_passos = 8`,
 # em agente.Orcamento. No grafo, quem limita o número de superpassos é o `recursion_limit` do
 # LangGraph, que tem valor padrão na biblioteca. Declaramos o nosso aqui, para uma troca de versão
-# não mudar quanto uma execução presa pode gastar. O caminho mais longo do grafo tem 13
-# superpassos (rota técnica, com uma redação reprovada e a confirmação); 20 dá folga e ainda corta
+# não mudar quanto uma execução presa pode gastar. O caminho mais longo do grafo tem 14
+# superpassos (rota técnica, com a conferência da ressalva, uma redação reprovada e a confirmação,
+# 14); 20 dá folga e ainda corta
 # um laço que não devia existir. Estourado, a execução termina como `orcamento_esgotado`.
 LIMITE_SUPERPASSOS = 20
 
@@ -79,6 +83,12 @@ class Triagem(_Modelo):
         if self.classe == "tecnico" and not [t for t in self.termos_busca if str(t).strip()]:
             raise ValueError("classe 'tecnico' exige termos_busca com 2 a 5 palavras do relato")
         return self
+
+
+class Ressalva(_Modelo):
+    cai_na_ressalva: bool
+    frase: str = ""
+    motivo: str = ""
 
 
 class Redacao(_Modelo):
@@ -105,7 +115,8 @@ class EstadoGrafo(TypedDict, total=False):
     classe: str | None                  # triagem
     log_diverge: bool                   # triagem
     termos: list[str]                   # triagem
-    candidatos: list[dict]              # buscar
+    candidatos: list[dict]              # buscar (e conferir_ressalva, que só pode baixar o score)
+    ressalvas_do_melhor: list[str]      # buscar: as frases de nao_cobre do primeiro candidato
     desfecho_proposto: dict | None      # decidir: {acao, kb_id, motivo}
     texto_redigido: str | None          # redigir
     erro_validacao: dict | None         # validar
@@ -122,6 +133,7 @@ class EstadoGrafo(TypedDict, total=False):
     n_chamadas_modelo: Annotated[int, operator.add]
     tokens_entrada: Annotated[int, operator.add]
     tokens_saida: Annotated[int, operator.add]
+    tokens_embedding: Annotated[int, operator.add]     # buscar: os tokens da API de embedding (log; não entram no orçamento)
     custo_usd: Annotated[float, operator.add]
     segundos_gastos: Annotated[float, operator.add]   # só o tempo dentro dos nós: a espera não conta
 
@@ -293,13 +305,82 @@ def triagem(state, ctx):
             "passos": [_passo(state, "triagem", {}, erro={"erro": erro})]}
 
 
+# Como o nó `buscar` recupera: "vetorial" (o cosseno do relato com cada guia, src/vetorial.py; o
+# padrão) ou "palavra" (a busca da Parte 1, db.buscar_kb). A segunda existe para medir e para os
+# testes offline, que não chamam a API de embedding (main.py --busca palavra). A busca híbrida
+# (vetor + palavra) foi medida e não rendeu nada sobre o só vetorial: docs/rag.md §4.1.
+BUSCA = "vetorial"
+
+
 def buscar(state, ctx):
-    """CÓDIGO. Recupera os procedimentos, com score. Roda só na rota técnica, com os termos que a
-    triagem escolheu; o texto do cliente vai junto para as ressalvas (docs/rag.md §5)."""
-    candidatos = db.buscar_kb(ctx.con, state["termos"], relato=state["texto"])
-    return {"candidatos": candidatos,
+    """CÓDIGO. Recupera os procedimentos, com score. Roda só na rota técnica. A busca vetorial
+    consulta pelo texto do cliente; a por palavra usa os termos que a triagem escolheu, e o texto
+    vai junto para as ressalvas literais (docs/rag.md §4 e §5). Guarda as ressalvas do primeiro
+    guia, para a aresta seguinte decidir se o modelo precisa lê-las."""
+    antes = vetorial.TOKENS_EMBEDDING
+    if BUSCA == "palavra":
+        candidatos = db.buscar_kb(ctx.con, state["termos"], relato=state["texto"])
+    else:
+        candidatos = vetorial.buscar(ctx.con, state["termos"], relato=state["texto"], modo="vetorial")
+    frases = []
+    if candidatos:
+        artigo = db.buscar_artigo(ctx.con, candidatos[0]["kb_id"])
+        frases = [f.strip() for f in artigo["nao_cobre"].split(";") if f.strip()] if artigo else []
+    return {"candidatos": candidatos, "ressalvas_do_melhor": frases,
+            "tokens_embedding": vetorial.TOKENS_EMBEDDING - antes,
             "passos": [_passo(state, "buscar_base_conhecimento", {"termos": state["termos"]},
                               {"resultados": candidatos, "limiar_para_agir_sozinho": LIMIAR_CONFIANCA})]}
+
+
+def conferir_ressalva(state, ctx):
+    """MODELO, com a garantia em CÓDIGO. O embedding não enxerga as exceções de um guia (coluna
+    nao_cobre): "o erro 502 vai e vem" fica tão perto do guia da falha constante quanto o relato
+    normal (docs/rag.md §4.2). Este nó pede ao modelo que LEIA as situações que o primeiro guia
+    não cobre e diga se o relato cai numa delas. O código só aplica o redutor da busca
+    (db.REDUTOR), e só se a frase citada for uma das do guia: o modelo pode BAIXAR o score, nunca
+    subir, e não inventa uma exceção."""
+    # ETAPA "conferir_ressalva" — técnica: zero-shot, classificação binária com saída em JSON
+    # validada por schema (cabeçalho de src/prompts/ressalva-v1.md). temperature=0.
+    melhor, frases = state["candidatos"][0], state["ressalvas_do_melhor"]
+    sistema = _ler_prompt(PROMPT_RESSALVA)
+    usuario = (f"{_registro_para_o_modelo(state)}\n\nProcedimento: {melhor['kb_id']} - {melhor['titulo']}\n"
+               f"Causa: {melhor['causa']}\n\nSituações que o procedimento NÃO cobre:\n"
+               + "\n".join(f"- {f}" for f in frases))
+    argumentos = {"kb_id": melhor["kb_id"], "situacoes": frases}
+    consumo, erro = {}, None
+    for _ in range(MAX_TENTATIVAS_RESSALVA):
+        motivo = _teto({**state, **_somar(state, consumo)}, ctx)
+        if motivo:
+            return {**consumo, "termino": Termino.ORCAMENTO.value, "motivo": motivo}
+        pedido = usuario if erro is None else (
+            f"{usuario}\n\nERRO DA TENTATIVA ANTERIOR: {erro}. Responda de novo, só com o JSON.")
+        try:
+            texto, uso = _chamar(ctx, state, sistema, pedido)
+        except ErroFatal as f:
+            return {**consumo, "termino": Termino.ERRO_FATAL.value, "motivo": str(f)}
+        consumo = _somar(consumo, uso)
+        try:
+            r = _ler_json(texto, Ressalva)
+        except ValueError as v:
+            erro = str(v)
+            continue
+        frase = r.frase.strip()
+        if r.cai_na_ressalva and frase not in frases:
+            erro = f"campo frase: deve ser uma das situações da lista, copiada igual (recebido: {frase!r})"
+            continue
+        resultado = {"cai_na_ressalva": r.cai_na_ressalva, "frase": frase if r.cai_na_ressalva else "",
+                     "motivo": r.motivo, "score_antes": melhor["score"], "score_depois": melhor["score"]}
+        if not r.cai_na_ressalva:
+            return {**consumo, "passos": [_passo(state, "conferir_ressalva", argumentos, resultado)]}
+        baixado = round(melhor["score"] * db.REDUTOR, 2)
+        resultado["score_depois"] = baixado
+        novo = {**melhor, "score": baixado, "ressalva_por": "modelo",
+                "ressalva": f"este procedimento NÃO cobre o caso relatado ('{frase}'): o score foi reduzido"}
+        return {**consumo, "candidatos": [novo] + state["candidatos"][1:],
+                "passos": [_passo(state, "conferir_ressalva", argumentos, resultado)]}
+    return {**consumo, "termino": Termino.ERRO_FATAL.value,
+            "motivo": f"conferência da ressalva fora do contrato em {MAX_TENTATIVAS_RESSALVA} tentativas: {erro}",
+            "passos": [_passo(state, "conferir_ressalva", argumentos, erro={"erro": erro})]}
 
 
 def decidir(state, ctx):
@@ -356,6 +437,10 @@ def redigir(state, ctx):
             usuario += f"\nRESSALVA: {c['ressalva']}"
     elif state.get("classe") == "tecnico":
         usuario += "\n\nProcedimento encontrado: nenhum"
+    ficha = db.ficha_do_plano(ctx.con, state["ticket"]["plano"]) if (
+        state.get("classe") == "tecnico" and state.get("ticket")) else None
+    if ficha:      # contexto: o que o suporte do plano cobre. Não muda o desfecho, que já está decidido
+        usuario += f"\n\nEscopo do plano do cliente ({ficha['plano']}): {ficha['escopo']}"
     if state.get("erro_validacao"):
         usuario += (f"\n\nERRO DA TENTATIVA ANTERIOR: "
                     f"{json.dumps(state['erro_validacao'], ensure_ascii=False)}")
@@ -411,6 +496,10 @@ def pedir_confirmacao(state, ctx):
                  "categoria": artigo["categoria"], "resumo": state["texto_redigido"],
                  "time_destino": artigo["time_destino"], "kb_id": proposto["kb_id"],
                  "prioridade_prevista": db.prioridade_prevista(ctx.con, state["ticket"], artigo),
+                 "guia_publicado_em": artigo["data_publicacao"],
+                 "guia_nao_cobre": [f.strip() for f in artigo["nao_cobre"].split(";") if f.strip()],
+                 "plano": state["ticket"]["plano"],
+                 "escopo_do_plano": (db.ficha_do_plano(ctx.con, state["ticket"]["plano"]) or {}).get("escopo"),
                  "pedido_em": pedido_em.isoformat(timespec="seconds"),
                  "vence_em": vence_em.isoformat(timespec="seconds")}
     pendencia_id = None
@@ -521,6 +610,21 @@ def _rota_triagem(state) -> str:
     return "tecnico" if state["classe"] == "tecnico" else "sem_busca"
 
 
+def _rota_buscar(state) -> str:
+    """Decide: código. O modelo só é chamado quando há o que conferir: o primeiro guia passaria do
+    limiar, ainda não caiu numa ressalva literal e declara situações que não cobre."""
+    candidatos = state.get("candidatos") or []
+    if (candidatos and candidatos[0]["score"] >= LIMIAR_CONFIANCA
+            and not candidatos[0].get("ressalva") and state.get("ressalvas_do_melhor")):
+        return "conferir"
+    return "decidir"
+
+
+def _rota_conferir(state) -> str:
+    """Decide: código. Teto ou erro de contrato encerram; senão segue para a decisão."""
+    return "encerrar" if state.get("termino") else "decidir"
+
+
 def _rota_redigir(state) -> str:
     """Decide: código. Teto estourado ou API fora encerram; senão o texto vai ao avaliador."""
     return "encerrar" if state.get("termino") else "avaliar"
@@ -540,7 +644,7 @@ def _rota_validar(state) -> str:
 
 def _construir() -> StateGraph:
     g = StateGraph(EstadoGrafo, context_schema=Contexto)
-    for funcao in (entrada, consultar, triagem, buscar, decidir, redigir, validar,
+    for funcao in (entrada, consultar, triagem, buscar, conferir_ressalva, decidir, redigir, validar,
                    pedir_confirmacao, confirmar, gravar, finalizar):
         g.add_node(funcao.__name__, _no(funcao))
     g.add_edge(START, "entrada")
@@ -549,7 +653,9 @@ def _construir() -> StateGraph:
                             {"existe": "triagem", "nao_existe": "decidir"})
     g.add_conditional_edges("triagem", _rota_triagem,
                             {"tecnico": "buscar", "sem_busca": "decidir", "encerrar": "finalizar"})
-    g.add_edge("buscar", "decidir")
+    g.add_conditional_edges("buscar", _rota_buscar, {"conferir": "conferir_ressalva", "decidir": "decidir"})
+    g.add_conditional_edges("conferir_ressalva", _rota_conferir,
+                            {"decidir": "decidir", "encerrar": "finalizar"})
     g.add_edge("decidir", "redigir")
     g.add_conditional_edges("redigir", _rota_redigir,
                             {"avaliar": "validar", "encerrar": "finalizar"})
@@ -585,7 +691,7 @@ def _estado_de(v: dict, **extra) -> Estado:
     e = Estado(
         id_ticket=v["id_ticket"], modelo=v["modelo"], execucao_id=v["execucao_id"],
         executado_em=v["executado_em"], commit=v.get("commit"), entrada=v.get("texto"),
-        prompt=f"{PROMPT_TRIAGEM.name} + {PROMPT_REDIGIR.name}", temperatura=v.get("temperatura"),
+        prompt=f"{PROMPT_TRIAGEM.name} + {PROMPT_RESSALVA.name} + {PROMPT_REDIGIR.name}", temperatura=v.get("temperatura"),
         passos=[Passo(**p) for p in v.get("passos") or []],
         n_chamadas_modelo=v.get("n_chamadas_modelo", 0),
         tokens_entrada=v.get("tokens_entrada", 0), tokens_saida=v.get("tokens_saida", 0),
@@ -623,6 +729,7 @@ def _concluir(id_ticket: str, log_dir: Path | None, estourou: bool = False) -> E
         registro.update(motor="langgraph", classe=v.get("classe"), log_diverge=v.get("log_diverge"),
                         desfecho_proposto=v.get("desfecho_proposto"),
                         tentativas_redacao=v.get("tentativas_redacao", 0),
+                        tokens_embedding=v.get("tokens_embedding", 0),
                         segundos_gastos=round(v.get("segundos_gastos", 0.0), 3))
         (log_dir / f"{id_ticket}.json").write_text(
             json.dumps(registro, ensure_ascii=False, indent=2), encoding="utf-8")

@@ -33,6 +33,12 @@ analista vai executar. Ela não pausa porque é reversível (é uma linha de ano
 a lê é a mesma pessoa que confirmaria. O risco que resta é o analista executar uma sugestão
 errada sem conferir; ele é contido pelo portão de confiança, e não por uma pausa.
 
+**O risco medido, e aceito (11/10/2026).** A busca vetorial deixa passar perguntas que a base não
+responde: 5 de 31 agem, mesmo com a triagem na frente, e quatro delas num guia `anotar` (`rag.md` §4.3).
+O grupo avaliou pausar também a `anotacao_interna` e **decidiu não fazê-lo**: a pausa continua só nas
+ações irreversíveis. Fica assumido que, nesses casos, o analista lê uma anotação com a sugestão de um
+procedimento que não se aplica ao relato. A tela do H1 (§2.1) só vale para o chamado interno.
+
 ## 2. O que a pessoa vê, e o que ela devolve (§8.2)
 
 ### 2.1 Hoje
@@ -61,6 +67,26 @@ O que o analista vê (`mostrar_pendencia`, em `src/main.py`), ao fim da execuç�
 O bloco é a tela de uma execução real pelo grafo (`logs/grafo-caso-6/saida-terminal.txt`,
 11/10/2026), com o resumo abreviado. No laço (`--laco`) a linha `prioridade_prevista` não
 aparece.
+
+**O que a tela ganhou em 11/10/2026** (decisão do grupo, para o analista conferir o que o sistema
+não confere): depois de `prioridade_prevista`, quatro campos e, se houver, um aviso. Execução real
+do `TKT-0007`, pelo grafo (`logs/grafo-h1-tela/TKT-0007.json`):
+
+```
+     guia_publicado_em: 2026-10-06
+     guia_nao_cobre: ['ssh']
+     plano: VPS Pro
+     escopo_do_plano: Servidor virtual gerenciado pela empresa. O suporte cobre o sistema operacional, a rede, os certificados, o firewall e os backups da VPS. A aplicação instalada pelo cliente dentro da VPS está fora do escopo do suporte. ...
+     ATENÇÃO: o guia KB-102 declara que NÃO cobre: ssh. Confira se o relato cai numa dessas situações.
+```
+
+- **`guia_publicado_em` e `guia_nao_cobre`** vêm do guia que o sistema usou. A ressalva é a última barreira
+  contra o que o nó `conferir_ressalva` deixa passar: o modelo não reconhece a situação "ssh" do KB-102
+  (`rag.md` §4.2), e a pausa é onde uma pessoa ainda pode vê-la. O aviso `ATENÇÃO` só aparece quando o
+  guia declara alguma situação.
+- **`plano` e `escopo_do_plano`** vêm da ficha do plano do cliente (`planos_fichas`). É contexto: nenhuma
+  regra de decisão usa o plano. O mesmo texto vai ao modelo que redige o resumo (`redigir`).
+- O laço (`--laco`) não preenche esses campos.
 
 **As três respostas aceitas**, dentro do prazo:
 
