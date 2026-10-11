@@ -6,14 +6,14 @@ Orientações para o Claude Code trabalhar neste repositório.
 
 Trabalho de disciplina (Agentes de IA): um **agente de triagem de chamados de suporte** de uma empresa fictícia de hospedagem. Ele lê o texto livre do cliente, consulta o sistema de tickets e a base de conhecimento e grava **um desfecho** por chamado. Todo o projeto (código, identificadores, comentários, docs, commits) é em **português**; mantenha assim.
 
-O caminho padrão é o **grafo em LangGraph** da Parte 2 (`src/grafo.py`, com checkpointer em SQLite e `interrupt` no H1), medido três vezes com o modelo real: 8 de 8 em `logs/grafo/`, `logs/grafo-rodada-2/` e `logs/grafo-rodada-3/` (10/10/2026), e com a pausa do H1 demonstrada em `logs/grafo-pausa/`. O laço da **Parte 1** (próprio, sem framework, em `src/agente.py`) continua no repositório e roda com `main.py --laco`; `--prompt` implica `--laco`. RAG vetorial e memória existem só como desenho em `docs/`.
+O caminho padrão é o **grafo em LangGraph** da Parte 2 (`src/grafo.py`, com checkpointer em SQLite e `interrupt` no H1), medido três vezes com o modelo real: 8 de 8 em `logs/grafo/`, `logs/grafo-rodada-2/` e `logs/grafo-rodada-3/` (10/10/2026), com a pausa do H1 demonstrada em `logs/grafo-pausa/` e a aprovação com edição em `logs/grafo-caso-6/`. O laço da **Parte 1** (próprio, sem framework, em `src/agente.py`) continua no repositório e roda com `main.py --laco`; `--prompt` implica `--laco`. RAG vetorial e memória existem só como desenho em `docs/`.
 
 ## Comandos
 
 Ambiente: Windows, venv em `.venv`, Python 3.10+. Não há linter, formatador nem build.
 
 ```bash
-.venv/Scripts/python.exe -m unittest discover -s tests        # testes offline: sem chave, sem rede (63 testes: 42 do laço, 21 do grafo)
+.venv/Scripts/python.exe -m unittest discover -s tests        # testes offline: sem chave, sem rede (70 testes: 43 do laço, 27 do grafo)
 .venv/Scripts/python.exe -m unittest tests.test_offline.TestAgente.test_orcamento_de_passos   # um teste só
 
 python src/main.py TKT-0001 "texto do chamado"                # uma execução pelo grafo (usa a API); log em logs/grafo/
@@ -22,6 +22,7 @@ python src/main.py --todos --auto-aprovar --laco              # os 8 casos pelo 
 python src/main.py --todos --auto-aprovar --rodada NOME --prompt agente-v4.md   # laço (--prompt implica --laco); grava em logs/NOME/
 python src/main.py --pendencias                               # ações à espera do analista (prazo de 20 min)
 python src/main.py --aprovar TKT-0007                         # ou --rejeitar: responde à ação pendente (grafo ou laço)
+python src/main.py --aprovar TKT-0007 --resumo "texto"        # aprovar EDITANDO o resumo (só no grafo; o laço recusa)
 python src/main.py --reset                                    # recria dados/tickets.db a partir do seed
 python conferir_grafo.py                                      # imprime o grafo compilado (sem chave); a saída está em docs/arquitetura.md §9
 python src/comparar_modelos.py                                # 5 casos × 3 modelos -> docs/modelos-tabela-3.3.md
@@ -66,6 +67,7 @@ Ao mexer, preserve estas invariantes (cada uma tem teste em `tests/test_offline.
 - **Portão de confiança em código.** `abrir_chamado_interno` e `anotacao_interna` exigem `kb_id` vindo de uma busca desta execução (`estado.scores_kb`) com score ≥ 0,5 e `acao_padrao` compatível (`escalar` / `anotar`).
 - **Um desfecho por execução** (`_exigir_sem_desfecho`) e **no máximo um `devolver_cliente` por chamado**, conferido no banco.
 - **Escrita irreversível pede confirmação, com prazo.** `abrir_chamado_interno` chama `estado.confirmar()`. Com confirmador (`--auto-aprovar`, testes) a resposta vem na hora. Sem confirmador, a ação vai para a tabela `pendencias` com `vence_em` (`PRAZO_CONFIRMACAO_MIN = 20`), o `Estado` é guardado como checkpoint e a execução termina em `aguardando_humano`, sem gravar nada. `agente.retomar()` conclui: aprovar no prazo abre o chamado; rejeitar (motivo `acao_rejeitada`) e prazo vencido (motivo `confirmacao_nao_recebida`) fazem o **código** gravar `fila_humana` com as considerações do agente (`encaminhar_pendencia`). No prazo vencido de um chamado que seria **P1** (`db.prioridade_prevista`), o código grava também um aviso ao gestor na tabela `avisos_gestor`. Rejeição dada na hora por um confirmador (`AcaoRejeitada`) segue o mesmo caminho e não derruba o laço. O relógio vale antes da pessoa: aprovação tardia não abre chamado. Depois da escrita o laço continua, para o modelo dar a frase final.
+- **Aprovar editando muda só o resumo, e só no grafo.** `--aprovar X --resumo "..."` chega a `retomar_grafo(resumo=...)`, que confere o texto pela mesma regra do texto do modelo (`_erro_do_texto`) **antes** de responder ao `interrupt`: edição recusada levanta `EdicaoRecusada` e não gasta a aprovação. Categoria, time, prioridade e `kb_id` não são editáveis (regra do `case.md` §2.1). O log guarda `resumo_original` e `resumo_aprovado` em `confirmacoes`. A pendência do grafo traz `prioridade_prevista`, só para a tela.
 - **O prazo é conferido, não cronometrado.** Não há processo em segundo plano: `vencer_pendencias()` roda no começo de cada comando do `main.py` (menos `--todos`). A espera não conta no teto de 90 s.
 - **`fila_humana` para chamado existente só depois de uma busca**, salvo `motivo="fora_da_alcada"`.
 - **`devolver_cliente` não pode citar informação interna** (`TERMOS_INTERNOS` + nomes de times).

@@ -51,6 +51,7 @@ python src/main.py TKT-0003                 # sem o texto: o programa pede que v
 python src/main.py TKT-0003 --auto-aprovar  # não espera a confirmação antes de abrir chamado interno (só para demonstração)
 python src/main.py --pendencias             # as ações que aguardam o analista, e quanto tempo falta
 python src/main.py --aprovar TKT-0003       # o analista aprova: o chamado interno é aberto e a execução conclui
+python src/main.py --aprovar TKT-0003 --resumo "texto corrigido"   # aprova EDITANDO: abre o chamado com o resumo do analista
 python src/main.py --rejeitar TKT-0003      # o analista rejeita: o chamado interno não é aberto, e o chamado vai para a fila humana
 python src/main.py --todos --auto-aprovar   # os 8 casos, cada um a partir do banco zerado, com verificador
 python src/main.py --reset                  # recria o banco simulado
@@ -62,7 +63,13 @@ python conferir_grafo.py                    # imprime os nós, as arestas e os c
 
 **O que foi medido no grafo:** 8 de 8 casos no verificador em três execuções (10/10/2026; `logs/grafo/`, `logs/grafo-rodada-2/`, `logs/grafo-rodada-3/`), cada uma com 15 chamadas ao modelo e cerca de 12,6 mil tokens nos 8 casos. O laço, na rodada 3 do `agente-v5.md`, deu 7 de 8, com 31 chamadas e 69.889 tokens ([`docs/grafo.md`](docs/grafo.md) §6). **O exemplo abaixo e os de `docs/io.md` são do laço**, de quando ele era o caminho padrão: para repeti-los hoje, acrescente `--laco` ao comando. Os mesmos chamados pelo grafo estão em `logs/grafo/`.
 
-**Quando o grafo para e espera alguém.** Abrir chamado interno é irreversível. Sem `--auto-aprovar`, a execução para antes de gravar, mostra a ação exata (id, categoria, resumo, time, procedimento, hora do pedido e do prazo) e termina em `aguardando_humano`. O analista tem 20 minutos para responder com `--aprovar TKT-0000` ou `--rejeitar TKT-0000`, de outro terminal; `--pendencias` lista o que espera. Aprovado, o chamado é aberto e a mesma execução conclui. Rejeitado ou sem resposta no prazo, o chamado vai para a fila humana com a ação que o agente propôs. Uma sequência real (pausar, listar, aprovar e aprovar de novo sem duplicar) está em `logs/grafo-pausa/saida-terminal.txt`.
+**Quando o grafo para e espera alguém.** Abrir chamado interno é irreversível. Sem `--auto-aprovar`, a execução para antes de gravar, mostra a ação exata (id, categoria, resumo, time, procedimento, prioridade prevista, hora do pedido e do prazo) e a consequência de aprová-la, e termina em `aguardando_humano`. O analista tem 20 minutos para responder, de outro terminal; `--pendencias` lista o que espera. São três respostas:
+
+- `--aprovar TKT-0000`: o chamado é aberto com o resumo que o modelo redigiu, e a mesma execução conclui;
+- `--aprovar TKT-0000 --resumo "texto corrigido"`: **aprovar editando**. O chamado é aberto com o resumo do analista. Só o resumo é editável; categoria, time e prioridade vêm do procedimento. Um resumo com menos de 20 caracteres é recusado, e a ação continua aguardando;
+- `--rejeitar TKT-0000`: o chamado não é aberto e vai para a fila humana com a ação que o agente propôs. O mesmo acontece sem resposta no prazo.
+
+Uma sequência real (pausar, listar, uma edição recusada, aprovar editando e aprovar de novo sem duplicar) está em `logs/grafo-caso-6/saida-terminal.txt`; a aprovação simples, em `logs/grafo-pausa/saida-terminal.txt`.
 
 Os chamados disponíveis são `TKT-0001` a `TKT-0007` e o inexistente `TKT-0999` (ver [`dados/README.md`](dados/README.md)).
 

@@ -1,0 +1,149 @@
+$ python src/main.py TKT-0007 --rodada grafo-caso-6   (Enter em branco: usa o texto registrado)
+
+==============================================================================
+TKT-0007  (caso: escalonamento_simples)  modelo: ministral-8b-latest  prompt: triagem-v1.md + redigir-v1.md (grafo)
+
+  nó consultar         consultar_ticket {"id_ticket": "TKT-0007"} -> ok
+  nó triagem           triagem {} -> ok
+  nó buscar            buscar_base_conhecimento {"termos": ["site", "parou", "salvar", "arquivos", "permissão"]} -> ok
+  nó decidir           decidir {} -> ok
+  nó redigir           redigir {"desfecho": "abrir_chamado_interno"} -> ok
+  ENTRADA: Meu site parou de salvar arquivos: todo upload falha com a mensagem de permissão negada. Preciso de ajuda para voltar a publicar.
+
+  TERMINO: aguardando_humano | desfecho: nenhum | passos: 5 | chamadas ao modelo: 2 | lembretes: 0 | tokens: 1770 | custo: US$ 0.00027
+  motivo: aguardando a confirmação do analista até 2026-10-11T00:44:51-03:00 (prazo de 20 minutos)
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0007",
+      "executado_em": "2026-10-11T00:24:48-03:00",
+      "termino": "aguardando_humano",
+      "resultado": {
+        "acao": null,
+        "texto": null,
+        "chamado_interno": null,
+        "time_destino": null,
+        "prioridade": null
+      },
+      "fonte": {
+        "tipo": "registro_do_chamado",
+        "kb_id": "KB-102",
+        "score": 0.86,
+        "registros": [
+          "TKT-0007"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "triagem",
+          "buscar_base_conhecimento",
+          "decidir",
+          "redigir"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": false,
+        "motivo": "a execução terminou sem desfecho (aguardando_humano: aguardando a confirmação do analista até 2026-10-11T00:44:51-03:00 (prazo de 20 minutos))"
+      }
+    }
+
+  >> AÇÃO IRREVERSÍVEL aguardando o analista de suporte:
+     ferramenta: abrir_chamado_interno
+     id_ticket: TKT-0007
+     categoria: permissao_arquivos
+     resumo: Cliente **Eta Engenharia (plano VPS Pro)** relata que o site **parou de salvar arquivos**, com falha de upload exibindo mensagem de **permissão negada**. Não há histórico de chamados internos anteriores nem log anexado. O procedimento **KB-102** (score 0.86) sugere que a causa é **arquivos/pastas com dono ou permissões incorretos**, comum após restauração/migração ou acesso de outro usuário. **Ação necessária:** Verificar e corrigir permissões (chown/chmod) no servidor, exigindo acesso de administrador.
+     time_destino: Infraestrutura
+     kb_id: KB-102
+     prioridade_prevista: P2
+     pedido_em: 2026-10-11T00:24:51-03:00
+     vence_em: 2026-10-11T00:44:51-03:00
+     faltam: 20 min
+     se aprovada: abre um chamado interno para Infraestrutura, com prioridade P2. Não há como apagar nem encerrar o chamado por aqui
+     rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta
+     responder: python src/main.py --aprovar TKT-0007   |   --rejeitar TKT-0007
+     aprovar corrigindo o resumo: python src/main.py --aprovar TKT-0007 --resumo "texto corrigido"
+[código de saída: 0]
+
+$ python src/main.py --pendencias --rodada grafo-caso-6
+
+1 ação(ões) aguardando o analista de suporte
+
+  >> AÇÃO IRREVERSÍVEL aguardando o analista de suporte:
+     ferramenta: abrir_chamado_interno
+     id_ticket: TKT-0007
+     categoria: permissao_arquivos
+     resumo: Cliente **Eta Engenharia (plano VPS Pro)** relata que o site **parou de salvar arquivos**, com falha de upload exibindo mensagem de **permissão negada**. Não há histórico de chamados internos anteriores nem log anexado. O procedimento **KB-102** (score 0.86) sugere que a causa é **arquivos/pastas com dono ou permissões incorretos**, comum após restauração/migração ou acesso de outro usuário. **Ação necessária:** Verificar e corrigir permissões (chown/chmod) no servidor, exigindo acesso de administrador.
+     time_destino: Infraestrutura
+     kb_id: KB-102
+     prioridade_prevista: P2
+     pedido_em: 2026-10-11T00:24:51-03:00
+     vence_em: 2026-10-11T00:44:51-03:00
+     faltam: 20 min
+     se aprovada: abre um chamado interno para Infraestrutura, com prioridade P2. Não há como apagar nem encerrar o chamado por aqui
+     rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta
+     responder: python src/main.py --aprovar TKT-0007   |   --rejeitar TKT-0007
+     aprovar corrigindo o resumo: python src/main.py --aprovar TKT-0007 --resumo "texto corrigido"
+[código de saída: 0]
+
+$ python src/main.py --aprovar TKT-0007 --resumo "ok" --rodada grafo-caso-6
+
+TKT-0007  EDIÇÃO RECUSADA: resumo corrigido recusado: texto curto demais ou ausente (esperado: pelo menos 20 caracteres)
+Nada foi gravado; a ação continua aguardando o analista.
+[código de saída: 1]
+
+$ python src/main.py --aprovar TKT-0007 --resumo "Site da Eta Engenharia (VPS Pro) não grava arquivos: todo upload falha com permissão negada. Sem log anexado e sem chamado interno anterior do cliente. Procedimento KB-102: conferir dono e permissões das pastas da conta." --rodada grafo-caso-6
+  nó confirmar         confirmar {"kb_id": "KB-102"} -> ok
+  nó gravar            abrir_chamado_interno {"id_ticket": "TKT-0007", "resumo": "Site da Eta Engenharia (VPS Pro) não grava arquivos:  -> ok
+
+==============================================================================
+TKT-0007  APROVADO COM EDIÇÃO pelo analista
+
+  RESUMO DO MODELO:   Cliente **Eta Engenharia (plano VPS Pro)** relata que o site **parou de salvar arquivos**, com falha de upload exibindo mensagem de **permissão negada**. Não há histórico de chamados internos anteriores nem log anexado. O procedimento **KB-102** (score 0.86) sugere que a causa é **arquivos/pastas com dono ou permissões incorretos**, comum após restauração/migração ou acesso de outro usuário. **Ação necessária:** Verificar e corrigir permissões (chown/chmod) no servidor, exigindo acesso de administrador.
+  RESUMO DO ANALISTA: Site da Eta Engenharia (VPS Pro) não grava arquivos: todo upload falha com permissão negada. Sem log anexado e sem chamado interno anterior do cliente. Procedimento KB-102: conferir dono e permissões das pastas da conta.
+
+  ENTRADA: Meu site parou de salvar arquivos: todo upload falha com a mensagem de permissão negada. Preciso de ajuda para voltar a publicar.
+
+  TERMINO: respondeu | desfecho: abrir_chamado_interno | passos: 7 | chamadas ao modelo: 2 | lembretes: 0 | tokens: 1770 | custo: US$ 0.00027
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0007",
+      "executado_em": "2026-10-11T00:24:48-03:00",
+      "termino": "respondeu",
+      "resultado": {
+        "acao": "abrir_chamado_interno",
+        "texto": "Site da Eta Engenharia (VPS Pro) não grava arquivos: todo upload falha com permissão negada. Sem log anexado e sem chamado interno anterior do cliente. Procedimento KB-102: conferir dono e permissões das pastas da conta.",
+        "chamado_interno": "INC-0002",
+        "time_destino": "Infraestrutura",
+        "prioridade": "P2"
+      },
+      "fonte": {
+        "tipo": "procedimento_da_base",
+        "kb_id": "KB-102",
+        "score": 0.86,
+        "registros": [
+          "TKT-0007"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "triagem",
+          "buscar_base_conhecimento",
+          "decidir",
+          "redigir",
+          "confirmar",
+          "abrir_chamado_interno"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": true,
+        "motivo": "procedimento KB-102 com score 0.86, igual ou acima do limiar 0.5"
+      }
+    }
+[código de saída: 0]
+
+$ python src/main.py --aprovar TKT-0007 --resumo "Site da Eta Engenharia (VPS Pro) não grava arquivos: todo upload falha com permissão negada. Sem log anexado e sem chamado interno anterior do cliente. Procedimento KB-102: conferir dono e permissões das pastas da conta." --rodada grafo-caso-6
+
+Não há confirmação pendente para TKT-0007.
+[código de saída: 0]
+
+$ conferência no banco (dados/tickets.db), depois das aprovações
+chamados_internos de TKT-0007: [(2, 'TKT-0007', 'Infraestrutura', 'P2', 'Site da Eta Engenharia (VPS Pro) não grava arquivos: todo upload falha com permissão negada. Sem log anexado e sem chamado interno anterior do cliente. Procedimento KB-102: conferir dono e permissões das pastas da conta.')]
+pendencias: [(1, 'TKT-0007', 'aprovada', '2026-10-11T00:24:51-03:00', '2026-10-11T00:44:51-03:00', '2026-10-11T00:24:57-03:00', 'analista de suporte (terminal)')]
+encaminhamentos: 0

@@ -7,7 +7,7 @@
 > [`arquitetura.md`](arquitetura.md) §9.
 >
 > **O que foi medido:** três execuções dos 8 casos com o modelo real, 8 de 8 no verificador nas
-> três, e uma pausa real no H1, retomada por outro processo (§6). O que é do código está provado por 21 testes offline
+> três, e uma pausa real no H1, retomada por outro processo (§6). O que é do código está provado por 27 testes offline
 > (`tests/test_grafo.py`), com modelo roteirizado.
 >
 > **O grafo é o caminho padrão do `main.py`** desde 10/10/2026, e grava em `logs/grafo/`. O laço
@@ -202,7 +202,7 @@ está em `arquitetura.md` §4; ao mudar um campo, as duas mudam juntas.
 | `texto_redigido` | `str` ou `None` | `redigir` | `validar`, `pedir_confirmacao`, `gravar` | nenhum |
 | `erro_validacao` | `dict` ou `None` | `validar` | `_rota_validar`, `redigir`, `finalizar` | nenhum |
 | `pendencia`, `pendencia_id` | `dict`, inteiro | `pedir_confirmacao` | `confirmar`, `gravar` | nenhum |
-| `confirmacao` | `dict` | `confirmar` | `gravar`, o log | nenhum |
+| `confirmacao` | `dict` (status, quem, quando; na aprovação com edição, também `resumo_original` e `resumo_aprovado`) | `confirmar` | `gravar`, o log | nenhum |
 | `desfecho` | `dict` | `gravar` | `finalizar` | nenhum |
 | `termino`, `motivo` | `str` | `triagem` ou `redigir` (teto, erro) e `finalizar` | as arestas, quem chama o grafo | nenhum |
 | `saida` | `dict` | `finalizar` | quem chama o grafo | nenhum |
@@ -372,6 +372,15 @@ O que isso mostra: o estado atravessou dois processos pelo checkpointer em SQLit
 não refez triagem, busca nem redação (os tokens não mudaram); e a segunda aprovação não criou
 nada. Limites: quem aprovou foi quem rodou o comando, 4 segundos depois, e não um analista; a
 rejeição e o prazo vencido não foram exercitados com o modelo real.
+
+### 6.2 Aprovar editando, com o modelo real
+
+Em `logs/grafo-caso-6/` (11/10/2026, commit `a328236`): o `TKT-0007` pausou; `--aprovar TKT-0007
+--resumo "ok"` foi recusado antes de responder ao `interrupt` (o grafo continuou parado em
+`confirmar`); a aprovação com o resumo corrigido abriu o `INC-0002` com o texto do analista; e a
+mesma aprovação, enviada de novo, não encontrou pausa. A edição não acrescentou nó nem aresta: o
+resumo vai no valor do `Command(resume=...)`, o nó `confirmar` o registra em `confirmacao`, e o
+nó `gravar` o escreve. A saída de `conferir_grafo.py` não mudou. Detalhe em `humano.md` §2.1 e §5.
 
 ## 7. Limites do que foi implementado
 

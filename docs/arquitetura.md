@@ -83,7 +83,7 @@ GRAFO   src/grafo.py · objeto GRAFO, compilado uma vez · thread_id = id do cha
       │                     Enquanto espera, o processo termina ──────────────────► ●T4
       │                     e o estado fica no checkpoint (dados/checkpoints.db).
       │                     A resposta chega por outro processo e o grafo continua daqui:
-      │                       aprova no prazo        → aprovada
+      │                       aprova no prazo        → aprovada (pode corrigir o resumo)
       │                       rejeita no prazo       → rejeitada
       │                       sem resposta em 20 min → vencida (o relógio vale antes da pessoa)
       ▼
@@ -226,7 +226,7 @@ dele. **Não há lista de mensagens no estado.**
 | `texto_redigido` | `str` ou `None` | `redigir` | `validar`, `pedir_confirmacao`, `gravar` | o modelo (◆D5) | nenhum |
 | `erro_validacao` | `dict` ou `None` | `validar` | a aresta de `validar`, `redigir`, `finalizar` | regra em código | nenhum |
 | `pendencia`, `pendencia_id` | `dict`, inteiro | `pedir_confirmacao` | `confirmar`, `gravar` | o estado e a tabela `pendencias` | nenhum |
-| `confirmacao` | `dict` | `confirmar` | `gravar`, o log | o analista (ou o relógio, no prazo vencido) | nenhum |
+| `confirmacao` | `dict` (status, quem, quando; na aprovação com edição, também `resumo_original` e `resumo_aprovado`) | `confirmar` | `gravar`, o log | o analista (ou o relógio, no prazo vencido) | nenhum |
 | `desfecho` | `dict` | `gravar` | `finalizar` | o retorno da escrita no banco | nenhum |
 | `termino`, `motivo` | `str` | `triagem` ou `redigir` (teto, erro) e `finalizar` | as arestas; quem chama o grafo | regra em código | nenhum |
 | `saida` | `dict` | `finalizar` | quem chama o grafo | `montar_saida` (`src/saida.py`) | nenhum |
@@ -326,8 +326,9 @@ antes de virar ●T3.
 | Onde | nó `confirmar`, depois de `decidir`, `redigir` e `validar`, e antes de `gravar` |
 | Critério | ação irreversível |
 | Quem é chamado | o **analista de suporte** (perfil do `case.md` §2.2) |
-| O que ele vê | a ação, o id do chamado, a categoria, o resumo redigido, o time de destino, o `kb_id`, a hora do pedido, a hora em que o prazo vence e quantos minutos faltam (`python src/main.py --pendencias`). A prioridade não aparece na tela: a do chamado aberto é calculada na gravação |
-| O que ele devolve | `--aprovar TKT-0000` ou `--rejeitar TKT-0000`. Não há aprovação com edição |
+| O que ele vê | a ação, o id do chamado, a categoria, o resumo redigido, o time de destino, o `kb_id`, a prioridade prevista, a hora do pedido, a hora em que o prazo vence, quantos minutos faltam e a consequência da aprovação (`python src/main.py --pendencias`). A prioridade da tela é a prevista: a do chamado é calculada de novo na gravação |
+| O que ele devolve | `--aprovar TKT-0000`, `--aprovar TKT-0000 --resumo "texto corrigido"` (aprovar **editando**) ou `--rejeitar TKT-0000` |
+| Se aprova editando | o chamado é aberto com o resumo do analista. Só o resumo é editável: categoria, time e prioridade continuam vindo do procedimento. O texto passa pela mesma regra do texto do modelo antes de o grafo continuar; recusado, nada é gravado e a ação continua à espera (`humano.md` §2.1) |
 | Se aprova no prazo | `gravar` abre o chamado e `finalizar` conclui; término ●T1 |
 | Se rejeita no prazo | o chamado interno **não** é aberto; `gravar` registra `fila_humana` com as considerações do agente (motivo `acao_rejeitada`); término ●T1 |
 | Se não responde em 20 minutos | o chamado interno **não** é aberto; `gravar` registra `fila_humana` com as considerações do agente (motivo `confirmacao_nao_recebida`); se o chamado seria **P1**, grava também o aviso ao gestor; término ●T1 |
@@ -380,7 +381,13 @@ está em `saida-terminal.txt`:
 | 3 | `python src/main.py --aprovar TKT-0007 --rodada grafo-pausa` | às 23:52:02 o grafo continuou de `confirmar`, abriu o `INC-0002` (Infraestrutura, P2) e terminou em `respondeu`, com as mesmas 2 chamadas ao modelo e os mesmos 1.755 tokens da pausa (`TKT-0007.json`) |
 | 4 | o mesmo comando, de novo | "Não há confirmação pendente para TKT-0007." No banco: um chamado interno para o `TKT-0007`, uma pendência com status `aprovada`, nenhum encaminhamento |
 
-Dois limites dessa demonstração: quem respondeu foi quem rodou o comando, 4 segundos depois, e
+**A aprovação com edição, demonstrada** (`logs/grafo-caso-6/`, 11/10/2026, commit `a328236`): o
+`TKT-0007` pausou; uma edição com o resumo "ok" foi recusada sem gastar a aprovação; a aprovação
+com o resumo corrigido abriu o `INC-0002` com o texto do analista, e o log guardou os dois
+resumos; a mesma aprovação enviada de novo não encontrou nada pendente. No banco: um chamado
+interno, uma pendência `aprovada`, nenhum encaminhamento (`humano.md` §5).
+
+Dois limites dessas demonstrações: quem respondeu foi quem rodou os comandos, segundos depois, e
 não um analista; e a rejeição e o prazo vencido, no grafo, estão cobertos só por testes offline
 (`tests/test_grafo.py`).
 
@@ -399,7 +406,8 @@ Limites do que foi implementado:
   (`dados/tickets.db`), e o estado da execução é o checkpoint (`dados/checkpoints.db`).
   `--reset` e `--todos` recriam o primeiro e não o segundo; por isso `--todos` exige
   `--auto-aprovar`.
-- **Não há aprovação com edição**, nem pedido do motivo da rejeição.
+- **A edição é só do resumo, e pela linha de comando.** O analista redigita o texto inteiro; não
+  há editor que parta do resumo do modelo. E não se pede o motivo da rejeição.
 
 `--auto-aprovar` troca o analista por uma aprovação automática e existe só para a demonstração:
 com ele o nó `confirmar` recebe a resposta na hora, sem `interrupt`. As três rodadas de 8 casos
@@ -538,7 +546,7 @@ vez (objeto `GRAFO`), com `langgraph==1.2.14` e `langgraph-checkpoint-sqlite==3.
 `requirements.txt`. É o caminho padrão do `main.py`; o laço dos §1 a §7 roda com `--laco`, para
 os dois serem comparados nos mesmos casos. Foi medido três vezes com o modelo real, 8 de 8 no
 verificador nas três (§8; `grafo.md` §6), e a pausa do [H1] foi demonstrada entre processos
-(§7). O que é do código está provado por 21 testes offline (`tests/test_grafo.py`).
+(§7). O que é do código está provado por 27 testes offline (`tests/test_grafo.py`).
 
 O §1 mostra o sistema inteiro (entrada, dados, checkpoint, términos). Esta seção mostra o mesmo
 grafo nó a nó, com a chave de cada aresta condicional, para ser conferido contra o código.

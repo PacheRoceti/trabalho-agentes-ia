@@ -6,7 +6,8 @@
 > checkpointer do LangGraph, e no laço da Parte 1 (`--laco`), com uma retomada feita à mão sobre
 > o SQLite. Nos dois a abertura de
 > chamado pausa, fica pendente com prazo de 20 minutos, e o analista aprova ou rejeita de outro
-> processo. **Só o H1 está implementado, e não há aprovação com edição.** O que falta está no §7.
+> processo. **Só o H1 está implementado.** No grafo o analista pode também **aprovar editando** o
+> resumo (§2). O que falta está no §7.
 
 ## 1. Onde o sistema para, e por qual critério (§8.1)
 
@@ -47,34 +48,72 @@ O que o analista vê (`mostrar_pendencia`, em `src/main.py`), ao fim da execuç�
      resumo: <o resumo redigido pelo modelo>
      time_destino: Infraestrutura
      kb_id: KB-102
-     pedido_em: <data e hora do pedido>
-     vence_em: <20 minutos depois>
+     prioridade_prevista: P2
+     pedido_em: 2026-10-11T00:24:51-03:00
+     vence_em: 2026-10-11T00:44:51-03:00
      faltam: 20 min
-     responder: python src/main.py --aprovar TKT-0007   |   --rejeitar TKT-0007
+     se aprovada: abre um chamado interno para Infraestrutura, com prioridade P2. Não há como apagar nem encerrar o chamado por aqui
      rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta
+     responder: python src/main.py --aprovar TKT-0007   |   --rejeitar TKT-0007
+     aprovar corrigindo o resumo: python src/main.py --aprovar TKT-0007 --resumo "texto corrigido"
 ```
 
-O bloco mostra o formato; os valores são os do `TKT-0007` no seed atual, e não a cópia de uma
-execução.
+O bloco é a tela de uma execução real pelo grafo (`logs/grafo-caso-6/saida-terminal.txt`,
+11/10/2026), com o resumo abreviado. No laço (`--laco`) a linha `prioridade_prevista` não
+aparece.
 
-Respostas aceitas: `--aprovar TKT-0007` e `--rejeitar TKT-0007`, dentro do prazo. Aprovar abre
-o chamado interno. Rejeitar não o abre, e o chamado vai para a fila humana com as considerações do
-agente (§4).
+**As três respostas aceitas**, dentro do prazo:
 
-### 2.2 O que falta nessa tela
+| Resposta | Comando | O que acontece |
+|---|---|---|
+| **aprovar** | `--aprovar TKT-0007` | abre o chamado interno com o resumo que o modelo redigiu |
+| **aprovar editando** | `--aprovar TKT-0007 --resumo "texto corrigido"` | abre o chamado interno com o resumo do analista. Só no grafo |
+| **rejeitar** | `--rejeitar TKT-0007` | não abre; o chamado vai para a fila humana com as considerações do agente (§4) |
 
-| Falta | Por que importa |
+**Aprovar editando: o que é editável, e o que não é.**
+
+- **Editável: só o resumo.** É o único campo da ação que o modelo escreveu, e é onde ele erra:
+  na execução do §5 o resumo dele vinha com negrito de Markdown e com uma causa ("sugere que a
+  causa é...") que o cliente não relatou.
+- **Não editável: categoria, time e prioridade.** Vêm do procedimento e da reincidência,
+  calculados pelo código na gravação. O analista não reclassifica: só o gestor (`case.md` §2.1).
+- **Não editável: o procedimento (`kb_id`).** Trocá-lo troca o time, a prioridade e a chave de
+  idempotência. É outra ação, e o caminho para ela é rejeitar.
+
+**As regras da edição** (`retomar_grafo` e o nó `confirmar`, em `src/grafo.py`):
+
+- o texto do analista passa pela **mesma regra** do texto do modelo (`_erro_do_texto`: 20
+  caracteres ou mais). Quem escreve muda, a regra não;
+- a conferência acontece **antes** de responder ao `interrupt`. Uma edição recusada não gasta a
+  aprovação: nada é gravado e a ação continua à espera;
+- **o prazo não se estende.** Uma aprovação editada que chega depois dos 20 minutos é prazo
+  vencido, e a edição é descartada: a fila humana recebe o resumo do agente;
+- **o original não se perde.** A confirmação no log guarda `resumo_original` (do modelo),
+  `resumo_aprovado` (do analista) e `editado: true`. No banco fica só o aprovado;
+- um resumo igual ao proposto não conta como edição;
+- `--rejeitar` com `--resumo` é recusado, e o laço (`--laco`) recusa a edição.
+
+### 2.2 O que entrou nessa tela em 11/10/2026, e o que ainda falta
+
+Entraram, no grafo: **a prioridade prevista** (`prioridade_prevista`, em `src/db.py`: a regra da
+abertura aplicada na hora do pedido), **a consequência escrita** ("abre um chamado interno para
+..., com prioridade ...; não há como apagar") e o comando para **aprovar editando**.
+
+A prioridade da tela é a **prevista**. A do chamado é calculada de novo na gravação; as duas só
+diferem se outro chamado do mesmo cliente e da mesma categoria for aberto durante a espera.
+
+| Ainda falta | Por que importa |
 |---|---|
-| **a prioridade** | o analista aprova um chamado sem saber se ele sai P1 ou P2, e é a prioridade que define o SLA. O código já sabe calculá-la antes da gravação (`prioridade_prevista`, em `src/db.py`), mas só a usa quando a ação é rejeitada ou vence; falta mostrá-la na tela |
-| **a reincidência** que o sistema confirmou | é o que faz a prioridade subir |
-| **o score** do procedimento | é o que sustenta a ação |
-| **a consequência**, escrita | "abre um chamado para a Infraestrutura, com SLA de 1 dia útil, que não pode ser apagado". Hoje a pergunta é só "confirma?" |
-| **aprovar editando** | não existe. O analista que discorda de uma frase do resumo só pode rejeitar tudo |
+| **a reincidência** que o sistema confirmou | é o que faz a prioridade subir; hoje o analista vê o P1 e não vê por quê |
+| **o score** do procedimento | é o que sustenta a ação. Hoje ele só aparece se o modelo o citar no resumo |
+| **o SLA** da prioridade | "P2" não diz ao analista que são 1 dia útil |
+| **editar o resumo num editor** | o texto corrigido vai inteiro na linha de comando; não há como partir do resumo do modelo e mudar uma frase |
 
-### 2.3 Proposta para o grafo
+### 2.3 O que a proposta previa, e o que foi feito
 
-Três respostas: **aprovar**, **rejeitar** e **aprovar editando**. Na edição, o analista altera só
-o texto (o resumo do chamado, ou a mensagem ao cliente). Categoria, time e prioridade não são
+A proposta eram três respostas: **aprovar**, **rejeitar** e **aprovar editando**, com a edição
+alterando só o texto (o resumo do chamado, ou a mensagem ao cliente). As três existem para o
+resumo do chamado (§2.1). A edição da mensagem ao cliente depende do H2, que não existe. Categoria, time e prioridade não são
 editáveis: vêm do procedimento, e só o gestor reclassifica (`case.md` §2.1).
 
 ## 3. A implementação, e a dependência do checkpoint (§8.3)
@@ -185,7 +224,27 @@ duas vezes, em dois processos:
 As duas saídas de terminal e a conferência no banco estão em `saida-terminal.txt`. A segunda
 chamada não chega à chave de idempotência: para antes, porque o grafo já não está parado em
 `confirmar`. A chave `ticket:kb_id` é a segunda barreira, e é ela que o teste offline abaixo
-exercita. **Falta** a aprovação com edição, que o caso 6 do enunciado também pede.
+exercita.
+
+**O caso 6 do enunciado, completo** (`logs/grafo-caso-6/`, 11/10/2026, commit `a328236`, modelo
+real, sem `--auto-aprovar`): o grafo pausa, a pessoa aprova editando, e a segunda aprovação não
+duplica nada. Cinco comandos, cada um em um processo:
+
+| # | Comando | Hora | O que aconteceu |
+|---|---|---|---|
+| 1 | `python src/main.py TKT-0007 --rodada grafo-caso-6` | 00:24:51 | parou em `confirmar`: `aguardando_humano`, prazo até 00:44:51, prioridade prevista P2, nada gravado (`TKT-0007-pausado.json`) |
+| 2 | `--pendencias` | | 1 ação aguardando, com a ação, a consequência e os comandos de resposta |
+| 3 | `--aprovar TKT-0007 --resumo "ok"` | | **edição recusada**: "texto curto demais ou ausente (esperado: pelo menos 20 caracteres)". Código de saída 1, nada gravado, a ação continua aguardando |
+| 4 | `--aprovar TKT-0007 --resumo "Site da Eta Engenharia (VPS Pro) não grava arquivos: ..."` | 00:24:57 | **aprovado com edição**: o grafo continuou de `confirmar` e abriu o `INC-0002` (Infraestrutura, P2) com o resumo do analista. As mesmas 2 chamadas ao modelo e 1.770 tokens da pausa (`TKT-0007.json`) |
+| 5 | o comando 4, de novo | | "Não há confirmação pendente para TKT-0007." |
+
+Conferência no banco depois do comando 5: **um** chamado interno para o `TKT-0007`, com o resumo
+do analista; uma pendência com status `aprovada`; nenhum encaminhamento. No log, a confirmação
+traz `editado: true`, o `resumo_original` do modelo e o `resumo_aprovado`. A saída dos cinco
+comandos e a conferência estão em `saida-terminal.txt`.
+
+Limite: quem aprovou e escreveu o resumo corrigido foi quem fazia a demonstração, 6 segundos
+depois da pausa, e não um analista de suporte.
 
 O teste `test_idempotencia_nao_duplica_chamado` repete a execução inteira. A aprovação repetida
 pelo caminho da retomada de hoje está em
@@ -214,9 +273,9 @@ não um analista.
   se o aviso vale também para o H2.
 - Pedir ao analista o **motivo** da rejeição: hoje o encaminhamento diz que ele rejeitou, e não
   por quê.
-- Mostrar prioridade, reincidência, score e consequência na tela de confirmação. A prioridade
-  prevista já é calculável antes da pausa (`prioridade_prevista`).
-- Implementar "aprovar editando".
+- Mostrar a reincidência, o score e o SLA na tela de confirmação (§2.2). A prioridade prevista e a
+  consequência já aparecem.
+- Deixar o analista editar o resumo a partir do texto do modelo, e não redigitando tudo (§2.2).
 - Dar chave de idempotência a `registrar_encaminhamento`.
-- Completar o caso 6 dos casos demonstrados: a pausa e a segunda aprovação que não duplica nada
-  estão em `logs/grafo-pausa/`; falta a pessoa aprovar **editando**.
+- Refazer o caso 6 (`logs/grafo-caso-6/`) com um analista de verdade respondendo: a demonstração
+  foi feita por quem escreveu o sistema.
