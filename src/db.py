@@ -44,6 +44,19 @@ SINONIMOS = {"salvar": "gravar", "expirou": "vencido", "caiu": "indisponivel"}
 # fica em 0,4, abaixo do limiar do portão.
 REDUTOR = 0.4
 
+# CURADORIA, em duas regras aplicadas ANTES do score, porque a busca não tem como saber qual de
+# duas versões vale: as duas casam com o mesmo relato.
+#   1. guia com `revogado_por` preenchido não entra na busca;
+#   2. entre as versões de um mesmo procedimento (KB-101, KB-101-A, KB-101-B...), só a de maior
+#      `data_publicacao` entra. É o que segura a versão antiga que ninguém marcou como revogada.
+# Cada uma fica desligada só para medir o que acontece sem ela (main.py --sem-filtro-revogados e
+# --sem-desempate-data, docs/rag.md §2.1).
+FILTRAR_REVOGADOS = True
+DESEMPATAR_POR_DATA = True
+
+# KB-101-A é uma atualização do KB-101: o id sem a letra identifica o procedimento.
+ID_KB = re.compile(r"^(KB-\d+)(?:-([A-Z]))?$")
+
 ID_TICKET = re.compile(r"^TKT-\d{4}$")
 
 # Ações irreversíveis à espera do analista. Não é dado do seed: é estado que as execuções criam,
@@ -146,6 +159,19 @@ def _casa(termo: str, chave: str) -> bool:
     return len(termo) >= 5 and len(chave) >= 5 and termo[:4] == chave[:4]
 
 
+def _procedimento(kb_id: str) -> str:
+    """O procedimento de que o guia é uma versão: o id sem a letra (KB-101-A -> KB-101)."""
+    m = ID_KB.match(kb_id)
+    return m.group(1) if m else kb_id
+
+
+def _ordem_de_versao(artigo) -> tuple[str, str]:
+    """A versão mais nova é a de maior data de publicação. A letra só desempata duas versões
+    publicadas no mesmo dia (mais adiante no alfabeto = mais nova; sem letra = a primeira)."""
+    m = ID_KB.match(artigo["id"])
+    return artigo["data_publicacao"], (m.group(2) or "") if m else ""
+
+
 def _palavras(termos: list[str]) -> list[str]:
     """Os termos do modelo viram palavras: frases são quebradas, palavras genéricas e de até
     2 letras saem, sinônimos conhecidos viram a palavra-chave, e não há repetição."""
@@ -161,7 +187,8 @@ def _palavras(termos: list[str]) -> list[str]:
 
 
 def buscar_kb(con: sqlite3.Connection, termos: list[str], top: int = 3,
-              relato: str | None = None) -> list[dict]:
+              relato: str | None = None, incluir_revogados: bool | None = None,
+              desempatar_por_data: bool | None = None) -> list[dict]:
     """Busca por sobreposição de palavras-chave.
 
     score = casados / (casados + nao_casados / 2)
@@ -176,16 +203,43 @@ def buscar_kb(con: sqlite3.Connection, termos: list[str], top: int = 3,
       - o relato cai numa RESSALVA do procedimento (coluna nao_cobre, frases separadas por ';',
         procuradas no texto do cliente e nos termos). O artigo volta com o campo 'ressalva'.
 
+    CURADORIA, antes do score:
+      - guia revogado (coluna revogado_por preenchida) fica FORA da busca;
+      - das versões de um mesmo procedimento (KB-101, KB-101-A...) só a mais nova concorre, pela
+        data_publicacao. A versão superada sai mesmo que a nova não case com a consulta: guia
+        antigo não age. O descarte NÃO é silencioso: a versão que ficou volta com
+        'data_publicacao' e 'versoes_descartadas' (as antigas que também casavam).
+    `incluir_revogados` e `desempatar_por_data` existem só para medir o que acontece sem cada
+    regra; None vale o que FILTRAR_REVOGADOS / DESEMPATAR_POR_DATA disserem. Sem as duas, o
+    resultado NÃO diz qual versão vale: é a situação de um corpus sem curadoria.
+
     Continua IMPERFEITA: só enxerga palavra, não sentido. É o que a busca vetorial (RAG)
     resolve na Parte 2, e o limiar de 0.5 foi ajustado à mão para os dados desta demonstração.
     """
+    if incluir_revogados is None:
+        incluir_revogados = not FILTRAR_REVOGADOS
+    if desempatar_por_data is None:
+        desempatar_por_data = DESEMPATAR_POR_DATA
     consulta = _palavras(termos)
     contexto = _normalizar(" ".join([relato or ""] + [str(t) for t in termos]))
     resultados = []
-    for a in con.execute("SELECT * FROM kb_artigos").fetchall():
+    sql = "SELECT * FROM kb_artigos" + ("" if incluir_revogados else " WHERE revogado_por IS NULL")
+    artigos = con.execute(sql).fetchall()
+    mais_nova = {}                       # procedimento -> a versão de maior data_publicacao
+    for a in artigos:
+        p = _procedimento(a["id"])
+        if p not in mais_nova or _ordem_de_versao(a) > _ordem_de_versao(mais_nova[p]):
+            mais_nova[p] = a
+    descartadas = {}                     # id da versão que ficou -> antigas que também casavam
+    for a in artigos:
         chaves = a["palavras_chave"].split()
         casados = sum(1 for t in consulta if any(_casa(t, c) for c in chaves))
         if casados == 0:
+            continue
+        vigente = mais_nova[_procedimento(a["id"])]
+        if desempatar_por_data and vigente["id"] != a["id"]:
+            descartadas.setdefault(vigente["id"], []).append(
+                {"kb_id": a["id"], "data_publicacao": a["data_publicacao"]})
             continue
         score = casados / (casados + (len(consulta) - casados) / 2)
         if casados < 2:
@@ -203,6 +257,10 @@ def buscar_kb(con: sqlite3.Connection, termos: list[str], top: int = 3,
             resultado["ressalva"] = (f"este procedimento NÃO cobre o caso relatado "
                                      f"('{ressalva}'): o score foi reduzido")
         resultados.append(resultado)
+    for r in resultados:
+        if r["kb_id"] in descartadas:
+            r["data_publicacao"] = mais_nova[_procedimento(r["kb_id"])]["data_publicacao"]
+            r["versoes_descartadas"] = descartadas[r["kb_id"]]
     resultados.sort(key=lambda r: r["score"], reverse=True)
     return resultados[:top]
 

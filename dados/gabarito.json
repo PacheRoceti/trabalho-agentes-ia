@@ -3,8 +3,9 @@
   "TKT-0001": {
     "caso": "simples",
     "acao": "anotacao_interna",
-    "kb_id": "KB-101",
-    "chamado_interno": false
+    "kb_id": "KB-101-A",
+    "chamado_interno": false,
+    "_nota": "Id trocado em 11/10/2026, sem mudar a resposta esperada: a base passou a nomear as versões (o guia com letra é a atualização do guia sem letra). O procedimento de SSL vigente, que era o KB-101, virou KB-101-A; o KB-101 é agora a versão antiga, revogada (docs/rag.md §2.1). Os logs anteriores a essa data trazem KB-101 para o mesmo procedimento."
   },
   "TKT-0002": {
     "caso": "divergencia",

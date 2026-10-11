@@ -48,7 +48,7 @@ ROTEIROS = {
     "TKT-0001": [turno(chamada(1, "consultar_ticket", id_ticket="TKT-0001")),
                  turno(chamada(2, "buscar_base_conhecimento", termos=["certificado", "ssl", "renovacao", "vencido"])),
                  turno(chamada(3, "registrar_encaminhamento", id_ticket="TKT-0001", destino="anotacao_interna",
-                               mensagem="Rodar certbot renew --dry-run e conferir a porta 80.", kb_id="KB-101")),
+                               mensagem="Rodar certbot renew --dry-run e conferir a porta 80.", kb_id="KB-101-A")),
                  turno(texto="Correção sugerida registrada para o analista.")],
     # divergência: relato "Webmail" × log de DNS; existe KB de DNS com score alto (a armadilha),
     # mas o correto é fila humana sinalizando a divergência
@@ -168,6 +168,78 @@ class TestAgente(unittest.TestCase):
         self.assertGreaterEqual(sem["score"], 0.5)
         self.assertLess(com["score"], 0.5)
         self.assertIn("NÃO cobre", com["ressalva"])
+
+    # ---- as versões de um procedimento: o KB-101 (antigo, revogado, posto no corpus de
+    # propósito) e o KB-101-A (a atualização vigente). Letra = versão mais nova.
+
+    SSL = ["certificado", "ssl", "renovacao", "vencido"]
+
+    def buscar_ssl(self, **kw):
+        return db.buscar_kb(self.con, self.SSL, **kw)
+
+    def test_guia_revogado_nao_entra_na_busca(self):
+        # só o filtro de revogados, sem o desempate por data
+        self.assertEqual([r["kb_id"] for r in self.buscar_ssl(desempatar_por_data=False)], ["KB-101-A"])
+
+    def test_sem_curadoria_o_revogado_empata_com_o_vigente_e_nada_o_distingue(self):
+        antigo, vigente = self.buscar_ssl(incluir_revogados=True, desempatar_por_data=False)[:2]
+        self.assertEqual((antigo["kb_id"], vigente["kb_id"]), ("KB-101", "KB-101-A"))
+        self.assertEqual(antigo["score"], vigente["score"])
+        self.assertGreaterEqual(antigo["score"], 0.5)
+        self.assertEqual((antigo["acao_padrao"], antigo["time_destino"]), ("escalar", "Seguranca"))
+        for campo in ("revogado_por", "data_publicacao", "versoes_descartadas"):
+            self.assertNotIn(campo, antigo)                  # a busca não diz qual dos dois vale
+
+    def test_desempate_por_data_segura_a_versao_antiga_que_ninguem_revogou(self):
+        self.con.execute("UPDATE kb_artigos SET revogado_por = NULL")    # a curadoria esqueceu
+        resultados = self.buscar_ssl()
+        self.assertEqual([r["kb_id"] for r in resultados], ["KB-101-A"])
+        # o descarte não é silencioso: fica no resultado da busca, com as datas
+        self.assertEqual(resultados[0]["data_publicacao"], "2026-02-02")
+        self.assertEqual(resultados[0]["versoes_descartadas"],
+                         [{"kb_id": "KB-101", "data_publicacao": "2025-03-10"}])
+
+    def test_o_desempate_e_pela_data_e_a_letra_so_decide_no_mesmo_dia(self):
+        self.con.execute("UPDATE kb_artigos SET revogado_por = NULL")
+        # a data manda, mesmo contra a letra: com o KB-101 "publicado" depois, é ele que vale
+        self.con.execute("UPDATE kb_artigos SET data_publicacao = '2026-06-01' WHERE id = 'KB-101'")
+        self.assertEqual([r["kb_id"] for r in self.buscar_ssl()], ["KB-101"])
+        # mesma data: vale a letra mais adiante
+        self.con.execute("UPDATE kb_artigos SET data_publicacao = '2026-06-01' WHERE id = 'KB-101-A'")
+        self.assertEqual([r["kb_id"] for r in self.buscar_ssl()], ["KB-101-A"])
+
+    def test_versao_superada_nao_age_mesmo_quando_a_nova_nao_casa(self):
+        self.con.execute("UPDATE kb_artigos SET revogado_por = NULL")
+        # "painel" e "manual" só existem no guia antigo: sem o desempate ele seria o único resultado
+        termos = ["painel", "manual"]
+        self.assertEqual([r["kb_id"] for r in db.buscar_kb(self.con, termos, desempatar_por_data=False)],
+                         ["KB-101"])
+        self.assertEqual(db.buscar_kb(self.con, termos), [])
+
+    def test_guias_de_procedimentos_diferentes_nao_sao_desempatados_por_data(self):
+        ids = {r["kb_id"] for r in db.buscar_kb(self.con, ["ssh", "acesso", "permissao", "negada"])}
+        self.assertEqual(ids, {"KB-102", "KB-103"})
+
+    def test_as_versoes_do_seed_sao_coerentes(self):
+        artigos = {a["id"]: a for a in self.con.execute("SELECT * FROM kb_artigos")}
+        revogados = [a for a in artigos.values() if a["revogado_por"]]
+        self.assertEqual([a["id"] for a in revogados], ["KB-101"])
+        for a in revogados:
+            novo = artigos[a["revogado_por"]]                # aponta para um guia que existe,
+            self.assertIsNone(novo["revogado_por"])          # vigente,
+            self.assertEqual(db._procedimento(novo["id"]), db._procedimento(a["id"]))   # do mesmo procedimento,
+            self.assertGreater(novo["data_publicacao"], a["data_publicacao"])           # publicado depois,
+            self.assertGreater(novo["id"], a["id"])          # e com a letra mais adiante
+
+    def test_o_laco_nao_age_sobre_guia_revogado(self):
+        # o modelo insiste no guia antigo: como ele não veio da busca, o portão recusa
+        roteiro = list(ROTEIROS["TKT-0001"])
+        roteiro[2] = turno(chamada(3, "abrir_chamado_interno", id_ticket="TKT-0001", kb_id="KB-101",
+                                   resumo="Certificado SSL vencido; renovar manualmente pelo painel."))
+        e = self.rodar("TKT-0001", roteiro=roteiro)
+        self.assertIn("não vem de uma busca", e.passos[2].erro["erro"])
+        self.assertEqual(self.con.execute("SELECT COUNT(*) FROM chamados_internos "
+                                          "WHERE ticket_externo = 'TKT-0001'").fetchone()[0], 0)
 
     def test_chamado_indevido_do_tkt_0006_e_barrado_mesmo_com_termos_que_casam(self):
         roteiro = list(ROTEIROS["TKT-0006"])
@@ -389,7 +461,7 @@ class TestAgente(unittest.TestCase):
     def test_saida_validada_tem_resultado_fonte_e_suficiencia(self):
         s = self.rodar("TKT-0001").saida                     # caminho feliz
         self.assertEqual((s.resultado.acao, s.fonte.tipo, s.fonte.kb_id),
-                         ("anotacao_interna", "procedimento_da_base", "KB-101"))
+                         ("anotacao_interna", "procedimento_da_base", "KB-101-A"))
         self.assertGreaterEqual(s.fonte.score, 0.5)
         self.assertTrue(s.suficiencia.suficiente)
         self.assertIn("certbot", s.resultado.texto)

@@ -7,7 +7,7 @@
 > [`arquitetura.md`](arquitetura.md) §9.
 >
 > **O que foi medido:** três execuções dos 8 casos com o modelo real, 8 de 8 no verificador nas
-> três, e uma pausa real no H1, retomada por outro processo (§6). O que é do código está provado por 27 testes offline
+> três, e uma pausa real no H1, retomada por outro processo (§6). O que é do código está provado por 30 testes offline
 > (`tests/test_grafo.py`), com modelo roteirizado.
 >
 > **O grafo é o caminho padrão do `main.py`** desde 10/10/2026, e grava em `logs/grafo/`. O laço
@@ -302,6 +302,8 @@ comando perdeu o `--grafo`); os nós, as arestas e os prompts são os mesmos.
 prioridade nos dois chamados abertos. O que variou foram os termos de busca e, com eles, o
 score: o KB-101 do `TKT-0001` teve 0,67, 0,67 e 0,75, e o KB-106 do `TKT-0002` teve 0,75, 0,67 e
 0,75. Nenhuma variação cruzou o limiar. A tabela abaixo detalha a primeira rodada.
+
+> **Sobre o id `KB-101` nestes logs.** Em 11/10/2026 a base passou a nomear as versões: o guia com letra é a atualização do guia sem letra. O procedimento de SSL vigente, que aparece aqui como `KB-101`, hoje é o `KB-101-A`; o `KB-101` de hoje é a versão antiga, revogada (`rag.md` §2.1). O texto do procedimento não mudou.
 
 | Chamado | Classe dada pela triagem | Busca: melhor artigo e score | Desfecho | Chamadas ao modelo | Tokens |
 |---|---|---|---|---|---|

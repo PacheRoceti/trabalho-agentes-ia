@@ -1,0 +1,226 @@
+{
+  "execucao_id": "TKT-0001-91247",
+  "id_ticket": "TKT-0001",
+  "executado_em": "2026-10-11T01:00:47-03:00",
+  "commit": "6b5fb31 + alterações locais",
+  "entrada": "O certificado SSL do meu site venceu ontem e a renovação automática não rodou. O navegador mostra aviso de site não seguro para os meus clientes.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + redigir-v1.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-101",
+    "chamado_interno": "INC-0002",
+    "time_destino": "Seguranca",
+    "prioridade": "P1",
+    "reincidencias_confirmadas_no_sistema": 0,
+    "ja_existia": false
+  },
+  "pendencia": null,
+  "confirmacoes": [
+    {
+      "pendencia": {
+        "ferramenta": "abrir_chamado_interno",
+        "id_ticket": "TKT-0001",
+        "categoria": "ssl_certificado",
+        "resumo": "Certificado SSL vencido no site da Acme Contabilidade (plano Hospedagem Business). O cliente relata que o certificado venceu ontem e a renovação automática não ocorreu, resultando em aviso de 'site não seguro' no navegador. Não há log anexado nem histórico de chamados internos anteriores. O procedimento **KB-101** indica que o certificado foi emitido manualmente (validade de 1 ano), sem renovação automática, e sugere emissão e instalação de um novo certificado pelo painel de administração. **Score 0.6** (limiar 0.5), mas exige acesso de administrador ao painel.",
+        "time_destino": "Seguranca",
+        "kb_id": "KB-101",
+        "prioridade_prevista": "P1",
+        "pedido_em": "2026-10-11T01:00:51-03:00",
+        "vence_em": "2026-10-11T01:20:51-03:00"
+      },
+      "aprovado": true,
+      "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+      "status": "aprovada",
+      "resolvido_em": "2026-10-11T01:00:51-03:00",
+      "editado": false
+    }
+  ],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1517,
+  "tokens_saida": 252,
+  "custo_usd": 0.000265,
+  "scores_kb": {
+    "KB-101": 0.6,
+    "KB-101-A": 0.6
+  },
+  "saida": {
+    "id_ticket": "TKT-0001",
+    "executado_em": "2026-10-11T01:00:47-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "abrir_chamado_interno",
+      "texto": "Certificado SSL vencido no site da Acme Contabilidade (plano Hospedagem Business). O cliente relata que o certificado venceu ontem e a renovação automática não ocorreu, resultando em aviso de 'site não seguro' no navegador. Não há log anexado nem histórico de chamados internos anteriores. O procedimento **KB-101** indica que o certificado foi emitido manualmente (validade de 1 ano), sem renovação automática, e sugere emissão e instalação de um novo certificado pelo painel de administração. **Score 0.6** (limiar 0.5), mas exige acesso de administrador ao painel.",
+      "chamado_interno": "INC-0002",
+      "time_destino": "Seguranca",
+      "prioridade": "P1"
+    },
+    "fonte": {
+      "tipo": "procedimento_da_base",
+      "kb_id": "KB-101",
+      "score": 0.6,
+      "registros": [
+        "TKT-0001"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "confirmar",
+        "abrir_chamado_interno"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": true,
+      "motivo": "procedimento KB-101 com score 0.6, igual ou acima do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0001"
+      },
+      "resultado": {
+        "id": "TKT-0001",
+        "aberto_em": "2026-09-21 08:12",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Acme Contabilidade",
+        "plano": "Hospedagem Business",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "certificado ssl",
+          "renovação automática",
+          "navegador",
+          "aviso site não seguro"
+        ],
+        "justificativa": "O cliente relata problema específico de certificado SSL vencido e falha na renovação automática, sintomas claros de falha em serviço técnico."
+      },
+      "erro": null,
+      "ms": 1626
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "certificado ssl",
+          "renovação automática",
+          "navegador",
+          "aviso site não seguro"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-101",
+            "titulo": "Certificado SSL vencido: renovação manual pelo painel",
+            "score": 0.6,
+            "causa": "Certificado emitido manualmente, com validade de um ano: não há renovação automática.",
+            "solucao": "Emitir e instalar um novo certificado pelo painel de administração. Exige acesso de administrador ao painel.",
+            "acao_padrao": "escalar",
+            "time_destino": "Seguranca"
+          },
+          {
+            "kb_id": "KB-101-A",
+            "titulo": "Certificado SSL não renovou automaticamente",
+            "score": 0.6,
+            "causa": "Desafio HTTP-01 falhando (porta 80 bloqueada ou DNS apontando para outro IP) ou timer do certbot parado.",
+            "solucao": "Conferir DNS do domínio e liberação da porta 80; rodar \"certbot renew --dry-run\"; reativar o timer do certbot.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "abrir_chamado_interno",
+        "kb_id": "KB-101",
+        "motivo": "procedimento_escalar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "abrir_chamado_interno"
+      },
+      "resultado": {
+        "texto": "Certificado SSL vencido no site da Acme Contabilidade (plano Hospedagem Business). O cliente relata que o certificado venceu ontem e a renovação automática não ocorreu, resultando em aviso de 'site não seguro' no navegador. Não há log anexado nem histórico de chamados internos anteriores. O procedimento **KB-101** indica que o certificado foi emitido manualmente (validade de 1 ano), sem renovação automática, e sugere emissão e instalação de um novo certificado pelo painel de administração. **Score 0.6** (limiar 0.5), mas exige acesso de administrador ao painel."
+      },
+      "erro": null,
+      "ms": 1688
+    },
+    {
+      "indice": 5,
+      "ferramenta": "confirmar",
+      "argumentos": {
+        "kb_id": "KB-101"
+      },
+      "resultado": {
+        "status": "aprovada",
+        "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+        "editado": false
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 6,
+      "ferramenta": "abrir_chamado_interno",
+      "argumentos": {
+        "id_ticket": "TKT-0001",
+        "resumo": "Certificado SSL vencido no site da Acme Contabilidade (plano Hospedagem Business). O cliente relata que o certificado venceu ontem e a renovação automática não ocorreu, resultando em aviso de 'site não seguro' no navegador. Não há log anexado nem histórico de chamados internos anteriores. O procedimento **KB-101** indica que o certificado foi emitido manualmente (validade de 1 ano), sem renovação automática, e sugere emissão e instalação de um novo certificado pelo painel de administração. **Score 0.6** (limiar 0.5), mas exige acesso de administrador ao painel.",
+        "kb_id": "KB-101"
+      },
+      "resultado": {
+        "chamado_interno": "INC-0002",
+        "time_destino": "Seguranca",
+        "prioridade": "P1",
+        "reincidencias_confirmadas_no_sistema": 0,
+        "ja_existia": false
+      },
+      "erro": null,
+      "ms": 19
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-101",
+    "motivo": "procedimento_escalar"
+  },
+  "tentativas_redacao": 1,
+  "segundos_gastos": 3.336
+}

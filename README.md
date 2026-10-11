@@ -99,6 +99,8 @@ execução de `2026-10-10T15:45:26-03:00`, com `ministral-8b-latest` e o prompt 
 `861a948`. O log completo está em `logs/TKT-0001.json`; os outros exemplos (recusa, fora do
 escopo, entrada incompleta e entrada ambígua) estão no `docs/io.md` §3.
 
+> **Sobre o id `KB-101` nestes logs.** Em 11/10/2026 a base passou a nomear as versões: o guia com letra é a atualização do guia sem letra. O procedimento de SSL vigente, que aparece aqui como `KB-101`, hoje é o `KB-101-A`; o `KB-101` de hoje é a versão antiga, revogada (`rag.md` §2.1). O texto do procedimento não mudou.
+
 **Os oito logs de `logs/`.** São todos do laço (hoje, `--laco`), com `ministral-8b-latest`, o prompt `agente-v5.md`
 e `--auto-aprovar`, de 10/10/2026, e todos têm o campo `saida` validado. Vieram de duas execuções
 no mesmo dia, e não de uma rodada só:

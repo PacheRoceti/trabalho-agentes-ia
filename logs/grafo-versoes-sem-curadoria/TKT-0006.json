@@ -1,0 +1,173 @@
+{
+  "execucao_id": "TKT-0006-91263",
+  "id_ticket": "TKT-0006",
+  "executado_em": "2026-10-11T01:01:03-03:00",
+  "commit": "6b5fb31 + alterações locais",
+  "entrada": "Meu site está dando erro 502 de vez em quando, mais ou menos desde o deploy de ontem. Às vezes funciona normal.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + redigir-v1.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1529,
+  "tokens_saida": 175,
+  "custo_usd": 0.000256,
+  "scores_kb": {
+    "KB-104": 0.16
+  },
+  "saida": {
+    "id_ticket": "TKT-0006",
+    "executado_em": "2026-10-11T01:01:03-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O procedimento **KB-104** foi encontrado com score **0.16** (limiar: 0.5), o que indica que não é seguro agir sozinho. Além disso, a **RESSALVA** do procedimento esclarece que ele **não cobre o caso relatado**, pois o erro 502 não é relatado como **constante**, mas sim **intermitente** ('às vezes').",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "busca_sem_correspondencia",
+      "kb_id": "KB-104",
+      "score": 0.16,
+      "registros": [
+        "TKT-0006"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o melhor procedimento encontrado (KB-104, score 0.16) ficou abaixo do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0006"
+      },
+      "resultado": {
+        "id": "TKT-0006",
+        "aberto_em": "2026-09-21 11:02",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Epsilon Studio",
+        "plano": "VPS Pro",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "site",
+          "erro 502"
+        ],
+        "justificativa": "O cliente relata um erro 502 no site, indicando um problema técnico no servidor ou aplicação."
+      },
+      "erro": null,
+      "ms": 750
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "site",
+          "erro 502"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.16,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "ressalva": "este procedimento NÃO cobre o caso relatado ('as vezes'): o score foi reduzido"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "score_abaixo_do_limiar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "O procedimento **KB-104** foi encontrado com score **0.16** (limiar: 0.5), o que indica que não é seguro agir sozinho. Além disso, a **RESSALVA** do procedimento esclarece que ele **não cobre o caso relatado**, pois o erro 502 não é relatado como **constante**, mas sim **intermitente** ('às vezes')."
+      },
+      "erro": null,
+      "ms": 1024
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0006",
+        "destino": "fila_humana",
+        "mensagem": "O procedimento **KB-104** foi encontrado com score **0.16** (limiar: 0.5), o que indica que não é seguro agir sozinho. Além disso, a **RESSALVA** do procedimento esclarece que ele **não cobre o caso relatado**, pois o erro 502 não é relatado como **constante**, mas sim **intermitente** ('às vezes')."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 16
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "score_abaixo_do_limiar"
+  },
+  "tentativas_redacao": 1,
+  "segundos_gastos": 1.792
+}

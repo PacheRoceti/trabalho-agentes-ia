@@ -94,6 +94,8 @@ fora do contrato. O log grava também `executado_em` e `commit`; o commit vem co
 
 ## 3. Os exemplos
 
+> **Sobre o id `KB-101` nestes logs.** Em 11/10/2026 a base passou a nomear as versões: o guia com letra é a atualização do guia sem letra. O procedimento de SSL vigente, que aparece aqui como `KB-101`, hoje é o `KB-101-A`; o `KB-101` de hoje é a versão antiga, revogada (`rag.md` §2.1). O texto do procedimento não mudou.
+
 Os cinco exemplos são execuções reais de 10/10/2026, do commit `861a948`, com `ministral-8b-latest`,
 prompt `agente-v5.md` e `temperature=0`. Cada um traz a entrada como chegou, o objeto de saída
 completo (com os campos nulos), a data e a hora da execução, o commit e o log correspondente em

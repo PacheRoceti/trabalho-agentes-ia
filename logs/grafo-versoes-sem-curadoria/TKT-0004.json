@@ -1,0 +1,140 @@
+{
+  "execucao_id": "TKT-0004-91258",
+  "id_ticket": "TKT-0004",
+  "executado_em": "2026-10-11T01:00:58-03:00",
+  "commit": "6b5fb31 + alterações locais",
+  "entrada": "Olá, quero fazer upgrade do meu plano para um servidor dedicado. Podem me passar valores e prazo de migração?",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + redigir-v1.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_comercial",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_comercial"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1377,
+  "tokens_saida": 113,
+  "custo_usd": 0.000223,
+  "scores_kb": {},
+  "saida": {
+    "id_ticket": "TKT-0004",
+    "executado_em": "2026-10-11T01:00:58-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_comercial",
+      "texto": "O cliente **Gama Cursos Online** (plano **Hospedagem Start**) solicitou informações sobre **upgrade para servidor dedicado**, incluindo valores e prazo de migração.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "registro_do_chamado",
+      "kb_id": null,
+      "score": null,
+      "registros": [
+        "TKT-0004"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": true,
+      "motivo": "assunto comercial: a classificação dispensa a base de procedimentos"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0004"
+      },
+      "resultado": {
+        "id": "TKT-0004",
+        "aberto_em": "2026-09-21 10:05",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Gama Cursos Online",
+        "plano": "Hospedagem Start",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "comercial",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [],
+        "justificativa": "O cliente solicita upgrade de plano para servidor dedicado, sem relatar problema técnico, apenas buscando informações sobre valores e prazo de migração."
+      },
+      "erro": null,
+      "ms": 927
+    },
+    {
+      "indice": 2,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_comercial",
+        "kb_id": null,
+        "motivo": "assunto_comercial"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 3,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_comercial"
+      },
+      "resultado": {
+        "texto": "O cliente **Gama Cursos Online** (plano **Hospedagem Start**) solicitou informações sobre **upgrade para servidor dedicado**, incluindo valores e prazo de migração."
+      },
+      "erro": null,
+      "ms": 1049
+    },
+    {
+      "indice": 4,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0004",
+        "destino": "fila_comercial",
+        "mensagem": "O cliente **Gama Cursos Online** (plano **Hospedagem Start**) solicitou informações sobre **upgrade para servidor dedicado**, incluindo valores e prazo de migração."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_comercial"
+      },
+      "erro": null,
+      "ms": 13
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "comercial",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "fila_comercial",
+    "kb_id": null,
+    "motivo": "assunto_comercial"
+  },
+  "tentativas_redacao": 1,
+  "segundos_gastos": 1.991
+}

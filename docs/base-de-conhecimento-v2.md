@@ -81,7 +81,7 @@ funciona mais e (2) manda o chamado para o time e a prioridade que valiam antes.
 
 | Fonte | Volume hoje | Volume previsto | Unidades |
 |---|---|---|---|
-| D — Procedimentos técnicos | 6 guias (KB-101 a KB-106) | ~15 guias | 15 a 20 trechos |
+| D — Procedimentos técnicos | 6 guias vigentes (KB-101-A e KB-102 a KB-106) e 1 revogado (KB-101) | ~15 guias | 15 a 20 trechos |
 | E — Catálogo de planos | 0 | 3 fichas (Start, Business, VPS Pro) | 3 trechos |
 
 **Total previsto: ~23 trechos.** Um banco vetorial dedicado é desnecessário nessa escala:
@@ -125,6 +125,9 @@ de referência** que o sistema aplica ou valida, sem que o modelo precise lê-la
   (é o que se casa com o relato). `acao_padrao`, `categoria`, `time_destino` e `prioridade_base`
   ficam como **metadados estruturados** do trecho e não entram no texto embedado: são lidos por
   código depois da recuperação, e não interpretados pelo modelo.
+- Versões: o guia com letra é uma atualização do guia sem letra (`KB-101`, depois `KB-101-A`,
+  depois `KB-101-B`; quanto mais adiante no alfabeto, mais nova). O id sem a letra identifica o
+  procedimento. Regra adotada em 11/10/2026.
 - Metadados: `kb_id`, `servico` (certbot, nginx, DNS, arquivos, SSH/fail2ban, backup),
   `acao_padrao`, `categoria` (ex.: `permissao_arquivos`, `dns_dominio`; conta a reincidência),
   `time_destino`, `prioridade_base`, `planos` (a quais planos o guia se
@@ -142,16 +145,18 @@ de referência** que o sistema aplica ou valida, sem que o modelo precise lê-la
   escopo do suporte e nunca autorizam, sozinhas, uma anotação ou a abertura de chamado. A regra
   do §0 (campos obrigatórios) vale para os procedimentos da fonte D.
 
-**O documento revogado (exigência do §4.2 da Parte 2).** Proposta: incluir no corpus, de
-propósito, uma versão antiga do KB-101 (SSL), com id próprio (`KB-101-A`), anterior à adoção do certbot, que manda
-**renovar o certificado manualmente pelo painel** e declara `acao_padrao = escalar`,
-`time_destino = Seguranca`, `prioridade_base = P1`, com `revogado_por = KB-101`. O KB-101
-vigente diz `anotar`, `Infraestrutura`, `P2`. As duas versões respondem ao mesmo relato,
-então o teste mostra duas coisas de uma vez: se o sistema recupera o documento revogado
-e, se recuperar, quanto isso custa — porque com time e prioridade vindos do documento, o
-erro não fica no texto da anotação, ele vira um chamado P1 aberto para o time errado. Se
-o sistema não distinguir as duas versões, o achado é de curadoria, não de recuperação: o
-filtro `revogado_por` vazio precisa ser aplicado antes da busca.
+**O documento revogado (exigência do §4.2 da Parte 2).** Implementado em 11/10/2026: o que
+aconteceu, com e sem a curadoria, está em [`rag.md`](rag.md) §2.1. O corpus tem, de propósito,
+a versão antiga do guia de SSL (`KB-101`), anterior à adoção do certbot, que manda **renovar o
+certificado manualmente pelo painel** e declara `acao_padrao = escalar`,
+`time_destino = Seguranca`, `prioridade_base = P1`, com `revogado_por = KB-101-A`. A versão
+vigente (`KB-101-A`) diz `anotar`, `Infraestrutura`, `P2`. As duas respondem ao mesmo relato.
+Sem curadoria o sistema não distingue as duas, e como time e prioridade vêm do documento, o
+erro não fica no texto da anotação: vira um chamado P1 aberto para o time errado (medido). A
+correção é de curadoria, e não de recuperação, em duas regras aplicadas antes da busca: o
+filtro de `revogado_por` preenchido, e o desempate por `data_publicacao` entre as versões de um
+mesmo procedimento. Quem publica uma versão nova tem duas obrigações: usar a letra seguinte do
+mesmo id e preencher `revogado_por` na versão antiga.
 
 **Fora desta v1:** os comentários livres dos analistas no histórico dos chamados não são
 indexados. Uma base de "precedentes" pesquisável entre chamados é memória episódica

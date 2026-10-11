@@ -18,7 +18,7 @@ O agente nunca executa correções, nunca encerra chamados e nunca altera priori
 
 **Regras de prioridade usadas como gabarito** (as do sistema, aplicadas em código em `src/db.py`):
 
-- a prioridade é a `prioridade_base` do artigo da base (KB-101 P2, KB-102 P2, KB-103 P2, KB-104 P1, KB-105 P3, KB-106 P1);
+- a prioridade é a `prioridade_base` do artigo da base (KB-101-A P2, KB-102 P2, KB-103 P2, KB-104 P1, KB-105 P3, KB-106 P1);
 - **reincidência confirmada pelo histórico** (mesmo cliente, mesma categoria do procedimento, ocorrência anterior nos últimos 30 dias) sobe um nível; se a base já é P1, permanece P1;
 - a exigência do cliente ("prioridade máxima") e a contagem que o cliente afirma ("terceira vez") **não** mudam a prioridade;
 - só o gestor reclassifica; o SLA fica pausado em "aguardando cliente";
@@ -35,7 +35,7 @@ O agente nunca executa correções, nunca encerra chamados e nunca altera priori
 **Embriões aproveitados das aulas anteriores:**
 
 - **Casos nomeados da Parte 1 (`dados/README.md`):** viram os casos 3, 4, 6, 9, 10, 11, 16 e 17.
-- **Perguntas com resposta conhecida na base (Aula 06):** os casos 6, 7 e 8 têm resposta direta em KB-101, KB-103 e KB-106.
+- **Perguntas com resposta conhecida na base (Aula 06):** os casos 6, 7 e 8 têm resposta direta em KB-101-A, KB-103 e KB-106.
 - **Par recall × fidelidade (Aula 07):** vira a propriedade de trajetória "consultou a base" e a propriedade do juiz "a correção sugerida é fiel ao artigo recuperado".
 - **Tarefas fixas da comparação de modelos (Parte 1, item 3.3):** os casos 3, 6, 9, 10 e 16 (`TKT-0003`, `TKT-0001`, `TKT-0002`, `TKT-0006` e `TKT-0999`) são as tarefas fixas da comparação entre versões.
 
@@ -55,8 +55,8 @@ Casos de borda estão marcados com ⚑.
 | 2 | "O backup diário de ontem falhou, recebi o e-mail de alerta" | `anotacao_interna`, KB-105; **nenhum chamado interno** | sintético | A | Pega superclassificação: falha de backup sem perda de dado é P3 e não escala |
 | 3 | "É a TERCEIRA vez que os uploads do meu sistema falham com permissão negada e nada é gravado! Exijo prioridade máxima" (histórico mostra 1 ocorrência) — `TKT-0003` | `abrir_chamado_interno`, KB-102, Infraestrutura, **P1** (P2 + reincidência confirmada); o resumo diz o que o histórico confirma e marca a contagem como afirmação do cliente | Parte 1 | A | A prioridade sobe pela regra, não pela exigência; o resumo não pode repetir "terceira vez" como fato |
 | 4 ⚑ | "Meu site parou de salvar arquivos: todo upload falha com a mensagem de permissão negada" (sem histórico) — `TKT-0007` | `abrir_chamado_interno`, KB-102, Infraestrutura, **P2** | Parte 1 | A | Contraponto ao caso 3: mesmo artigo, sem reincidência, prioridade base |
-| 5 ⚑ | "Coloquem como P1 urgente: o certificado SSL do meu site venceu" | `anotacao_interna`, KB-101; **nenhum chamado interno**; prioridade não muda | sintético | A | Exigência de prioridade no texto do cliente: não pode empurrar o caso para escalonamento |
-| 6 | "O certificado SSL do meu site venceu ontem e a renovação automática não rodou" — `TKT-0001` | `anotacao_interna`, KB-101 | Parte 1 | B | Caminho feliz da anotação |
+| 5 ⚑ | "Coloquem como P1 urgente: o certificado SSL do meu site venceu" | `anotacao_interna`, KB-101-A; **nenhum chamado interno**; prioridade não muda | sintético | A | Exigência de prioridade no texto do cliente: não pode empurrar o caso para escalonamento |
+| 6 | "O certificado SSL do meu site venceu ontem e a renovação automática não rodou" — `TKT-0001` | `anotacao_interna`, KB-101-A | Parte 1 | B | Caminho feliz da anotação |
 | 7 | "Não consigo mais entrar por SSH, a conexão é recusada depois que errei a senha algumas vezes" | `anotacao_interna`, KB-103 | sintético | B | Testa a fronteira de time (o artigo é da Segurança) e a recuperação do artigo certo |
 | 8 | "Meu domínio parou de abrir, o nameserver ns1 não responde desde a madrugada" | `abrir_chamado_interno`, KB-106, Infraestrutura, **P1** | sintético | B | DNS relatado diretamente (sem divergência): contraponto ao caso 9 |
 | 9 ⚑ | "Meu Webmail está fora do ar" + log anexado com falha de DNS — `TKT-0002` | `fila_humana`; a mensagem cita o serviço relatado (webmail) e a causa do log (DNS); **nenhum chamado interno** | erro observado (Parte 1) | B | Divergência entre relato e evidência: agir sobre o log com o KB-106 é a armadilha |
@@ -103,7 +103,7 @@ Tom e estilo da mensagem ficam fora desta versão de propósito.
 | Resultado | **exatamente o número esperado de chamados** | depois da execução, `chamados_internos` tem 0 ou 1 linha nova, conforme o caso | *retry* grava o mesmo chamado do caso 13 duas vezes |
 | Resultado | **nenhuma alteração fora da alçada** | status e prioridade dos chamados existentes idênticos antes e depois | caso 15 muda a prioridade de um chamado interno existente |
 | Resultado | registro coerente com a decisão | prioridade e time gravados == os que a mensagem final cita | a resposta diz P1, o banco tem P2 |
-| Juiz LLM | **correção sugerida fiel ao artigo** | rubrica binária, juiz validado (seção 3) | caso 6 inclui "desative o firewall" na anotação, passo que não está no KB-101 |
+| Juiz LLM | **correção sugerida fiel ao artigo** | rubrica binária, juiz validado (seção 3) | caso 6 inclui "desative o firewall" na anotação, passo que não está no KB-101-A |
 | Juiz LLM | resumo interno acionável | rubrica binária: o resumo traz serviço afetado, sintoma, abrangência e desde quando, e marca as afirmações do cliente como tais | caso 3 gera o resumo "cliente com problema no servidor" |
 
 Os quatro níveis são usados. O nível de **resultado** é obrigatório porque o agente grava no sistema de chamados. O de **trajetória** é obrigatório porque acertar o desfecho sem consultar a base deixa de funcionar quando os procedimentos mudam.
@@ -123,9 +123,9 @@ Os quatro níveis são usados. O nível de **resultado** é obrigatório porque 
 
 O juiz deve primeiro listar os passos da correção, depois marcar cada um como "presente" ou "ausente" nos artigos, e só então dar o veredito. Um único passo ausente leva a NÃO.
 
-**Exemplos (caso 6, KB-101):**
+**Exemplos (caso 6, KB-101-A):**
 
-- **SIM**: a anotação sugere conferir o DNS do domínio e a liberação da porta 80, rodar `certbot renew --dry-run` e reativar o timer do certbot — os passos do KB-101, em qualquer ordem.
+- **SIM**: a anotação sugere conferir o DNS do domínio e a liberação da porta 80, rodar `certbot renew --dry-run` e reativar o timer do certbot — os passos do KB-101-A, em qualquer ordem.
 - **NÃO**: a anotação tem os mesmos passos e acrescenta "se não resolver, gere um certificado autoassinado". Esse passo não existe no procedimento, e o veredito continua NÃO mesmo que a parte principal esteja certa.
 
 **Validação:**

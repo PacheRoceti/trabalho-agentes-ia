@@ -546,7 +546,7 @@ vez (objeto `GRAFO`), com `langgraph==1.2.14` e `langgraph-checkpoint-sqlite==3.
 `requirements.txt`. É o caminho padrão do `main.py`; o laço dos §1 a §7 roda com `--laco`, para
 os dois serem comparados nos mesmos casos. Foi medido três vezes com o modelo real, 8 de 8 no
 verificador nas três (§8; `grafo.md` §6), e a pausa do [H1] foi demonstrada entre processos
-(§7). O que é do código está provado por 27 testes offline (`tests/test_grafo.py`).
+(§7). O que é do código está provado por 30 testes offline (`tests/test_grafo.py`).
 
 O §1 mostra o sistema inteiro (entrada, dados, checkpoint, términos). Esta seção mostra o mesmo
 grafo nó a nó, com a chave de cada aresta condicional, para ser conferido contra o código.

@@ -142,6 +142,38 @@ class TestGrafo(unittest.TestCase):
                                                  "motivo": "score_abaixo_do_limiar"})
         self.assertFalse(e.saida.suficiencia.suficiente)
 
+    def rodar_sem(self, ticket, filtro=True, desempate=True):
+        db.FILTRAR_REVOGADOS, db.DESEMPATAR_POR_DATA = filtro, desempate
+        try:
+            return self.rodar(ticket)
+        finally:
+            db.FILTRAR_REVOGADOS, db.DESEMPATAR_POR_DATA = True, True
+
+    def test_sem_curadoria_o_tkt_0001_vira_chamado_p1_para_o_time_errado(self):
+        # o achado do documento revogado (docs/rag.md §2.1): mesmo roteiro, mesmo score, e o
+        # guia antigo decide a ação, o time e a prioridade
+        e = self.rodar_sem("TKT-0001", filtro=False, desempate=False)
+        self.assertEqual(e.scores_kb["KB-101"], e.scores_kb["KB-101-A"])
+        self.assertEqual((e.desfecho["acao"], e.desfecho["kb_id"]), ("abrir_chamado_interno", "KB-101"))
+        self.assertEqual((e.desfecho["prioridade"], e.desfecho["time_destino"]), ("P1", "Seguranca"))
+        self.assertFalse(verificar("TKT-0001", e, self.con)[0])
+
+    def test_cada_regra_de_curadoria_sozinha_basta_para_o_tkt_0001(self):
+        for filtro, desempate in ((True, False), (False, True)):
+            with self.subTest(filtro=filtro, desempate=desempate):
+                self.con.close()
+                db.recriar_banco()
+                self.con = db.conectar()
+                e = self.rodar_sem("TKT-0001", filtro=filtro, desempate=desempate)
+                self.assertEqual(list(e.scores_kb), ["KB-101-A"])
+                self.assertEqual(verificar("TKT-0001", e, self.con), (True, []))
+
+    def test_o_descarte_da_versao_antiga_fica_no_log_da_busca(self):
+        e = self.rodar_sem("TKT-0001", filtro=False)
+        busca = next(p for p in e.passos if p.ferramenta == "buscar_base_conhecimento")
+        self.assertEqual(busca.resultado["resultados"][0]["versoes_descartadas"],
+                         [{"kb_id": "KB-101", "data_publicacao": "2025-03-10"}])
+
     def test_fora_da_alcada_vai_a_fila_humana_sem_busca(self):
         e = self.rodar("TKT-0007", [triagem("fora_da_alcada"), texto("O cliente pede para encerrar o chamado.")])
         self.assertEqual((e.desfecho["acao"], e.desfecho["motivo"]), ("fila_humana", "fora_da_alcada"))

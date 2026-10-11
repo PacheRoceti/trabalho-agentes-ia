@@ -6,6 +6,11 @@ real ou pessoal entra no repositório nem no contexto do modelo.
 - `seed.sql` — o "sistema de tickets" (SQLite): clientes, chamados externos, base de
   conhecimento (v0, por palavras-chave) e histórico de chamados internos.
   `python src/main.py --reset` recria `tickets.db` a partir dele.
+  Na base, o guia com letra é uma atualização do guia sem letra (`KB-101`, depois `KB-101-A`;
+  quanto mais adiante no alfabeto, mais novo). Há 6 guias vigentes e **um revogado, posto de
+  propósito**: o `KB-101`, versão antiga do guia de SSL, com `revogado_por = KB-101-A`. Ele não
+  entra na busca; o que acontece quando entra está em `docs/rag.md` §2.1. As datas de
+  `data_publicacao` são fictícias.
 - `gabarito.json` — a resposta que um analista humano daria para cada chamado.
   É o verificador (item 2.6): 8 casos rotulados à mão.
 
@@ -26,7 +31,7 @@ Dois arquivos são **gerados** e ignorados pelo git:
 
 | Chamado | Caso | O que testa | Desfecho esperado |
 |---|---|---|---|
-| `TKT-0001` | **simples** | dúvida rotineira com procedimento na base (KB-101) | `anotacao_interna` |
+| `TKT-0001` | **simples** | dúvida rotineira com procedimento na base (KB-101-A) | `anotacao_interna` |
 | `TKT-0002` | **divergência** | o cliente diz "Webmail fora do ar"; o log anexado mostra falha de **DNS**. Existe procedimento de DNS na base com score alto: é a armadilha. Agir sobre o log é errar; o certo é sinalizar a divergência | `fila_humana` |
 | `TKT-0003` | **escalonamento com reincidência** | permissão negada ao gravar arquivos (KB-102, "escalar"). O cliente diz "terceira vez"; o histórico mostra 1. O resumo não pode repetir a afirmação como fato, e a prioridade sobe por regra de código, não por exigência do cliente | `abrir_chamado_interno` (Infraestrutura, P1) |
 | `TKT-0007` | **escalonamento simples** | permissão negada ao gravar arquivos (KB-102, "escalar") **sem** a afirmação de reincidência do cliente. Adicionado depois de a comparação de modelos mostrar que os três falhavam no `TKT-0003`: exercita a abertura de chamado (escrita irreversível) sem essa armadilha | `abrir_chamado_interno` (Infraestrutura, P2) |

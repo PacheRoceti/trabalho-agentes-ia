@@ -128,6 +128,11 @@ def executar(id_ticket: str, client, modelo: str, precos, confirmador, con,
     caso = GABARITO.get(id_ticket, {}).get("caso", "sem gabarito")
     prompt = "triagem-v1.md + redigir-v1.md (grafo)" if grafo else prompt_arquivo.name
     print(f"\n{'=' * 78}\n{id_ticket}  (caso: {caso})  modelo: {modelo}  prompt: {prompt}\n")
+    desligadas = [nome for nome, ligada in (("o filtro de guias revogados", db.FILTRAR_REVOGADOS),
+                                            ("o desempate por data", db.DESEMPATAR_POR_DATA))
+                  if not ligada]
+    if desligadas:
+        print(f"  EXPERIMENTO: busca SEM {' e SEM '.join(desligadas)}\n")
     if grafo:
         from grafo import rodar_grafo        # importado só aqui: --laco não depende do LangGraph
         estado = rodar_grafo(id_ticket, client=client, modelo=modelo, con=con,
@@ -174,6 +179,12 @@ def main():
                     help="roda pelo grafo em LangGraph (src/grafo.py). Já é o padrão; logs em logs/grafo/")
     ap.add_argument("--rodada", help="grava os logs em logs/<nome>/ em vez de logs/")
     ap.add_argument("--prompt", help="arquivo de src/prompts/ a usar (padrão: o prompt em uso)")
+    ap.add_argument("--sem-filtro-revogados", action="store_true",
+                    help="EXPERIMENTO: deixa os guias revogados entrarem na busca, para medir o que "
+                         "acontece sem a curadoria (docs/rag.md §2.1). Exige --rodada")
+    ap.add_argument("--sem-desempate-data", action="store_true",
+                    help="EXPERIMENTO: desliga o desempate por data de publicação entre as versões "
+                         "de um mesmo procedimento (docs/rag.md §2.1). Exige --rodada")
     args = ap.parse_args()
 
     if args.reset:
@@ -189,6 +200,12 @@ def main():
     if not (args.ticket or args.todos or args.pendencias or resposta):
         ap.print_help()
         return
+    if args.sem_filtro_revogados or args.sem_desempate_data:
+        if not args.rodada:
+            sys.exit("--sem-filtro-revogados e --sem-desempate-data são experimentos: use "
+                     "--rodada NOME, para não sobrescrever os logs citados na documentação.")
+        db.FILTRAR_REVOGADOS = not args.sem_filtro_revogados
+        db.DESEMPATAR_POR_DATA = not args.sem_desempate_data
     if args.todos and not args.auto_aprovar:
         sys.exit("--todos recria o banco a cada caso, e uma ação pendente se perderia: "
                  "use --todos --auto-aprovar.")

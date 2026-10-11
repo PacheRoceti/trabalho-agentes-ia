@@ -4,7 +4,7 @@
 --
 -- OS CASOS DIFÍCEIS (nomeados, como pede o item 2.8 do enunciado):
 --
---   TKT-0001  caso SIMPLES        dúvida rotineira com procedimento na base (KB-101)
+--   TKT-0001  caso SIMPLES        dúvida rotineira com procedimento na base (KB-101-A)
 --   TKT-0002  caso de DIVERGÊNCIA o cliente diz "Webmail fora do ar"; o log anexado
 --                                 mostra falha de DNS (e existe procedimento de DNS
 --                                 na base: a armadilha é agir sobre o log)
@@ -39,7 +39,8 @@ CREATE TABLE tickets_externos (
 );
 
 CREATE TABLE kb_artigos (
-    id              TEXT PRIMARY KEY,      -- KB-000
+    id              TEXT PRIMARY KEY,      -- KB-000, ou KB-000-A, KB-000-B... para as ATUALIZAÇÕES
+                                           -- do KB-000: quanto mais adiante a letra, mais nova
     titulo          TEXT NOT NULL,
     palavras_chave  TEXT NOT NULL,         -- separadas por espaço, sem acento
     causa           TEXT NOT NULL,
@@ -48,8 +49,11 @@ CREATE TABLE kb_artigos (
     time_destino    TEXT NOT NULL,
     prioridade_base TEXT NOT NULL CHECK (prioridade_base IN ('P1', 'P2', 'P3')),
     categoria       TEXT NOT NULL,         -- copiada para o chamado interno; conta a reincidência
-    nao_cobre       TEXT NOT NULL DEFAULT ''   -- ressalvas: situações que o guia NÃO cobre, em frases
+    nao_cobre       TEXT NOT NULL DEFAULT '',  -- ressalvas: situações que o guia NÃO cobre, em frases
                                                -- sem acento separadas por ';' (reduzem o score)
+    data_publicacao TEXT NOT NULL,             -- AAAA-MM-DD (fictícia, como o resto dos dados)
+    revogado_por    TEXT                       -- id do guia que substituiu este; NULL = vigente.
+                                               -- Guia revogado não entra na busca (db.buscar_kb)
 );
 
 CREATE TABLE chamados_internos (
@@ -119,12 +123,24 @@ INSERT INTO tickets_externos VALUES
 
 -- ------------------------------------------------ base de conhecimento (v0)
 -- Substituída por RAG (busca vetorial) na Parte 2.
+--
+-- VERSÕES: o guia com letra é uma atualização do guia sem letra (KB-101 -> KB-101-A -> KB-101-B).
+--
+-- O DOCUMENTO REVOGADO (enunciado da Parte 2, §4.2): o KB-101 está aqui DE PROPÓSITO. É a
+-- versão antiga do guia de SSL, anterior ao certbot, e responde ao mesmo relato do KB-101-A
+-- (TKT-0001) com outra ação, outro time e outra prioridade. Vem antes do KB-101-A porque foi
+-- publicado antes. O que acontece com e sem a curadoria está em docs/rag.md §2.1.
 INSERT INTO kb_artigos VALUES
-  ('KB-101', 'Certificado SSL não renovou automaticamente',
+  ('KB-101', 'Certificado SSL vencido: renovação manual pelo painel',
+   'certificado ssl renovacao vencido painel manual https',
+   'Certificado emitido manualmente, com validade de um ano: não há renovação automática.',
+   'Emitir e instalar um novo certificado pelo painel de administração. Exige acesso de administrador ao painel.',
+   'escalar', 'Seguranca', 'P1', 'ssl_certificado', '', '2025-03-10', 'KB-101-A'),
+  ('KB-101-A', 'Certificado SSL não renovou automaticamente',
    'certificado ssl renovacao vencido certbot https',
    'Desafio HTTP-01 falhando (porta 80 bloqueada ou DNS apontando para outro IP) ou timer do certbot parado.',
    'Conferir DNS do domínio e liberação da porta 80; rodar "certbot renew --dry-run"; reativar o timer do certbot.',
-   'anotar', 'Infraestrutura', 'P2', 'ssl_certificado', ''),
+   'anotar', 'Infraestrutura', 'P2', 'ssl_certificado', '', '2026-02-02', NULL),
   -- vale para todos os planos: em nenhum deles o cliente ou o analista corrige o dono de um arquivo
   ('KB-102', 'Permissão negada ao gravar arquivos',
    'permissao negada gravar arquivos upload escrita dono pasta',
@@ -132,29 +148,29 @@ INSERT INTO kb_artigos VALUES
    'Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano.',
    'escalar', 'Infraestrutura', 'P2', 'permissao_arquivos',
    -- "permissão negada" no login por SSH é outro problema (KB-103)
-   'ssh'),
+   'ssh', '2026-10-06', NULL),
   ('KB-103', 'Acesso SSH bloqueado ou recusado',
    'ssh acesso bloqueado recusada fail2ban firewall',
    'IP do cliente banido pelo fail2ban após tentativas falhas, ou regra de firewall.',
    'Verificar se o IP do cliente está banido no fail2ban e liberar; conferir porta e regras do firewall.',
-   'anotar', 'Seguranca', 'P2', 'acesso_ssh', ''),
+   'anotar', 'Seguranca', 'P2', 'acesso_ssh', '', '2026-01-15', NULL),
   ('KB-104', 'Site fora do ar com erro 5xx após deploy',
    '502 503 5xx deploy nginx indisponivel',
    'Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).',
    'Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).',
    'escalar', 'Infraestrutura', 'P1', 'site_fora_do_ar',
    -- o guia cobre a falha CONSTANTE; o 502 intermitente não tem procedimento (TKT-0006)
-   'intermitente; as vezes; de vez em quando; oscila'),
+   'intermitente; as vezes; de vez em quando; oscila', '2026-05-20', NULL),
   ('KB-106', 'Falha de resolução DNS do domínio',
    'dns resolucao nameserver dominio zona',
    'Nameserver do domínio fora do ar ou zona DNS com registro inválido.',
    'Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS.',
-   'escalar', 'Infraestrutura', 'P1', 'dns_dominio', ''),
+   'escalar', 'Infraestrutura', 'P1', 'dns_dominio', '', '2026-03-18', NULL),
   ('KB-105', 'Backup diário falhou',
    'backup falhou diario restauracao agendamento snapshot',
    'Cota de armazenamento de backup excedida ou janela de backup sobreposta a outra tarefa.',
    'Conferir a cota do storage de backup e o agendamento; reexecutar o job manualmente.',
-   'anotar', 'Infraestrutura', 'P3', 'backup', '');
+   'anotar', 'Infraestrutura', 'P3', 'backup', '', '2026-04-08', NULL);
 
 -- ------------------------------------------------- histórico de chamados internos
 -- CLI-02 tem UMA ocorrência anterior de permissão negada ao gravar arquivos (o histórico que

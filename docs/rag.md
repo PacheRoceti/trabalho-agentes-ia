@@ -2,8 +2,9 @@
 
 > **Estado deste documento: versão inicial, de 10/10/2026.** Descreve a recuperação que existe
 > hoje (consulta estruturada em SQLite e busca por palavra-chave) e mede as dez perguntas contra
-> ela. **Não há busca vetorial, nem documento revogado no corpus, nem índice.** O que está marcado
-> como **PROPOSTA** ainda não foi decidido pelo grupo nem implementado. O que falta está no §6.
+> ela. **Não há busca vetorial nem índice.** O documento revogado está no corpus desde 11/10/2026,
+> medido com e sem as duas regras de curadoria (§2.1). O que está marcado como **PROPOSTA** ainda não foi decidido
+> pelo grupo nem implementado. O que falta está no §6.
 >
 > O desenho da base (fontes, donos, o que entra no índice, curadoria) já está em
 > [`base-de-conhecimento-v2.md`](base-de-conhecimento-v2.md); este documento não o repete.
@@ -35,7 +36,7 @@ perguntas pede.
 
 | O que entra | De onde vem | Quem mantém | Com que frequência muda | Hoje no repositório |
 |---|---|---|---|---|
-| Procedimentos técnicos (fonte D) | wiki interna de Infraestrutura (fictícia) | Infraestrutura e Segurança; time e prioridade revisados pela Coordenação de Suporte | mensal, e a cada troca de versão de um serviço | `dados/seed.sql`, tabela `kb_artigos`: 6 guias (KB-101 a KB-106) |
+| Procedimentos técnicos (fonte D) | wiki interna de Infraestrutura (fictícia) | Infraestrutura e Segurança; time e prioridade revisados pela Coordenação de Suporte | mensal, e a cada troca de versão de um serviço | `dados/seed.sql`, tabela `kb_artigos`: 6 guias vigentes (KB-101-A e KB-102 a KB-106) e 1 revogado, posto de propósito (KB-101, §2.1) |
 | Catálogo de planos (fonte E) | página de planos e anexo de suporte (fictícios) | Comercial e Suporte | cerca de 2 vezes por ano | não existe; só o nome do plano em `clientes.plano` |
 
 **O índice pode ser construído uma vez?** Não. A fonte D muda todo mês, então o índice é
@@ -46,20 +47,114 @@ Fica fora do corpus o que é registro (chamados, histórico), regra aplicada em 
 reincidência) e lista de referência (times). A razão de cada um está em
 `base-de-conhecimento-v2.md` §3.
 
-### 2.1 O documento revogado
+### 2.1 O documento revogado, e as versões de um procedimento
 
-**Não está no corpus ainda.** A proposta já escrita (`base-de-conhecimento-v2.md` §4) é incluir o
-`KB-101-A`, a versão antiga do guia de SSL: manda renovar o certificado manualmente pelo painel e
-declara `escalar`, `Seguranca`, `P1`, com `revogado_por = KB-101`. O guia vigente (KB-101) diz
-`anotar`, `Infraestrutura`, `P2`.
+**Como a base nomeia as versões.** O guia com letra é uma atualização do guia sem letra:
+`KB-101` é a primeira versão, `KB-101-A` a seguinte, `KB-101-B` a outra, e quanto mais adiante
+no alfabeto, mais nova. O id sem a letra identifica o procedimento. A tabela `kb_artigos` tem
+as colunas `data_publicacao` e `revogado_por`. As datas são fictícias, como o resto dos dados.
 
-O que se espera encontrar, e que precisa ser medido: os dois guias respondem ao mesmo relato (P1
-do §3), e a busca não tem como saber qual vale. Como o time e a prioridade vêm do documento, o
-erro não fica no texto: vira um chamado P1 aberto para o time errado. A correção prevista é de
-curadoria, e não de recuperação: filtrar `revogado_por` preenchido antes da busca
-(`memoria.md` §2.1).
+**O documento revogado está no corpus desde 11/10/2026**, em `dados/seed.sql`: o `KB-101`, a
+versão antiga do guia de SSL, anterior ao certbot. O guia vigente é o `KB-101-A`. Até essa data
+o guia vigente tinha o id `KB-101`, e é assim que ele aparece nos logs anteriores; o texto dele
+não mudou.
 
-Hoje a tabela `kb_artigos` não tem as colunas `data_publicacao` nem `revogado_por`.
+| | KB-101 (antigo, revogado) | KB-101-A (vigente) |
+|---|---|---|
+| Título | Certificado SSL vencido: renovação manual pelo painel | Certificado SSL não renovou automaticamente |
+| Solução | emitir e instalar um novo certificado pelo painel | conferir DNS e porta 80, rodar `certbot renew --dry-run` |
+| `acao_padrao` | `escalar` | `anotar` |
+| `time_destino` | `Seguranca` | `Infraestrutura` |
+| `prioridade_base` | P1 | P2 |
+| `data_publicacao` | 2025-03-10 | 2026-02-02 |
+| `revogado_por` | `KB-101-A` | vazio |
+
+Os dois respondem à P1 do §3, que é o relato do `TKT-0001`.
+
+**A curadoria tem duas regras, em código, aplicadas antes do score** (`db.buscar_kb`):
+
+1. **Filtro de revogados.** Guia com `revogado_por` preenchido não entra na busca
+   (`FILTRAR_REVOGADOS`).
+2. **Desempate por data.** Das versões de um mesmo procedimento, só a de maior
+   `data_publicacao` entra (`DESEMPATAR_POR_DATA`). A letra decide apenas entre duas versões
+   publicadas no mesmo dia. É a regra que segura a versão antiga que ninguém marcou como
+   revogada. A versão superada sai mesmo quando a nova não casa com a consulta.
+
+O descarte pelo desempate fica registrado: o guia que ficou volta da busca com
+`data_publicacao` e `versoes_descartadas` (as antigas que também casavam), e isso vai para o
+log. Guias de procedimentos diferentes não são desempatados por data: concorrem pelo score.
+Como o portão de confiança só aceita `kb_id` vindo de uma busca da execução, uma versão
+descartada também não pode ser usada numa escrita.
+
+**O que foi medido.** Quatro rodadas dos 8 casos pelo grafo, em 11/10/2026, com
+`ministral-8b-latest` e `--auto-aprovar`, uma para cada combinação das duas regras. Commit
+`6b5fb31 + alterações locais`: o seed, as regras e os testes ainda não estavam commitados.
+
+| Rodada (`logs/`) | Filtro de revogados | Desempate por data | Resultado | `TKT-0001`: guias devolvidos | `TKT-0001`: desfecho |
+|---|---|---|---|---|---|
+| `grafo-versoes-sem-curadoria/` | desligado | desligado | **7 de 8** | KB-101 (0,60) e KB-101-A (0,60) | chamado `INC-0002`, Segurança, P1: **FALHOU** |
+| `grafo-versoes-so-desempate/` | desligado | ligado | 8 de 8 | KB-101-A (0,67), com o KB-101 em `versoes_descartadas` | `anotacao_interna`: OK |
+| `grafo-versoes-so-filtro/` | ligado | desligado | 8 de 8 | KB-101-A (0,75) | `anotacao_interna`: OK |
+| `grafo-versoes-curadoria/` (o padrão) | ligado | ligado | 8 de 8 | KB-101-A (0,75) | `anotacao_interna`: OK |
+
+Os scores diferem entre as rodadas porque a triagem escolheu termos um pouco diferentes em
+cada uma, e não por causa das regras. Os outros sete casos deram o mesmo desfecho nas quatro.
+
+**O que acontece sem curadoria** (primeira linha da tabela; as regras são desligadas com
+`--sem-filtro-revogados --sem-desempate-data`, e a busca não diz qual versão vale):
+
+- **A busca devolveu as duas versões com o mesmo score, 0,60.** Os termos da triagem
+  ("certificado ssl", "renovação automática", navegador, "aviso site não seguro") casam com as
+  mesmas palavras-chave nas duas. Nada na busca diz qual vale.
+- **O desempate foi a ordem das linhas na tabela.** O `KB-101` veio primeiro porque foi
+  inserido primeiro (é o mais antigo). O nó `decidir` usou o primeiro da lista.
+- **O erro não ficou no texto.** O `TKT-0001` devia receber uma anotação para o analista
+  (`anotacao_interna`, KB-101-A). Recebeu o chamado interno `INC-0002`, para a **Segurança**,
+  com prioridade **P1**. O verificador registrou: "desfecho 'abrir_chamado_interno' em vez de
+  'anotacao_interna'; kb_id 'KB-101' em vez de 'KB-101-A'; 1 chamado(s) interno(s) gravado(s)".
+- **O modelo redigiu o resumo a partir do guia antigo**, sem estranhar: "o certificado foi
+  emitido manualmente (validade de 1 ano), sem renovação automática", quando o cliente tinha
+  escrito que a renovação automática não rodou.
+- **A única barreira que sobrou foi o analista.** A abertura de chamado passa pelo H1
+  (`humano.md`), e nesta rodada ela foi aprovada pelo `--auto-aprovar`. A tela da pausa mostra
+  o time e a prioridade, mas não diz que existe uma versão mais nova do guia.
+
+**O achado.** Sem curadoria, o sistema não tem como saber que o `KB-101` não vale mais. O score
+é igual, o texto é plausível, e o modelo não recebe a data nem a revogação. Trocar a técnica de
+recuperação não resolveria: os dois guias falam do mesmo assunto, e é de se esperar que uma
+busca vetorial ache os dois (não medido, porque não há busca vetorial).
+
+**O que cada regra resolve.** Qualquer uma das duas, sozinha, bastou para o `TKT-0001`. Elas
+cobrem falhas diferentes de quem mantém o corpus. O filtro depende de alguém preencher
+`revogado_por` ao publicar a versão nova. O desempate depende de a versão nova seguir a
+convenção do id (mesmo número, letra seguinte) e ter a data certa. Na rodada só com o
+desempate, o log da busca mostra as duas versões e a data que venceu:
+`"versoes_descartadas": [{"kb_id": "KB-101", "data_publicacao": "2025-03-10"}]`.
+
+**Limites.**
+
+- Uma execução de cada combinação.
+- Sem curadoria, o empate foi resolvido pela ordem de inserção, que nós escolhemos (o guia
+  antigo antes do novo, na ordem de publicação). Com a ordem contrária, o KB-101-A viria
+  primeiro e o `TKT-0001` passaria sem que ninguém notasse o guia antigo no segundo lugar. O
+  defeito seria o mesmo.
+- As duas regras dependem de metadado correto. Uma versão nova publicada com outro número
+  (`KB-107` no lugar de `KB-101-B`) e sem `revogado_por` na antiga escapa das duas, e volta a
+  ser o caso "sem curadoria".
+- A data vence a letra. Se alguém publicar o `KB-101-B` com data anterior à do `KB-101-A`, vale
+  o `KB-101-A`, e nada avisa da incoerência no banco em uso. No seed, um teste confere que
+  letra e data concordam.
+- Quando a versão nova não casa com a consulta e a antiga casaria, a antiga é descartada e o
+  descarte não aparece no resultado: `versoes_descartadas` só acompanha um guia devolvido.
+- Na rodada só com o filtro, a anotação do `TKT-0001` citou dois domínios que não estão no
+  chamado ("acmecontabilidade.com.br" e "hospedagem.acmecontabilidade.com.br"). O verificador
+  não confere isso, e o caso consta como OK. Não tem relação com as versões; fica registrado.
+
+Onze testes offline cobrem o que é do código: o filtro sozinho, o empate sem curadoria, o
+desempate segurando a versão que ninguém revogou, a data vencendo a letra, a versão superada
+que não age, procedimentos diferentes sem desempate, a coerência das versões do seed, o portão
+recusando o `kb_id` antigo, o `TKT-0001` virando chamado P1 sem curadoria, cada regra bastando
+sozinha e o descarte no log (`tests/test_offline.py`, `tests/test_grafo.py`).
 
 ## 3. As dez perguntas (§4.3)
 
@@ -68,7 +163,7 @@ estão escritas como o cliente escreve.
 
 | # | Pergunta | Forma | Trecho do corpus que responde | Depende de exceção? |
 |---|---|---|---|---|
-| P1 | "O certificado SSL do meu site venceu e a renovação automática não rodou." | assunto | KB-101 | |
+| P1 | "O certificado SSL do meu site venceu e a renovação automática não rodou." | assunto | KB-101-A | |
 | P2 | "Todo upload do meu site falha com permissão negada, não consigo salvar arquivos." | assunto | KB-102 | |
 | P3 | Este cliente já teve chamado interno desta categoria nos últimos 30 dias? | registro | `chamados_internos` (cliente, categoria, data) | |
 | P4 | Qual é o plano do cliente que abriu o chamado? | registro | `clientes.plano` | |
@@ -76,7 +171,7 @@ estão escritas como o cliente escreve.
 | P6 | "Meu site dá erro 502 de vez em quando desde o deploy de ontem." | assunto | KB-104, coluna `nao_cobre` | **sim**: o guia cobre a falha constante e declara que não cobre a intermitente |
 | P7 | "Recebo permissão negada quando tento entrar por SSH no servidor." | assunto | KB-103; e KB-102, coluna `nao_cobre` | **sim**: "permissão negada" é o sintoma do KB-102, que declara não cobrir SSH |
 | P8 | Em que procedimento aparece "fail2ban"? | termo | KB-103 | |
-| P9 | Que guia substitui a versão antiga do procedimento de SSL? | relação | `revogado_por` do `KB-101-A` | |
+| P9 | Que guia substitui a versão antiga do procedimento de SSL? | relação | `revogado_por` do `KB-101` | |
 | P10 | "Como instalo o WordPress no meu site?" | assunto | **nenhum**: não está no corpus | |
 
 A P10 é a que exercita a recusa do contrato de saída: sem procedimento, o desfecho é
@@ -84,14 +179,15 @@ A P10 é a que exercita a recusa do contrato de saída: sem procedimento, o desf
 
 ### 3.1 Resultado de hoje
 
-Medido em 10/10/2026, com o seed atual, chamando a função de recuperação diretamente. Nas
+Medido em 10/10/2026, chamando a função de recuperação diretamente. A P1 e a P9 foram medidas
+de novo em 11/10/2026, com as duas versões do guia de SSL no corpus e a curadoria ligada. Nas
 perguntas de assunto e de termo, a pergunta inteira foi passada como termo de `buscar_kb`; no
 sistema, quem escolhe os termos é o modelo, e o score muda com a escolha. O limiar para agir é
 0,5.
 
 | # | O que a recuperação devolveu | Certo? |
 |---|---|---|
-| P1 | KB-101, score 0,80 | sim |
+| P1 | KB-101-A, score 0,80 | sim |
 | P2 | KB-102, score 0,77 | sim |
 | P3 | resposta exata, por `_reincidencia` | sim |
 | P4 | resposta exata, por `buscar_ticket` | sim |
@@ -99,7 +195,7 @@ sistema, quem escolhe os termos é o modelo, e o score muda com a escolha. O lim
 | P6 | KB-104, score 0,23, com a ressalva "de vez em quando" | sim: abaixo do limiar, o sistema não age |
 | P7 | KB-102 com 0,18 (ressalva "ssh") e KB-103 com 0,10 | **parcial**: o guia errado foi barrado, mas o certo (KB-103) não passou do limiar |
 | P8 | KB-103, score 0,40 | o guia certo; o score é baixo porque um termo só nunca passa de 0,4, por regra |
-| P9 | sem resposta | **não**: a coluna `revogado_por` não existe |
+| P9 | KB-101-A, por `buscar_artigo("KB-101")`, campo `revogado_por` | sim (em 10/10/2026 não havia resposta: a coluna não existia) |
 | P10 | nenhum procedimento | sim: é a recusa esperada |
 
 O achado é a P7. A busca por palavra não casa "entrar por SSH" com "acesso SSH bloqueado ou
@@ -123,6 +219,8 @@ assunto respondida por uma busca de termo.
   pode cair para 1.
 
 ## 5. Onde a recuperação entra no laço (§4.4)
+
+> **Sobre o id `KB-101` nestes logs.** Em 11/10/2026 a base passou a nomear as versões: o guia com letra é a atualização do guia sem letra. O procedimento de SSL vigente, que aparece aqui como `KB-101`, hoje é o `KB-101-A`; o `KB-101` de hoje é a versão antiga, revogada (`rag.md` §2.1). O texto do procedimento não mudou.
 
 **A escolha: etapa fixa, condicionada à rota.** No grafo, que é o caminho padrão, a busca é um
 nó executado só quando a triagem classifica o chamado como técnico. O modelo não decide na hora
@@ -228,9 +326,11 @@ busca com outros termos quando a primeira vem fraca.
 ## 6. O que falta para este item
 
 - Decidir e implementar a busca vetorial: modelo de embedding, dimensões, onde a lista fica.
-- Acrescentar as colunas `data_publicacao`, `revogado_por` e `planos` a `kb_artigos`.
-- Incluir o `KB-101-A` no corpus, medir a P1 com ele e reportar o que aconteceu, antes e depois
-  do filtro de revogados.
+- Acrescentar a coluna `planos` a `kb_artigos` (`data_publicacao` e `revogado_por` já existem).
+- Repetir a medição das versões: foi uma execução de cada combinação (§2.1).
+- Conferir a coerência entre letra e data ao carregar o corpus, e não só no teste do seed.
+- Registrar o descarte também quando a versão nova não casa com a consulta.
+- Mostrar ao analista, na tela da pausa, a data de publicação do guia usado.
 - Escrever as fichas de plano (fonte E), se entrarem no corpus.
 - Medir as dez perguntas com a busca vetorial e comparar com o §3.1, em especial a P7.
 - Calibrar o limiar com perguntas sem resposta na base, no lugar do 0,5 ajustado à mão.

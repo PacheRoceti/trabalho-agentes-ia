@@ -406,18 +406,18 @@ Esta seção registra o que o grupo aprendeu sobre suporte de hospedagem e que a
 
 | Termo | O que é | Onde aparece |
 |---|---|---|
-| **SSL / TLS** (*Secure Sockets Layer* / *Transport Layer Security*) | O protocolo que cifra a comunicação entre o navegador e o site. O SSL é o nome antigo e o TLS é a versão em uso, mas a área continua dizendo "SSL" | Categoria `ssl_certificado`, KB-101 |
+| **SSL / TLS** (*Secure Sockets Layer* / *Transport Layer Security*) | O protocolo que cifra a comunicação entre o navegador e o site. O SSL é o nome antigo e o TLS é a versão em uso, mas a área continua dizendo "SSL" | Categoria `ssl_certificado`, KB-101-A |
 | **Certificado SSL** | O arquivo que prova a identidade do site e permite a conexão cifrada. Tem validade (90 dias nos gratuitos do Let's Encrypt) e precisa ser renovado | Quando vence, o navegador mostra "site não seguro" (`TKT-0001`) |
-| **HTTPS** | O endereço do site servido com SSL/TLS (porta 443); o HTTP sem cifra usa a porta 80 | KB-101 |
-| **Let's Encrypt e certbot** | Let's Encrypt é a autoridade que emite certificados gratuitos; certbot é o programa que os pede e renova sozinho, por uma tarefa agendada (timer) | KB-101: a renovação automática que não rodou |
-| **Desafio HTTP-01** | A prova que o Let's Encrypt exige antes de emitir: ele acessa um arquivo no site pela porta 80. Falha se a porta estiver bloqueada ou se o domínio apontar para outro endereço | Causa do KB-101 |
+| **HTTPS** | O endereço do site servido com SSL/TLS (porta 443); o HTTP sem cifra usa a porta 80 | KB-101-A |
+| **Let's Encrypt e certbot** | Let's Encrypt é a autoridade que emite certificados gratuitos; certbot é o programa que os pede e renova sozinho, por uma tarefa agendada (timer) | KB-101-A: a renovação automática que não rodou |
+| **Desafio HTTP-01** | A prova que o Let's Encrypt exige antes de emitir: ele acessa um arquivo no site pela porta 80. Falha se a porta estiver bloqueada ou se o domínio apontar para outro endereço | Causa do KB-101-A |
 | **DNS** (*Domain Name System*) | O serviço que traduz o nome de um domínio no endereço IP do servidor | Categoria `dns_dominio`, KB-106 |
 | **Nameserver** (`ns1`, `ns2`) | O servidor que responde pelas consultas de DNS de um domínio. Pode ser da empresa de hospedagem ou de terceiros (o registrador do domínio) | KB-106 e log do `TKT-0002` |
 | **Zona DNS** | O conjunto de registros de um domínio (para onde apontam o site, o e-mail etc.) | KB-106 |
 | **SERVFAIL** | Resposta de erro do DNS: o nameserver não conseguiu responder | Log do `TKT-0002` |
 | **SSH** (*Secure Shell*) | O acesso remoto, por linha de comando, a um servidor | Categoria `acesso_ssh`, KB-103 |
 | **fail2ban** | Programa que bloqueia (bane) o IP de quem erra a senha várias vezes seguidas | Causa do KB-103 |
-| **Firewall** | O filtro que libera ou bloqueia conexões por porta e por IP | KB-101 e KB-103 |
+| **Firewall** | O filtro que libera ou bloqueia conexões por porta e por IP | KB-101-A e KB-103 |
 | **nginx** | O servidor web que recebe as requisições e as entrega à aplicação do cliente | KB-104 |
 | **Erro 5xx** (502, 503) | Códigos de erro do lado do servidor. 502 (*Bad Gateway*) quer dizer que o nginx está no ar, mas a aplicação por trás dele não respondeu | Categoria `site_fora_do_ar`, KB-104 |
 | **Deploy** | A publicação de uma nova versão da aplicação do cliente no servidor | KB-104: erro que começa logo depois de um deploy |
