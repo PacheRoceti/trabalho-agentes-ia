@@ -228,3 +228,9 @@ aula08-memoria/memoria_db/
 indice/
 indice-*/
 *.db
+
+# Arquivos temporários do SQLite (o checkpointer do grafo usa WAL). Sem isto, o log de toda
+# execução pelo grafo marcaria "+ alterações locais" (agente._commit olha src/ e dados/).
+*.db-wal
+*.db-shm
+*.db-journal
