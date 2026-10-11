@@ -1,11 +1,16 @@
 {
-  "execucao_id": "TKT-0001-2775",
+  "execucao_id": "TKT-0001-57926",
   "id_ticket": "TKT-0001",
+  "executado_em": "2026-10-10T15:45:26-03:00",
+  "commit": "861a948",
+  "entrada": "O certificado SSL do meu site venceu ontem e a renovação automática não rodou. O navegador mostra aviso de site não seguro para os meus clientes.",
   "modelo": "ministral-8b-latest",
-  "prompt": "agente-v3.md",
+  "prompt": "agente-v5.md",
+  "prompt_lembrete": "lembrete-v1.md",
+  "temperatura": 0.0,
   "termino": "respondeu",
   "motivo": null,
-  "resposta": "O chamado TKT-0001 foi encaminhado para anotação interna com a sugestão de verificação do certificado SSL.",
+  "resposta": "O chamado foi encaminhado para anotação interna com a sugestão de verificação do DNS, liberação da porta 80 e reativação do timer do certbot.",
   "desfecho": {
     "acao": "anotacao_interna",
     "kb_id": "KB-101",
@@ -16,11 +21,40 @@
   "confirmacoes": [],
   "n_chamadas_modelo": 4,
   "lembretes": 0,
-  "tokens_entrada": 7099,
-  "tokens_saida": 196,
-  "custo_usd": 0.001094,
+  "tokens_entrada": 8622,
+  "tokens_saida": 200,
+  "custo_usd": 0.001323,
   "scores_kb": {
-    "KB-101": 0.73
+    "KB-101": 0.62
+  },
+  "saida": {
+    "id_ticket": "TKT-0001",
+    "executado_em": "2026-10-10T15:45:26-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "anotacao_interna",
+      "texto": "Certificado SSL não renovou automaticamente. Sugestão: conferir DNS do domínio e liberação da porta 80; rodar \"certbot renew --dry-run\"; reativar o timer do certbot.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "procedimento_da_base",
+      "kb_id": "KB-101",
+      "score": 0.62,
+      "registros": [
+        "TKT-0001"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "buscar_base_conhecimento",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": true,
+      "motivo": "procedimento KB-101 com score 0.62, igual ou acima do limiar 0.5"
+    }
   },
   "passos": [
     {
@@ -31,7 +65,6 @@
       },
       "resultado": {
         "id": "TKT-0001",
-        "texto": "O certificado SSL do meu site venceu ontem e a renovação automática não rodou. O navegador mostra aviso de site não seguro para os meus clientes.",
         "aberto_em": "2026-09-21 08:12",
         "status": "novo",
         "anexo_log": null,
@@ -47,11 +80,9 @@
       "ferramenta": "buscar_base_conhecimento",
       "argumentos": {
         "termos": [
-          "certificado",
-          "ssl",
-          "venceu",
-          "renovacao",
-          "automatica"
+          "certificado ssl venceu",
+          "renovacao automática não rodou",
+          "aviso navegador site não seguro"
         ]
       },
       "resultado": {
@@ -59,7 +90,7 @@
           {
             "kb_id": "KB-101",
             "titulo": "Certificado SSL não renovou automaticamente",
-            "score": 0.73,
+            "score": 0.62,
             "causa": "Desafio HTTP-01 falhando (porta 80 bloqueada ou DNS apontando para outro IP) ou timer do certbot parado.",
             "solucao": "Conferir DNS do domínio e liberação da porta 80; rodar \"certbot renew --dry-run\"; reativar o timer do certbot.",
             "acao_padrao": "anotar",
@@ -77,7 +108,7 @@
       "argumentos": {
         "id_ticket": "TKT-0001",
         "destino": "anotacao_interna",
-        "mensagem": "Certificado SSL venceu e renovação automática não ocorreu. Sugestão: verificar desafio HTTP-01 (porta 80 bloqueada ou DNS incorreto), executar \"certbot renew --dry-run\" e reativar timer do certbot.",
+        "mensagem": "Certificado SSL não renovou automaticamente. Sugestão: conferir DNS do domínio e liberação da porta 80; rodar \"certbot renew --dry-run\"; reativar o timer do certbot.",
         "kb_id": "KB-101"
       },
       "resultado": {
@@ -85,7 +116,7 @@
         "destino": "anotacao_interna"
       },
       "erro": null,
-      "ms": 6
+      "ms": 8
     }
   ]
 }

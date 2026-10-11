@@ -1,0 +1,91 @@
+{
+  "execucao_id": "TKT-0004-80090",
+  "id_ticket": "TKT-0004",
+  "executado_em": "2026-10-10T21:54:50-03:00",
+  "commit": "2ffb2b5 + alterações locais",
+  "entrada": "Olá, quero fazer upgrade do meu plano para um servidor dedicado. Podem me passar valores e prazo de migração?",
+  "modelo": "ministral-8b-latest",
+  "prompt": "agente-v5-sem-frase.md",
+  "prompt_lembrete": "lembrete-v1.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": "O chamado foi encaminhado para a fila comercial para análise do upgrade do plano.",
+  "desfecho": {
+    "acao": "fila_comercial",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_comercial"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 3,
+  "lembretes": 0,
+  "tokens_entrada": 5955,
+  "tokens_saida": 99,
+  "custo_usd": 0.000908,
+  "scores_kb": {},
+  "saida": {
+    "id_ticket": "TKT-0004",
+    "executado_em": "2026-10-10T21:54:50-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_comercial",
+      "texto": "Cliente solicitou upgrade para servidor dedicado, com informações sobre valores e prazo de migração.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "registro_do_chamado",
+      "kb_id": null,
+      "score": null,
+      "registros": [
+        "TKT-0004"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": true,
+      "motivo": "assunto comercial: a classificação dispensa a base de procedimentos"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0004"
+      },
+      "resultado": {
+        "id": "TKT-0004",
+        "aberto_em": "2026-09-21 10:05",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Gama Cursos Online",
+        "plano": "Hospedagem Start",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0004",
+        "destino": "fila_comercial",
+        "mensagem": "Cliente solicitou upgrade para servidor dedicado, com informações sobre valores e prazo de migração."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_comercial"
+      },
+      "erro": null,
+      "ms": 8
+    }
+  ]
+}

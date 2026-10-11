@@ -4,7 +4,11 @@ versão:            v4  (v1, v2 e v3 continuam em src/prompts/, como histórico)
 carimbo:           prompt × modelo × parâmetros × resultado
                    agente-v3 × ministral-8b-latest × temperature=0  -> 6 de 8   (rodada 4, Parte 1)
                    agente-v4 × ministral-8b-latest × temperature=0  -> 6 de 8 e 5 de 8   (10/10/2026, duas
-                                      execuções iguais; logs/regra-da-frase/v4-a e v4-b; docs/prompts.md §3)
+                                      execuções iguais; docs/prompts.md §3.6. Os logs dessas duas
+                                      execuções não foram guardados: o que está hoje em
+                                      logs/regra-da-frase/v4-a e v4-b é a repetição com o
+                                      agente-v4-com-frase.md, 6 de 8 e 6 de 8. O teste da regra
+                                      da frase que vale é o da v5: docs/prompts.md §3)
                    ATENÇÃO: em uma das duas execuções a v4 abriu um chamado indevido no TKT-0006, e nas
                    duas o TKT-0005 foi à fila humana em vez de voltar ao cliente.
                    agente-v4 × ministral-8b-latest × temperature=0  -> 5 de 8   (logs/rodada-1-prompt-v4, depois

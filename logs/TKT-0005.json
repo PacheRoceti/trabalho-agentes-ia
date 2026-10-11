@@ -1,25 +1,58 @@
 {
-  "execucao_id": "TKT-0005-2795",
+  "execucao_id": "TKT-0005-58132",
   "id_ticket": "TKT-0005",
+  "executado_em": "2026-10-10T15:48:52-03:00",
+  "commit": "861a948",
+  "entrada": "Meu servidor não está funcionando direito.",
   "modelo": "ministral-8b-latest",
-  "prompt": "agente-v3.md",
+  "prompt": "agente-v5.md",
+  "prompt_lembrete": "lembrete-v1.md",
+  "temperatura": 0.0,
   "termino": "respondeu",
   "motivo": null,
-  "resposta": "O chamado foi devolvido ao cliente para que esclareça qual serviço está afetado e os detalhes do problema.",
+  "resposta": "O chamado foi devolvido ao cliente para que complemente o relato com o serviço ou servidor afetado, o erro observado e o período em que ocorre.",
   "desfecho": {
     "acao": "devolver_cliente",
     "kb_id": null,
-    "encaminhamento": 1,
+    "encaminhamento": 4,
     "destino": "devolver_cliente"
   },
   "pendencia": null,
   "confirmacoes": [],
   "n_chamadas_modelo": 3,
   "lembretes": 0,
-  "tokens_entrada": 4926,
-  "tokens_saida": 110,
-  "custo_usd": 0.000755,
+  "tokens_entrada": 6048,
+  "tokens_saida": 114,
+  "custo_usd": 0.000924,
   "scores_kb": {},
+  "saida": {
+    "id_ticket": "TKT-0005",
+    "executado_em": "2026-10-10T15:48:52-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "devolver_cliente",
+      "texto": "O serviço ou servidor afetado; o erro ou comportamento observado; desde quando ocorre.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "registro_do_chamado",
+      "kb_id": null,
+      "score": null,
+      "registros": [
+        "TKT-0005"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o texto do chamado não informa o serviço afetado nem o sintoma; o pedido de informação ao cliente foi registrado"
+    }
+  },
   "passos": [
     {
       "indice": 0,
@@ -29,7 +62,6 @@
       },
       "resultado": {
         "id": "TKT-0005",
-        "texto": "Meu servidor não está funcionando direito.",
         "aberto_em": "2026-09-21 10:31",
         "status": "novo",
         "anexo_log": null,
@@ -38,7 +70,7 @@
         "historico_cliente": []
       },
       "erro": null,
-      "ms": 1
+      "ms": 0
     },
     {
       "indice": 1,
@@ -46,14 +78,14 @@
       "argumentos": {
         "id_ticket": "TKT-0005",
         "destino": "devolver_cliente",
-        "mensagem": "Por favor, informe qual serviço está afetado, qual o erro ou comportamento observado e desde quando ocorre."
+        "mensagem": "O serviço ou servidor afetado; o erro ou comportamento observado; desde quando ocorre."
       },
       "resultado": {
-        "encaminhamento": 1,
+        "encaminhamento": 4,
         "destino": "devolver_cliente"
       },
       "erro": null,
-      "ms": 4
+      "ms": 8
     }
   ]
 }

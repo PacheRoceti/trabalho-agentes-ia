@@ -28,6 +28,12 @@ LIMIAR_CONFIANCA = 0.5   # abaixo disso, o agente NÃO age sozinho (vai à fila 
 # humana com as considerações do agente. O silêncio nunca vira aprovação.
 PRAZO_CONFIRMACAO_MIN = 20
 MOTIVO_PRAZO_VENCIDO = "confirmacao_nao_recebida"
+# Rejeição do analista: a ação também NÃO é executada, e o chamado segue o mesmo caminho do prazo
+# vencido (fila humana, com as considerações do agente). Uma rejeição não deixa o chamado parado.
+MOTIVO_REJEITADA = "acao_rejeitada"
+# Prazo vencido numa ação que abriria um chamado com esta prioridade também avisa o gestor: a fila
+# humana é lida pelo mesmo analista que não respondeu.
+PRIORIDADE_QUE_AVISA_GESTOR = "P1"
 
 DESTINOS = ["fila_comercial", "devolver_cliente", "anotacao_interna", "fila_humana"]
 
@@ -55,11 +61,20 @@ class ErroFatal(Exception):
 
 
 class PausaParaHumano(Exception):
-    """Ação irreversível não confirmada: o agente para e devolve o controle. Quando ninguém
-    respondeu ainda, a pendência leva `pedido_em` e `vence_em` e fica gravada no banco."""
+    """Ação irreversível à espera do analista: o agente para e devolve o controle. A pendência
+    leva `pedido_em` e `vence_em` e fica gravada no banco."""
 
     def __init__(self, pendencia: dict):
         super().__init__("ação irreversível aguardando confirmação humana")
+        self.pendencia = pendencia
+
+
+class AcaoRejeitada(Exception):
+    """O analista respondeu na hora, e rejeitou. Não derruba o laço: quem executa a ferramenta
+    (agente._executar) encaminha o chamado à fila humana e devolve isso ao modelo."""
+
+    def __init__(self, pendencia: dict):
+        super().__init__("o analista rejeitou a ação")
         self.pendencia = pendencia
 
 
@@ -166,7 +181,7 @@ def abrir_chamado_interno(estado, con, id_ticket: str, resumo: str, kb_id: str) 
     resposta = estado.confirmar(pendencia)
     if resposta is None:
         # Ninguém respondeu agora: a espera é assíncrona e tem prazo. A pendência fica no banco
-        # e a execução pausa; aprovar_pendencia ou encaminhar_pendencia_vencida a concluem depois.
+        # e a execução pausa; aprovar_pendencia ou encaminhar_pendencia a concluem depois.
         pedido_em = datetime.now().astimezone()
         vence_em = pedido_em + timedelta(minutes=estado.prazo_confirmacao_min)
         pendencia = {**pendencia, "pedido_em": pedido_em.isoformat(timespec="seconds"),
@@ -175,7 +190,7 @@ def abrir_chamado_interno(estado, con, id_ticket: str, resumo: str, kb_id: str) 
                                                  pendencia["pedido_em"], pendencia["vence_em"])
         raise PausaParaHumano(pendencia)
     if not resposta:
-        raise PausaParaHumano(pendencia)
+        raise AcaoRejeitada(pendencia)
 
     resultado = db.abrir_chamado(con, estado.ticket, resumo.strip(), artigo)
     estado.desfecho = {"acao": "abrir_chamado_interno", "kb_id": kb_id, **resultado}
@@ -183,8 +198,9 @@ def abrir_chamado_interno(estado, con, id_ticket: str, resumo: str, kb_id: str) 
 
 
 # ---------------------------------------------------------------- depois da pausa
-# As duas saídas de uma pendência que não foi rejeitada. Não são ferramentas do modelo: quem as
-# chama é a retomada (agente.retomar), com a ação que já passou por todos os portões.
+# As saídas de uma ação que pediu confirmação: executar (aprovada) ou encaminhar à fila humana
+# (rejeitada, ou prazo vencido). Não são ferramentas do modelo: quem as chama é o laço
+# (agente._executar, agente.retomar), com a ação que já passou por todos os portões.
 
 def aprovar_pendencia(estado, con, acao: dict) -> dict:
     """O analista aprovou dentro do prazo: executa a escrita que estava pendente."""
@@ -194,22 +210,33 @@ def aprovar_pendencia(estado, con, acao: dict) -> dict:
     return resultado
 
 
-def encaminhar_pendencia_vencida(estado, con, acao: dict) -> tuple[dict, dict]:
-    """O prazo venceu sem resposta: a ação NÃO é executada e o CÓDIGO encaminha o chamado à fila
-    humana com as considerações do agente (ação proposta, procedimento, score e texto redigido).
+def encaminhar_pendencia(estado, con, acao: dict, motivo: str) -> tuple[dict, dict]:
+    """A ação NÃO é executada (o analista a rejeitou, ou o prazo venceu sem resposta) e o CÓDIGO
+    encaminha o chamado à fila humana com as considerações do agente: ação proposta, prioridade
+    que o chamado teria, procedimento, score e texto redigido. No prazo vencido de um chamado que
+    seria P1, grava também o aviso ao gestor.
     Devolve os argumentos e o resultado da escrita, para a trajetória."""
     prazo = f"{estado.prazo_confirmacao_min:g} minutos"
+    if motivo == MOTIVO_PRAZO_VENCIDO:
+        abertura, por = f"Confirmação não recebida em {prazo}.", f"código: prazo de {prazo} vencido"
+    else:
+        abertura, por = "Ação rejeitada pelo analista de suporte.", "código: ação rejeitada pelo analista"
+    prioridade = db.prioridade_prevista(con, estado.ticket, db.buscar_artigo(con, acao["kb_id"]))
     mensagem = (
-        f"Confirmação não recebida em {prazo}. Ação proposta pelo agente e NÃO executada: "
-        f"abrir chamado interno para {acao['time_destino']} (categoria {acao['categoria']}). "
+        f"{abertura} Ação proposta pelo agente e NÃO executada: "
+        f"abrir chamado interno para {acao['time_destino']} (categoria {acao['categoria']}, "
+        f"prioridade prevista {prioridade}). "
         f"Sustentação: procedimento {acao['kb_id']}, score {estado.scores_kb.get(acao['kb_id'])}. "
         f"Resumo redigido: {acao['resumo'].strip()}")
     resultado = db.registrar_encaminhamento(con, acao["id_ticket"], "fila_humana", mensagem, None)
-    estado.desfecho = {"acao": "fila_humana", "kb_id": None, **resultado,
-                       "motivo": MOTIVO_PRAZO_VENCIDO}
+    if motivo == MOTIVO_PRAZO_VENCIDO and prioridade == PRIORIDADE_QUE_AVISA_GESTOR:
+        resultado["aviso_gestor"] = db.avisar_gestor(
+            con, acao["id_ticket"], prioridade, motivo, mensagem,
+            datetime.now().astimezone().isoformat(timespec="seconds"))
+    estado.desfecho = {"acao": "fila_humana", "kb_id": None, **resultado, "motivo": motivo}
     argumentos = {"id_ticket": acao["id_ticket"], "destino": "fila_humana", "mensagem": mensagem,
-                  "motivo": MOTIVO_PRAZO_VENCIDO}
-    return argumentos, {**resultado, "registrado_por": f"código: prazo de {prazo} vencido"}
+                  "motivo": motivo}
+    return argumentos, {**resultado, "registrado_por": por}
 
 
 def registrar_encaminhamento(estado, con, id_ticket: str, destino: str, mensagem: str,
@@ -325,5 +352,6 @@ SCHEMAS = [
 ]
 
 __all__ = ["FUNCOES", "SCHEMAS", "FERRAMENTAS_DE_ESCRITA", "ErroRecuperavel",
-           "ErroFatal", "PausaParaHumano", "LIMIAR_CONFIANCA", "PRAZO_CONFIRMACAO_MIN",
-           "MOTIVO_PRAZO_VENCIDO", "aprovar_pendencia", "encaminhar_pendencia_vencida"]
+           "ErroFatal", "PausaParaHumano", "AcaoRejeitada", "LIMIAR_CONFIANCA",
+           "PRAZO_CONFIRMACAO_MIN", "MOTIVO_PRAZO_VENCIDO", "MOTIVO_REJEITADA",
+           "PRIORIDADE_QUE_AVISA_GESTOR", "aprovar_pendencia", "encaminhar_pendencia"]

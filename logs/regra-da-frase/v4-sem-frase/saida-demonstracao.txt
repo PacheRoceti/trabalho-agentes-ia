@@ -1,0 +1,348 @@
+
+==============================================================================
+TKT-0001  (caso: simples)  modelo: ministral-8b-latest  prompt: agente-v4-sem-frase.md
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0001"} -> ok
+  passo 1 [leitura ] buscar_base_conhecimento {"termos": ["certificado ssl", "renovacao automática", "venceu", "aviso navegador"]} -> ok
+  passo 2 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0001", "destino": "anotacao_interna", "mensagem": "Certificado SSL venceu e renovação autom -> ok
+  ENTRADA: O certificado SSL do meu site venceu ontem e a renovação automática não rodou. O navegador mostra aviso de site não seguro para os meus clientes.
+
+  TERMINO: respondeu | desfecho: anotacao_interna | passos: 3 | chamadas ao modelo: 4 | lembretes: 0 | tokens: 7426 | custo: US$ 0.00111
+  resposta: O chamado foi anotado internamente com a sugestão de verificação para a equipe de infraestrutura.
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0001",
+      "executado_em": "2026-10-10T21:33:05-03:00",
+      "termino": "respondeu",
+      "resultado": {
+        "acao": "anotacao_interna",
+        "texto": "Certificado SSL venceu e renovação automática não ocorreu. Sugestão: verificar desafio HTTP-01 (porta 80 bloqueada ou DNS incorreto), executar \"certbot renew --dry-run\" e reativar timer do certbot.",
+        "chamado_interno": null,
+        "time_destino": null,
+        "prioridade": null
+      },
+      "fonte": {
+        "tipo": "procedimento_da_base",
+        "kb_id": "KB-101",
+        "score": 0.73,
+        "registros": [
+          "TKT-0001"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "buscar_base_conhecimento",
+          "registrar_encaminhamento"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": true,
+        "motivo": "procedimento KB-101 com score 0.73, igual ou acima do limiar 0.5"
+      }
+    }
+  VERIFICADOR: OK
+
+==============================================================================
+TKT-0002  (caso: divergencia)  modelo: ministral-8b-latest  prompt: agente-v4-sem-frase.md
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0002"} -> ok
+  passo 1 [leitura ] buscar_base_conhecimento {"termos": ["webmail fora ar", "webmail falha", "dns falha", "resolucao dns", "timeout nameserver"]} -> ok
+  passo 2 [ESCRITA ] abrir_chamado_interno {"id_ticket": "TKT-0002", "resumo": "Cliente CLI-06 (Zeta Imóveis) relata webmail fora do ar desde cedo. Log m -> ok
+  ENTRADA: Meu Webmail está fora do ar desde cedo, ninguém da empresa consegue ler e-mail.
+
+  TERMINO: respondeu | desfecho: abrir_chamado_interno | passos: 3 | chamadas ao modelo: 4 | lembretes: 0 | tokens: 7968 | custo: US$ 0.00120
+  resposta: O chamado foi escalado para o time de Infraestrutura como chamado interno INC-0002.
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0002",
+      "executado_em": "2026-10-10T21:33:08-03:00",
+      "termino": "respondeu",
+      "resultado": {
+        "acao": "abrir_chamado_interno",
+        "texto": "Cliente CLI-06 (Zeta Imóveis) relata webmail fora do ar desde cedo. Log mostra falha de resolução DNS (SERVFAIL) e nameserver não respondendo (timeout). Acesso ao webmail pelo IP do servidor funciona normalmente.",
+        "chamado_interno": "INC-0002",
+        "time_destino": "Infraestrutura",
+        "prioridade": "P1"
+      },
+      "fonte": {
+        "tipo": "procedimento_da_base",
+        "kb_id": "KB-106",
+        "score": 0.67,
+        "registros": [
+          "TKT-0002"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "buscar_base_conhecimento",
+          "abrir_chamado_interno"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": true,
+        "motivo": "procedimento KB-106 com score 0.67, igual ou acima do limiar 0.5"
+      }
+    }
+  VERIFICADOR: FALHOU - desfecho 'abrir_chamado_interno' em vez de 'fila_humana'; 1 chamado(s) interno(s) gravado(s) para TKT-0002
+
+==============================================================================
+TKT-0003  (caso: escalonamento_reincidencia)  modelo: ministral-8b-latest  prompt: agente-v4-sem-frase.md
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0003"} -> ok
+  passo 1 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0003", "destino": "fila_humana", "mensagem": "O cliente afirma que é a terceira vez que enf -> ERRO: fila_humana sem nenhuma busca na base para este chamado
+  passo 2 [leitura ] buscar_base_conhecimento {"termos": ["upload", "falha", "permissao", "negada"]} -> ok
+  passo 3 [ESCRITA ] abrir_chamado_interno {"id_ticket": "TKT-0003", "resumo": "Cliente relata terceira falha de upload com permissão negada (histórico d -> ok
+  ENTRADA: É a TERCEIRA vez que os uploads do meu sistema falham com permissão negada e nada é gravado! Exijo prioridade máxima agora.
+
+  TERMINO: respondeu | desfecho: abrir_chamado_interno | passos: 4 | chamadas ao modelo: 5 | lembretes: 0 | tokens: 10589 | custo: US$ 0.00159
+  resposta: O chamado foi escalado para o time de Infraestrutura como um novo incidente interno (INC-0002), com prioridade P1.
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0003",
+      "executado_em": "2026-10-10T21:33:12-03:00",
+      "termino": "respondeu",
+      "resultado": {
+        "acao": "abrir_chamado_interno",
+        "texto": "Cliente relata terceira falha de upload com permissão negada (histórico do sistema confirma apenas um chamado interno resolvido em 01/09/2026). Artigo KB-102 (score 0.86) sugere permissões incorretas nos arquivos.",
+        "chamado_interno": "INC-0002",
+        "time_destino": "Infraestrutura",
+        "prioridade": "P1"
+      },
+      "fonte": {
+        "tipo": "procedimento_da_base",
+        "kb_id": "KB-102",
+        "score": 0.86,
+        "registros": [
+          "TKT-0003",
+          "INC-0001"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "registrar_encaminhamento",
+          "buscar_base_conhecimento",
+          "abrir_chamado_interno"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": true,
+        "motivo": "procedimento KB-102 com score 0.86, igual ou acima do limiar 0.5"
+      }
+    }
+  VERIFICADOR: OK
+
+==============================================================================
+TKT-0999  (caso: registro_inexistente)  modelo: ministral-8b-latest  prompt: agente-v4-sem-frase.md
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0999"} -> ERRO: chamado não encontrado no sistema de tickets
+  passo 1 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0999", "destino": "fila_humana", "mensagem": "O ID do chamado informado não existe no siste -> ok
+  ENTRADA: (sem texto: id não encontrado)
+
+  TERMINO: respondeu | desfecho: fila_humana | passos: 2 | chamadas ao modelo: 3 | lembretes: 0 | tokens: 5071 | custo: US$ 0.00076
+  resposta: O chamado TKT-0999 foi encaminhado para a fila humana, pois o ID não existe no sistema.
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0999",
+      "executado_em": "2026-10-10T21:33:17-03:00",
+      "termino": "respondeu",
+      "resultado": {
+        "acao": "fila_humana",
+        "texto": "O ID do chamado informado não existe no sistema. Verifique se há erro no número ou se o chamado foi encerrado.",
+        "chamado_interno": null,
+        "time_destino": null,
+        "prioridade": null
+      },
+      "fonte": {
+        "tipo": "nenhuma",
+        "kb_id": null,
+        "score": null,
+        "registros": [],
+        "ferramentas": [
+          "consultar_ticket",
+          "registrar_encaminhamento"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": false,
+        "motivo": "o chamado não foi encontrado no sistema de tickets"
+      }
+    }
+  VERIFICADOR: OK
+
+==============================================================================
+TKT-0004  (caso: nao_dispara_acao_principal)  modelo: ministral-8b-latest  prompt: agente-v4-sem-frase.md
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0004"} -> ok
+  passo 1 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0004", "destino": "fila_comercial", "mensagem": "Cliente solicitou upgrade para servidor de -> ok
+  ENTRADA: Olá, quero fazer upgrade do meu plano para um servidor dedicado. Podem me passar valores e prazo de migração?
+
+  TERMINO: respondeu | desfecho: fila_comercial | passos: 2 | chamadas ao modelo: 3 | lembretes: 0 | tokens: 5159 | custo: US$ 0.00077
+  resposta: O chamado foi encaminhado para a fila comercial para avaliação do upgrade solicitado.
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0004",
+      "executado_em": "2026-10-10T21:33:19-03:00",
+      "termino": "respondeu",
+      "resultado": {
+        "acao": "fila_comercial",
+        "texto": "Cliente solicitou upgrade para servidor dedicado, solicitando valores e prazo de migração.",
+        "chamado_interno": null,
+        "time_destino": null,
+        "prioridade": null
+      },
+      "fonte": {
+        "tipo": "registro_do_chamado",
+        "kb_id": null,
+        "score": null,
+        "registros": [
+          "TKT-0004"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "registrar_encaminhamento"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": true,
+        "motivo": "assunto comercial: a classificação dispensa a base de procedimentos"
+      }
+    }
+  VERIFICADOR: OK
+
+==============================================================================
+TKT-0005  (caso: informacao_insuficiente)  modelo: ministral-8b-latest  prompt: agente-v4-sem-frase.md
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0005"} -> ok
+  passo 1 [leitura ] buscar_base_conhecimento {"termos": ["servidor", "nao", "funcionando"]} -> ok
+  passo 2 [leitura ] buscar_base_conhecimento {"termos": ["servidor", "problema", "desempenho"]} -> ok
+  passo 3 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0005", "destino": "fila_humana", "mensagem": "O relato do cliente menciona que o servidor n -> ok
+  ENTRADA: Meu servidor não está funcionando direito.
+
+  TERMINO: respondeu | desfecho: fila_humana | passos: 4 | chamadas ao modelo: 5 | lembretes: 0 | tokens: 9072 | custo: US$ 0.00136
+  resposta: O chamado TKT-0005 foi encaminhado para análise humana, pois o relato não permitiu identificar o problema com precisão.
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0005",
+      "executado_em": "2026-10-10T21:33:21-03:00",
+      "termino": "respondeu",
+      "resultado": {
+        "acao": "fila_humana",
+        "texto": "O relato do cliente menciona que o servidor não está funcionando direito, mas não há informações suficientes para identificar o serviço afetado ou o sintoma específico. Não foi possível encontrar procedimentos na base de conhecimento com os termos 'servidor', 'nao', 'funcionando' ou 'servidor', 'problema', 'desempenho'. Recomenda-se análise humana para esclarecer o problema.",
+        "chamado_interno": null,
+        "time_destino": null,
+        "prioridade": null
+      },
+      "fonte": {
+        "tipo": "busca_sem_correspondencia",
+        "kb_id": null,
+        "score": null,
+        "registros": [
+          "TKT-0005"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "buscar_base_conhecimento",
+          "buscar_base_conhecimento",
+          "registrar_encaminhamento"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": false,
+        "motivo": "nenhum procedimento da base corresponde ao relato"
+      }
+    }
+  VERIFICADOR: FALHOU - desfecho 'fila_humana' em vez de 'devolver_cliente'
+
+==============================================================================
+TKT-0006  (caso: correspondencia_parcial)  modelo: ministral-8b-latest  prompt: agente-v4-sem-frase.md
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0006"} -> ok
+  passo 1 [leitura ] buscar_base_conhecimento {"termos": ["site", "erro", "502"]} -> ok
+  passo 2 [leitura ] buscar_base_conhecimento {"termos": ["erro", "502", "intermitente"]} -> ok
+  passo 3 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0006", "destino": "fila_humana", "mensagem": "O cliente relata erro 502 intermitente no sit -> ok
+  ENTRADA: Meu site está dando erro 502 de vez em quando, mais ou menos desde o deploy de ontem. Às vezes funciona normal.
+
+  TERMINO: respondeu | desfecho: fila_humana | passos: 4 | chamadas ao modelo: 5 | lembretes: 0 | tokens: 9804 | custo: US$ 0.00147
+  resposta: O chamado TKT-0006 foi encaminhado para análise humana, pois o erro 502 intermitente não tem procedimento automático aplicável.
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0006",
+      "executado_em": "2026-10-10T21:33:25-03:00",
+      "termino": "respondeu",
+      "resultado": {
+        "acao": "fila_humana",
+        "texto": "O cliente relata erro 502 intermitente no site desde o deploy de ontem. Não há artigo na base de conhecimento com score suficiente para agir sozinho, pois todos os procedimentos existentes tratam de falhas constantes, não intermitentes. Necessário análise manual para verificar se há instabilidade no servidor ou configuração incompatível com o novo deploy.",
+        "chamado_interno": null,
+        "time_destino": null,
+        "prioridade": null
+      },
+      "fonte": {
+        "tipo": "busca_sem_correspondencia",
+        "kb_id": "KB-104",
+        "score": 0.11,
+        "registros": [
+          "TKT-0006"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "buscar_base_conhecimento",
+          "buscar_base_conhecimento",
+          "registrar_encaminhamento"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": false,
+        "motivo": "o melhor procedimento encontrado (KB-104, score 0.11) ficou abaixo do limiar 0.5"
+      }
+    }
+  VERIFICADOR: OK
+
+==============================================================================
+TKT-0007  (caso: escalonamento_simples)  modelo: ministral-8b-latest  prompt: agente-v4-sem-frase.md
+
+  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0007"} -> ok
+  passo 1 [leitura ] buscar_base_conhecimento {"termos": ["site", "salvar", "arquivos", "permissão", "negada"]} -> ok
+  passo 2 [ESCRITA ] abrir_chamado_interno {"id_ticket": "TKT-0007", "resumo": "Cliente CLI-07 (Eta Engenharia) relata que site parou de salvar arquivos, -> ok
+  ENTRADA: Meu site parou de salvar arquivos: todo upload falha com a mensagem de permissão negada. Preciso de ajuda para voltar a publicar.
+
+  TERMINO: respondeu | desfecho: abrir_chamado_interno | passos: 3 | chamadas ao modelo: 4 | lembretes: 0 | tokens: 7425 | custo: US$ 0.00111
+  resposta: O chamado foi escalado para o time de Infraestrutura como chamado interno INC-0002.
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0007",
+      "executado_em": "2026-10-10T21:33:29-03:00",
+      "termino": "respondeu",
+      "resultado": {
+        "acao": "abrir_chamado_interno",
+        "texto": "Cliente CLI-07 (Eta Engenharia) relata que site parou de salvar arquivos, com mensagem de permissão negada em uploads. Log não disponível. Causa e solução conforme KB-102.",
+        "chamado_interno": "INC-0002",
+        "time_destino": "Infraestrutura",
+        "prioridade": "P2"
+      },
+      "fonte": {
+        "tipo": "procedimento_da_base",
+        "kb_id": "KB-102",
+        "score": 1.0,
+        "registros": [
+          "TKT-0007"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "buscar_base_conhecimento",
+          "abrir_chamado_interno"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": true,
+        "motivo": "procedimento KB-102 com score 1.0, igual ou acima do limiar 0.5"
+      }
+    }
+  VERIFICADOR: OK
+
+==============================================================================
+RESULTADO: 6 de 8 casos conferidos pelo verificador
+  TKT-0001  simples                      OK
+  TKT-0002  divergencia                  FALHOU
+  TKT-0003  escalonamento_reincidencia   OK
+  TKT-0999  registro_inexistente         OK
+  TKT-0004  nao_dispara_acao_principal   OK
+  TKT-0005  informacao_insuficiente      FALHOU
+  TKT-0006  correspondencia_parcial      OK
+  TKT-0007  escalonamento_simples        OK

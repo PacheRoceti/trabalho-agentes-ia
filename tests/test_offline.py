@@ -221,11 +221,16 @@ class TestAgente(unittest.TestCase):
         self.assertIn("limiar", e.passos[2].erro["erro"])
         self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0006"), 0)
 
-    def test_sem_confirmacao_do_analista_nada_e_gravado(self):
+    def test_rejeicao_na_hora_nao_abre_chamado_e_vai_a_fila_humana(self):
         e = self.rodar("TKT-0003", confirmador=NAO)
-        self.assertEqual(e.termino, Termino.HUMANO)
+        self.assertEqual(e.termino, Termino.RESPONDEU)
+        self.assertEqual((e.desfecho["acao"], e.desfecho["motivo"]), ("fila_humana", "acao_rejeitada"))
         self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0003"), 0)
-        self.assertEqual(e.pendencia["ferramenta"], "abrir_chamado_interno")
+        self.assertEqual(db.contar(self.con, "encaminhamentos", "TKT-0003"), 1)
+        self.assertEqual([p.ferramenta for p in e.passos][-2:], ["abrir_chamado_interno", "registrar_encaminhamento"])
+        self.assertIn("rejeitou", e.passos[-2].erro["erro"])
+        self.assertFalse(e.confirmacoes[-1]["aprovado"])
+        self.assertEqual(db.contar(self.con, "avisos_gestor", "TKT-0003"), 0)   # P1, mas não é prazo vencido
 
     # ---- o prazo de 20 minutos do analista (espera assíncrona, pendência no banco)
 
@@ -271,6 +276,20 @@ class TestAgente(unittest.TestCase):
         self.assertIn("20 minutos", e.saida.suficiencia.motivo)
         self.assertEqual([p.ferramenta for p in e.passos][-2:], ["abrir_chamado_interno", "registrar_encaminhamento"])
         self.assertIn("não recebida", e.passos[-2].erro["erro"])
+        self.assertIn("prioridade prevista P2", msg)
+        self.assertEqual(db.contar(self.con, "avisos_gestor", "TKT-0007"), 0)   # só P1 avisa o gestor
+
+    def test_prazo_vencido_de_chamado_p1_avisa_o_gestor(self):
+        self.rodar("TKT-0003", confirmador=None)                      # P2 + reincidência = P1
+        e = self.retomar("TKT-0003", "vencer", minutos=21)
+        self.assertEqual((e.desfecho["acao"], e.desfecho["motivo"]), ("fila_humana", "confirmacao_nao_recebida"))
+        self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0003"), 0)
+        self.assertEqual(db.contar(self.con, "encaminhamentos", "TKT-0003"), 1)
+        (aviso,) = self.con.execute("SELECT * FROM avisos_gestor WHERE ticket_externo = 'TKT-0003'").fetchall()
+        self.assertEqual((aviso["id"], aviso["prioridade"], aviso["motivo"]),
+                         (e.desfecho["aviso_gestor"], "P1", "confirmacao_nao_recebida"))
+        self.assertIn("prioridade prevista P1", aviso["mensagem"])
+        self.assertEqual(aviso["mensagem"], e.saida.resultado.texto)
 
     def test_aprovacao_depois_do_prazo_nao_abre_chamado(self):
         self.rodar("TKT-0007", confirmador=None)
@@ -279,13 +298,30 @@ class TestAgente(unittest.TestCase):
         self.assertFalse(e.confirmacoes[-1]["aprovado"])
         self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0007"), 0)
 
-    def test_rejeicao_dentro_do_prazo_nao_grava_nada(self):
+    def test_rejeicao_dentro_do_prazo_vai_a_fila_humana_com_as_consideracoes_do_agente(self):
         self.rodar("TKT-0007", confirmador=None)
-        e = self.retomar("TKT-0007", "rejeitar", minutos=5)
-        self.assertEqual((e.termino, e.motivo), (Termino.HUMANO, "analista rejeitou a ação"))
+        e = self.retomar("TKT-0007", "rejeitar", minutos=5, frase="Encaminhado.")
+        self.assertEqual((e.termino, e.resposta), (Termino.RESPONDEU, "Encaminhado."))
+        self.assertEqual((e.desfecho["acao"], e.desfecho["motivo"]), ("fila_humana", "acao_rejeitada"))
         self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0007"), 0)
-        self.assertEqual(db.contar(self.con, "encaminhamentos", "TKT-0007"), 0)
+        msg = self.con.execute("SELECT mensagem FROM encaminhamentos WHERE ticket_externo = 'TKT-0007'").fetchone()[0]
+        for trecho in ("rejeitada pelo analista", "NÃO executada", "Infraestrutura", "KB-102",
+                       f"score {e.scores_kb['KB-102']}", "todo upload do site falha"):
+            self.assertIn(trecho, msg)
+        self.assertEqual(e.saida.resultado.texto, msg)
+        self.assertFalse(e.saida.suficiencia.suficiente)
+        self.assertIn("rejeitou", e.saida.suficiencia.motivo)
+        self.assertIn("rejeitou", e.passos[-2].erro["erro"])
+        self.assertEqual(e.confirmacoes[-1]["status"], "rejeitada")
         self.assertEqual(db.pendencias_aguardando(self.con), [])
+        self.assertIsNone(self.retomar("TKT-0007", "rejeitar"))       # rejeitar duas vezes
+        self.assertEqual(db.contar(self.con, "encaminhamentos", "TKT-0007"), 1)
+
+    def test_rejeicao_de_chamado_p1_nao_avisa_o_gestor(self):
+        self.rodar("TKT-0003", confirmador=None)
+        self.retomar("TKT-0003", "rejeitar", minutos=5)
+        self.assertEqual(db.contar(self.con, "encaminhamentos", "TKT-0003"), 1)
+        self.assertEqual(db.contar(self.con, "avisos_gestor", "TKT-0003"), 0)
 
     def test_prazo_configuravel_e_vencimento_de_todas_as_pendencias(self):
         self.rodar("TKT-0007", confirmador=None, prazo_confirmacao_min=1)
@@ -359,7 +395,7 @@ class TestAgente(unittest.TestCase):
         self.assertFalse(s.suficiencia.suficiente)
 
     def test_execucao_sem_desfecho_tem_saida_com_suficiencia_negativa(self):
-        e = self.rodar("TKT-0003", confirmador=NAO)
+        e = self.rodar("TKT-0003", confirmador=None)         # pausou à espera do analista
         self.assertIsNone(e.saida.resultado.acao)
         self.assertFalse(e.saida.suficiencia.suficiente)
         self.assertIn("aguardando_humano", e.saida.suficiencia.motivo)

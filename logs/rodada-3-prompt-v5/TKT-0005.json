@@ -1,0 +1,91 @@
+{
+  "execucao_id": "TKT-0005-74969",
+  "id_ticket": "TKT-0005",
+  "executado_em": "2026-10-10T20:29:29-03:00",
+  "commit": "2ffb2b5 + alterações locais",
+  "entrada": "Meu servidor não está funcionando direito.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "agente-v5.md",
+  "prompt_lembrete": "lembrete-v1.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": "O chamado foi devolvido ao cliente para que complemente o relato com o servidor afetado, o erro observado e o período em que ocorre.",
+  "desfecho": {
+    "acao": "devolver_cliente",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "devolver_cliente"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 3,
+  "lembretes": 0,
+  "tokens_entrada": 6051,
+  "tokens_saida": 115,
+  "custo_usd": 0.000925,
+  "scores_kb": {},
+  "saida": {
+    "id_ticket": "TKT-0005",
+    "executado_em": "2026-10-10T20:29:29-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "devolver_cliente",
+      "texto": "Qual servidor está afetado? Qual erro ou comportamento anormal você observou? Desde quando isso ocorre?",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "registro_do_chamado",
+      "kb_id": null,
+      "score": null,
+      "registros": [
+        "TKT-0005"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o texto do chamado não informa o serviço afetado nem o sintoma; o pedido de informação ao cliente foi registrado"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0005"
+      },
+      "resultado": {
+        "id": "TKT-0005",
+        "aberto_em": "2026-09-21 10:31",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Delta Restaurantes",
+        "plano": "Hospedagem Start",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0005",
+        "destino": "devolver_cliente",
+        "mensagem": "Qual servidor está afetado? Qual erro ou comportamento anormal você observou? Desde quando isso ocorre?"
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "devolver_cliente"
+      },
+      "erro": null,
+      "ms": 7
+    }
+  ]
+}

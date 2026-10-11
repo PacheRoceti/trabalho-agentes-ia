@@ -63,6 +63,18 @@ CREATE TABLE IF NOT EXISTS pendencias (
     checkpoint     TEXT                        -- JSON: o Estado da execução pausada
 )"""
 
+# Avisos ao gestor de suporte: o chamado interno que seria P1 e não foi aberto porque o analista
+# não respondeu no prazo. Como as pendências, é estado criado pelas execuções, com data real.
+SQL_AVISOS_GESTOR = """
+CREATE TABLE IF NOT EXISTS avisos_gestor (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticket_externo TEXT NOT NULL,
+    prioridade     TEXT NOT NULL,              -- a que o chamado interno teria
+    motivo         TEXT NOT NULL,
+    mensagem       TEXT NOT NULL,
+    criado_em      TEXT NOT NULL               -- ISO 8601 com fuso
+)"""
+
 
 class RegistroNaoEncontrado(Exception):
     """A consulta foi válida, mas o registro não existe no sistema."""
@@ -74,6 +86,7 @@ def conectar() -> sqlite3.Connection:
     con = sqlite3.connect(DB_PATH)
     con.row_factory = sqlite3.Row
     con.execute(SQL_PENDENCIAS)
+    con.execute(SQL_AVISOS_GESTOR)
     return con
 
 
@@ -90,6 +103,7 @@ def recriar_banco() -> None:
         con.execute(f"DROP TABLE IF EXISTS {t}")
     con.executescript(SEED.read_text(encoding="utf-8"))
     con.execute(SQL_PENDENCIAS)
+    con.execute(SQL_AVISOS_GESTOR)
     con.commit()
     con.close()
 
@@ -218,6 +232,13 @@ def _prioridade(base: str, reincidencias: int) -> str:
     return PRIORIDADES[nivel]
 
 
+def prioridade_prevista(con, ticket: dict, artigo: dict) -> str:
+    """A prioridade que o chamado interno teria se fosse aberto agora (mesma regra de
+    abrir_chamado). Serve à ação que NÃO foi executada: é ela que decide se o gestor é avisado."""
+    return _prioridade(artigo["prioridade_base"],
+                       _reincidencia(con, ticket["_cliente_id"], artigo["categoria"]))
+
+
 def abrir_chamado(con, ticket: dict, resumo: str, artigo: dict) -> dict:
     """Escrita IRREVERSÍVEL (não há 'apagar' nem 'encerrar' chamado por aqui).
 
@@ -319,6 +340,17 @@ def resolver_pendencia(con, id_pendencia: int, status: str, quando: str, por: st
            WHERE id = ? AND status = 'aguardando'""", (status, quando, por, id_pendencia))
     con.commit()
     return cur.rowcount == 1
+
+
+def avisar_gestor(con, id_ticket: str, prioridade: str, motivo: str, mensagem: str,
+                  quando: str) -> int:
+    """Registra o aviso ao gestor de suporte. É uma linha a mais, e não um desfecho: o desfecho
+    do chamado continua sendo o encaminhamento à fila humana."""
+    cur = con.execute(
+        """INSERT INTO avisos_gestor (ticket_externo, prioridade, motivo, mensagem, criado_em)
+           VALUES (?, ?, ?, ?, ?)""", (id_ticket, prioridade, motivo, mensagem, quando))
+    con.commit()
+    return cur.lastrowid
 
 
 def times_destino(con) -> list[str]:

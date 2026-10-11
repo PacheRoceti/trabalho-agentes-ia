@@ -97,7 +97,9 @@ fora do contrato. O log grava também `executado_em` e `commit`; o commit vem co
 Os cinco exemplos são execuções reais de 10/10/2026, do commit `861a948`, com `ministral-8b-latest`,
 prompt `agente-v5.md` e `temperature=0`. Cada um traz a entrada como chegou, o objeto de saída
 completo (com os campos nulos), a data e a hora da execução, o commit e o log correspondente em
-`logs/`. O log tem ainda a trajetória (`passos`), que não faz parte do contrato de saída.
+`logs/`. Os outros três logs da pasta (`TKT-0003`, `TKT-0007` e `TKT-0999`) são do mesmo dia e do
+mesmo prompt, de uma execução posterior (21h22, commit `2ffb2b5 + alterações locais`), e não são
+exemplos deste documento. O log tem ainda a trajetória (`passos`), que não faz parte do contrato de saída.
 
 Limite: o "agora" do banco simulado é fixo (`2026-09-21 12:00`, em `src/db.py`) e não é a data da
 execução, que está em `executado_em`.

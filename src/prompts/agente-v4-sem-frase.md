@@ -1,6 +1,7 @@
 <!--
 prompt:            agente-triagem
-versão:            v4 SEM UMA FRASE: variante do teste da regra da frase (docs/prompts.md §3).
+versão:            v4 SEM UMA FRASE: variante dos testes ANTERIORES da regra da frase, na v4
+                   (docs/prompts.md §3.6). O teste que vale é o da v5: agente-v5-sem-frase.md.
                    Não é o prompt em uso. É a agente-v4.md sem a segunda metade do passo 5:
                    "inclusive quando o problema é o próprio chamado: se consultar_ticket disser que o
                    id não existe, chame registrar_encaminhamento com destino "fila_humana" e explique

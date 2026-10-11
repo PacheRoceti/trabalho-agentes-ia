@@ -4,7 +4,18 @@ versão:            v5  (v1 a v4 continuam em src/prompts/, como histórico)
 carimbo:           prompt × modelo × parâmetros × resultado
                    agente-v4 (revisada) × ministral-8b-latest × temperature=0  -> 6 de 8, nenhum chamado
                                       indevido (logs/rodada-2-prompt-v4). Falharam o TKT-0003 e o TKT-0007
-                   agente-v5 × ministral-8b-latest × temperature=0  -> AINDA NÃO MEDIDO
+                   agente-v5 × ministral-8b-latest × temperature=0  -> MEDIDO em três rodadas de 8 casos:
+                     logs/rodada-1-prompt-v5   7 de 8. Falhou o TKT-0005        (texto e seed anteriores
+                     logs/rodada-2-prompt-v5   6 de 8. Falharam o TKT-0005       à revisão de 10/10/2026)
+                                               e o TKT-0003
+                     logs/rodada-3-prompt-v5   7 de 8. Falhou o TKT-0002        (texto e seed ATUAIS)
+                   A rodada 3 é a que vale para este arquivo como está: 10/10/2026, 20h29, commit
+                   "2ffb2b5 + alterações locais", com --auto-aprovar. 31 chamadas ao modelo, 22 passos,
+                   69.889 tokens, US$ 0,0105 a preço de lista, 1 lembrete (TKT-0999).
+                   Teste da regra da frase (10/10/2026, 21h53, docs/prompts.md §3), mesmo texto:
+                     logs/regra-da-frase/v5-a  7 de 8. Falhou o TKT-0002
+                     logs/regra-da-frase/v5-b  7 de 8. Falhou o TKT-0002
+                   A variante agente-v5-sem-frase.md deu 7 de 8 (falhou o TKT-0005) e 8 de 8.
 
 O QUE MUDOU (v4 revisada -> v5, 10/10/2026), a partir de logs/rodada-2-prompt-v4. Três frases:
   passo 3    "(serviço e sintoma, não frases)" -> "palavras soltas que nomeiem o serviço e o sintoma,
@@ -24,7 +35,20 @@ O QUE MUDOU (v4 revisada -> v5, 10/10/2026), a partir de logs/rodada-2-prompt-v4
 REVISÃO de 10/10/2026, no mesmo arquivo: no passo 2, "disco" virou "permissão de arquivos". A
   categoria do KB-102 mudou no seed (docs/case.md §2.12), e na busca o sinônimo "encheu" -> "cheio"
   deu lugar a "salvar" -> "gravar". As rodadas logs/rodada-1-prompt-v5 e logs/rodada-2-prompt-v5 são
-  do texto e do seed anteriores;
+  do texto e do seed anteriores; a logs/rodada-3-prompt-v5 é do texto e do seed atuais.
+
+O QUE A RODADA 3 MOSTROU (logs/rodada-3-prompt-v5):
+  passaram   TKT-0003 e TKT-0007 (os dois que a v4 revisada errava): chamado interno aberto pelo
+             KB-102, com score 0,86 e 0,83; o TKT-0003 saiu P1 pela reincidência confirmada.
+             TKT-0005 (falha das rodadas 1 e 2): devolvido ao cliente em 2 passos, sem busca.
+             TKT-0006: fila humana, citando a ressalva do KB-104 (score 0,4).
+  falhou     TKT-0002 (divergência), e pelo lado que NÃO é seguro: chamado interno P1 aberto para
+             a Infraestrutura, pelo KB-106 (score 0,67), quando o esperado é fila humana. O modelo
+             tentou primeiro a fila humana, com a divergência escrita; a ferramenta recusou por
+             faltar a busca na base; ele buscou e, com o artigo acima do limiar, abriu o chamado.
+             O passo 4 (divergência -> fila humana) não resistiu ao resultado da busca. Na rodada
+             2 o mesmo caso, com o mesmo artigo e o mesmo score, foi para a fila humana.
+  não mudou  TKT-0999: o modelo ainda precisou de 1 lembrete para registrar o desfecho.
 
 LIMITE HONESTO: a v5 e a busca nova foram escritas DEPOIS de ver as falhas nestes mesmos 8 casos.
   Um resultado melhor aqui não prova que o sistema generaliza.
@@ -54,9 +78,12 @@ O que cada regra impede:
                                       única mensagem que chega ao cliente, e prometer o que o agente
                                       não pode cumprir
   "score"                             espelha o portão de confiança do código
-  passo 5 (toda escrita, mesmo id     escrita para o TKT-0999; o teste de 10/10/2026 mostrou que esse
-   inexistente)                        caso funciona sem ela, mas tirá-la fez o TKT-0007 falhar.
-                                       Mantida por isso: docs/prompts.md §3
+  passo 5 (toda escrita, mesmo id     escrita para o TKT-0999. O teste feito NESTE prompt em
+   inexistente)                        10/10/2026 (docs/prompts.md §3) mostrou que esse caso funciona
+                                       sem ela, e com 1 lembrete a menos. Sem ela o TKT-0002 passou
+                                       nas duas execuções (com ela, falhou nas duas) e o TKT-0005
+                                       falhou em uma de duas. Os desfechos mudaram, então pelo
+                                       critério do teste ela foi mantida; tirá-la é decisão em aberto
   "UM desfecho"                       impede duas escritas para o mesmo chamado
   "nunca executa/fecha/reclassifica"  espelha o que as ferramentas já não permitem
   "afirmação a verificar"             impede o cliente virar fato no chamado interno

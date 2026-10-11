@@ -10,13 +10,18 @@
   o analista tem 20 minutos para responder (--prazo-confirmacao MIN muda o prazo da execução):
     python src/main.py --pendencias                 o que aguarda o analista, e quanto tempo falta
     python src/main.py --aprovar TKT-0007           abre o chamado e conclui a execução pausada
-    python src/main.py --rejeitar TKT-0007          nada é gravado
-  Vencido o prazo, o chamado vai para a fila humana com as considerações do agente. O prazo é
-  aplicado no começo de qualquer comando que use o agente: não há processo em segundo plano.
+    python src/main.py --rejeitar TKT-0007          o chamado interno não é aberto
+  Rejeitada a ação ou vencido o prazo, o chamado vai para a fila humana com as considerações do
+  agente. No prazo vencido de um chamado que seria P1, o gestor também é avisado (tabela
+  avisos_gestor). O prazo é aplicado no começo de qualquer comando que use o agente: não há
+  processo em segundo plano.
 
     python src/main.py --todos --auto-aprovar       os 8 casos, do banco zerado, com verificador
                                                     (grava também logs/saida-demonstracao.txt)
     python src/main.py --reset                      recria o banco de dados simulado
+    python src/main.py TKT-0001 --grafo             roda pelo grafo em LangGraph (src/grafo.py), e não
+                                                    pelo laço; os logs vão para logs/grafo/, e
+                                                    --aprovar / --rejeitar valem para os dois
     python src/main.py --todos --auto-aprovar --rodada NOME [--prompt ARQUIVO]
                                                     grava em logs/NOME/ (não sobrescreve logs/) e,
                                                     com --prompt, usa outro arquivo de src/prompts/
@@ -70,7 +75,7 @@ def mostrar_pendencia(pendencia: dict):
     print(f"     faltam: {max(resta, 0) / 60:.0f} min" if resta > 0 else "     PRAZO VENCIDO")
     id_ticket = pendencia["id_ticket"]
     print(f"     responder: python src/main.py --aprovar {id_ticket}   |   --rejeitar {id_ticket}")
-    print("     sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta")
+    print("     rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta")
 
 
 def ler_texto(id_ticket: str, texto: str | None) -> str | None:
@@ -93,6 +98,9 @@ def mostrar(estado):
         print("  SAÍDA (objeto validado, src/saida.py):")
         for linha in json.dumps(estado.saida.model_dump(), ensure_ascii=False, indent=2).splitlines():
             print(f"    {linha}")
+    if (estado.desfecho or {}).get("aviso_gestor"):
+        print(f"  >> GESTOR AVISADO: o chamado interno seria P1 e o prazo de confirmação venceu "
+              f"(tabela avisos_gestor, id {estado.desfecho['aviso_gestor']})")
     if (estado.motivo or "").startswith("aguardando"):   # pausou à espera do analista
         mostrar_pendencia(estado.pendencia)
 
@@ -100,13 +108,22 @@ def mostrar(estado):
 def executar(id_ticket: str, client, modelo: str, precos, confirmador, con,
              log_dir: Path = RAIZ / "logs", prompt_arquivo: Path = PROMPT_ARQUIVO,
              texto: str | None = None,
-             prazo_confirmacao_min: float = PRAZO_CONFIRMACAO_MIN) -> bool | None:
+             prazo_confirmacao_min: float = PRAZO_CONFIRMACAO_MIN,
+             grafo: bool = False) -> bool | None:
     caso = GABARITO.get(id_ticket, {}).get("caso", "sem gabarito")
-    print(f"\n{'=' * 78}\n{id_ticket}  (caso: {caso})  modelo: {modelo}  prompt: {prompt_arquivo.name}\n")
-    estado = rodar(id_ticket, client=client, modelo=modelo, con=con,
-                   preco_usd_por_mtok=precos, orcamento=Orcamento(),
-                   confirmador=confirmador, log_dir=log_dir, prompt_arquivo=prompt_arquivo,
-                   texto=texto, prazo_confirmacao_min=prazo_confirmacao_min)
+    prompt = "triagem-v1.md + redigir-v1.md (grafo)" if grafo else prompt_arquivo.name
+    print(f"\n{'=' * 78}\n{id_ticket}  (caso: {caso})  modelo: {modelo}  prompt: {prompt}\n")
+    if grafo:
+        from grafo import rodar_grafo        # importado só aqui: o laço não depende do LangGraph
+        estado = rodar_grafo(id_ticket, client=client, modelo=modelo, con=con,
+                             preco_usd_por_mtok=precos, orcamento=Orcamento(),
+                             confirmador=confirmador, log_dir=log_dir, texto=texto,
+                             prazo_confirmacao_min=prazo_confirmacao_min)
+    else:
+        estado = rodar(id_ticket, client=client, modelo=modelo, con=con,
+                       preco_usd_por_mtok=precos, orcamento=Orcamento(),
+                       confirmador=confirmador, log_dir=log_dir, prompt_arquivo=prompt_arquivo,
+                       texto=texto, prazo_confirmacao_min=prazo_confirmacao_min)
     mostrar(estado)
     if (estado.motivo or "").startswith("aguardando"):   # pausou: ainda não há o que conferir
         return None
@@ -133,6 +150,8 @@ def main():
     ap.add_argument("--prazo-confirmacao", type=float, default=PRAZO_CONFIRMACAO_MIN, metavar="MIN",
                     help=f"prazo do analista para esta execução, em minutos (padrão: {PRAZO_CONFIRMACAO_MIN})")
     ap.add_argument("--reset", action="store_true", help="recria o banco simulado")
+    ap.add_argument("--grafo", action="store_true",
+                    help="roda pelo grafo em LangGraph (src/grafo.py) em vez do laço; logs em logs/grafo/")
     ap.add_argument("--rodada", help="grava os logs em logs/<nome>/ em vez de logs/")
     ap.add_argument("--prompt", help="arquivo de src/prompts/ a usar (padrão: o prompt em uso)")
     args = ap.parse_args()
@@ -162,7 +181,10 @@ def main():
               float(os.environ.get("PRECO_SAIDA_USD") or "0.15"))
     # Sem --auto-aprovar não há confirmador: a ação irreversível fica pendente, com prazo.
     confirmador = confirmador_auto if args.auto_aprovar else None
-    log_dir = RAIZ / "logs" / args.rodada if args.rodada else RAIZ / "logs"
+    # O grafo nunca grava em logs/: é lá que estão os logs do laço citados no README e no io.md.
+    log_dir = RAIZ / "logs" / (args.rodada or ("grafo" if args.grafo else ""))
+    if args.grafo and args.prompt:
+        sys.exit("--prompt vale só para o laço: o grafo usa triagem-v1.md e redigir-v1.md.")
     prompt_arquivo = PROMPTS / args.prompt if args.prompt else PROMPT_ARQUIVO
     if not prompt_arquivo.exists():
         sys.exit(f"Prompt não encontrado: {prompt_arquivo}")
@@ -204,7 +226,7 @@ def main():
                 db.recriar_banco()              # cada caso parte do mesmo estado inicial
                 con = db.conectar()
                 resultados[id_ticket] = executar(id_ticket, client, modelo, precos, confirmador, con,
-                                                 log_dir, prompt_arquivo)
+                                                 log_dir, prompt_arquivo, grafo=args.grafo)
                 con.close()
             acertos = sum(1 for v in resultados.values() if v)
             print(f"\n{'=' * 78}\nRESULTADO: {acertos} de {len(resultados)} casos conferidos pelo verificador")
@@ -218,7 +240,7 @@ def main():
         texto = ler_texto(args.ticket, args.texto)
         con = db.conectar()
         executar(args.ticket, client, modelo, precos, confirmador, con, log_dir, prompt_arquivo, texto,
-                 args.prazo_confirmacao)
+                 args.prazo_confirmacao, grafo=args.grafo)
         con.close()
 
 

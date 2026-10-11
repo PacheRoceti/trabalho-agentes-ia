@@ -1,0 +1,123 @@
+{
+  "execucao_id": "TKT-0006-80032",
+  "id_ticket": "TKT-0006",
+  "executado_em": "2026-10-10T21:53:52-03:00",
+  "commit": "2ffb2b5 + alterações locais",
+  "entrada": "Meu site está dando erro 502 de vez em quando, mais ou menos desde o deploy de ontem. Às vezes funciona normal.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "agente-v5.md",
+  "prompt_lembrete": "lembrete-v1.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": "O chamado foi encaminhado para a fila humana, pois o erro 502 intermitente não é coberto pelo artigo encontrado.",
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 4,
+  "lembretes": 0,
+  "tokens_entrada": 8631,
+  "tokens_saida": 197,
+  "custo_usd": 0.001324,
+  "scores_kb": {
+    "KB-104": 0.4
+  },
+  "saida": {
+    "id_ticket": "TKT-0006",
+    "executado_em": "2026-10-10T21:53:52-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O cliente relata erro 502 intermitente após deploy, mas o artigo com melhor score (0.4) tem ressalva: não cobre casos em que o erro ocorre 'às vezes'. O anexo_log não está disponível para análise. Um analista deve verificar o comportamento do site e o log do servidor para identificar a causa real.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "busca_sem_correspondencia",
+      "kb_id": "KB-104",
+      "score": 0.4,
+      "registros": [
+        "TKT-0006"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "buscar_base_conhecimento",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o melhor procedimento encontrado (KB-104, score 0.4) ficou abaixo do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0006"
+      },
+      "resultado": {
+        "id": "TKT-0006",
+        "aberto_em": "2026-09-21 11:02",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Epsilon Studio",
+        "plano": "VPS Pro",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "site",
+          "erro",
+          "502",
+          "deploy"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.4,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "ressalva": "este procedimento NÃO cobre o caso relatado ('as vezes'): o score foi reduzido"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 2,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0006",
+        "destino": "fila_humana",
+        "mensagem": "O cliente relata erro 502 intermitente após deploy, mas o artigo com melhor score (0.4) tem ressalva: não cobre casos em que o erro ocorre 'às vezes'. O anexo_log não está disponível para análise. Um analista deve verificar o comportamento do site e o log do servidor para identificar a causa real."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 7
+    }
+  ]
+}

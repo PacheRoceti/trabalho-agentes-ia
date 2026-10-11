@@ -1,0 +1,130 @@
+{
+  "execucao_id": "TKT-0005-80092",
+  "id_ticket": "TKT-0005",
+  "executado_em": "2026-10-10T21:54:52-03:00",
+  "commit": "2ffb2b5 + alterações locais",
+  "entrada": "Meu servidor não está funcionando direito.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "agente-v5-sem-frase.md",
+  "prompt_lembrete": "lembrete-v1.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": "O chamado TKT-0005 foi encaminhado para a fila humana, pois faltam detalhes técnicos para uma solução automática.",
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 5,
+  "lembretes": 0,
+  "tokens_entrada": 10334,
+  "tokens_saida": 244,
+  "custo_usd": 0.001587,
+  "scores_kb": {},
+  "saida": {
+    "id_ticket": "TKT-0005",
+    "executado_em": "2026-10-10T21:54:52-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O cliente relatou que seu servidor não está funcionando direito, mas não descreveu qual o erro ou comportamento observado, nem desde quando ocorre. Além disso, não há logs anexados nem detalhes técnicos no chamado para identificar a causa. Não foi possível encontrar procedimentos na base de conhecimento com os termos buscados ('servidor', 'nao', 'funcionando', 'direito'). Recomenda-se análise humana para obter mais informações.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "busca_sem_correspondencia",
+      "kb_id": null,
+      "score": null,
+      "registros": [
+        "TKT-0005"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "buscar_base_conhecimento",
+        "buscar_base_conhecimento",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "nenhum procedimento da base corresponde ao relato"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0005"
+      },
+      "resultado": {
+        "id": "TKT-0005",
+        "aberto_em": "2026-09-21 10:31",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Delta Restaurantes",
+        "plano": "Hospedagem Start",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "servidor",
+          "nao",
+          "funcionando"
+        ]
+      },
+      "resultado": {
+        "resultados": [],
+        "aviso": "nenhum procedimento da base tem correspondência com esses termos",
+        "sugestao": "tente UMA nova busca com outras palavras soltas do relato (o serviço e o sintoma)"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "servidor",
+          "nao",
+          "estando",
+          "direito"
+        ]
+      },
+      "resultado": {
+        "resultados": [],
+        "aviso": "nenhum procedimento da base tem correspondência com esses termos",
+        "sugestao": "não busque de novo: registre 'fila_humana' explicando o que foi buscado"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 3,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0005",
+        "destino": "fila_humana",
+        "mensagem": "O cliente relatou que seu servidor não está funcionando direito, mas não descreveu qual o erro ou comportamento observado, nem desde quando ocorre. Além disso, não há logs anexados nem detalhes técnicos no chamado para identificar a causa. Não foi possível encontrar procedimentos na base de conhecimento com os termos buscados ('servidor', 'nao', 'funcionando', 'direito'). Recomenda-se análise humana para obter mais informações."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 7
+    }
+  ]
+}

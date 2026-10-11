@@ -177,7 +177,10 @@ compensa o custo e o 3B perde julgamento**, não que o 8B seja "o melhor" em ter
 
 ### 3.3-C Demonstração oficial (rodada 4, 8 casos, `ministral-8b-latest`)
 
-**6 de 8 casos** conferidos pelo verificador (`logs/saida-demonstracao.txt` e `logs/TKT-*.json`).
+**6 de 8 casos** conferidos pelo verificador (`logs/saida-demonstracao.txt`). Os oito
+`logs/TKT-*.json` desta rodada foram sobrescritos em 10/10/2026 por execuções do `agente-v5.md`
+(`README.md`, "Os oito logs de `logs/`"); os da rodada 4 estão no histórico do git, no commit
+`d60a2bd`.
 Passaram: `0001`, `0002`, `0004`, `0005`, `0006`, `0999`. Falharam: `0003` (julgamento, acima) e
 `0007` (busca por palavra, acima). O `TKT-0007` foi adicionado **depois** da comparação de modelos,
 para exercitar a abertura de chamado sem a armadilha do `TKT-0003`; nenhum caso existente foi

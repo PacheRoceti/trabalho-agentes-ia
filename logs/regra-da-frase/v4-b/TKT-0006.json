@@ -1,0 +1,150 @@
+{
+  "execucao_id": "TKT-0006-78777",
+  "id_ticket": "TKT-0006",
+  "executado_em": "2026-10-10T21:32:57-03:00",
+  "commit": "2ffb2b5 + alterações locais",
+  "entrada": "Meu site está dando erro 502 de vez em quando, mais ou menos desde o deploy de ontem. Às vezes funciona normal.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "agente-v4-com-frase.md",
+  "prompt_lembrete": "lembrete-v1.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": "O chamado foi encaminhado para análise humana, pois o erro 502 intermitente não tem procedimento automático.",
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 5,
+  "lembretes": 0,
+  "tokens_entrada": 9810,
+  "tokens_saida": 216,
+  "custo_usd": 0.001504,
+  "scores_kb": {
+    "KB-104": 0.11
+  },
+  "saida": {
+    "id_ticket": "TKT-0006",
+    "executado_em": "2026-10-10T21:32:57-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O cliente relata erro 502 intermitente no site desde o deploy de ontem. Não há log anexado nem histórico de chamados. A busca na base de conhecimento não encontrou procedimentos com score suficiente para agir sozinho, pois o erro é intermitente e os artigos existentes tratam de falhas constantes após deploy.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "busca_sem_correspondencia",
+      "kb_id": "KB-104",
+      "score": 0.11,
+      "registros": [
+        "TKT-0006"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "buscar_base_conhecimento",
+        "buscar_base_conhecimento",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o melhor procedimento encontrado (KB-104, score 0.11) ficou abaixo do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0006"
+      },
+      "resultado": {
+        "id": "TKT-0006",
+        "aberto_em": "2026-09-21 11:02",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Epsilon Studio",
+        "plano": "VPS Pro",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "site",
+          "erro 502",
+          "deploy"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.4,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "ressalva": "este procedimento NÃO cobre o caso relatado ('as vezes'): o score foi reduzido"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "erro 502",
+          "intermitente"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.11,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "ressalva": "este procedimento NÃO cobre o caso relatado ('intermitente'): o score foi reduzido"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 3,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0006",
+        "destino": "fila_humana",
+        "mensagem": "O cliente relata erro 502 intermitente no site desde o deploy de ontem. Não há log anexado nem histórico de chamados. A busca na base de conhecimento não encontrou procedimentos com score suficiente para agir sozinho, pois o erro é intermitente e os artigos existentes tratam de falhas constantes após deploy."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 7
+    }
+  ]
+}

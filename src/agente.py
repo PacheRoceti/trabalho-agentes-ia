@@ -29,8 +29,9 @@ from pydantic import ValidationError
 
 import db
 from ferramentas import (FERRAMENTAS_DE_ESCRITA, FUNCOES, LIMIAR_CONFIANCA,
-                         PRAZO_CONFIRMACAO_MIN, SCHEMAS, ErroFatal, ErroRecuperavel,
-                         PausaParaHumano, aprovar_pendencia, encaminhar_pendencia_vencida)
+                         MOTIVO_PRAZO_VENCIDO, MOTIVO_REJEITADA, PRAZO_CONFIRMACAO_MIN, SCHEMAS,
+                         AcaoRejeitada, ErroFatal, ErroRecuperavel, PausaParaHumano,
+                         aprovar_pendencia, encaminhar_pendencia)
 from saida import Saida, montar_saida
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -71,7 +72,7 @@ class Termino(str, Enum):
     RESPONDEU = "respondeu"            # o modelo concluiu E registrou um desfecho
     ORCAMENTO = "orcamento_esgotado"   # bateu um dos tetos
     ERRO_FATAL = "erro_fatal"          # não há como continuar
-    HUMANO = "aguardando_humano"       # ação irreversível não confirmada
+    HUMANO = "aguardando_humano"       # ação irreversível à espera do analista, dentro do prazo
 
 
 # ================================================================ ESTADO
@@ -336,17 +337,14 @@ def _laco(e: Estado, *, client, con, temperatura: float | None,
                                     "name": chamada.function.name,
                                     "content": json.dumps(observacao, ensure_ascii=False)})
     except PausaParaHumano as p:
+        # Ninguém respondeu ainda: a execução fica guardada para continuar depois (retomar).
+        # O tempo já gasto vai junto, e a espera pelo analista não entra no teto de tempo.
         e.termino, e.pendencia = Termino.HUMANO, p.pendencia
-        if e.pendencia_id is None:
-            e.motivo = "analista não confirmou a ação"
-        else:
-            # Ninguém respondeu ainda: a execução fica guardada para continuar depois (retomar).
-            # O tempo já gasto vai junto, e a espera pelo analista não entra no teto de tempo.
-            e.motivo = (f"aguardando a confirmação do analista até {p.pendencia['vence_em']} "
-                        f"(prazo de {e.prazo_confirmacao_min:g} minutos)")
-            db.gravar_checkpoint(con, e.pendencia_id, e.checkpoint(
-                preco_usd_por_mtok=list(preco_usd_por_mtok),
-                segundos=time.monotonic() - orcamento.inicio))
+        e.motivo = (f"aguardando a confirmação do analista até {p.pendencia['vence_em']} "
+                    f"(prazo de {e.prazo_confirmacao_min:g} minutos)")
+        db.gravar_checkpoint(con, e.pendencia_id, e.checkpoint(
+            preco_usd_por_mtok=list(preco_usd_por_mtok),
+            segundos=time.monotonic() - orcamento.inicio))
     except ErroFatal as f:
         e.termino, e.motivo = Termino.ERRO_FATAL, str(f)
     finally:
@@ -378,9 +376,10 @@ def retomar(id_ticket: str, decisao: str, *, client, con, por: str = "analista d
 
     `decisao` é "aprovar", "rejeitar" ou "vencer" (só aplica o prazo, sem resposta de ninguém).
     Quem decide o que acontece é o relógio antes da pessoa: passado o `vence_em`, qualquer decisão
-    vira prazo vencido, a ação não é executada e o código encaminha o chamado à fila humana com
-    as considerações do agente. Dentro do prazo, aprovar executa a escrita e rejeitar não grava
-    nada. Depois de uma escrita o laço continua, para o modelo dar a frase final.
+    vira prazo vencido. Dentro do prazo, aprovar executa a escrita. Rejeitar e prazo vencido têm
+    o mesmo destino: a ação não é executada e o código encaminha o chamado à fila humana com as
+    considerações do agente (no prazo vencido de um chamado que seria P1, avisa também o gestor).
+    Depois da escrita o laço continua, para o modelo dar a frase final.
 
     Devolve None quando não há o que fazer: nenhuma pendência aguardando, "vencer" antes do
     prazo, ou pendência que outra chamada já resolveu (a segunda aprovação não repete nada)."""
@@ -390,6 +389,13 @@ def retomar(id_ticket: str, decisao: str, *, client, con, por: str = "analista d
     if not registros:
         return None
     registro = registros[-1]
+    if (registro["checkpoint"] or {}).get("motor") == "grafo":
+        # A pausa é de uma execução do grafo (src/grafo.py): quem continua é ele, pelo checkpoint
+        # do LangGraph. O log volta para a pasta em que a execução pausada gravou.
+        from grafo import retomar_grafo
+        pasta = registro["checkpoint"].get("log_dir")
+        return retomar_grafo(id_ticket, decisao, client=client, con=con, por=por, agora=agora,
+                             log_dir=Path(pasta) if pasta else log_dir, verbose=verbose)
     agora = agora or datetime.now().astimezone()
     vencida = agora >= datetime.fromisoformat(registro["vence_em"])
     if decisao == "vencer" and not vencida:
@@ -406,26 +412,16 @@ def retomar(id_ticket: str, decisao: str, *, client, con, por: str = "analista d
     e.confirmacoes.append({"pendencia": acao, "aprovado": status == "aprovada", "por": por,
                            "status": status, "resolvido_em": quando})
     pausado = e.passos[-1]                               # o abrir_chamado_interno que pausou
-    if status == "rejeitada":
-        pausado.erro = {"erro": "o analista rejeitou a ação"}
-        e.termino, e.motivo, e.pendencia = Termino.HUMANO, "analista rejeitou a ação", acao
-        _finalizar(e, log_dir)
-        return e
-
     if status == "aprovada":
         pausado.erro, pausado.resultado = None, aprovar_pendencia(e, con, acao)
         observacao = pausado.resultado
+    elif status == "rejeitada":
+        pausado.erro = {"erro": "o analista rejeitou a ação"}
+        observacao = _encaminhar_nao_executada(e, con, acao, MOTIVO_REJEITADA)
     else:
-        prazo = f"{e.prazo_confirmacao_min:g} minutos"
-        pausado.erro = {"erro": f"confirmação do analista não recebida em {prazo}"}
-        argumentos, resultado = encaminhar_pendencia_vencida(e, con, acao)
-        e.passos.append(Passo(indice=e.n_passos, ferramenta="registrar_encaminhamento",
-                              argumentos=argumentos, resultado=resultado))
-        observacao = {
-            **resultado,
-            "aviso": f"o analista não confirmou em {prazo}: o chamado interno NÃO foi aberto, e o "
-                     f"sistema encaminhou o chamado à fila humana com a ação proposta",
-            "sugestao": "não registre outro desfecho; responda com UMA frase dizendo isso"}
+        pausado.erro = {"erro": f"confirmação do analista não recebida em "
+                                f"{e.prazo_confirmacao_min:g} minutos"}
+        observacao = _encaminhar_nao_executada(e, con, acao, MOTIVO_PRAZO_VENCIDO)
     if verbose:
         print(f"  retomada [{status}] {pausado.ferramenta} -> {e.desfecho['acao']}")
 
@@ -449,6 +445,22 @@ def retomar(id_ticket: str, decisao: str, *, client, con, por: str = "analista d
                  log_dir=log_dir, verbose=verbose)
 
 
+def _encaminhar_nao_executada(e: Estado, con, acao: dict, motivo: str) -> dict:
+    """A ação irreversível não foi autorizada (rejeição ou prazo vencido): o código grava o
+    encaminhamento à fila humana, registra o passo na trajetória e devolve o que o modelo vai ler."""
+    argumentos, resultado = encaminhar_pendencia(e, con, acao, motivo)
+    e.passos.append(Passo(indice=e.n_passos, ferramenta="registrar_encaminhamento",
+                          argumentos=argumentos, resultado=resultado))
+    causa = ("o analista rejeitou a ação" if motivo == MOTIVO_REJEITADA else
+             f"o analista não confirmou em {e.prazo_confirmacao_min:g} minutos")
+    aviso = (f"{causa}: o chamado interno NÃO foi aberto, e o sistema encaminhou o chamado à "
+             f"fila humana com a ação proposta")
+    if "aviso_gestor" in resultado:
+        aviso += "; como o chamado seria P1, o gestor de suporte foi avisado"
+    return {**resultado, "aviso": aviso,
+            "sugestao": "não registre outro desfecho; responda com UMA frase dizendo isso"}
+
+
 def vencer_pendencias(*, client, con, agora: datetime | None = None,
                       log_dir: Path | None = None, verbose: bool = True) -> list[Estado]:
     """Aplica o prazo a todas as pendências que venceram sem resposta. Não há processo em segundo
@@ -467,6 +479,7 @@ def _executar(e: Estado, con, chamada, verbose: bool) -> dict:
     Erro recuperável volta como dado (com 'esperado' e 'sugestao')."""
     nome = chamada.function.name
     passo = Passo(indice=e.n_passos, ferramenta=nome, argumentos={})
+    rejeitada = None
     t0 = time.monotonic()
     try:
         try:
@@ -489,6 +502,9 @@ def _executar(e: Estado, con, chamada, verbose: bool) -> dict:
     except ErroRecuperavel as r:
         passo.erro = r.payload
         observacao = r.payload
+    except AcaoRejeitada as r:                           # o analista respondeu na hora, e negou
+        passo.erro = {"erro": str(r)}
+        rejeitada = r.pendencia
     except (PausaParaHumano, ErroFatal) as x:            # registra o passo e propaga
         passo.erro = {"erro": str(x)}
         raise
@@ -499,4 +515,9 @@ def _executar(e: Estado, con, chamada, verbose: bool) -> dict:
             marca = "ESCRITA " if nome in FERRAMENTAS_DE_ESCRITA else "leitura "
             status = f"ERRO: {passo.erro['erro']}" if passo.erro else "ok"
             print(f"  passo {passo.indice} [{marca}] {nome} {json.dumps(passo.argumentos, ensure_ascii=False)[:110]} -> {status}")
+    if rejeitada:                                        # rejeição não derruba o laço: fila humana
+        observacao = _encaminhar_nao_executada(e, con, rejeitada, MOTIVO_REJEITADA)
+        if verbose:
+            print(f"  passo {e.passos[-1].indice} [ESCRITA ] registrar_encaminhamento "
+                  f"(código: ação rejeitada) -> ok")
     return observacao

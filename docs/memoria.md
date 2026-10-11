@@ -15,7 +15,7 @@
 | | Curto prazo | Longo prazo |
 |---|---|---|
 | O que é | a janela de uma triagem (um `TKT-xxxx`), incluindo a pausa à espera do cliente quando o agente pede informação | o que atravessa chamados diferentes, de clientes diferentes, em dias diferentes |
-| Conteúdo, no case | prompt do sistema (`src/prompts/agente-v3.md`), o texto do chamado com o id que o acompanha ("TKT-0002: Meu Webmail está fora do ar…"), a trajetória (as chamadas de `consultar_ticket`, `buscar_base_conhecimento` e seus resultados), os trechos da base de conhecimento recuperados nesta busca | episódica (execuções passadas), semântica (fatos estáveis sobre clientes e times), procedural (regras de triagem aprendidas) |
+| Conteúdo, no case | prompt do sistema (`src/prompts/agente-v5.md`, o prompt em uso, já executado em três rodadas de 8 casos: `logs/rodada-1-prompt-v5/` a `logs/rodada-3-prompt-v5/`), o texto do chamado com o id que o acompanha ("TKT-0002: Meu Webmail está fora do ar…"), a trajetória (as chamadas de `consultar_ticket`, `buscar_base_conhecimento` e seus resultados), os trechos da base de conhecimento recuperados nesta busca | episódica (execuções passadas), semântica (fatos estáveis sobre clientes e times), procedural (regras de triagem aprendidas) |
 | Persistido como | **checkpoint** por conversa, endereçado pelo `thread_id` = id do chamado externo (ver 1.5) | índice por similaridade (episódica), tabela chave-valor (semântica), texto dentro do próprio prompt (procedural) |
 | Lido | uma vez, ao retomar uma execução parada | a cada passo do laço em que o modelo pode se beneficiar de um fato ou um precedente |
 | Acesso | por `thread_id` (id do chamado) | por relevância (episódica), por chave `cliente_id`/categoria (semântica), carregado sempre (procedural) |
@@ -35,7 +35,19 @@ Isso responde às três perguntas do enunciado: (a) retomável sem reaplicar efe
 
 ### 1.2 O orçamento da janela
 
-Seis fontes disputam a janela de uma chamada ao modelo. Medido a partir do `src/prompts/agente-v3.md` e dos schemas em `src/ferramentas.py`:
+Seis fontes disputam a janela de uma chamada ao modelo. As medidas por fonte da tabela foram feitas com o `src/prompts/agente-v3.md` e os schemas de `src/ferramentas.py` daquela época. O prompt em uso hoje é o `agente-v5.md`, e **a medida por fonte não foi refeita com ele**.
+
+O que há de medido com o `agente-v5.md` é o total, na rodada 3 (`logs/rodada-3-prompt-v5/`, 10/10/2026, 8 execuções, seed e texto atuais):
+
+| Medida na rodada 3 | Valor |
+|---|---|
+| Tokens de entrada por chamada ao modelo (média de cada execução) | de 2.017 (`TKT-0005`) a 2.492 (`TKT-0002`) |
+| Tokens por execução, entrada + saída | de 6.166 (`TKT-0005`, 3 chamadas) a 12.962 (`TKT-0002`, 5 chamadas) |
+| Total das 8 execuções | 69.889 tokens em 31 chamadas ao modelo |
+
+A média por chamada fica abaixo da soma dos tetos (6.000), sem memória de longo prazo e sem corte nenhum: o laço de hoje reenvia a trajetória inteira e não descarta passos. O log grava o total de tokens da execução, e não o de cada chamada, então a maior chamada de cada execução não está medida.
+
+A tabela, com os valores por fonte medidos no `agente-v3.md`:
 
 | Fonte | Teto (tokens) | Medido / justificativa |
 |---|---|---|
@@ -66,7 +78,7 @@ A reincidência é o exemplo mais claro de por que a estrutura decorre do padrã
 ### 1.4 Quem escreve, o volume, e o que não entra
 
 **Quem escreve:**
-- **episódica**: o **código** extrai, ao fim de cada execução (qualquer término, inclusive `aguardando_humano` quando o analista recusa), os campos estruturados do `Estado` — nunca o texto livre que o modelo escreveu como resposta final, porque texto livre é exatamente o que a rodada 2 mostrou não ser confiável ("registrei" sem ter registrado);
+- **episódica**: o **código** extrai, ao fim de cada execução (qualquer término; a ação que o analista rejeita termina em `respondeu`, com desfecho `fila_humana` e motivo `acao_rejeitada`), os campos estruturados do `Estado` — nunca o texto livre que o modelo escreveu como resposta final, porque texto livre é exatamente o que a rodada 2 mostrou não ser confiável ("registrei" sem ter registrado);
 - **semântica**: o **código** também, por regra determinística (a mesma consulta SQL que já existe), nunca o modelo — um fato como "plano do cliente" tem peso de negócio demais para depender de o modelo tê-lo lido certo;
 - **procedural**: só o **humano** (analista ou o grupo), em revisão, nunca automático — é a lição da rodada 2: prompt mexido sem supervisão piorou o resultado de 5 para 3 em 7. Uma regra procedural só entra no prompt depois de aparecer em pelo menos 3 correções do mesmo padrão, revisadas por uma pessoa.
 
