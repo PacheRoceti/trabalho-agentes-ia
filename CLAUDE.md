@@ -6,7 +6,7 @@ Orientações para o Claude Code trabalhar neste repositório.
 
 Trabalho de disciplina (Agentes de IA): um **agente de triagem de chamados de suporte** de uma empresa fictícia de hospedagem. Ele lê o texto livre do cliente, consulta o sistema de tickets e a base de conhecimento e grava **um desfecho** por chamado. Todo o projeto (código, identificadores, comentários, docs, commits) é em **português**; mantenha assim.
 
-O caminho padrão é o **grafo em LangGraph** da Parte 2 (`src/grafo.py`, com checkpointer em SQLite e `interrupt` no H1), medido uma vez com o modelo real: 8 de 8 em `logs/grafo/` (10/10/2026). O laço da **Parte 1** (próprio, sem framework, em `src/agente.py`) continua no repositório e roda com `main.py --laco`; `--prompt` implica `--laco`. RAG vetorial e memória existem só como desenho em `docs/`.
+O caminho padrão é o **grafo em LangGraph** da Parte 2 (`src/grafo.py`, com checkpointer em SQLite e `interrupt` no H1), medido três vezes com o modelo real: 8 de 8 em `logs/grafo/`, `logs/grafo-rodada-2/` e `logs/grafo-rodada-3/` (10/10/2026), e com a pausa do H1 demonstrada em `logs/grafo-pausa/`. O laço da **Parte 1** (próprio, sem framework, em `src/agente.py`) continua no repositório e roda com `main.py --laco`; `--prompt` implica `--laco`. RAG vetorial e memória existem só como desenho em `docs/`.
 
 ## Comandos
 
@@ -107,8 +107,8 @@ Sobreposição de palavras: `score = casados / (casados + nao_casados / 2)`, com
 | Doc | Conteúdo |
 |---|---|
 | `case.md` | O caso de negócio: problema, usuários, workflow, verificador, riscos (§2.12 = o que o domínio ensinou). |
-| `arquitetura.md` | O sistema **como está hoje** (Parte 2, item 3). |
-| `arquitetura-v2.md` | Histórico da Parte 1: do desenho no papel ao que foi construído, e o que as rodadas ensinaram. |
+| `arquitetura.md` | O sistema **como está hoje** (Parte 2, item 3): o grafo. §1 a §7 = diagrama e as seis perguntas; §8 = nível de autonomia; §9 = conferência contra o código. A tabela de campos do estado está aqui (§4) e em `grafo.md` §3.1: mudam juntas. |
+| `arquitetura-v2.md` | Histórico da Parte 1: do desenho no papel ao que foi construído, e o que as rodadas ensinaram. O §7 é a descrição do laço (`--laco`), com os portões ■G1 a ■G6. |
 | `io.md` | Entrada, contrato de saída e cinco exemplos reais. |
 | `prompts.md` | Plano de prompt engineering e o experimento da "regra da frase". |
 | `modelos.md` | Escolha de modelo (3 Ministral), custo e comparação. `modelos-tabela-3.3.md` é gerado. |

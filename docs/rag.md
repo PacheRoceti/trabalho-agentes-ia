@@ -186,16 +186,21 @@ triagem (`grafo.md` §1). É uma **etapa fixa condicionada à rota**: não roda 
 o modelo não decide na hora se busca. Ele ainda escolhe os termos, na triagem, e o nó `decidir`
 confere a divergência entre relato e log antes de olhar o score.
 
-Chamadas de recuperação na execução medida do grafo (`logs/grafo/`, 10/10/2026, 21h11, 8 de 8 no
-verificador; `grafo.md` §6):
+Chamadas de recuperação nas três rodadas medidas do grafo (`logs/grafo/`,
+`logs/grafo-rodada-2/` e `logs/grafo-rodada-3/`, de 10/10/2026, 8 de 8 no verificador nas três;
+`grafo.md` §6). Os números são iguais nas três:
 
-| | Grafo |
+| | Cada rodada do grafo |
 |---|---|
 | Buscas no total (8 execuções) | 5 |
 | Média por execução | 0,63 |
 | Execuções sem nenhuma busca | 3 (`TKT-0004`, `TKT-0005`, `TKT-0999`) |
 | Buscas repetidas na mesma execução | 0 (o grafo não tem caminho de volta para a busca) |
 | Buscas inúteis | 0 |
+
+A tabela seguinte é a da primeira rodada. Nas outras duas os termos mudaram pouco e os scores
+ficaram do mesmo lado do limiar: KB-101 com 0,67 e 0,75, KB-106 com 0,67 e 0,75, KB-102 com 0,86
+e KB-104 com 0,16.
 
 | Chamado | Termos escolhidos pela triagem | Melhor artigo e score | Desfecho | Verificador |
 |---|---|---|---|---|
@@ -209,15 +214,15 @@ São os mesmos números de buscas da rodada 3 do laço. A diferença está no `T
 foi recuperado com score ainda maior (0,75), e o chamado não foi aberto, porque a divergência já
 estava decidida quando a busca voltou. Nenhuma das cinco buscas foi inútil no sentido do
 enunciado: todas são de chamados técnicos, e as três execuções sem busca são as que não têm o
-que buscar. Limite: é uma execução por caso.
+que buscar. Limite: são três execuções dos mesmos 8 casos.
 
 A defesa da escolha começa na medição das rodadas 1 e 2 do laço:
 as buscas inúteis e a busca que faltou são todas erro de decisão do modelo. A rodada 3 enfraquece
 essa defesa pela metade: com o seed e o texto atuais, o modelo decidiu certo quando buscar em 7
 das 8 execuções, e na oitava quem forçou a busca foi o código. O que a rodada 3 acrescenta é
 outro argumento: o `TKT-0002` precisa que a divergência entre relato e log seja decidida
-**antes** de o resultado da busca chegar ao modelo, e não depois. Na execução medida do grafo
-foi o que aconteceu. O preço da etapa fixa é o que o laço tinha e o grafo não tem: uma segunda
+**antes** de o resultado da busca chegar ao modelo, e não depois. Nas três rodadas do grafo foi
+o que aconteceu. O preço da etapa fixa é o que o laço tinha e o grafo não tem: uma segunda
 busca com outros termos quando a primeira vem fraca.
 
 ## 6. O que falta para este item
@@ -230,6 +235,6 @@ busca com outros termos quando a primeira vem fraca.
 - Medir as dez perguntas com a busca vetorial e comparar com o §3.1, em especial a P7.
 - Calibrar o limiar com perguntas sem resposta na base, no lugar do 0,5 ajustado à mão.
 - Confirmar o `k`.
-- Repetir a medição do §5 no grafo: os números são de uma execução por caso.
+- Medir o §5 em perguntas fora dos 8 casos: as três rodadas do grafo são dos mesmos chamados.
 - Ligar a recuperação à fonte do contrato de saída (`fonte.kb_id` e `fonte.score`, em
   `src/saida.py`) quando o score passar a ser de similaridade.

@@ -1,0 +1,119 @@
+{
+  "execucao_id": "TKT-0999-87080",
+  "id_ticket": "TKT-0999",
+  "executado_em": "2026-10-10T23:51:20-03:00",
+  "commit": "083d132",
+  "entrada": null,
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + redigir-v1.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 1,
+  "lembretes": 0,
+  "tokens_entrada": 754,
+  "tokens_saida": 45,
+  "custo_usd": 0.00012,
+  "scores_kb": {},
+  "saida": {
+    "id_ticket": "TKT-0999",
+    "executado_em": "2026-10-10T23:51:20-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O ID **TKT-0999** não foi encontrado no sistema de tickets. Verificar se o cliente enviou o chamado por outro meio ou se há duplicidade de registro.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "nenhuma",
+      "kb_id": null,
+      "score": null,
+      "registros": [],
+      "ferramentas": [
+        "consultar_ticket",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o chamado não foi encontrado no sistema de tickets"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0999"
+      },
+      "resultado": null,
+      "erro": {
+        "erro": "chamado não encontrado no sistema de tickets",
+        "recebido": "TKT-0999"
+      },
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "id_inexistente"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 2,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "O ID **TKT-0999** não foi encontrado no sistema de tickets. Verificar se o cliente enviou o chamado por outro meio ou se há duplicidade de registro."
+      },
+      "erro": null,
+      "ms": 916
+    },
+    {
+      "indice": 3,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0999",
+        "destino": "fila_humana",
+        "mensagem": "O ID **TKT-0999** não foi encontrado no sistema de tickets. Verificar se o cliente enviou o chamado por outro meio ou se há duplicidade de registro."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 15
+    }
+  ],
+  "motor": "langgraph",
+  "classe": null,
+  "log_diverge": null,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "id_inexistente"
+  },
+  "tentativas_redacao": 1,
+  "segundos_gastos": 0.932
+}

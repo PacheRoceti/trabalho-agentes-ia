@@ -1,0 +1,134 @@
+$ python src/main.py TKT-0007 --rodada grafo-pausa   (Enter em branco: usa o texto registrado)
+
+==============================================================================
+TKT-0007  (caso: escalonamento_simples)  modelo: ministral-8b-latest  prompt: triagem-v1.md + redigir-v1.md (grafo)
+
+  nó consultar         consultar_ticket {"id_ticket": "TKT-0007"} -> ok
+  nó triagem           triagem {} -> ok
+  nó buscar            buscar_base_conhecimento {"termos": ["site", "parou", "salvar", "arquivos", "permissão"]} -> ok
+  nó decidir           decidir {} -> ok
+  nó redigir           redigir {"desfecho": "abrir_chamado_interno"} -> ok
+  ENTRADA: Meu site parou de salvar arquivos: todo upload falha com a mensagem de permissão negada. Preciso de ajuda para voltar a publicar.
+
+  TERMINO: aguardando_humano | desfecho: nenhum | passos: 5 | chamadas ao modelo: 2 | lembretes: 0 | tokens: 1755 | custo: US$ 0.00026
+  motivo: aguardando a confirmação do analista até 2026-10-11T00:11:58-03:00 (prazo de 20 minutos)
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0007",
+      "executado_em": "2026-10-10T23:51:55-03:00",
+      "termino": "aguardando_humano",
+      "resultado": {
+        "acao": null,
+        "texto": null,
+        "chamado_interno": null,
+        "time_destino": null,
+        "prioridade": null
+      },
+      "fonte": {
+        "tipo": "registro_do_chamado",
+        "kb_id": "KB-102",
+        "score": 0.86,
+        "registros": [
+          "TKT-0007"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "triagem",
+          "buscar_base_conhecimento",
+          "decidir",
+          "redigir"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": false,
+        "motivo": "a execução terminou sem desfecho (aguardando_humano: aguardando a confirmação do analista até 2026-10-11T00:11:58-03:00 (prazo de 20 minutos))"
+      }
+    }
+
+  >> AÇÃO IRREVERSÍVEL aguardando o analista de suporte:
+     ferramenta: abrir_chamado_interno
+     id_ticket: TKT-0007
+     categoria: permissao_arquivos
+     resumo: Cliente **Eta Engenharia (plano VPS Pro)** relata que o site **parou de salvar arquivos**, com falha de upload exibindo mensagem de **permissão negada**. Não há log anexado nem histórico de chamados internos anteriores. O procedimento **KB-102** (score 0.86) sugere que a causa seja **arquivos ou pastas com dono ou permissões incorretos**, comum após restauração, migração ou publicação por outro usuário. **Exige acesso de administrador ao servidor** para correção via `chown/chmod`.
+     time_destino: Infraestrutura
+     kb_id: KB-102
+     pedido_em: 2026-10-10T23:51:58-03:00
+     vence_em: 2026-10-11T00:11:58-03:00
+     faltam: 20 min
+     responder: python src/main.py --aprovar TKT-0007   |   --rejeitar TKT-0007
+     rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta
+[código de saída: 0]
+
+$ python src/main.py --pendencias --rodada grafo-pausa
+
+1 ação(ões) aguardando o analista de suporte
+
+  >> AÇÃO IRREVERSÍVEL aguardando o analista de suporte:
+     ferramenta: abrir_chamado_interno
+     id_ticket: TKT-0007
+     categoria: permissao_arquivos
+     resumo: Cliente **Eta Engenharia (plano VPS Pro)** relata que o site **parou de salvar arquivos**, com falha de upload exibindo mensagem de **permissão negada**. Não há log anexado nem histórico de chamados internos anteriores. O procedimento **KB-102** (score 0.86) sugere que a causa seja **arquivos ou pastas com dono ou permissões incorretos**, comum após restauração, migração ou publicação por outro usuário. **Exige acesso de administrador ao servidor** para correção via `chown/chmod`.
+     time_destino: Infraestrutura
+     kb_id: KB-102
+     pedido_em: 2026-10-10T23:51:58-03:00
+     vence_em: 2026-10-11T00:11:58-03:00
+     faltam: 20 min
+     responder: python src/main.py --aprovar TKT-0007   |   --rejeitar TKT-0007
+     rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta
+[código de saída: 0]
+
+$ python src/main.py --aprovar TKT-0007 --rodada grafo-pausa
+  nó confirmar         confirmar {"kb_id": "KB-102"} -> ok
+  nó gravar            abrir_chamado_interno {"id_ticket": "TKT-0007", "resumo": "Cliente **Eta Engenharia (plano VPS Pro)** relata que -> ok
+
+==============================================================================
+TKT-0007  APROVADO pelo analista
+
+  ENTRADA: Meu site parou de salvar arquivos: todo upload falha com a mensagem de permissão negada. Preciso de ajuda para voltar a publicar.
+
+  TERMINO: respondeu | desfecho: abrir_chamado_interno | passos: 7 | chamadas ao modelo: 2 | lembretes: 0 | tokens: 1755 | custo: US$ 0.00026
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0007",
+      "executado_em": "2026-10-10T23:51:55-03:00",
+      "termino": "respondeu",
+      "resultado": {
+        "acao": "abrir_chamado_interno",
+        "texto": "Cliente **Eta Engenharia (plano VPS Pro)** relata que o site **parou de salvar arquivos**, com falha de upload exibindo mensagem de **permissão negada**. Não há log anexado nem histórico de chamados internos anteriores. O procedimento **KB-102** (score 0.86) sugere que a causa seja **arquivos ou pastas com dono ou permissões incorretos**, comum após restauração, migração ou publicação por outro usuário. **Exige acesso de administrador ao servidor** para correção via `chown/chmod`.",
+        "chamado_interno": "INC-0002",
+        "time_destino": "Infraestrutura",
+        "prioridade": "P2"
+      },
+      "fonte": {
+        "tipo": "procedimento_da_base",
+        "kb_id": "KB-102",
+        "score": 0.86,
+        "registros": [
+          "TKT-0007"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "triagem",
+          "buscar_base_conhecimento",
+          "decidir",
+          "redigir",
+          "confirmar",
+          "abrir_chamado_interno"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": true,
+        "motivo": "procedimento KB-102 com score 0.86, igual ou acima do limiar 0.5"
+      }
+    }
+[código de saída: 0]
+
+$ python src/main.py --aprovar TKT-0007 --rodada grafo-pausa
+
+Não há confirmação pendente para TKT-0007.
+[código de saída: 0]
+
+$ conferência no banco (dados/tickets.db), depois das duas aprovações
+chamados_internos de TKT-0007: [(2, 'TKT-0007', 'P2')]
+pendencias: [(1, 'TKT-0007', 'aprovada', '2026-10-10T23:51:58-03:00', '2026-10-11T00:11:58-03:00', '2026-10-10T23:52:02-03:00', 'analista de suporte (terminal)')]
+encaminhamentos: 0

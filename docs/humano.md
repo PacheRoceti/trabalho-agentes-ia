@@ -79,7 +79,7 @@ editáveis: vêm do procedimento, e só o gestor reclassifica (`case.md` §2.1).
 
 ## 3. A implementação, e a dependência do checkpoint (§8.3)
 
-**Hoje.** A pausa acontece dentro da ferramenta `abrir_chamado_interno` (`src/ferramentas.py`).
+**No laço da Parte 1 (`--laco`).** A pausa acontece dentro da ferramenta `abrir_chamado_interno` (`src/ferramentas.py`).
 Todas as validações vêm antes dela e a escrita vem depois, então nada com efeito colateral
 acontece antes da confirmação. Sem resposta imediata, a ferramenta grava a ação na tabela
 `pendencias`, com `pedido_em` e `vence_em`, e levanta `PausaParaHumano`; o laço guarda o `Estado`
@@ -91,7 +91,7 @@ pendência, reconstrói o `Estado`, executa a escrita aprovada (ou grava o encam
 humana, na rejeição e no prazo vencido) e devolve a observação ao modelo, que dá a frase final. É um checkpoint feito à mão, para esta única pausa: uma coluna de JSON no
 banco simulado, que `--reset` apaga.
 
-**No grafo (implementado em 10/10/2026, só para o H1).** `interrupt` dentro do nó `confirmar`,
+**No grafo, que é o caminho padrão (implementado em 10/10/2026, só para o H1).** `interrupt` dentro do nó `confirmar`,
 e retomada com `Command(resume=...)`, por `retomar_grafo()` (`src/grafo.py`). Como o nó roda de
 novo desde o começo na retomada, o `confirmar` não faz nada antes de pausar: a hora do pedido e a
 linha em `pendencias` são do nó anterior (`pedir_confirmacao`), e a escrita é do nó seguinte
@@ -104,8 +104,9 @@ espera atravessa processos, e morreria com o primeiro.
 A tabela `pendencias` continua sendo a fila do analista nos dois caminhos: é ela que
 `--pendencias` lista e que aplica o prazo. A pendência guarda de qual caminho é a pausa, e
 `--aprovar` / `--rejeitar` chamam a retomada certa. Uma pausa e uma retomada em dois processos
-foram conferidas à mão com modelo roteirizado, e os testes de `tests/test_grafo.py` cobrem
-aprovar, aprovar duas vezes, rejeitar e prazo vencido. Não há execução com o modelo real.
+foram executadas com o modelo real em `logs/grafo-pausa/` (10/10/2026, commit `083d132`): pausa às 23:51:58, aprovação por outro processo às 23:52:02, e uma segunda aprovação que não encontrou nada pendente (`grafo.md` §6.1). Os testes de
+`tests/test_grafo.py` cobrem aprovar, aprovar duas vezes, rejeitar e prazo vencido; a rejeição e
+o prazo vencido não foram executados com o modelo real.
 
 ## 4. O que acontece se ninguém responder, ou se a pessoa rejeitar (§8.4)
 
@@ -172,8 +173,20 @@ registro.
   no banco (um por chamado). Uma anotação ou um encaminhamento à fila humana gravado duas vezes
   cria duas linhas.
 
-**O que falta.** A demonstração que o enunciado pede: o log das duas aprovações, pelo caminho da
-retomada (`Command(resume=...)` enviado duas vezes), e a prova de que a segunda não criou nada.
+**A demonstração, com log.** Em `logs/grafo-pausa/` (10/10/2026, commit `083d132`, modelo real,
+sem `--auto-aprovar`), o `TKT-0007` pausou no nó `confirmar` e `--aprovar TKT-0007` foi enviado
+duas vezes, em dois processos:
+
+| Chamada | Hora | O que aconteceu | O que ficou no banco |
+|---|---|---|---|
+| 1ª `--aprovar` | 23:52:02 | `Command(resume=...)`; o grafo abriu o `INC-0002` e terminou em `respondeu` (`TKT-0007.json`) | 1 chamado interno para o `TKT-0007`; pendência `aprovada` |
+| 2ª `--aprovar` | logo depois | "Não há confirmação pendente para TKT-0007." Nenhum nó rodou | o mesmo: 1 chamado interno, 1 pendência, nenhum encaminhamento |
+
+As duas saídas de terminal e a conferência no banco estão em `saida-terminal.txt`. A segunda
+chamada não chega à chave de idempotência: para antes, porque o grafo já não está parado em
+`confirmar`. A chave `ticket:kb_id` é a segunda barreira, e é ela que o teste offline abaixo
+exercita. **Falta** a aprovação com edição, que o caso 6 do enunciado também pede.
+
 O teste `test_idempotencia_nao_duplica_chamado` repete a execução inteira. A aprovação repetida
 pelo caminho da retomada de hoje está em
 `test_aprovacao_dentro_do_prazo_abre_o_chamado_e_conclui`: a segunda chamada de `retomar()` não
@@ -186,12 +199,14 @@ recebe uma linha só, apesar de `registrar_encaminhamento` não ter chave.
 Cada resposta a um pedido de confirmação é gravada no log da execução, no campo `confirmacoes`,
 com a ação pedida, se foi aprovada, por quem e, na retomada, o status (`aprovada`, `rejeitada` ou
 `vencida`) e a hora. A tabela `pendencias` guarda o mesmo, com a hora do pedido e a do prazo. Com `--auto-aprovar`, o registro diz "auto-aprovado". Todos
-os logs do repositório foram gerados assim: não há, em `logs/`, uma confirmação dada por uma
-pessoa.
+os logs das rodadas foram gerados assim. A exceção é `logs/grafo-pausa/`, em que a confirmação
+veio pelo comando `--aprovar`, de outro processo; quem o rodou foi quem fazia a demonstração, e
+não um analista.
 
 ## 7. O que falta para este item
 
-- Demonstrar o H1 do grafo (`interrupt` e checkpointer em SQLite) com o modelo real, e com log.
+- Exercitar a rejeição e o prazo vencido do H1 no grafo com o modelo real, e com log (a aprovação
+  já está em `logs/grafo-pausa/`).
 - Implementar H2 e H3: a confirmação do pedido ao cliente, o envio, a pausa e a retomada com a
   resposta, com o prazo de 20 minutos no H2 e o de 3 dias úteis no H3.
 - Aplicar o prazo vencido sem depender de alguém rodar um comando (§4).
@@ -203,6 +218,5 @@ pessoa.
   prevista já é calculável antes da pausa (`prioridade_prevista`).
 - Implementar "aprovar editando".
 - Dar chave de idempotência a `registrar_encaminhamento`.
-- Demonstrar a aprovação repetida, com log (§5).
-- Gerar o caso 6 dos casos demonstrados: o grafo pausa, a pessoa aprova editando, e a segunda
-  aprovação não duplica nada.
+- Completar o caso 6 dos casos demonstrados: a pausa e a segunda aprovação que não duplica nada
+  estão em `logs/grafo-pausa/`; falta a pessoa aprovar **editando**.

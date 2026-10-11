@@ -6,8 +6,8 @@
 > foi conferido contra a saída de `python conferir_grafo.py`, que está colada em
 > [`arquitetura.md`](arquitetura.md) §9.
 >
-> **O que foi medido:** uma execução dos 8 casos com o modelo real, 8 de 8 no verificador
-> (`logs/grafo/`, §6). O que é do código está provado por 21 testes offline
+> **O que foi medido:** três execuções dos 8 casos com o modelo real, 8 de 8 no verificador nas
+> três, e uma pausa real no H1, retomada por outro processo (§6). O que é do código está provado por 21 testes offline
 > (`tests/test_grafo.py`), com modelo roteirizado.
 >
 > **O grafo é o caminho padrão do `main.py`** desde 10/10/2026, e grava em `logs/grafo/`. O laço
@@ -173,9 +173,9 @@ cabe num workflow com roteador, que é o degrau mais barato.
 **O que o workflow trata.** A única falha da rodada 3 do laço foi o `TKT-0002`: o modelo viu o
 procedimento com score 0,67 e abriu um chamado indevido. No grafo a divergência é um campo da
 triagem, e o nó `decidir` a confere **antes** de olhar o score. O teste offline
-`test_divergencia_e_decidida_antes_do_score` prova a regra do código. Na execução medida (§6) o
-modelo marcou o campo, o `KB-106` veio com score 0,75 e o chamado foi à fila humana. Uma
-execução não prova que ele marca o campo sempre.
+`test_divergencia_e_decidida_antes_do_score` prova a regra do código. Nas três rodadas medidas
+(§6) o modelo marcou o campo, o `KB-106` veio com score 0,75, 0,67 e 0,75, e o chamado foi à fila
+humana. Três rodadas nos mesmos casos não provam que ele marca o campo em qualquer chamado.
 
 **O que se perdeu.** No laço, quando um portão recusava uma escrita, o modelo recebia o erro e
 escolhia outra ação. No grafo esse caminho de volta não existe: `decidir` escolhe uma vez. O
@@ -186,7 +186,8 @@ escolhia outra ação. No grafo esse caminho de volta não existe: `decidir` esc
 ### 3.1 Os campos (§7.1)
 
 O estado é o `TypedDict` `EstadoGrafo`, em `src/grafo.py`. A coluna do reducer confere com a
-saída de `conferir_grafo.py`.
+saída de `conferir_grafo.py`. A mesma tabela, com a coluna "de onde veio" que o enunciado pede,
+está em `arquitetura.md` §4; ao mudar um campo, as duas mudam juntas.
 
 | Campo | Tipo | Quem escreve | Quem lê | Reducer |
 |---|---|---|---|---|
@@ -270,7 +271,7 @@ processos (checkpointer em SQLite) e a retomada (`Command(resume=...)`). No laç
 ## 5. A decisão que virou parâmetro (§6.6)
 
 **O limite de voltas.** No laço ele é uma decisão explícita nossa: `max_passos = 8`, em
-`Orcamento` (`src/agente.py`), justificada no `arquitetura.md` §5. No grafo, quem limita o número
+`Orcamento` (`src/agente.py`), justificada no `arquitetura-v2.md` §7.5. No grafo, quem limita o número
 de superpassos é o `recursion_limit` do LangGraph, que tem valor padrão na biblioteca. Se o
 padrão mudar numa troca de versão, uma execução presa passa a gastar mais, ou menos, sem que
 nenhuma linha do projeto tenha sido alterada.
@@ -285,9 +286,22 @@ técnico do grafo tem mais nós do que o laço tinha passos, então o número 8 
 
 ## 6. O que foi medido
 
-Uma execução dos 8 casos: `python src/main.py --todos --auto-aprovar --grafo`, em
-10/10/2026, 21h11, `ministral-8b-latest`, `temperature=0`, `--auto-aprovar`, commit `2ffb2b5 + alterações locais`. Prompts `triagem-v1.md` e `redigir-v1.md`. Logs e saída de terminal em
-`logs/grafo/`. Resultado: **8 de 8** no verificador.
+Três execuções dos 8 casos, todas em 10/10/2026, com `ministral-8b-latest`, `temperature=0`,
+`--auto-aprovar` e os prompts `triagem-v1.md` e `redigir-v1.md`:
+
+| Rodada | Comando | Hora | Commit | Verificador | Chamadas ao modelo | Tokens | Custo |
+|---|---|---|---|---|---|---|---|
+| `logs/grafo/` | `python src/main.py --todos --auto-aprovar --grafo` | 21h11 | `2ffb2b5 + alterações locais` | **8 de 8** | 15 | 12.623 | US$ 0,0019 |
+| `logs/grafo-rodada-2/` | `python src/main.py --todos --auto-aprovar --rodada grafo-rodada-2` | 23h51 | `083d132` | **8 de 8** | 15 | 12.687 | US$ 0,0019 |
+| `logs/grafo-rodada-3/` | `python src/main.py --todos --auto-aprovar --rodada grafo-rodada-3` | 23h51 | `083d132` | **8 de 8** | 15 | 12.664 | US$ 0,0019 |
+
+Entre a primeira rodada e as outras duas o grafo virou o caminho padrão do `main.py` (por isso o
+comando perdeu o `--grafo`); os nós, as arestas e os prompts são os mesmos.
+
+**As três rodadas deram os mesmos 8 desfechos**, com as mesmas classes na triagem e a mesma
+prioridade nos dois chamados abertos. O que variou foram os termos de busca e, com eles, o
+score: o KB-101 do `TKT-0001` teve 0,67, 0,67 e 0,75, e o KB-106 do `TKT-0002` teve 0,75, 0,67 e
+0,75. Nenhuma variação cruzou o limiar. A tabela abaixo detalha a primeira rodada.
 
 | Chamado | Classe dada pela triagem | Busca: melhor artigo e score | Desfecho | Chamadas ao modelo | Tokens |
 |---|---|---|---|---|---|
@@ -327,15 +341,37 @@ O que os logs mostram:
 
 Limites desta medição:
 
-- **Uma execução por caso.** Nos testes do laço, duas execuções iguais já diferiram entre si
-  (`prompts.md` §3.4). Um 8 de 8 em uma execução não mede a frequência de acerto.
+- **Três execuções por caso, nos mesmos 8 casos.** Mostram que o resultado se repete aqui; no
+  laço, duas execuções iguais já diferiam entre si (`prompts.md` §3.4). Não medem o acerto em
+  chamados que o grupo não viu.
 - **Os dois prompts foram escritos depois de ver as falhas do laço nestes mesmos 8 casos.** O
   resultado não prova que o sistema generaliza.
-- **Aprovação automática.** Com `--auto-aprovar` o nó `confirmar` recebe a resposta na hora: a
-  pausa com `interrupt` e a retomada por outro processo **não** foram exercitadas com o modelo
-  real, só nos testes offline.
+- **Aprovação automática nas três rodadas.** Com `--auto-aprovar` o nó `confirmar` recebe a
+  resposta na hora, sem `interrupt`. A pausa foi medida à parte, logo abaixo.
 - **A redação não tem verificador.** O que se confere é o desfecho gravado, não o texto do resumo
   nem o da mensagem.
+
+### 6.1 A pausa e a retomada, com o modelo real
+
+Uma execução do `TKT-0007` **sem** `--auto-aprovar`, em `logs/grafo-pausa/` (10/10/2026, commit `083d132`): pausa às 23:51:58, aprovação por outro processo às 23:52:02, e uma segunda aprovação que não encontrou nada pendente. São quatro comandos, cada um em
+um processo:
+
+| # | Comando | Resultado |
+|---|---|---|
+| 1 | `python src/main.py TKT-0007 --rodada grafo-pausa` | parou no `interrupt` do nó `confirmar`: término `aguardando_humano`, 5 passos, 2 chamadas ao modelo, 1.755 tokens, nada gravado |
+| 2 | `python src/main.py --pendencias --rodada grafo-pausa` | 1 ação aguardando, com prazo até 00:11:58 |
+| 3 | `python src/main.py --aprovar TKT-0007 --rodada grafo-pausa` | `Command(resume=...)`: o grafo continuou de `confirmar`, abriu o `INC-0002` (P2) e terminou em `respondeu`, com 7 passos e as **mesmas** 2 chamadas e 1.755 tokens |
+| 4 | o mesmo comando, de novo | "Não há confirmação pendente para TKT-0007." |
+
+Arquivos da pasta: `saida-terminal.txt` (a saída dos quatro comandos e a conferência no banco),
+`TKT-0007-pausado.json` (cópia do log tirada depois do comando 1, porque o comando 3 grava por
+cima) e `TKT-0007.json` (o log final). Conferência no banco depois do comando 4: um chamado
+interno para o `TKT-0007`, uma pendência com status `aprovada`, nenhum encaminhamento.
+
+O que isso mostra: o estado atravessou dois processos pelo checkpointer em SQLite; a retomada
+não refez triagem, busca nem redação (os tokens não mudaram); e a segunda aprovação não criou
+nada. Limites: quem aprovou foi quem rodou o comando, 4 segundos depois, e não um analista; a
+rejeição e o prazo vencido não foram exercitados com o modelo real.
 
 ## 7. Limites do que foi implementado
 
@@ -350,9 +386,8 @@ Limites desta medição:
 
 ## 8. O que falta para este item
 
-- Repetir a execução dos 8 casos no grafo: uma só não mede frequência (§6).
-- Demonstrar a pausa e a retomada (`interrupt` e `Command(resume=...)`) com o modelo real, sem
-  `--auto-aprovar`, e com log.
+- Medir o grafo em chamados fora dos 8 casos: as três rodadas são dos mesmos casos (§6).
+- Exercitar a rejeição e o prazo vencido com o modelo real, e com log (§6.1).
 - Contar as linhas das quatro frentes do §4.
 - Fazer a demonstração do campo sem reducer (§3.2).
 - Implementar H2 e H3 (`humano.md` §7), e com eles o nó `aguardar_cliente`.

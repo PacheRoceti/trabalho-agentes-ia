@@ -1,0 +1,174 @@
+{
+  "execucao_id": "TKT-0002-87095",
+  "id_ticket": "TKT-0002",
+  "executado_em": "2026-10-10T23:51:35-03:00",
+  "commit": "083d132",
+  "entrada": "Meu Webmail está fora do ar desde cedo, ninguém da empresa consegue ler e-mail.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + redigir-v1.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1724,
+  "tokens_saida": 232,
+  "custo_usd": 0.000293,
+  "scores_kb": {
+    "KB-106": 0.75
+  },
+  "saida": {
+    "id_ticket": "TKT-0002",
+    "executado_em": "2026-10-10T23:51:35-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O cliente relata que o **webmail** está fora do ar desde cedo, impedindo o acesso ao serviço por todos os usuários da empresa. No entanto, o log anexado mostra que o **nameserver ns1.zeta.com.br** não responde (timeout) e a resolução DNS do domínio **mail.zeta.com.br** apresenta falha (**SERVFAIL**), mas o acesso ao webmail pelo **IP direto do servidor (203.0.113.40)** funciona normalmente. Há divergência entre o relato do cliente e o comportamento observado nos logs.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "registro_do_chamado",
+      "kb_id": "KB-106",
+      "score": 0.75,
+      "registros": [
+        "TKT-0002"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "havia procedimento com score igual ou acima do limiar (KB-106, 0.75), mas o agente não agiu sozinho; o motivo está no texto registrado no resultado"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0002"
+      },
+      "resultado": {
+        "id": "TKT-0002",
+        "aberto_em": "2026-09-21 09:15",
+        "status": "novo",
+        "anexo_log": "2026-09-21 09:08 nslookup mail.zeta.com.br -> falha de resolução DNS: SERVFAIL. 2026-09-21 09:09 nslookup -type=ns zeta.com.br -> nameserver ns1.zeta.com.br não responde (timeout). 2026-09-21 09:10 acesso ao webmail direto pelo IP do servidor (https://203.0.113.40/webmail) -> a tela de login abre normalmente.",
+        "cliente": "Zeta Imóveis",
+        "plano": "Hospedagem Business",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": true,
+        "termos_busca": [
+          "webmail fora ar",
+          "resolucao dns",
+          "nameserver nao responde"
+        ],
+        "justificativa": "o cliente relata problema no webmail, mas o log aponta falha de resolução DNS e nameserver não respondendo, indicando causa externa ao serviço de webmail."
+      },
+      "erro": null,
+      "ms": 1138
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "webmail fora ar",
+          "resolucao dns",
+          "nameserver nao responde"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-106",
+            "titulo": "Falha de resolução DNS do domínio",
+            "score": 0.75,
+            "causa": "Nameserver do domínio fora do ar ou zona DNS com registro inválido.",
+            "solucao": "Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "divergencia_relato_log"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "O cliente relata que o **webmail** está fora do ar desde cedo, impedindo o acesso ao serviço por todos os usuários da empresa. No entanto, o log anexado mostra que o **nameserver ns1.zeta.com.br** não responde (timeout) e a resolução DNS do domínio **mail.zeta.com.br** apresenta falha (**SERVFAIL**), mas o acesso ao webmail pelo **IP direto do servidor (203.0.113.40)** funciona normalmente. Há divergência entre o relato do cliente e o comportamento observado nos logs."
+      },
+      "erro": null,
+      "ms": 1401
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0002",
+        "destino": "fila_humana",
+        "mensagem": "O cliente relata que o **webmail** está fora do ar desde cedo, impedindo o acesso ao serviço por todos os usuários da empresa. No entanto, o log anexado mostra que o **nameserver ns1.zeta.com.br** não responde (timeout) e a resolução DNS do domínio **mail.zeta.com.br** apresenta falha (**SERVFAIL**), mas o acesso ao webmail pelo **IP direto do servidor (203.0.113.40)** funciona normalmente. Há divergência entre o relato do cliente e o comportamento observado nos logs."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 21
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": true,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "divergencia_relato_log"
+  },
+  "tentativas_redacao": 1,
+  "segundos_gastos": 2.562
+}
