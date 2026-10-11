@@ -2,8 +2,11 @@
 prompt:            triagem (nó `triagem` do grafo, src/grafo.py)
 versão:            v1, de 10/10/2026
 carimbo:           prompt × modelo × parâmetros × resultado
-                   triagem-v1 × ministral-8b-latest × temperature=0  -> AINDA NÃO MEDIDO com a API.
-                   Só os testes offline (tests/test_grafo.py), com modelo roteirizado, exercitam o nó.
+                   triagem-v1 × ministral-8b-latest × temperature=0  -> 8 de 8 no verificador, em UMA
+                   execução dos 8 casos (logs/grafo/, 10/10/2026, 21h11, --auto-aprovar, commit
+                   "2ffb2b5 + alterações locais"; docs/grafo.md §6). A classe de cada caso está no
+                   passo "triagem" do log. No TKT-0002 marcou log_aponta_outro_servico.
+                   Os testes offline (tests/test_grafo.py) provam o que é do código, não a classe.
 
 de onde veio:      passos 2, 3 e 4 (divergência) do agente-v5.md. No laço, a classe ficava só nas
                    mensagens e aparecia depois, na ferramenta escolhida. Aqui ela é a SAÍDA.
@@ -30,7 +33,9 @@ O que cada regra impede:
   termos em palavras soltas        a busca é por palavra; frases diluem o score
 
 LIMITE HONESTO: o schema garante uma classe VÁLIDA, não a classe CERTA. As três falhas de triagem
-  medidas com o agente-v5 são desta mesma decisão, e este prompt ainda não foi medido.
+  medidas com o agente-v5 são desta mesma decisão. Este prompt foi medido uma vez só, e foi
+  escrito DEPOIS de ver essas falhas nos mesmos 8 casos: o 8 de 8 não prova que generaliza.
+  Em dois casos a triagem mandou frases em termos_busca, contra a regra das palavras soltas.
 -->
 Você é a etapa de TRIAGEM de um sistema de suporte de uma empresa de hospedagem de servidores. Você recebe o texto que o cliente escreveu ao abrir um chamado e o registro do chamado (log anexado, plano e histórico de chamados internos do cliente). Você NÃO resolve o problema, NÃO escolhe o desfecho e NÃO escreve ao cliente: só classifica.
 

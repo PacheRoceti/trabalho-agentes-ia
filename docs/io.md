@@ -101,6 +101,11 @@ completo (com os campos nulos), a data e a hora da execução, o commit e o log 
 mesmo prompt, de uma execução posterior (21h22, commit `2ffb2b5 + alterações locais`), e não são
 exemplos deste documento. O log tem ainda a trajetória (`passos`), que não faz parte do contrato de saída.
 
+**Os exemplos são do laço da Parte 1.** Foram executados quando ele era o caminho padrão do
+`main.py`. Hoje o padrão é o grafo, e o comando de cada exemplo equivale a acrescentar `--laco`.
+O contrato de saída é o mesmo nos dois caminhos (`src/saida.py`); os mesmos cinco chamados pelo
+grafo estão em `logs/grafo/`, com o campo `saida` no mesmo formato, e não foram copiados para cá.
+
 Limite: o "agora" do banco simulado é fixo (`2026-09-21 12:00`, em `src/db.py`) e não é a data da
 execução, que está em `executado_em`.
 

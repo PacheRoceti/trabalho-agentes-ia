@@ -1,5 +1,11 @@
 # Memória do agente (Exercício 8 / §5 da Parte 2)
 
+> **Atualização de 10/10/2026.** Da memória de longo prazo, nada foi implementado: o texto abaixo
+> continua sendo decisão de projeto. Do curto prazo, o **checkpoint** já existe no grafo
+> (`src/grafo.py`): `SqliteSaver` gravando em `dados/checkpoints.db`, com `thread_id` igual ao id
+> do chamado, como o §1.5 previa. Ele guarda a execução pausada no H1; uma execução nova do mesmo
+> chamado apaga o checkpoint anterior (`grafo.md` §7).
+
 > Este documento não descreve código existente: o agente da Parte 1 **não tem
 > memória** — cada execução parte do zero, olha só o chamado que recebeu e
 > esquece tudo ao terminar. O que segue são as decisões de projeto que

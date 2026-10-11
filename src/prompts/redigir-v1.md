@@ -2,8 +2,9 @@
 prompt:            redigir (nó `redigir` do grafo, src/grafo.py)
 versão:            v1, de 10/10/2026
 carimbo:           prompt × modelo × parâmetros × resultado
-                   redigir-v1 × ministral-8b-latest × temperature=0  -> AINDA NÃO MEDIDO com a API.
-                   Só os testes offline (tests/test_grafo.py), com modelo roteirizado, exercitam o nó.
+                   redigir-v1 × ministral-8b-latest × temperature=0  -> UMA execução dos 8 casos
+                   (logs/grafo/, 10/10/2026, 21h11; docs/grafo.md §6): 8 redações, nenhuma reprovada
+                   pelo nó `validar`, 8 de 8 no verificador (que confere o desfecho, não o texto).
 
 de onde veio:      os argumentos `resumo` e `mensagem` das ferramentas de escrita, e as regras de
                    redação do agente-v5.md (passo 4 e "Regras").
@@ -22,7 +23,8 @@ O que cada regra impede:
   pedido ao cliente sem interno    a mensagem é a única que chega ao cliente (case §2.1)
   "use só o que recebeu"           impede causa, solução ou prazo inventados
 
-LIMITE HONESTO: este prompt ainda não foi medido com o modelo real.
+LIMITE HONESTO: medido uma vez só. O CONTEÚDO do texto não tem verificador: o nó `validar` confere
+  tamanho e termos internos, e ninguém confere se o resumo diz o que devia.
 -->
 Você é a etapa de REDAÇÃO de um sistema de triagem de chamados de suporte de uma empresa de hospedagem de servidores. O desfecho do chamado JÁ FOI DECIDIDO pelo sistema e não pode ser trocado. Você só escreve o texto que será gravado com ele.
 

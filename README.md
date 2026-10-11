@@ -51,14 +51,20 @@ python src/main.py TKT-0003                 # sem o texto: o programa pede que v
 python src/main.py TKT-0003 --auto-aprovar  # não espera a confirmação antes de abrir chamado interno (só para demonstração)
 python src/main.py --pendencias             # as ações que aguardam o analista, e quanto tempo falta
 python src/main.py --aprovar TKT-0003       # o analista aprova: o chamado interno é aberto e a execução conclui
-python src/main.py --rejeitar TKT-0003      # o analista rejeita: nada é gravado
+python src/main.py --rejeitar TKT-0003      # o analista rejeita: o chamado interno não é aberto, e o chamado vai para a fila humana
 python src/main.py --todos --auto-aprovar   # os 8 casos, cada um a partir do banco zerado, com verificador
 python src/main.py --reset                  # recria o banco simulado
+python src/main.py TKT-0001 --laco          # o mesmo chamado pelo laço da Parte 1, e não pelo grafo; logs em logs/
+python conferir_grafo.py                    # imprime os nós, as arestas e os campos do grafo compilado (sem chave)
 ```
+
+**Dois caminhos.** O padrão é o grafo em LangGraph (`src/grafo.py`): o modelo classifica e redige, e o código decide o desfecho. Os logs dele vão para `logs/grafo/`. Com `--laco`, o chamado passa pelo laço da Parte 1 (`src/agente.py`), que grava em `logs/`; `--prompt ARQUIVO` escolhe um prompt do laço e já implica `--laco`. A entrada, a saída validada, o verificador e os comandos `--pendencias`, `--aprovar` e `--rejeitar` são os mesmos nos dois.
+
+**O que foi medido no grafo:** 8 de 8 casos no verificador, em uma execução (10/10/2026, 21h11, `logs/grafo/`), com 15 chamadas ao modelo e 12.623 tokens nos 8 casos. O laço, na rodada 3 do `agente-v5.md`, deu 7 de 8, com 31 chamadas e 69.889 tokens ([`docs/grafo.md`](docs/grafo.md) §6). **O exemplo abaixo e os de `docs/io.md` são do laço**, de quando ele era o caminho padrão: para repeti-los hoje, acrescente `--laco` ao comando. Os mesmos chamados pelo grafo estão em `logs/grafo/`.
 
 Os chamados disponíveis são `TKT-0001` a `TKT-0007` e o inexistente `TKT-0999` (ver [`dados/README.md`](dados/README.md)).
 
-**O que o sistema faz.** Lê o texto do chamado e o histórico do cliente no sistema de tickets, decide se o assunto é técnico, comercial ou de informação insuficiente, consulta a base de conhecimento e dá **um desfecho** ao chamado. Quando o desfecho é abrir um chamado interno (ação irreversível), ele para, grava a ação pendente e espera a confirmação do analista de suporte, que tem **20 minutos** para aprovar ou rejeitar (`--aprovar` / `--rejeitar`). Sem resposta no prazo, o chamado interno não é aberto: o chamado vai para a fila humana com a ação que o agente propôs.
+**O que o sistema faz.** Lê o texto do chamado e o histórico do cliente no sistema de tickets, decide se o assunto é técnico, comercial ou de informação insuficiente, consulta a base de conhecimento e dá **um desfecho** ao chamado. Quando o desfecho é abrir um chamado interno (ação irreversível), ele para, grava a ação pendente e espera a confirmação do analista de suporte, que tem **20 minutos** para aprovar ou rejeitar (`--aprovar` / `--rejeitar`). Se o analista rejeita, ou não responde no prazo, o chamado interno não é aberto: o chamado vai para a fila humana com a ação que o agente propôs. Quando o prazo vence e o chamado interno seria P1, o gestor de suporte também é avisado (tabela `avisos_gestor`).
 
 **O que ele devolve.** Uma linha por passo (ferramenta, argumentos, resultado ou erro), o motivo do término, o desfecho e o veredito do verificador. O que vale é o que foi **gravado no banco**:
 
@@ -68,14 +74,14 @@ Os chamados disponíveis são `TKT-0001` a `TKT-0007` e o inexistente `TKT-0999`
 | `anotacao_interna` | correção sugerida para o analista validar e executar | tabela `encaminhamentos` |
 | `fila_comercial` | assunto comercial, fora do escopo do suporte | tabela `encaminhamentos` |
 | `devolver_cliente` | faltam informações; a mensagem é o pedido ao cliente (a única mensagem que o agente envia a ele, no máximo uma por chamado) | tabela `encaminhamentos` |
-| `fila_humana` | o sistema não teve confiança para agir sozinho (ou o id não existe), ou o analista não confirmou a abertura do chamado em 20 minutos | tabela `encaminhamentos` |
+| `fila_humana` | o sistema não teve confiança para agir sozinho (ou o id não existe), ou o analista rejeitou a abertura do chamado, ou não a confirmou em 20 minutos | tabela `encaminhamentos` |
 
 Como interpretar o término (`TERMINO:` na saída):
 
 | Término | Significa |
 |---|---|
 | `respondeu` | o agente registrou um desfecho e concluiu |
-| `aguardando_humano` | a abertura do chamado espera o analista, ou ele a rejeitou: nada foi gravado, e o `motivo` diz qual dos dois. Na espera, a ação fica na tabela `pendencias`, com o prazo de 20 minutos; `--aprovar` conclui a execução (término `respondeu`). Vencido o prazo, o chamado vai para a fila humana com as considerações do agente (término `respondeu`, desfecho `fila_humana`). O prazo é aplicado no começo do próximo comando do `main.py`: não há processo em segundo plano |
+| `aguardando_humano` | a abertura do chamado espera o analista: nada foi gravado ainda. A ação fica na tabela `pendencias`, com o prazo de 20 minutos; `--aprovar` conclui a execução (término `respondeu`). Com `--rejeitar`, ou vencido o prazo, o chamado vai para a fila humana com as considerações do agente (término `respondeu`, desfecho `fila_humana`); no prazo vencido de um chamado que seria P1, o gestor também é avisado. O prazo é aplicado no começo do próximo comando do `main.py`: não há processo em segundo plano |
 | `orcamento_esgotado` | passou de 8 passos, 30 mil tokens, US$ 0,05 ou 90 s; o motivo diz qual teto |
 | `erro_fatal` | não há como continuar (API fora, chave inválida, modelo encerrou sem desfecho) |
 
@@ -83,6 +89,31 @@ Como interpretar o término (`TERMINO:` na saída):
 execução de `2026-10-10T15:45:26-03:00`, com `ministral-8b-latest` e o prompt `agente-v5.md`, commit
 `861a948`. O log completo está em `logs/TKT-0001.json`; os outros exemplos (recusa, fora do
 escopo, entrada incompleta e entrada ambígua) estão no `docs/io.md` §3.
+
+**Os oito logs de `logs/`.** São todos do laço (hoje, `--laco`), com `ministral-8b-latest`, o prompt `agente-v5.md`
+e `--auto-aprovar`, de 10/10/2026, e todos têm o campo `saida` validado. Vieram de duas execuções
+no mesmo dia, e não de uma rodada só:
+
+| Log | Executado em | Commit | Desfecho | Verificador |
+|---|---|---|---|---|
+| `TKT-0001.json` | 15:45:26 | `861a948` | `anotacao_interna` (KB-101, score 0,62) | OK |
+| `TKT-0002.json` | 15:47:35 | `861a948` | `fila_humana` (divergência; KB-106 com score 0,67) | OK |
+| `TKT-0003.json` | 21:22:28 | `2ffb2b5 + alterações locais` | `abrir_chamado_interno` (KB-102, score 0,86, P1) | OK |
+| `TKT-0004.json` | 15:48:10 | `861a948` | `fila_comercial` | OK |
+| `TKT-0005.json` | 15:48:52 | `861a948` | `devolver_cliente` | OK |
+| `TKT-0006.json` | 15:48:21 | `861a948` | `fila_humana` (KB-104, score 0,40, com ressalva) | OK |
+| `TKT-0007.json` | 21:22:39 | `2ffb2b5 + alterações locais` | `abrir_chamado_interno` (KB-102, score 0,89, P2) | OK |
+| `TKT-0999.json` | 21:22:46 | `2ffb2b5 + alterações locais` | `fila_humana` (id inexistente; 1 lembrete) | OK |
+
+Os três das 21h22 foram refeitos um a um (`python src/main.py TKT-0003 --reset --auto-aprovar`, e o
+mesmo para os outros dois): os anteriores eram do `agente-v3.md`, sem data, sem commit e sem o
+campo `saida`, e os do `TKT-0003` e do `TKT-0007` ainda tinham o texto antigo do chamado.
+
+**O que não foi refeito:** `logs/saida-demonstracao.txt`. Ele continua sendo a saída de terminal da
+rodada 4, com o `agente-v3.md` e o seed antigo (6 de 8, `docs/modelos.md` §3.3-C), e **não
+corresponde aos oito logs acima**. Só um `--todos` o regrava, e ele regrava também os cinco logs
+das 15h, citados com data e tokens no `docs/io.md`. As rodadas completas do `agente-v5.md`, com a
+saída de terminal de cada uma, estão em `logs/rodada-1-prompt-v5/` a `logs/rodada-3-prompt-v5/`.
 
 Entrada (comando: `python src/main.py TKT-0001 --auto-aprovar`; o texto do chamado é o campo `entrada` do log):
 
@@ -144,11 +175,15 @@ Como ler: o agente consultou o registro do chamado (passo 0), buscou na base (pa
 
 ```
 src/         agente.py (laço, estado, orçamento) · ferramentas.py · db.py (SQLite) · verificar.py
-             main.py · comparar_modelos.py (item 3.3)
+             saida.py (contrato de saída) · grafo.py (o grafo em LangGraph, Parte 2)
+             main.py · comparar_modelos.py (item 3.3) · ver_log.py
+conferir_grafo.py   imprime o grafo compilado, para conferir com o desenho (docs/arquitetura.md §9)
 src/prompts/ agente-v5.md e lembrete-v1.md (os prompts em uso, carregados em tempo de execução por agente.py)
-             agente-v1.md a agente-v4.md (histórico) · agente-v4-sem-frase.md (variante de teste, docs/prompts.md §3)
+             agente-v1.md a agente-v4.md (histórico) · agente-v5-sem-frase.md (variante do teste da regra da frase,
+             docs/prompts.md §3) · agente-v4-com-frase.md e agente-v4-sem-frase.md (testes anteriores, §3.6)
+             triagem-v1.md e redigir-v1.md (os dois prompts do grafo)
 dados/       seed.sql · gabarito.json · README.md (casos difíceis nomeados)
-tests/       testes offline (sem chave)
+tests/       testes offline (sem chave): test_offline.py (o laço) e test_grafo.py (o grafo)
 docs/        case.md · modelos.md · modelos-tabela-3.3.md · arquitetura-v2.md · base-de-conhecimento-v2.md · memoria.md · fontes.md
 logs/        trajetória de cada execução demonstrada (JSON)
 ```

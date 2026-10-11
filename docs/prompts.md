@@ -1,18 +1,22 @@
 # Plano de prompt engineering (Parte 2, item 2)
 
-> **Estado deste documento.** Descreve os prompts que existem hoje. O sistema tem **um** ponto de
-> chamada ao modelo (o laço em `src/agente.py`) e dois textos de prompt em uso. As etapas que a
-> Parte 2 acrescenta (resposta do RAG, extração para a memória) ainda não existem e não têm linha
-> aqui. O teste da regra da frase está no §3.
+> **Estado deste documento.** Descreve os prompts que existem hoje. O grafo, que é o caminho
+> padrão, chama o modelo em **dois** nós (`triagem` e `redigir`), cada um com o seu prompt. O
+> laço da Parte 1 (`--laco`) tem um ponto de chamada e dois textos (o prompt de sistema e o
+> lembrete). As etapas de resposta do RAG e de extração para a memória ainda não existem e não
+> têm linha aqui. O teste da regra da frase está no §3 e foi feito no prompt do laço.
 
 ## 1. As etapas em que o modelo é chamado
 
 | Etapa | Arquivo | Técnica | Por que ela | Contrato de saída | Como é testada |
 |---|---|---|---|---|---|
-| **Triagem do chamado** (prompt de sistema do laço) | `src/prompts/agente-v5.md` | zero-shot com procedimento numerado e tool calling | Sem few-shot, para não usar como exemplo os mesmos casos que servem de teste (`dados/gabarito.json`). Procedimento numerado porque a triagem tem ordem fixa: consultar, classificar, buscar, escolher o desfecho, registrar | Ver §1.1 | 8 casos rotulados em `dados/gabarito.json`, conferidos por `src/verificar.py` contra o que foi gravado no banco. Critério: ≥ 6 de 8 e nenhum chamado interno aberto indevidamente. Resultado medido da v4: 6 de 8 e 5 de 8 em duas execuções iguais, com um chamado indevido em uma delas (§3.2); a v4 revisada deu 6 de 8 sem chamado indevido (`logs/rodada-2-prompt-v4`). **A v5, em uso, ainda não foi medida** |
+| **Triagem do chamado** (prompt de sistema do laço) | `src/prompts/agente-v5.md` | zero-shot com procedimento numerado e tool calling | Sem few-shot, para não usar como exemplo os mesmos casos que servem de teste (`dados/gabarito.json`). Procedimento numerado porque a triagem tem ordem fixa: consultar, classificar, buscar, escolher o desfecho, registrar | Ver §1.1 | 8 casos rotulados em `dados/gabarito.json`, conferidos por `src/verificar.py` contra o que foi gravado no banco. Critério: ≥ 6 de 8 e nenhum chamado interno aberto indevidamente. Resultado medido da v4: 6 de 8 e 5 de 8 em duas execuções iguais, com um chamado indevido em uma delas (§3.2); a v4 revisada deu 6 de 8 sem chamado indevido (`logs/rodada-2-prompt-v4`). A v5 deu 7, 6 e 7 de 8 em três rodadas, com um chamado indevido na terceira (`TKT-0002`), e 7 e 7 de 8 no teste do §3 |
 | **Lembrete de desfecho** (mensagem de usuário, enviada pelo laço só quando o modelo encerra sem registrar desfecho) | `src/prompts/lembrete-v1.md` | instrução direta (zero-shot), sem exemplos | O modelo narrava a ação ("registrei", "encaminhei") sem chamar a ferramenta. A regra no prompt de sistema não bastou nas rodadas 1 e 2 | Uma chamada de ferramenta de escrita (`abrir_chamado_interno` ou `registrar_encaminhamento`). Texto sem chamada conta como falha; depois de 2 lembretes sem efeito, a execução termina como `erro_fatal` | O campo `lembretes` do log conta quantos foram enviados. Nas duas execuções da v4, foi enviado 1 lembrete no `TKT-0002` e 1 no `TKT-0999`, e os dois casos terminaram com o desfecho certo |
+| **Triagem, no grafo** (nó `triagem`) | `src/prompts/triagem-v1.md` | zero-shot, classificação com saída estruturada (JSON), sem ferramentas | A classe é a decisão que só o modelo toma (texto livre). Saída estruturada porque ela vira a rota do grafo: no laço a classe ficava só nas mensagens. Sem few-shot pela mesma razão da linha acima | JSON validado pela classe `Triagem` (`src/grafo.py`): `classe` ∈ {`tecnico`, `comercial`, `insuficiente`, `fora_da_alcada`}; `log_aponta_outro_servico` booleano; `termos_busca` com 2 a 5 itens só na classe técnica; `justificativa` em uma frase. Proibido: escolher o desfecho. Saída fora do contrato volta ao modelo uma vez; na segunda, `erro_fatal` | Os mesmos 8 casos e o mesmo verificador. Uma execução medida: 8 de 8 (`logs/grafo/`, 10/10/2026; `grafo.md` §6). A classe de cada caso está no passo `triagem` do log. 21 testes offline provam o que é do código, não a classificação |
+| **Redação, no grafo** (nó `redigir`) | `src/prompts/redigir-v1.md` | zero-shot, geração de texto com saída estruturada (JSON), sem ferramentas | O desfecho chega decidido pelo código; ao modelo resta escrever o resumo ou a mensagem. Separar a redação impede que ele troque a ação ao redigir | JSON validado pela classe `Redacao`: um campo, `texto`. Proibido: informação interna no pedido ao cliente (conferido pelo nó `validar`), causa, solução ou prazo que não vieram no que ele recebeu. Reprovado, volta uma vez com o erro; na segunda, `erro_fatal` | O nó `validar` confere tamanho mínimo e termos internos a cada execução. Na execução medida, nenhuma redação foi reprovada (8 casos, 8 redações). **O conteúdo do texto não tem verificador** |
 
-As duas linhas pertencem ao mesmo laço: não há uma segunda chamada ao modelo com prompt próprio.
+As duas primeiras linhas pertencem ao laço (`--laco`), e as duas últimas ao grafo, que é o caminho
+padrão.
 
 **A entrada da triagem.** A mensagem de usuário é montada pelo código (`_entrada`, em
 `src/agente.py`): o id do chamado, o id do cliente e, abaixo, o texto que o cliente escreveu. Um id
@@ -299,9 +303,11 @@ deste teste. Ficam aqui como histórico; as conclusões acima são as do teste n
   em rodada própria.
 - Decidir o que fazer com a recusa da fila humana sem busca, que leva o `TKT-0002` ao chamado
   indevido (§3.5).
-- Acrescentar uma linha no §1 para cada etapa nova da Parte 2 que chamar o modelo. As duas
-  etapas já existem no grafo (`src/grafo.py`): `triagem`, com o prompt `triagem-v1.md`, e
-  `redigir`, com o `redigir-v1.md`. Os dois arquivos têm o cabeçalho de costume e estão marcados
-  "AINDA NÃO MEDIDO": nenhuma execução do grafo foi feita com o modelo real.
+- Repetir a medição de `triagem-v1.md` e `redigir-v1.md`: há uma execução dos 8 casos, e a
+  redação não tem critério de acerto além do nó `validar`.
+- Fazer a regra da frase também em um prompt do grafo, que é o caminho padrão (o §3 testou o do
+  laço).
+- Acrescentar uma linha no §1 para as etapas que ainda não existem (resposta do RAG, extração
+  para a memória), quando existirem.
 - Atualizar os documentos que ainda citam o `agente-v3.md` como o prompt em uso (`docs/case.md`
   §2.11, `docs/arquitetura-v2.md` §4, `docs/memoria.md` §1.1 e §1.2).

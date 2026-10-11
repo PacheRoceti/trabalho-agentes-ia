@@ -1,5 +1,8 @@
 """Ponto de entrada.
 
+  O caminho padrão é o GRAFO em LangGraph (src/grafo.py); os logs dele vão para logs/grafo/.
+  O laço da Parte 1 (src/agente.py) roda com --laco, e grava em logs/.
+
     python src/main.py TKT-0001 "O certificado SSL do meu site venceu ontem..."
                                                     a ENTRADA é o texto do chamado, acompanhado do id
     python src/main.py TKT-0001                     sem o texto, o programa pede que você o digite;
@@ -19,12 +22,13 @@
     python src/main.py --todos --auto-aprovar       os 8 casos, do banco zerado, com verificador
                                                     (grava também logs/saida-demonstracao.txt)
     python src/main.py --reset                      recria o banco de dados simulado
-    python src/main.py TKT-0001 --grafo             roda pelo grafo em LangGraph (src/grafo.py), e não
-                                                    pelo laço; os logs vão para logs/grafo/, e
+    python src/main.py TKT-0001 --laco              roda pelo laço da Parte 1, e não pelo grafo;
                                                     --aprovar / --rejeitar valem para os dois
     python src/main.py --todos --auto-aprovar --rodada NOME [--prompt ARQUIVO]
-                                                    grava em logs/NOME/ (não sobrescreve logs/) e,
-                                                    com --prompt, usa outro arquivo de src/prompts/
+                                                    grava em logs/NOME/ (não sobrescreve os logs
+                                                    versionados). --prompt escolhe outro arquivo de
+                                                    src/prompts/ para o LAÇO, e por isso já implica
+                                                    --laco: o grafo usa triagem-v1.md e redigir-v1.md
 """
 import argparse
 import json
@@ -109,12 +113,12 @@ def executar(id_ticket: str, client, modelo: str, precos, confirmador, con,
              log_dir: Path = RAIZ / "logs", prompt_arquivo: Path = PROMPT_ARQUIVO,
              texto: str | None = None,
              prazo_confirmacao_min: float = PRAZO_CONFIRMACAO_MIN,
-             grafo: bool = False) -> bool | None:
+             grafo: bool = True) -> bool | None:
     caso = GABARITO.get(id_ticket, {}).get("caso", "sem gabarito")
     prompt = "triagem-v1.md + redigir-v1.md (grafo)" if grafo else prompt_arquivo.name
     print(f"\n{'=' * 78}\n{id_ticket}  (caso: {caso})  modelo: {modelo}  prompt: {prompt}\n")
     if grafo:
-        from grafo import rodar_grafo        # importado só aqui: o laço não depende do LangGraph
+        from grafo import rodar_grafo        # importado só aqui: --laco não depende do LangGraph
         estado = rodar_grafo(id_ticket, client=client, modelo=modelo, con=con,
                              preco_usd_por_mtok=precos, orcamento=Orcamento(),
                              confirmador=confirmador, log_dir=log_dir, texto=texto,
@@ -136,7 +140,7 @@ def executar(id_ticket: str, client, modelo: str, precos, confirmador, con,
 
 def main():
     load_dotenv(RAIZ / ".env")
-    ap = argparse.ArgumentParser(description="Agente de triagem de chamados (Parte 1)")
+    ap = argparse.ArgumentParser(description="Agente de triagem de chamados")
     ap.add_argument("ticket", nargs="?", help="id do chamado externo, ex: TKT-0001")
     ap.add_argument("texto", nargs="?",
                     help="o texto do chamado, entre aspas; sem ele, o programa pede no terminal")
@@ -150,8 +154,10 @@ def main():
     ap.add_argument("--prazo-confirmacao", type=float, default=PRAZO_CONFIRMACAO_MIN, metavar="MIN",
                     help=f"prazo do analista para esta execução, em minutos (padrão: {PRAZO_CONFIRMACAO_MIN})")
     ap.add_argument("--reset", action="store_true", help="recria o banco simulado")
+    ap.add_argument("--laco", action="store_true",
+                    help="roda pelo laço da Parte 1 (src/agente.py) em vez do grafo; logs em logs/")
     ap.add_argument("--grafo", action="store_true",
-                    help="roda pelo grafo em LangGraph (src/grafo.py) em vez do laço; logs em logs/grafo/")
+                    help="roda pelo grafo em LangGraph (src/grafo.py). Já é o padrão; logs em logs/grafo/")
     ap.add_argument("--rodada", help="grava os logs em logs/<nome>/ em vez de logs/")
     ap.add_argument("--prompt", help="arquivo de src/prompts/ a usar (padrão: o prompt em uso)")
     args = ap.parse_args()
@@ -181,10 +187,13 @@ def main():
               float(os.environ.get("PRECO_SAIDA_USD") or "0.15"))
     # Sem --auto-aprovar não há confirmador: a ação irreversível fica pendente, com prazo.
     confirmador = confirmador_auto if args.auto_aprovar else None
+    if args.grafo and (args.laco or args.prompt):
+        sys.exit("--grafo não combina com --laco nem com --prompt: --prompt vale só para o laço "
+                 "(o grafo usa triagem-v1.md e redigir-v1.md).")
+    # O grafo é o caminho padrão. --prompt escolhe um prompt do laço, e por isso implica --laco.
+    usar_grafo = not (args.laco or args.prompt)
     # O grafo nunca grava em logs/: é lá que estão os logs do laço citados no README e no io.md.
-    log_dir = RAIZ / "logs" / (args.rodada or ("grafo" if args.grafo else ""))
-    if args.grafo and args.prompt:
-        sys.exit("--prompt vale só para o laço: o grafo usa triagem-v1.md e redigir-v1.md.")
+    log_dir = RAIZ / "logs" / (args.rodada or ("grafo" if usar_grafo else ""))
     prompt_arquivo = PROMPTS / args.prompt if args.prompt else PROMPT_ARQUIVO
     if not prompt_arquivo.exists():
         sys.exit(f"Prompt não encontrado: {prompt_arquivo}")
@@ -226,7 +235,7 @@ def main():
                 db.recriar_banco()              # cada caso parte do mesmo estado inicial
                 con = db.conectar()
                 resultados[id_ticket] = executar(id_ticket, client, modelo, precos, confirmador, con,
-                                                 log_dir, prompt_arquivo, grafo=args.grafo)
+                                                 log_dir, prompt_arquivo, grafo=usar_grafo)
                 con.close()
             acertos = sum(1 for v in resultados.values() if v)
             print(f"\n{'=' * 78}\nRESULTADO: {acertos} de {len(resultados)} casos conferidos pelo verificador")
@@ -240,7 +249,7 @@ def main():
         texto = ler_texto(args.ticket, args.texto)
         con = db.conectar()
         executar(args.ticket, client, modelo, precos, confirmador, con, log_dir, prompt_arquivo, texto,
-                 args.prazo_confirmacao, grafo=args.grafo)
+                 args.prazo_confirmacao, grafo=usar_grafo)
         con.close()
 
 

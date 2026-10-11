@@ -1,13 +1,15 @@
 # Arquitetura do agente (Parte 2, item 3)
 
-> **O que este documento descreve.** O sistema **como ele está hoje**, no commit `861a948`
-> (10/10/2026): o laço da Parte 1, com o prompt `agente-v5.md`, a entrada em texto digitado e a
-> saída validada (`src/saida.py`). O grafo
-> em LangGraph, o índice vetorial, a memória e o checkpointer **ainda não existem no código**
-> (a pausa pela confirmação do analista tem uma retomada própria, sobre o SQLite: §7); onde
-> o enunciado pede um deles, o documento diz o que há no lugar. O que falta entrar aqui está
-> listado no §9. O desenho proposto para o grafo está em [`grafo.md`](grafo.md), a recuperação em
-> [`rag.md`](rag.md) e os pontos de parada em [`humano.md`](humano.md).
+> **O que este documento descreve.** O sistema **como ele está hoje** (10/10/2026). O caminho
+> padrão é o **grafo em LangGraph** (`src/grafo.py`), descrito no §9 com a conferência contra o
+> código. Os §1 a §7 descrevem o laço da Parte 1 (`src/agente.py`, prompt `agente-v5.md`), que
+> continua no repositório e roda com `--laco`: as ferramentas, os portões, o orçamento, o término
+> e o humano descritos ali são as mesmas regras e, em boa parte, as mesmas funções que o grafo
+> usa. O §8 defende o nível de autonomia com as medições dos dois. A entrada em texto digitado e
+> a saída validada (`src/saida.py`) são as mesmas nos dois caminhos. O índice vetorial e a memória **ainda não existem no código**;
+> onde o enunciado pede um deles, o documento diz o que há no lugar. O grafo está detalhado em
+> [`grafo.md`](grafo.md), a recuperação em [`rag.md`](rag.md) e os pontos de parada em
+> [`humano.md`](humano.md).
 >
 > O histórico da decisão (v1 no papel → v2 construída) continua em
 > [`arquitetura-v2.md`](arquitetura-v2.md).
@@ -81,9 +83,11 @@ ESCRITA   uma por execução (■G1)
       [H1] o ANALISTA DE SUPORTE confirma antes do INSERT; a ação fica em `pendencias`,
            com prazo de 20 min, e a execução pausa ──────────────────────────────────► ●T4
              aprova no prazo        → grava; a chave ticket:kb_id impede duplicata ──► ●T1
-             rejeita no prazo       → nada é gravado ───────────────────────────────► ●T4
-             sem resposta em 20 min → [C] grava fila_humana, com as considerações
+             rejeita no prazo       → [C] grava fila_humana, com as considerações
                                       do agente ────────────────────────────────────► ●T1
+             sem resposta em 20 min → [C] grava fila_humana, com as considerações
+                                      do agente; se o chamado seria P1, grava também
+                                      o aviso ao gestor ────────────────────────────► ●T1
 
   registrar_encaminhamento    reversível: uma linha na tabela encaminhamentos
       destinos: fila_comercial · devolver_cliente · anotacao_interna · fila_humana
@@ -98,6 +102,8 @@ DADOS   dados/tickets.db (SQLite), acessado só por src/db.py
   encaminhamentos ..... escrito por registrar_encaminhamento; relido para o ■G6
   pendencias .......... a ação irreversível à espera do analista, o prazo e o Estado da
                         execução pausada; criada em src/db.py, e não no seed
+  avisos_gestor ....... o aviso ao gestor quando o prazo vence num chamado que seria P1;
+                        criada em src/db.py, e não no seed
 
 
 MEMÓRIA   nenhuma entre execuções: cada execução parte do zero
@@ -165,9 +171,11 @@ O laço não tem contador de voltas próprio. O que o limita é o teto de passos
 lembretes: no pior caso são 11 chamadas ao modelo (8 voltas com ferramenta, 2 lembretes e a
 resposta final).
 
-O caminho real é curto. Nas 16 execuções das duas rodadas com o `agente-v5.md`
-(`logs/rodada-1-prompt-v5/`, `logs/rodada-2-prompt-v5/`), todas tiveram de 2 a 4 passos e de 3 a
-5 chamadas ao modelo.
+O caminho real é curto. Nas 24 execuções das três rodadas com o `agente-v5.md`
+(`logs/rodada-1-prompt-v5/`, `logs/rodada-2-prompt-v5/`, `logs/rodada-3-prompt-v5/`), todas
+tiveram de 2 a 4 passos e de 3 a 5 chamadas ao modelo. Na rodada 3, a única com o seed e o texto
+atuais do prompt (10/10/2026, commit `2ffb2b5 + alterações locais`), as 8 execuções somaram 22
+passos, 31 chamadas ao modelo, 69.889 tokens e US$ 0,0105 a preço de lista.
 
 ## 4. O estado
 
@@ -188,14 +196,16 @@ nunca das mensagens.
 | `n_chamadas_modelo` | inteiro | o laço | o log |
 | `lembretes` | inteiro | a etapa (d) do laço | a etapa (d) do laço |
 | `confirmacoes` | lista | `Estado.confirmar()` e a retomada (`retomar()`) | o log |
-| `pendencia` | dict ou `None` | o laço, ao capturar `PausaParaHumano` | o log |
+| `pendencia` | dict ou `None` | o laço, ao capturar `PausaParaHumano` (só na espera) | o log |
 | `prazo_confirmacao_min` | número (padrão 20) | `rodar()`, na criação | `abrir_chamado_interno`, para calcular o `vence_em`; a retomada, para o texto do encaminhamento |
 | `pendencia_id` | inteiro ou `None` | `abrir_chamado_interno`, ao gravar a pendência | o laço, para guardar o checkpoint |
 | `termino`, `motivo`, `resposta` | enum, texto | o laço | `main.py`, o verificador e o log |
 | `historico` | lista de mensagens | o laço | só a chamada ao modelo |
 
-O `desfecho` é o único campo de decisão com dois escritores (as duas ferramentas de escrita), e o
-portão ■G1 garante que só uma delas escreve por execução.
+O `desfecho` é o único campo de decisão com mais de um escritor: as duas ferramentas de escrita,
+e o código que encaminha à fila humana a ação rejeitada ou vencida (`encaminhar_pendencia`, em
+`src/ferramentas.py`). O portão ■G1 garante que só uma das ferramentas escreve por execução, e o
+encaminhamento pelo código só acontece no lugar da abertura de chamado que não foi autorizada.
 
 **O que ficou na lista de mensagens** (`historico`), e só nela:
 
@@ -245,13 +255,14 @@ Toda execução grava por que parou (`Estado.termino` e `Estado.motivo`). São q
 
 | Término | Quando | O que ficou gravado no banco |
 |---|---|---|
-| ●T1 `respondeu` | o modelo respondeu só com texto e há desfecho gravado. Inclui a execução retomada: o analista aprovou, ou o prazo venceu e o código gravou a `fila_humana` | o desfecho |
+| ●T1 `respondeu` | o modelo respondeu só com texto e há desfecho gravado. Inclui a execução retomada: o analista aprovou, ou ele rejeitou ou o prazo venceu e o código gravou a `fila_humana` | o desfecho; no prazo vencido de um chamado que seria P1, também uma linha em `avisos_gestor` |
 | ●T2 `orcamento_esgotado` | um dos quatro tetos estourou; o motivo diz qual (`passos: 8/8`, `tempo: 91s/90s`) | nada, **ou** o desfecho, se o teto estourou depois da escrita e antes da resposta final |
 | ●T3 `erro_fatal` | (1) API indisponível depois de 5 tentativas; (2) a API recusou a chamada (chave ou modelo inválido, erro do provedor); (3) o modelo encerrou sem desfecho depois de 2 lembretes; (4) interrupção inesperada | nada, salvo no caso (4), se a interrupção vier depois da escrita |
-| ●T4 `aguardando_humano` | a abertura do chamado interno espera o analista, ou ele a rejeitou; o `motivo` diz qual | nada em `chamados_internos` nem em `encaminhamentos`. Na espera, a ação e o prazo ficam na tabela `pendencias`; os argumentos da ação ficam também no campo `pendencia` do log |
+| ●T4 `aguardando_humano` | a abertura do chamado interno espera o analista, dentro do prazo | nada em `chamados_internos` nem em `encaminhamentos`. A ação e o prazo ficam na tabela `pendencias`; os argumentos da ação ficam também no campo `pendencia` do log |
 
-O ●T4 da espera não é um fim: é o único término que a mesma execução pode trocar depois, por
-●T1, quando o analista aprova ou o prazo vence (§7).
+O ●T4 não é um fim: é o único término que a mesma execução troca depois, por ●T1, quando o
+analista aprova, rejeita ou o prazo vence (§7). Nenhuma das três saídas deixa o chamado sem
+desfecho.
 
 Consequência do ●T2: para saber se o chamado teve desfecho, vale o campo `desfecho`, e não o
 término. O verificador (`src/verificar.py`) confere o banco.
@@ -269,11 +280,11 @@ levanta erro fatal: os casos (1) e (2) do ●T3 vêm da chamada ao modelo.
 | Onde | dentro de `abrir_chamado_interno`, depois de todos os portões e antes do INSERT |
 | Critério | ação irreversível |
 | Quem é chamado | o **analista de suporte** (perfil do `case.md` §2.2) |
-| O que ele vê | a ferramenta, o id do chamado, a categoria, o resumo, o time de destino, o `kb_id`, a hora do pedido, a hora em que o prazo vence e quantos minutos faltam (`python src/main.py --pendencias`). A prioridade não aparece: ela é calculada depois da confirmação |
+| O que ele vê | a ferramenta, o id do chamado, a categoria, o resumo, o time de destino, o `kb_id`, a hora do pedido, a hora em que o prazo vence e quantos minutos faltam (`python src/main.py --pendencias`). A prioridade não aparece na tela: a do chamado aberto é calculada na gravação, e a prevista só é calculada quando a ação é rejeitada ou vence |
 | O que ele devolve | `--aprovar TKT-0000` ou `--rejeitar TKT-0000`. Não há aprovação com edição |
 | Se aprova no prazo | o chamado é gravado e a execução pausada continua: o modelo recebe o resultado e dá a frase final; término ●T1 |
-| Se rejeita no prazo | nada é gravado; término ●T4, com motivo "analista rejeitou a ação" |
-| Se não responde em 20 minutos | o chamado interno **não** é aberto; o código grava `fila_humana` com as considerações do agente; término ●T1 |
+| Se rejeita no prazo | o chamado interno **não** é aberto; o código grava `fila_humana` com as considerações do agente (motivo `acao_rejeitada`); término ●T1 |
+| Se não responde em 20 minutos | o chamado interno **não** é aberto; o código grava `fila_humana` com as considerações do agente (motivo `confirmacao_nao_recebida`); se o chamado seria **P1**, grava também o aviso ao gestor; término ●T1 |
 
 **A espera é assíncrona.** `abrir_chamado_interno` não fica parado esperando: grava a ação na
 tabela `pendencias`, com `pedido_em` e `vence_em`, e levanta `PausaParaHumano`. O laço guarda na
@@ -285,10 +296,25 @@ execução: não há nova triagem nem nova busca.
 **O prazo.** O analista tem **20 minutos** para confirmar ou rejeitar, contados do pedido de
 confirmação (`case.md` §2.1; constante `PRAZO_CONFIRMACAO_MIN`, em `src/ferramentas.py`). Vencido
 o prazo, a ação não é executada e o código, sem consultar o modelo, grava um encaminhamento à
-`fila_humana` com as considerações do agente: a ação que ele propôs, o procedimento e o score que
-a sustentam, o resumo já redigido e o motivo "confirmação não recebida em 20 minutos". O desfecho
-leva `motivo: confirmacao_nao_recebida`, e a `suficiencia` da saída é negativa. Depois da
-gravação o modelo é chamado uma vez, só para a frase final.
+`fila_humana` com as considerações do agente: a ação que ele propôs, a prioridade que o chamado
+teria, o procedimento e o score que a sustentam, o resumo já redigido e o motivo "confirmação não
+recebida em 20 minutos". O desfecho leva `motivo: confirmacao_nao_recebida`, e a `suficiencia` da
+saída é negativa. Depois da gravação o modelo é chamado uma vez, só para a frase final.
+
+**A rejeição tem o mesmo destino.** Se o analista rejeita dentro do prazo, a ação não é executada
+e o código grava o mesmo encaminhamento à `fila_humana`, com as mesmas considerações e o motivo
+"ação rejeitada pelo analista de suporte" (`motivo: acao_rejeitada`). Vale também para a resposta
+dada na hora, por um confirmador: a rejeição não derruba o laço, e o modelo recebe a observação
+e dá a frase final. Antes de 10/10/2026 a rejeição não gravava nada e a execução terminava em
+●T4, com o chamado sem desfecho.
+
+**Prazo vencido em chamado P1 avisa o gestor.** A fila humana é lida pelo mesmo analista que não
+respondeu. Por isso, quando o prazo vence e o chamado interno seria P1, o código grava também uma
+linha na tabela `avisos_gestor`, com o chamado, a prioridade, o motivo e a mesma mensagem do
+encaminhamento. A prioridade usada é a **prevista**: a base do procedimento mais a reincidência,
+pela mesma regra da abertura (`prioridade_prevista`, em `src/db.py`), calculada na hora do
+vencimento. O aviso não é um segundo desfecho: o desfecho continua sendo a `fila_humana`. A
+rejeição não avisa o gestor, porque o analista já viu o chamado.
 
 **O relógio vale antes da pessoa.** Uma aprovação que chega depois do `vence_em` é tratada como
 prazo vencido: o chamado não é aberto. O silêncio nunca vira aprovação, e a aprovação tardia
@@ -298,7 +324,11 @@ também não.
 em `src/db.py`, confere o status no mesmo `UPDATE`), e a segunda chamada não encontra o que
 aprovar.
 
-Três limites do que foi implementado:
+Quatro limites do que foi implementado:
+
+- **O aviso ao gestor é um registro, não uma notificação.** O sistema é simulado e não tem canal
+  de mensagem: o aviso é uma linha em `avisos_gestor`, que o gestor precisa consultar. Não há
+  comando no `main.py` para listá-la.
 
 - **O prazo é conferido, não cronometrado.** Não há processo em segundo plano. As pendências
   vencidas são encaminhadas no começo do próximo comando do `main.py` (`vencer_pendencias`). Se
@@ -327,15 +357,21 @@ do analista"), e não por uma execução registrada com o modelo real.
 
 ## 8. O nível de autonomia (§3.3)
 
-**O nível é roteador**, implementado como um laço de ferramentas curto.
+**O nível é workflow com roteador.** No grafo, que é o caminho padrão, o caminho é fixo em
+código e o modelo decide **a rota**: no nó `triagem` ele escolhe a classe do chamado e diz se o
+log aponta outro serviço (as decisões ◆D1 e ◆D3 abaixo); o desfecho sai do nó `decidir`, que é
+código. O laço da Parte 1 tomava as mesmas duas decisões dentro de um laço de ferramentas curto.
+O que segue é a defesa feita com o laço rodando, que é o que justificou descer um degrau; o
+resultado do grafo está no fim da seção.
 
 **Por que o workflow não servia.** Um workflow tem o caminho fixo em código. Aqui o caminho
 depende de duas decisões sobre texto livre, as duas marcadas no diagrama:
 
 - **◆D1, a triagem.** O cliente não preenche categoria. Decidir se "quero um servidor dedicado" é
   comercial, ou se "meu servidor não funciona" tem informação suficiente, não cabe em regra. No
-  `TKT-0004` (as duas rodadas) o modelo foi direto para `fila_comercial`, em 2 passos, sem buscar
-  na base.
+  `TKT-0004` (as três rodadas) o modelo foi direto para `fila_comercial`, em 2 passos, sem buscar
+  na base. Na rodada 3 fez o mesmo com o `TKT-0005`: 2 passos, sem busca, pedido devolvido ao
+  cliente.
 - **◆D3, o relato contra o log.** É a decisão que nenhum portão do código consegue tomar. No
   `TKT-0002` da rodada 2 (`logs/rodada-2-prompt-v5/TKT-0002.json`), a busca devolveu o `KB-106`
   com score 0,67, acima do limiar, e o procedimento é de escalonamento: **os portões ■G3 e ■G4
@@ -344,40 +380,310 @@ depende de duas decisões sobre texto livre, as duas marcadas no diagrama:
   escrita. Sem essa decisão, o sistema abriria um chamado para a Infraestrutura sem saber de quem
   é o nameserver (`case.md` §2.12, regra 6).
 
+  **A rodada 3 mostra o que acontece quando essa decisão falha**
+  (`logs/rodada-3-prompt-v5/TKT-0002.json`). O modelo começou certo: no passo 1 chamou
+  `fila_humana` com a divergência escrita. O portão ■G5 recusou, porque não havia busca. Ele
+  buscou, recebeu o mesmo `KB-106` com o mesmo score 0,67, e no passo 3 abriu o chamado interno:
+  P1, para a Infraestrutura. Os portões ■G3 e ■G4 deixaram passar, como previsto acima, e a
+  execução rodou com `--auto-aprovar`. É a mesma entrada da rodada 2, com o resultado oposto. O
+  que segura o `TKT-0002` é só o modelo, e ele não segura sempre.
+
 **Por que não o agente.** O que colocaria o sistema acima de um roteador é decidir, em tempo de
 execução, **quantos** passos dar e **quais**: buscar de novo (◆D4) e se recuperar de um erro de
-ferramenta. As 16 execuções com o `agente-v5.md` não sustentam esse degrau:
+ferramenta. As 24 execuções com o `agente-v5.md` não sustentam esse degrau:
 
 | Capacidade | O que as rodadas mostram |
 |---|---|
-| Busca repetida (◆D4) | aconteceu em 3 das 16 execuções (`TKT-0002` na rodada 1, `TKT-0005` nas duas). Em nenhuma mudou o desfecho. No `TKT-0005` a busca nem devia ter ocorrido: o caso é de informação insuficiente |
-| Recuperação de erro | no `TKT-0999` (id inexistente), nas duas rodadas, o modelo leu o erro e encerrou sem registrar nada. Quem o fez registrar foi o lembrete, que é código |
+| Busca repetida (◆D4) | aconteceu em 3 das 24 execuções (`TKT-0002` na rodada 1, `TKT-0005` nas rodadas 1 e 2). Em nenhuma mudou o desfecho. No `TKT-0005` a busca nem devia ter ocorrido: o caso é de informação insuficiente. Na rodada 3 não houve nenhuma: 5 buscas, uma por execução que buscou |
+| Recuperação de erro | no `TKT-0999` (id inexistente), o lembrete, que é código, foi usado nas três rodadas (1 lembrete na rodada 3) para o modelo registrar o desfecho. No `TKT-0002` da rodada 3 o modelo corrigiu a chamada depois do erro do portão ■G5 (fez a busca que faltava), e a correção terminou no desfecho errado |
 | Tamanho do caminho | de 2 a 4 passos em todas as execuções, sempre consultar → (buscar) → escrever |
 
 O laço continua sendo a forma da implementação, porque é ele que devolve ao modelo o erro de um
 portão. Mas a decisão que o modelo toma dentro dele é de rota, e não de plano.
 
 **Onde o roteador erra.** As decisões que só o modelo toma são também as que falham. Resultado
-do verificador: 7 de 8 na rodada 1 e 6 de 8 na rodada 2. As três falhas são de ◆D1:
+do verificador: 7 de 8 na rodada 1, 6 de 8 na rodada 2 e 7 de 8 na rodada 3. São quatro falhas em
+24 execuções.
 
-- `TKT-0005` (as duas rodadas): o modelo tratou como técnico um relato sem serviço nem sintoma, e
+Três são de ◆D1, nas rodadas 1 e 2 (seed e texto do prompt anteriores à revisão de 10/10/2026):
+
+- `TKT-0005` (rodadas 1 e 2): o modelo tratou como técnico um relato sem serviço nem sintoma, e
   o chamado foi para a `fila_humana` em vez de voltar ao cliente;
 - `TKT-0003` (rodada 2): o modelo leu um problema técnico com exigência de prioridade como pedido
   fora da alçada.
 
-Nas três o erro foi para o lado seguro: nenhum chamado indevido foi aberto.
+Nessas três o erro foi para o lado seguro: nenhum chamado indevido foi aberto. Na rodada 3 os
+dois casos passaram.
 
-Limite desta medição: o prompt e a busca foram ajustados depois de ver as falhas nestes mesmos 8
-casos (cabeçalho de `src/prompts/agente-v5.md`). O resultado não prova que o sistema generaliza.
+A quarta é de ◆D3, na rodada 3:
 
-## 9. O que ainda falta neste documento
+- `TKT-0002`: chamado interno P1 aberto para a Infraestrutura, quando o esperado é `fila_humana`
+  (descrito acima, em ◆D3).
 
-O enunciado pede, neste mesmo arquivo, quatro itens que dependem do grafo, que ainda não foi
-construído:
+**É a única falha para o lado que não é seguro**: um chamado indevido, de prioridade máxima, que
+nenhum portão em código barrou. A última barreira que restava era o analista, no [H1], e a rodada
+usou `--auto-aprovar`. O log também mostra que o portão ■G5, criado para o `TKT-0003`, foi o que
+devolveu ao modelo uma `fila_humana` que estava certa. Uma execução não prova que foi ele a
+causa, mas a regra "fila humana só depois da busca" não tem exceção para a divergência entre
+relato e log.
 
-| Item | Seção do enunciado | Situação |
-|---|---|---|
-| O grafo em ASCII, com nós, arestas e quem decide cada uma, ao lado da saída de `get_graph()` | §6.1 e §6.4 | a fazer; o diagrama do §1 descreve o laço atual |
-| A tabela de padrões usados, com a justificativa de cada um | §6.2 | a fazer |
-| A tabela de campos do estado do grafo, com reducers | §7.1 | a fazer; a tabela do §4 descreve o `Estado` atual |
-| Todos os pontos de parada marcados no grafo, com o critério de cada um | §8.1 | a fazer; hoje há um, o [H1] do §7 |
+Limites desta medição:
+
+- o prompt e a busca foram ajustados depois de ver as falhas nestes mesmos 8 casos (cabeçalho de
+  `src/prompts/agente-v5.md`). O resultado não prova que o sistema generaliza;
+- só a rodada 3 usa o seed e o texto atuais, e é uma execução por caso. O `TKT-0002` deu
+  resultados opostos nas rodadas 2 e 3, com `temperature=0`: uma rodada não mede a frequência
+  de nenhuma das falhas. As duas execuções do `agente-v5.md` no teste da regra da frase
+  (`prompts.md` §3.2) repetiram a falha da rodada 3 no `TKT-0002`.
+
+**O que o grafo mediu** (`logs/grafo/`, 10/10/2026, 21h11, `ministral-8b-latest`, `temperature=0`, `--auto-aprovar`, commit `2ffb2b5 + alterações locais`): **8 de 8** no verificador, com 15
+chamadas ao modelo e 12.623 tokens nos 8 casos (laço, rodada 3: 31 chamadas e 69.889 tokens).
+No `TKT-0002` a triagem marcou `log_aponta_outro_servico`, a busca devolveu o `KB-106` com score
+0,75, e o nó `decidir` mandou o chamado à `fila_humana` porque confere a divergência antes do
+score. A decisão continua sendo do modelo; o que mudou é que ela é tomada antes de o artigo
+aparecer, e o código não a desfaz. É uma execução por caso, com prompts escritos depois de ver
+as falhas nestes mesmos 8 casos: não mede frequência.
+
+## 9. O grafo (§6.1, §6.2, §6.4, §7.1 e §8.1)
+
+O grafo existe desde 10/10/2026: `StateGraph` em [`src/grafo.py`](../src/grafo.py), compilado uma
+vez (objeto `GRAFO`), com `langgraph==1.2.14` e `langgraph-checkpoint-sqlite==3.1.1` fixados no
+`requirements.txt`. É o caminho padrão do `main.py`; o laço dos §1 a §7 roda com `--laco`, para
+os dois serem comparados nos mesmos casos. Foi medido uma vez com o modelo real: 8 de 8 no
+verificador (`logs/grafo/`, 10/10/2026, 21h11; `grafo.md` §6). O que é do código está provado
+por 21 testes offline (`tests/test_grafo.py`).
+
+### 9.1 O desenho
+
+```
+LEGENDA   [nó]   ◇ aresta condicional, com a chave do mapa de destinos entre aspas
+          ⏸ ponto de parada (interrupt)   ● término
+          MODELO = o nó chama o modelo      código = o nó não chama o modelo
+
+START
+  │
+  ▼
+[entrada]            código   o texto do chamado, como chegou (ou o registrado para o id)
+  │
+  ▼
+[consultar]          código   lê o chamado, o plano, o log anexado e o histórico do cliente
+  │
+  ◇ _rota_consultar                              decide: código (campo vazio)
+  ├─ "nao_existe" ─────────────────────────────► [decidir]
+  └─ "existe"
+        ▼
+[triagem]            MODELO   JSON validado: classe, log_aponta_outro_servico, termos_busca
+  │
+  ◇ _rota_triagem                                decide: o MODELO (a classe); o código lê o valor
+  ├─ "encerrar"   teto, API fora ou JSON inválido 2 vezes ──► [finalizar]
+  ├─ "sem_busca"  comercial, insuficiente, fora_da_alcada ──► [decidir]
+  └─ "tecnico"
+        ▼
+[buscar]             código   busca os procedimentos com os termos da triagem; devolve o score
+  │
+  ▼
+[decidir]            código   escolhe o desfecho (regras de rota + portão de confiança):
+  │                             id inexistente ........................... fila_humana
+  │                             comercial ................................ fila_comercial
+  │                             fora_da_alcada ........................... fila_humana
+  │                             insuficiente, sem pedido anterior ........ devolver_cliente
+  │                             insuficiente, com pedido anterior ........ fila_humana
+  │                             técnico, log aponta outro serviço ........ fila_humana  (antes do score)
+  │                             técnico, sem artigo ou score < 0,5 ....... fila_humana
+  │                             técnico, score ≥ 0,5, guia "escalar" ..... abrir_chamado_interno
+  │                             técnico, score ≥ 0,5, guia "anotar" ...... anotacao_interna
+  ▼
+[redigir]            MODELO   JSON validado: o texto (resumo ou mensagem) do desfecho já decidido
+  │
+  ◇ _rota_redigir                                decide: código
+  ├─ "encerrar"   teto ou API fora ────────────► [finalizar]
+  └─ "avaliar"
+        ▼
+[validar]            código   tamanho mínimo; pedido ao cliente sem informação interna
+  │
+  ◇ _rota_validar                                decide: código
+  ├─ "redigir_de_novo"  reprovado, 1ª vez ─────► [redigir]
+  ├─ "encerrar"         reprovado, 2ª vez ─────► [finalizar]
+  ├─ "reversivel" ─────────────────────────────► [gravar]
+  └─ "irreversivel"     abrir_chamado_interno
+        ▼
+[pedir_confirmacao]  código   monta a ação, marca pedido_em e vence_em (20 min), grava em `pendencias`
+  │
+  ▼
+[confirmar]          ⏸ H1     interrupt: espera o analista de suporte
+  │                           decide: o relógio, depois a pessoa → aprovada · rejeitada · vencida
+  ▼
+[gravar]             código   aprovada → abre o chamado interno (chave ticket:kb_id)
+  │                           rejeitada ou vencida → fila_humana com as considerações do agente
+  │                           vencida, e o chamado seria P1 → aviso ao gestor
+  │                           desfecho reversível → uma linha em `encaminhamentos`
+  ▼
+[finalizar]          código   término, motivo e saída validada
+  │                           ● respondeu · ● orcamento_esgotado · ● erro_fatal
+  ▼
+END
+
+Fora dos nós:
+  parado no interrupt ............ a chamada devolve ● aguardando_humano; a execução continua
+                                   do checkpoint quando o analista responde ou o prazo vence
+  LIMITE_SUPERPASSOS estourado ... ● orcamento_esgotado (recursion_limit = 20, declarado no código)
+```
+
+Os nós, as arestas condicionais com quem decide cada uma e os términos estão detalhados em
+[`grafo.md`](grafo.md) §1.
+
+### 9.2 A conferência contra o código (§6.4)
+
+Saída de `python conferir_grafo.py`, de 10/10/2026. O script está na raiz e importa o objeto
+`GRAFO` de `src/grafo.py`, o mesmo que o `main.py` executa.
+
+```
+langgraph 1.2.14
+checkpointer: SqliteSaver   recursion_limit declarado: 20
+
+NÓS (11)
+  entrada
+  consultar
+  triagem
+  buscar
+  decidir
+  redigir
+  validar
+  pedir_confirmacao
+  confirmar
+  gravar
+  finalizar
+
+ARESTAS FIXAS (8)
+  __start__          -> entrada
+  buscar             -> decidir
+  confirmar          -> gravar
+  decidir            -> redigir
+  entrada            -> consultar
+  gravar             -> finalizar
+  pedir_confirmacao  -> confirmar
+  finalizar          -> __end__
+
+ARESTAS CONDICIONAIS (11), com a chave do mapa de destinos
+  consultar          -> decidir            [nao_existe]
+  consultar          -> triagem            [existe]
+  redigir            -> finalizar          [encerrar]
+  redigir            -> validar            [avaliar]
+  triagem            -> buscar             [tecnico]
+  triagem            -> decidir            [sem_busca]
+  triagem            -> finalizar          [encerrar]
+  validar            -> finalizar          [encerrar]
+  validar            -> gravar             [reversivel]
+  validar            -> pedir_confirmacao  [irreversivel]
+  validar            -> redigir            [redigir_de_novo]
+
+CAMPOS DO ESTADO, e o reducer de cada um
+  id_ticket              (sobrescreve)
+  modelo                 (sobrescreve)
+  temperatura            (sobrescreve)
+  execucao_id            (sobrescreve)
+  executado_em           (sobrescreve)
+  commit                 (sobrescreve)
+  prazo_confirmacao_min  (sobrescreve)
+  texto_recebido         (sobrescreve)
+  texto                  (sobrescreve)
+  ticket                 (sobrescreve)
+  classe                 (sobrescreve)
+  log_diverge            (sobrescreve)
+  termos                 (sobrescreve)
+  candidatos             (sobrescreve)
+  desfecho_proposto      (sobrescreve)
+  texto_redigido         (sobrescreve)
+  erro_validacao         (sobrescreve)
+  pendencia              (sobrescreve)
+  pendencia_id           (sobrescreve)
+  confirmacao            (sobrescreve)
+  desfecho               (sobrescreve)
+  termino                (sobrescreve)
+  motivo                 (sobrescreve)
+  saida                  (sobrescreve)
+  passos                 add
+  tentativas_redacao     add
+  n_chamadas_modelo      add
+  tokens_entrada         add
+  tokens_saida           add
+  custo_usd              add
+  segundos_gastos        add
+
+MERMAID (get_graph().draw_mermaid())
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	entrada(entrada)
+	consultar(consultar)
+	triagem(triagem)
+	buscar(buscar)
+	decidir(decidir)
+	redigir(redigir)
+	validar(validar)
+	pedir_confirmacao(pedir_confirmacao)
+	confirmar(confirmar)
+	gravar(gravar)
+	finalizar(finalizar)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> entrada;
+	buscar --> decidir;
+	confirmar --> gravar;
+	consultar -. &nbsp;nao_existe&nbsp; .-> decidir;
+	consultar -. &nbsp;existe&nbsp; .-> triagem;
+	decidir --> redigir;
+	entrada --> consultar;
+	gravar --> finalizar;
+	pedir_confirmacao --> confirmar;
+	redigir -. &nbsp;encerrar&nbsp; .-> finalizar;
+	redigir -. &nbsp;avaliar&nbsp; .-> validar;
+	triagem -. &nbsp;tecnico&nbsp; .-> buscar;
+	triagem -. &nbsp;sem_busca&nbsp; .-> decidir;
+	triagem -. &nbsp;encerrar&nbsp; .-> finalizar;
+	validar -. &nbsp;encerrar&nbsp; .-> finalizar;
+	validar -. &nbsp;reversivel&nbsp; .-> gravar;
+	validar -. &nbsp;irreversivel&nbsp; .-> pedir_confirmacao;
+	validar -. &nbsp;redigir_de_novo&nbsp; .-> redigir;
+	finalizar --> __end__;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc
+```
+
+**O que a conferência mostra, contra o desenho:**
+
+- os 11 nós do desenho são os 11 nós do grafo compilado;
+- as 8 arestas fixas e as 11 condicionais (quatro pontos de decisão) são as do desenho, com as
+  mesmas chaves;
+- não há aresta condicional depois de `confirmar`: a resposta do analista é lida por `gravar`,
+  como o desenho diz.
+
+O desenho foi corrigido depois de escrever o código. A proposta anterior não tinha os nós
+`decidir` e `pedir_confirmacao`, e tinha o nó `aguardar_cliente`, que não foi implementado
+(`grafo.md` §1).
+
+### 9.3 Onde está o resto
+
+| Item do enunciado | Onde está |
+|---|---|
+| Tabela de padrões usados, com a justificativa (§6.2) | `grafo.md` §2 |
+| Tabela de campos do estado do grafo, com reducers (§7.1) | `grafo.md` §3.1; a coluna do reducer confere com a saída acima |
+| O que o framework não deu (§6.5) e a decisão que virou parâmetro (§6.6) | `grafo.md` §4 e §5 |
+
+### 9.4 Os pontos de parada, no grafo (§8.1)
+
+O grafo tem **um** ponto de parada, o [H1], no nó `confirmar`:
+
+| | |
+|---|---|
+| Critério | ação irreversível (abrir chamado interno) |
+| Como para | `interrupt`, com o estado no checkpointer em SQLite (`dados/checkpoints.db`), endereçado pelo `thread_id` = id do chamado |
+| Como continua | `Command(resume=...)`, por `retomar_grafo()`. Os comandos são os mesmos do laço: `--aprovar`, `--rejeitar` e o vencimento do prazo, que reconhecem pela pendência de qual dos dois caminhos é a pausa |
+| Regras | as do §7: 20 minutos, o relógio antes da pessoa, rejeição e prazo vencido na fila humana, aviso ao gestor no P1 vencido |
+
+A confirmação do pedido ao cliente (H2) e a espera pela resposta dele (H3) não existem no grafo
+nem no laço (`humano.md` §7).

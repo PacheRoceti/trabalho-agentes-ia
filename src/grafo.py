@@ -1,7 +1,7 @@
 """O grafo (Parte 2, item 6): o mesmo trabalho do laço de agente.py, como workflow em LangGraph.
 
-O laço da Parte 1 continua em agente.py e é o que roda por padrão. Este arquivo é o outro
-caminho (`python src/main.py --grafo ...`), para os dois poderem ser comparados nos mesmos casos.
+Este arquivo é o caminho padrão do main.py. O laço da Parte 1 continua em agente.py e roda com
+`python src/main.py --laco ...`, para os dois poderem ser comparados nos mesmos casos.
 
 O que muda em relação ao laço (docs/grafo.md):
 
