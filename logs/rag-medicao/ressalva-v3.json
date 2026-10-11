@@ -1,0 +1,689 @@
+{
+ "ressalva_no": [
+  {
+   "id": "P6",
+   "grupo": "exceção",
+   "kb": "KB-104",
+   "votos": [
+    true,
+    true,
+    true
+   ],
+   "certas": 3,
+   "frases": [
+    "de vez em quando",
+    "de vez em quando",
+    "de vez em quando"
+   ],
+   "literal": true
+  },
+  {
+   "id": "P7",
+   "grupo": "exceção",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 0,
+   "frases": [
+    "O relato menciona permissão negada ao entrar por SSH, mas não aborda nenhuma das situações listadas como ressalvas do procedimento.",
+    "O relato menciona permissão negada ao entrar por SSH, mas não aborda a situação de arquivos ou pastas com dono ou permissões incorretos, que é o escopo do procedimento. A ressalva mencionada ('ssh') não se aplica ao contexto descrito, pois o procedimento não cobre casos de permissão negada especificamente ao acesso via SSH, mas sim ao gravação de arquivos.",
+    "O relato menciona permissão negada ao entrar por SSH, mas não aborda a situação específica de arquivos ou pastas com dono ou permissões incorretos, que é o foco do procedimento. Além disso, a ressalva mencionada é apenas 'ssh', mas o relato não descreve um cenário que caiba na ressalva como um problema de acesso via SSH em si, mas sim uma permissão negada, que não é uma situação explicitamente listada como ressalva no procedimento."
+   ],
+   "literal": true
+  },
+  {
+   "id": "X1",
+   "grupo": "exceção",
+   "kb": "KB-104",
+   "votos": [
+    true,
+    true,
+    true
+   ],
+   "certas": 3,
+   "frases": [
+    "intermitente",
+    "intermitente",
+    "intermitente"
+   ],
+   "literal": true
+  },
+  {
+   "id": "X2",
+   "grupo": "exceção",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 0,
+   "frases": [
+    "O relato menciona permissão negada no login por SSH, mas a ressalva do procedimento é específica para situações relacionadas ao uso de SSH, não ao login. Além disso, o relato não descreve nenhuma das situações listadas como ressalvas, que se referem ao uso de arquivos ou pastas com permissões incorretas.",
+    "O relato menciona permissão negada no login por SSH, mas a ressalva do procedimento é específica para situações relacionadas ao uso de SSH, não ao login em si. Como o relato não descreve uma situação intermitente, constante ou outra condição que esteja listada como ressalva, não há correspondência.",
+    "O relato menciona permissão negada no login por SSH, mas a ressalva do procedimento é específica para conexões via SSH, não para problemas de permissão no login por essa via. Além disso, o problema relatado não se refere a arquivos ou pastas com permissões incorretas, mas sim a uma restrição de acesso ao sistema via SSH com chave específica."
+   ],
+   "literal": true
+  },
+  {
+   "id": "X3",
+   "grupo": "exceção",
+   "kb": "KB-104",
+   "votos": [
+    true,
+    true,
+    true
+   ],
+   "certas": 3,
+   "frases": [
+    "intermitente",
+    "intermitente",
+    "intermitente"
+   ],
+   "literal": false
+  },
+  {
+   "id": "X4",
+   "grupo": "exceção",
+   "kb": "KB-104",
+   "votos": [
+    true,
+    true,
+    true
+   ],
+   "certas": 3,
+   "frases": [
+    "intermitente",
+    "intermitente",
+    "intermitente"
+   ],
+   "literal": false
+  },
+  {
+   "id": "X5",
+   "grupo": "exceção",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 0,
+   "frases": [
+    "O relato menciona acesso por terminal remoto, mas não menciona uso de SSH explicitamente, e não há informações suficientes para confirmar que o acesso é via SSH. Além disso, o procedimento não cobre acesso por terminal remoto em geral, apenas por SSH.",
+    "O relato menciona acesso por terminal remoto, mas não menciona uso de SSH explicitamente, e não há informações suficientes para confirmar que o acesso é feito por essa via. Além disso, o procedimento não cobre acesso por terminal remoto em geral, apenas SSH.",
+    "O relato menciona acesso por terminal remoto, mas não menciona uso de SSH explicitamente. Além disso, o procedimento se refere a permissões para gravar arquivos, enquanto o relato menciona permissão negada para acessar o servidor, não para gravar arquivos."
+   ],
+   "literal": false
+  },
+  {
+   "id": "X6",
+   "grupo": "exceção",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 0,
+   "frases": [
+    "O relato do cliente menciona apenas um problema de acesso por SSH, sem relação com arquivos ou pastas com permissões incorretas, nem com restauração, migração ou publicação feita por outro usuário, que são as situações não cobertas pelo procedimento.",
+    "O relato do cliente menciona uma situação de permissão negada ao acessar via SSH, mas não descreve nenhuma das situações listadas como ressalvas do procedimento.",
+    "O relato do cliente menciona apenas um problema de acesso por SSH, sem relação com arquivos ou pastas, permissões incorretas ou situações como restauração, migração ou publicação por outro usuário, que são as causas do procedimento. Além disso, a ressalva mencionada é apenas para casos de 'ssh', mas o problema relatado não se enquadra nas situações não cobertas do procedimento."
+   ],
+   "literal": true
+  },
+  {
+   "id": "X7",
+   "grupo": "exceção",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 0,
+   "frases": [
+    "O relato menciona acesso pelo terminal, mas não especifica se é via SSH. Além disso, não há menção a nenhuma das situações listadas como ressalvas, como acesso intermitente ou outro método que não seja SSH.",
+    "O relato menciona acesso pelo terminal, mas não especifica se é via SSH. Além disso, não há menção a nenhuma das situações listadas como ressalvas, como acesso intermitente ou outras condições específicas.",
+    "O relato menciona acesso por terminal, mas não especifica se é via SSH. Além disso, não há menção a nenhuma das situações listadas como ressalvas, como intermitência ou outros detalhes que indiquem exclusão do escopo do procedimento."
+   ],
+   "literal": false
+  },
+  {
+   "id": "X8",
+   "grupo": "exceção",
+   "kb": "KB-107",
+   "votos": [
+    true,
+    true,
+    true
+   ],
+   "certas": 3,
+   "frases": [
+    "lento",
+    "lento",
+    "lento"
+   ],
+   "literal": false
+  },
+  {
+   "id": "X9",
+   "grupo": "exceção",
+   "kb": "KB-115",
+   "votos": [
+    true,
+    true,
+    true
+   ],
+   "certas": 3,
+   "frases": [
+    "intermitente",
+    "intermitente",
+    "intermitente"
+   ],
+   "literal": true
+  },
+  {
+   "id": "X10",
+   "grupo": "exceção",
+   "kb": "KB-115",
+   "votos": [
+    true,
+    true,
+    true
+   ],
+   "certas": 3,
+   "frases": [
+    "intermitente",
+    "intermitente",
+    "intermitente"
+   ],
+   "literal": false
+  },
+  {
+   "id": "X11",
+   "grupo": "exceção",
+   "kb": "KB-111",
+   "votos": [
+    true,
+    true,
+    true
+   ],
+   "certas": 3,
+   "frases": [
+    "recebimento",
+    "recebimento",
+    "recebimento"
+   ],
+   "literal": true
+  },
+  {
+   "id": "P2",
+   "grupo": "controle",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato do cliente menciona falha em uploads pelo site, sem referência a acesso por SSH ou terminal remoto, não correspondendo a nenhuma ressalva do procedimento.",
+    "O relato do cliente menciona falha em uploads pelo site, sem referência a acesso por SSH ou terminal remoto, não correspondendo a nenhuma ressalva do procedimento.",
+    "O relato do cliente não menciona nenhuma situação relacionada ao uso de SSH ou acesso remoto por terminal, apenas falha em uploads pelo site."
+   ],
+   "literal": false
+  },
+  {
+   "id": "A2",
+   "grupo": "controle",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato não menciona acesso por SSH ou qualquer situação que esteja na lista de ressalvas do procedimento.",
+    "O relato não menciona acesso por SSH ou qualquer situação que esteja na lista de ressalvas do procedimento.",
+    "O relato não menciona acesso por SSH ou qualquer situação que esteja na lista de ressalvas do procedimento."
+   ],
+   "literal": false
+  },
+  {
+   "id": "A4",
+   "grupo": "controle",
+   "kb": "KB-104",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato menciona que o site fica fora do ar com erro 503 após o deploy, mas não descreve nenhuma situação intermitente ou variável no tempo, como 'às vezes' ou 'de vez em quando'. O problema é descrito como constante (desde que publicou a nova versão), não se enquadrando em nenhuma ressalva da lista.",
+    "O relato descreve um erro constante (503 após deploy), sem menção a intermitência ou situações que não sejam constantes.",
+    "O relato descreve um problema constante (site fora do ar com erro 503 após deploy), sem menção a nenhuma das situações listadas como ressalva."
+   ],
+   "literal": false
+  },
+  {
+   "id": "A8",
+   "grupo": "controle",
+   "kb": "KB-107",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato menciona apenas que o site não conecta ao banco de dados, sem mencionar lentidão, demora ou qualquer situação listada nas ressalvas.",
+    "O relato menciona que a conexão é recusada, mas não descreve nenhuma das situações listadas como ressalva ('lento', 'lentidão', 'consulta demorada').",
+    "O relato menciona que a conexão é recusada, mas não descreve nenhuma das situações listadas como ressalva ('lento', 'lentidão', 'consulta demorada')."
+   ],
+   "literal": false
+  },
+  {
+   "id": "A14",
+   "grupo": "controle",
+   "kb": "KB-113",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato do cliente não menciona nenhuma das situações listadas como ressalva (instalação ou atualização de versão do PHP). O problema relatado é o esgotamento de memória em um script PHP já instalado, o que está dentro do escopo do procedimento.",
+    "O relato não menciona nenhuma das situações de ressalva listadas ('instalacao', 'instalar', 'atualizar versao'). O problema relatado é o esgotamento de memória do PHP em execução, sem referência a instalação ou atualização do ambiente PHP.",
+    "O relato do cliente não menciona nenhuma das situações de ressalva listadas ('instalação', 'instalar', 'atualizar versão'). Ele descreve apenas um problema de memória do PHP em execução, sem referência a instalação ou atualização de versão."
+   ],
+   "literal": false
+  },
+  {
+   "id": "A15",
+   "grupo": "controle",
+   "kb": "KB-114",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato menciona apenas falha no login por FTP com recusa de senha, sem nenhuma menção a conexão por SSH ou situação que caiba nas ressalvas.",
+    "O relato menciona apenas falha no login por FTP com recusa de senha, sem nenhuma menção a conexão por SSH ou situação que caiba nas ressalvas fornecidas.",
+    "O relato menciona apenas falha no login por FTP com recusa de senha, sem nenhuma menção a conexão por SSH ou situação que caiba nas ressalvas."
+   ],
+   "literal": false
+  },
+  {
+   "id": "C1",
+   "grupo": "controle",
+   "kb": "KB-104",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato descreve um erro constante (\"o tempo todo\"), não uma situação intermitente ou variável.",
+    "O relato descreve um erro constante (502) desde o deploy, sem menção a intermitência ou periodicidade, não correspondendo a nenhuma ressalva da lista.",
+    "O relato descreve um erro constante (\"o tempo todo\"), não uma situação intermitente ou variável."
+   ],
+   "literal": false
+  },
+  {
+   "id": "C2",
+   "grupo": "controle",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato menciona falha em uploads de imagens pelo site, sem relação com acesso via SSH ou permissões em ambiente de terminal.",
+    "O relato menciona falha em uploads de imagens pelo site, sem relação com acesso via SSH ou permissões em ambiente de terminal.",
+    "O relato menciona falha em uploads de imagens pelo site, sem relação com acesso via SSH ou qualquer menção a essa situação específica da ressalva."
+   ],
+   "literal": false
+  },
+  {
+   "id": "C3",
+   "grupo": "controle",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato não menciona acesso via SSH ou qualquer situação que esteja listada nas ressalvas do procedimento.",
+    "O relato não menciona acesso por SSH ou qualquer situação que esteja listada nas ressalvas do procedimento.",
+    "O relato não menciona acesso por SSH ou qualquer situação que esteja na lista de ressalvas do procedimento."
+   ],
+   "literal": false
+  },
+  {
+   "id": "C4",
+   "grupo": "controle",
+   "kb": "KB-102",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato menciona falha em uploads de fotos após migração, mas não menciona uso de SSH ou situação que caiba nas ressalvas fornecidas.",
+    "O relato menciona falha em uploads de fotos após migração, mas não menciona uso de SSH ou situação que caiba nas ressalvas fornecidas.",
+    "O relato menciona falha em uploads de fotos após migração, mas não faz referência a acesso via SSH ou situação intermitente, constante ou qualquer outra ressalva listada."
+   ],
+   "literal": false
+  },
+  {
+   "id": "C5",
+   "grupo": "controle",
+   "kb": "KB-104",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato descreve um erro constante (502 em todas as páginas) após o deploy, sem menção a intermitência ou qualquer situação que caiba nas ressalvas fornecidas.",
+    "O relato descreve um erro constante (502 em todas as páginas) após o deploy, sem menção a intermitência ou periodicidade que caracterizaria uma das ressalvas listadas.",
+    "O relato descreve um erro constante (502 em todas as páginas) após o deploy, sem menção a intermitência ou qualquer situação que caiba nas ressalvas fornecidas."
+   ],
+   "literal": false
+  },
+  {
+   "id": "C6",
+   "grupo": "controle",
+   "kb": "KB-107",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato menciona erro de conexão com o banco de dados após reinício do servidor, mas não descreve nenhuma das situações listadas como ressalva ('lento', 'lentidão', 'consulta demorada').",
+    "O relato menciona apenas um erro de conexão com o banco de dados após o reinício do servidor, sem mencionar lentidão, consulta demorada ou qualquer situação que caiba nas ressalvas fornecidas.",
+    "O relato menciona apenas um erro de conexão com o banco de dados após o reinício do servidor, sem mencionar lentidão, consulta demorada ou qualquer situação listada como ressalva."
+   ],
+   "literal": false
+  },
+  {
+   "id": "C7",
+   "grupo": "controle",
+   "kb": "KB-115",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato descreve um problema constante de CPU em 100% e não menciona nenhuma das situações listadas como ressalva.",
+    "O relato não menciona nenhuma das situações listadas como ressalva (intermitente, às vezes, de vez em quando). A CPU está em 100% 'o tempo todo', o que não corresponde a nenhuma das ressalvas.",
+    "O relato descreve um problema constante (CPU em 100% o tempo todo), sem menção a intermitência ou periodicidade que justifique uma das ressalvas listadas."
+   ],
+   "literal": false
+  },
+  {
+   "id": "C8",
+   "grupo": "controle",
+   "kb": "KB-111",
+   "votos": [
+    false,
+    false,
+    false
+   ],
+   "certas": 3,
+   "frases": [
+    "O relato do cliente descreve um problema de envio de e-mail (rejeitado), não de recebimento ou não chegada do e-mail, que são as situações listadas como ressalvas.",
+    "O relato do cliente descreve um problema de envio de e-mail (rejeição por erro SPF), não de recebimento ou não chegada do e-mail, que são as situações listadas como ressalvas.",
+    "O relato do cliente descreve um problema de envio de e-mail (rejeição), não de recebimento ou não chegada do e-mail, que são as situações listadas como ressalvas."
+   ],
+   "literal": false
+  }
+ ],
+ "ressalva_sistema": [
+  {
+   "id": "P1",
+   "kb_id": "KB-101-A",
+   "rodou": false,
+   "cai": null,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "P2",
+   "kb_id": "KB-102",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "P6",
+   "kb_id": "KB-104",
+   "rodou": false,
+   "cai": null,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "P7",
+   "kb_id": "KB-103",
+   "rodou": false,
+   "cai": null,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "A2",
+   "kb_id": "KB-102",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "A4",
+   "kb_id": "KB-104",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "A8",
+   "kb_id": "KB-107",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "A14",
+   "kb_id": "KB-113",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "A15",
+   "kb_id": "KB-114",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "X1",
+   "kb_id": "KB-104",
+   "rodou": false,
+   "cai": null,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "X2",
+   "kb_id": "KB-103",
+   "rodou": false,
+   "cai": null,
+   "antes": "parcial",
+   "depois": "parcial"
+  },
+  {
+   "id": "X3",
+   "kb_id": "KB-104",
+   "rodou": true,
+   "cai": true,
+   "antes": "errado",
+   "depois": "certo"
+  },
+  {
+   "id": "X4",
+   "kb_id": "KB-104",
+   "rodou": true,
+   "cai": true,
+   "antes": "errado",
+   "depois": "certo"
+  },
+  {
+   "id": "X5",
+   "kb_id": "KB-102",
+   "rodou": true,
+   "cai": false,
+   "antes": "errado",
+   "depois": "errado"
+  },
+  {
+   "id": "X6",
+   "kb_id": "KB-103",
+   "rodou": false,
+   "cai": null,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "X7",
+   "kb_id": "KB-102",
+   "rodou": true,
+   "cai": false,
+   "antes": "errado",
+   "depois": "errado"
+  },
+  {
+   "id": "X8",
+   "kb_id": "KB-107",
+   "rodou": true,
+   "cai": true,
+   "antes": "errado",
+   "depois": "certo"
+  },
+  {
+   "id": "X9",
+   "kb_id": "KB-115",
+   "rodou": false,
+   "cai": null,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "X10",
+   "kb_id": "KB-115",
+   "rodou": false,
+   "cai": null,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "X11",
+   "kb_id": "KB-111",
+   "rodou": false,
+   "cai": null,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "C1",
+   "kb_id": "KB-104",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "C2",
+   "kb_id": "KB-102",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "C3",
+   "kb_id": "KB-102",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "C4",
+   "kb_id": "KB-102",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "C5",
+   "kb_id": "KB-104",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "C6",
+   "kb_id": "KB-107",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "C7",
+   "kb_id": "KB-115",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  },
+  {
+   "id": "C8",
+   "kb_id": "KB-111",
+   "rodou": true,
+   "cai": false,
+   "antes": "certo",
+   "depois": "certo"
+  }
+ ]
+}

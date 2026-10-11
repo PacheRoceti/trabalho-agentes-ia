@@ -14,6 +14,7 @@ import json
 import re
 import sqlite3
 import unicodedata
+from datetime import datetime
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -104,6 +105,79 @@ CREATE TABLE IF NOT EXISTS kb_vetores (
 )"""
 
 
+# Memória episódica (docs/memoria.md §1.3): um registro por execução CONCLUÍDA do grafo, escrito
+# pelo código a partir de campos estruturados. Não guarda o texto do cliente nem o log anexado.
+# Como as pendências, é estado criado pelas execuções, com data real: nasce aqui, não no seed.
+SQL_EPISODIOS = """
+CREATE TABLE IF NOT EXISTS episodios (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticket_externo TEXT NOT NULL,
+    cliente_id     TEXT,                       -- NULL quando o id do chamado não existe
+    classe         TEXT,                       -- a classe da triagem
+    categoria      TEXT,                       -- a do guia proposto, quando houve um
+    kb_id          TEXT,                       -- o guia que o agente propôs usar
+    score          REAL,
+    acao_proposta  TEXT,                       -- o que o nó `decidir` propôs
+    desfecho       TEXT,                       -- o que foi gravado (NULL = nada)
+    motivo         TEXT,
+    veredito       TEXT,                       -- aprovado | editado | rejeitado | vencido | NULL (sem H1)
+    motivo_rejeicao TEXT,                      -- o que o analista disse ao rejeitar (MOTIVOS_REJEICAO) ou NULL
+    termino        TEXT NOT NULL,
+    resumo         TEXT NOT NULL,              -- montado pelo código, nunca texto do modelo
+    criado_em      TEXT NOT NULL               -- ISO 8601 com fuso
+)"""
+
+# Decaimento (docs/memoria.md §2.2): até 90 dias o episódio é recente; entre 90 e 365 ele ainda
+# aparece, marcado como antigo, e não entra na contagem do aviso; depois de 365 é removido.
+# Os dois cortes são justificados pelo domínio, e não medidos.
+EPISODIO_RECENTE_DIAS = 90
+EPISODIO_MAX_DIAS = 365
+
+# Memória procedural, a parte que existe em código (docs/memoria.md §5): o analista pode dizer por
+# que rejeitou, e `candidatas_a_regra` conta os padrões que se repetem. Cada motivo aponta ONDE uma
+# pessoa deveria olhar; nada aqui escreve regra, prompt ou guia.
+MOTIVOS_REJEICAO = {
+    "guia_errado": "revisar a triagem e a busca: o guia proposto não era o do problema",
+    "caso_fora_do_guia": "revisar o guia: falta declarar a situação em nao_cobre",
+    "resumo_ruim": "revisar o prompt do redigir: o resumo não serviu",
+    "outro": "sem destino sugerido: ler os episódios",
+}
+DESTINO_EDITADO = "revisar o prompt do redigir: o analista corrigiu o resumo antes de aprovar"
+DESTINO_SEM_MOTIVO = "sem destino sugerido: as rejeições não trazem motivo"
+MINIMO_CANDIDATA = 3        # correções do mesmo padrão para virar candidata (memoria.md §1.4)
+
+
+# Memória semântica (docs/memoria.md §4): fatos estáveis do ambiente do cliente, CONFIRMADOS pelo
+# analista. Vocabulário fechado: a chave e o valor vêm de FATOS_ACEITOS, nunca de texto livre, e
+# quem escreve é uma pessoa (main.py --fato), nunca o modelo nem a alegação do cliente. Não decai
+# com o tempo: um valor novo para a mesma chave fecha o anterior (substituido_em).
+SQL_FATOS = """
+CREATE TABLE IF NOT EXISTS fatos_cliente (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    cliente_id      TEXT NOT NULL,
+    chave           TEXT NOT NULL,
+    valor           TEXT NOT NULL,
+    confirmado_por  TEXT NOT NULL,
+    confirmado_em   TEXT NOT NULL,             -- ISO 8601 com fuso
+    substituido_em  TEXT                       -- NULL = é o valor que vale
+)"""
+
+# As três chaves vieram dos casos e das medições (docs/memoria.md §4.1). O texto de cada valor é
+# o que a tela do H1 e o nó `conferir_ressalva` mostram.
+FATOS_ACEITOS = {
+    "acesso": {"ssh": "o cliente administra o servidor por SSH (terminal remoto)",
+               "painel": "o cliente só usa o painel de controle e o FTP; não tem acesso por SSH"},
+    "certificado": {"gerenciado": "o certificado SSL é emitido e renovado pela hospedagem (certbot)",
+                    "externo": "o certificado SSL foi comprado de outra empresa e é instalado pelo cliente"},
+    "aplicacao": {"gerenciada": "a aplicação do site é instalada e mantida pela hospedagem",
+                  "propria": "a aplicação foi instalada pelo próprio cliente e é mantida por ele"},
+}
+
+
+class FatoRecusado(Exception):
+    """O fato não é do vocabulário, ou o cliente não existe."""
+
+
 def conectar() -> sqlite3.Connection:
     if not DB_PATH.exists():
         recriar_banco()
@@ -112,6 +186,8 @@ def conectar() -> sqlite3.Connection:
     con.execute(SQL_PENDENCIAS)
     con.execute(SQL_AVISOS_GESTOR)
     con.execute(SQL_VETORES)
+    con.execute(SQL_EPISODIOS)
+    con.execute(SQL_FATOS)
     return con
 
 
@@ -130,6 +206,8 @@ def recriar_banco() -> None:
     con.execute(SQL_PENDENCIAS)
     con.execute(SQL_AVISOS_GESTOR)
     con.execute(SQL_VETORES)
+    con.execute(SQL_EPISODIOS)
+    con.execute(SQL_FATOS)
     con.commit()
     con.close()
 
@@ -446,6 +524,127 @@ def avisar_gestor(con, id_ticket: str, prioridade: str, motivo: str, mensagem: s
            VALUES (?, ?, ?, ?, ?)""", (id_ticket, prioridade, motivo, mensagem, quando))
     con.commit()
     return cur.lastrowid
+
+
+# ------------------------------------------------------------------ memória episódica
+
+def _idade_em_dias(criado_em: str, agora: datetime) -> float:
+    return (agora - datetime.fromisoformat(criado_em)).total_seconds() / 86400
+
+
+def registrar_episodio(con, episodio: dict) -> int:
+    """Grava o registro de uma execução concluída. Quem chama é o código, com campos do estado."""
+    campos = ("ticket_externo", "cliente_id", "classe", "categoria", "kb_id", "score",
+              "acao_proposta", "desfecho", "motivo", "veredito", "motivo_rejeicao", "termino",
+              "resumo", "criado_em")
+    cur = con.execute(
+        f"INSERT INTO episodios ({', '.join(campos)}) VALUES ({', '.join('?' * len(campos))})",
+        tuple(episodio.get(c) for c in campos))
+    con.commit()
+    return cur.lastrowid
+
+
+def esquecer_episodios(con, agora: datetime | None = None) -> int:
+    """Remove os episódios com mais de EPISODIO_MAX_DIAS. Devolve quantos saíram. Como o prazo
+    das pendências, é conferido quando um comando roda: não há processo em segundo plano."""
+    agora = agora or datetime.now().astimezone()
+    velhos = [l["id"] for l in con.execute("SELECT id, criado_em FROM episodios")
+              if _idade_em_dias(l["criado_em"], agora) > EPISODIO_MAX_DIAS]
+    con.executemany("DELETE FROM episodios WHERE id = ?", [(i,) for i in velhos])
+    con.commit()
+    return len(velhos)
+
+
+def precedentes(con, kb_id: str, cliente_id: str | None, categoria: str | None,
+                agora: datetime | None = None, top: int = 3) -> dict:
+    """O que a memória episódica sabe, por consulta exata (sem embedding), para a tela do H1:
+    as decisões do analista sobre este guia e os últimos episódios do cliente na categoria.
+    Só as decisões RECENTES entram na contagem; as antigas são contadas à parte, e o que passou
+    de EPISODIO_MAX_DIAS não é lido mesmo que ainda não tenha sido removido. É só informação:
+    nenhuma regra de decisão lê este resultado."""
+    agora = agora or datetime.now().astimezone()
+
+    def vivos(sql, args):
+        linhas = [dict(l) for l in con.execute(sql + " ORDER BY criado_em DESC, id DESC", args)]
+        for l in linhas:
+            l["_idade"] = _idade_em_dias(l["criado_em"], agora)
+        return [l for l in linhas if l["_idade"] <= EPISODIO_MAX_DIAS]
+
+    do_guia = vivos("""SELECT * FROM episodios WHERE kb_id = ?
+                       AND veredito IN ('aprovado', 'editado', 'rejeitado')""", (kb_id,))
+    recentes = [l for l in do_guia if l["_idade"] <= EPISODIO_RECENTE_DIAS]
+    guia = {"kb_id": kb_id, "janela_dias": EPISODIO_RECENTE_DIAS, "decisoes": len(recentes),
+            **{v + "s": sum(l["veredito"] == v for l in recentes)
+               for v in ("aprovado", "editado", "rejeitado")},
+            "decisoes_antigas": len(do_guia) - len(recentes)}
+    guia["rejeicoes_por_motivo"] = {}
+    for l in recentes:
+        if l["veredito"] == "rejeitado":
+            m = l["motivo_rejeicao"] or "sem motivo"
+            guia["rejeicoes_por_motivo"][m] = guia["rejeicoes_por_motivo"].get(m, 0) + 1
+    do_cliente = vivos("SELECT * FROM episodios WHERE cliente_id = ? AND categoria = ?",
+                       (cliente_id, categoria)) if cliente_id and categoria else []
+    return {"guia": guia,
+            "cliente": [{"ticket": l["ticket_externo"], "em": l["criado_em"][:10], "kb_id": l["kb_id"],
+                         "desfecho": l["desfecho"], "veredito": l["veredito"],
+                         "antigo": l["_idade"] > EPISODIO_RECENTE_DIAS} for l in do_cliente[:top]]}
+
+
+def candidatas_a_regra(con, agora: datetime | None = None, minimo: int = MINIMO_CANDIDATA) -> list[dict]:
+    """Os padrões de correção do analista que se repetiram: rejeições do mesmo guia pelo mesmo
+    motivo e aprovações com edição do mesmo guia, entre os episódios RECENTES. Só lê. É o
+    material para uma pessoa decidir se escreve uma regra; nenhuma regra nasce daqui."""
+    agora = agora or datetime.now().astimezone()
+    grupos: dict[tuple, list] = {}
+    for l in con.execute("""SELECT id, ticket_externo, kb_id, veredito, motivo_rejeicao, criado_em
+                              FROM episodios WHERE kb_id IS NOT NULL
+                              AND veredito IN ('rejeitado', 'editado') ORDER BY id"""):
+        if _idade_em_dias(l["criado_em"], agora) > EPISODIO_RECENTE_DIAS:
+            continue
+        padrao = "editado" if l["veredito"] == "editado" else (l["motivo_rejeicao"] or "sem_motivo")
+        grupos.setdefault((l["kb_id"], padrao), []).append(l)
+    destinos = {**MOTIVOS_REJEICAO, "editado": DESTINO_EDITADO, "sem_motivo": DESTINO_SEM_MOTIVO}
+    return [{"kb_id": kb_id, "padrao": padrao, "quantidade": len(linhas), "destino": destinos[padrao],
+             "episodios": [l["id"] for l in linhas],
+             "chamados": sorted({l["ticket_externo"] for l in linhas})}
+            for (kb_id, padrao), linhas in sorted(grupos.items()) if len(linhas) >= minimo]
+
+
+# ------------------------------------------------------------------ memória semântica
+
+def registrar_fato(con, cliente_id: str, chave: str, valor: str, por: str,
+                   quando: str | None = None) -> dict:
+    """Grava um fato confirmado sobre o cliente. O valor anterior da mesma chave deixa de valer
+    (contradição: vale o mais novo), e fica na tabela com a data em que foi substituído."""
+    if con.execute("SELECT 1 FROM clientes WHERE id = ?", (cliente_id,)).fetchone() is None:
+        raise FatoRecusado(f"cliente {cliente_id} não existe")
+    if chave not in FATOS_ACEITOS or valor not in FATOS_ACEITOS[chave]:
+        aceitos = "; ".join(f"{c}={'|'.join(v)}" for c, v in FATOS_ACEITOS.items())
+        raise FatoRecusado(f"fato {chave}={valor} fora do vocabulário (aceitos: {aceitos})")
+    quando = quando or datetime.now().astimezone().isoformat(timespec="seconds")
+    atual = fatos_do_cliente(con, cliente_id).get(chave)
+    if atual and atual["valor"] == valor:
+        return {**atual, "mudou": False}
+    con.execute("""UPDATE fatos_cliente SET substituido_em = ?
+                   WHERE cliente_id = ? AND chave = ? AND substituido_em IS NULL""",
+                (quando, cliente_id, chave))
+    con.execute("""INSERT INTO fatos_cliente (cliente_id, chave, valor, confirmado_por, confirmado_em)
+                   VALUES (?, ?, ?, ?, ?)""", (cliente_id, chave, valor, por, quando))
+    con.commit()
+    return {**fatos_do_cliente(con, cliente_id)[chave], "mudou": True,
+            "substituiu": atual["valor"] if atual else None}
+
+
+def fatos_do_cliente(con, cliente_id: str | None) -> dict:
+    """Os fatos que valem hoje para o cliente, por chave exata: {chave: {valor, texto, ...}}."""
+    if not cliente_id:
+        return {}
+    linhas = con.execute("""SELECT chave, valor, confirmado_por, confirmado_em FROM fatos_cliente
+                            WHERE cliente_id = ? AND substituido_em IS NULL ORDER BY chave""",
+                         (cliente_id,))
+    return {l["chave"]: {"valor": l["valor"], "texto": FATOS_ACEITOS[l["chave"]][l["valor"]],
+                         "confirmado_por": l["confirmado_por"], "confirmado_em": l["confirmado_em"]}
+            for l in linhas}
 
 
 def times_destino(con) -> list[str]:

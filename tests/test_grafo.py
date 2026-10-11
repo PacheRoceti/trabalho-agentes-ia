@@ -449,6 +449,215 @@ class TestGrafo(unittest.TestCase):
         self.assertEqual((e.termino, e.desfecho["motivo"]), (Termino.RESPONDEU, "acao_rejeitada"))
         self.assertEqual(db.contar(self.con, "avisos_gestor", "TKT-0003"), 0)
 
+    # ---- a memória episódica (docs/memoria.md §1.3 e §2.2): o código escreve, a tela do H1 lê
+
+    def episodios(self):
+        return [dict(l) for l in self.con.execute("SELECT * FROM episodios ORDER BY id")]
+
+    def semear(self, dias, veredito, kb_id="KB-102", ticket="TKT-0007"):
+        """Um episódio com `dias` de idade, do mesmo cliente e categoria do chamado `ticket`."""
+        t = db.buscar_ticket(self.con, ticket)
+        quando = (datetime.now().astimezone() - timedelta(days=dias)).isoformat(timespec="seconds")
+        db.registrar_episodio(self.con, {
+            "ticket_externo": ticket, "cliente_id": t["_cliente_id"], "classe": "tecnico",
+            "categoria": db.buscar_artigo(self.con, kb_id)["categoria"], "kb_id": kb_id, "score": 0.9,
+            "acao_proposta": "abrir_chamado_interno", "desfecho": "fila_humana", "motivo": "teste",
+            "veredito": veredito, "termino": "respondeu", "resumo": "semeado pelo teste",
+            "criado_em": quando})
+
+    def test_execucao_concluida_grava_um_episodio_e_a_pausada_nao(self):
+        self.rodar("TKT-0007", confirmador=None)
+        self.assertEqual(self.episodios(), [])                         # pausou: ainda não é um episódio
+        self.retomar("TKT-0007", "rejeitar")
+        (ep,) = self.episodios()
+        self.assertEqual((ep["kb_id"], ep["acao_proposta"], ep["desfecho"], ep["veredito"]),
+                         ("KB-102", "abrir_chamado_interno", "fila_humana", "rejeitado"))
+        self.assertEqual(ep["cliente_id"], db.buscar_ticket(self.con, "TKT-0007")["_cliente_id"])
+        self.assertEqual(ep["categoria"], db.buscar_artigo(self.con, "KB-102")["categoria"])
+
+    def test_o_episodio_nao_guarda_o_texto_do_cliente_nem_o_que_o_modelo_redigiu(self):
+        e = self.rodar("TKT-0003")
+        (ep,) = self.episodios()
+        guardado = json.dumps(ep, ensure_ascii=False)
+        ticket = db.buscar_ticket(self.con, "TKT-0003")
+        for fora in (ticket["texto"], ticket["anexo_log"], e.desfecho.get("resumo"), ticket["cliente"]):
+            if fora:
+                self.assertNotIn(fora, guardado)
+        self.assertEqual(ep["veredito"], "aprovado")
+
+    def test_episodio_sem_h1_nao_tem_veredito_e_id_inexistente_nao_tem_cliente(self):
+        self.rodar("TKT-0001")
+        self.rodar("TKT-0999")
+        anotado, inexistente = self.episodios()
+        self.assertEqual((anotado["desfecho"], anotado["veredito"]), ("anotacao_interna", None))
+        self.assertEqual((inexistente["cliente_id"], inexistente["kb_id"], inexistente["motivo"]),
+                         (None, None, "id_inexistente"))
+
+    def test_a_tela_da_pausa_mostra_o_que_o_analista_ja_decidiu_sobre_o_guia(self):
+        self.rodar("TKT-0007", confirmador=NAO)
+        p = self.rodar("TKT-0007", confirmador=None).pendencia["precedentes"]
+        self.assertEqual((p["guia"]["decisoes"], p["guia"]["rejeitados"], p["guia"]["aprovados"]), (1, 1, 0))
+        self.assertEqual([(c["ticket"], c["veredito"], c["antigo"]) for c in p["cliente"]],
+                         [("TKT-0007", "rejeitado", False)])
+        import io, contextlib, main
+        tela = io.StringIO()
+        with contextlib.redirect_stdout(tela):
+            main.mostrar_pendencia(self.rodar("TKT-0007", confirmador=None).pendencia)
+        self.assertIn("MEMÓRIA: nos últimos 90 dias o analista decidiu 1 vez(es) sobre o guia KB-102: "
+                      "1 rejeitada(s)", tela.getvalue())
+
+    def test_o_precedente_so_avisa_e_nao_muda_o_desfecho(self):
+        for _ in range(3):
+            self.semear(dias=1, veredito="rejeitado")
+        e = self.rodar("TKT-0007")
+        self.assertEqual(e.desfecho["acao"], "abrir_chamado_interno")
+        self.assertEqual(verificar("TKT-0007", e, self.con), (True, []))
+        self.assertEqual(e.confirmacoes[-1]["pendencia"]["precedentes"]["guia"]["rejeitados"], 3)
+
+    def test_decaimento_o_antigo_aparece_sem_contar_e_o_de_mais_de_um_ano_sai(self):
+        self.semear(dias=30, veredito="rejeitado")
+        self.semear(dias=200, veredito="rejeitado")
+        self.semear(dias=400, veredito="rejeitado")
+        t = db.buscar_ticket(self.con, "TKT-0007")
+        categoria = db.buscar_artigo(self.con, "KB-102")["categoria"]
+        p = db.precedentes(self.con, "KB-102", t["_cliente_id"], categoria)
+        self.assertEqual((p["guia"]["decisoes"], p["guia"]["rejeitados"], p["guia"]["decisoes_antigas"]), (1, 1, 1))
+        self.assertEqual([c["antigo"] for c in p["cliente"]], [False, True])   # o de 400 dias não é lido
+        self.assertEqual(db.esquecer_episodios(self.con), 1)
+        self.assertEqual(len(self.episodios()), 2)
+        self.assertEqual(db.esquecer_episodios(self.con), 0)
+
+    def test_sem_memoria_o_grafo_nao_le_nem_grava_episodio(self):
+        self.semear(dias=1, veredito="rejeitado")
+        grafo_mod.MEMORIA = False
+        try:
+            e = self.rodar("TKT-0007")
+        finally:
+            grafo_mod.MEMORIA = True
+        self.assertIsNone(e.confirmacoes[-1]["pendencia"]["precedentes"])
+        self.assertEqual(len(self.episodios()), 1)                     # só o semeado
+
+    # ---- a memória semântica (docs/memoria.md §4): fatos do cliente, confirmados pelo analista
+
+    def test_fato_tem_vocabulario_fechado_e_o_valor_novo_substitui_o_antigo(self):
+        for cliente, chave, valor in (("CLI-07", "acesso", "telnet"), ("CLI-07", "humor", "bom"),
+                                      ("CLI-99", "acesso", "ssh")):
+            with self.assertRaises(db.FatoRecusado):
+                db.registrar_fato(self.con, cliente, chave, valor, por="teste")
+        self.assertEqual(db.fatos_do_cliente(self.con, "CLI-07"), {})
+        self.assertTrue(db.registrar_fato(self.con, "CLI-07", "acesso", "painel", por="teste")["mudou"])
+        self.assertFalse(db.registrar_fato(self.con, "CLI-07", "acesso", "painel", por="teste")["mudou"])
+        novo = db.registrar_fato(self.con, "CLI-07", "acesso", "ssh", por="teste")
+        self.assertEqual((novo["valor"], novo["substituiu"]), ("ssh", "painel"))
+        self.assertEqual({c: f["valor"] for c, f in db.fatos_do_cliente(self.con, "CLI-07").items()},
+                         {"acesso": "ssh"})
+        antigas = self.con.execute("SELECT valor FROM fatos_cliente WHERE substituido_em IS NOT NULL").fetchall()
+        self.assertEqual([l["valor"] for l in antigas], ["painel"])     # o antigo fica, fechado
+
+    def test_o_fato_vai_a_entrada_do_no_da_ressalva_e_a_tela_do_h1(self):
+        db.registrar_fato(self.con, "CLI-07", "acesso", "ssh", por="teste")
+        e = self.rodar("TKT-0007", confirmador=None)
+        pedido_da_ressalva = self.modelo.pedidos[1]["messages"][1]["content"]
+        self.assertIn("Fatos confirmados sobre o ambiente do cliente", pedido_da_ressalva)
+        self.assertIn(db.FATOS_ACEITOS["acesso"]["ssh"], pedido_da_ressalva)
+        self.assertNotIn("Fatos confirmados", self.modelo.pedidos[2]["messages"][1]["content"])   # não vai ao redigir
+        self.assertEqual(e.pendencia["fatos_cliente"], {"acesso": "ssh"})
+        passo = next(p for p in e.passos if p.ferramenta == "conferir_ressalva")
+        self.assertEqual(passo.argumentos["fatos"], {"acesso": "ssh"})
+
+    def test_sem_fato_a_entrada_do_no_da_ressalva_nao_muda(self):
+        e = self.rodar("TKT-0007", confirmador=None)
+        self.assertNotIn("Fatos confirmados", self.modelo.pedidos[1]["messages"][1]["content"])
+        self.assertEqual(e.pendencia["fatos_cliente"], {})
+
+    def test_o_fato_nao_decide_quem_baixa_o_score_e_a_resposta_do_no(self):
+        db.registrar_fato(self.con, "CLI-07", "acesso", "ssh", por="teste")
+        e = self.rodar("TKT-0007")                                     # o modelo diz que não cai
+        self.assertEqual(e.desfecho["acao"], "abrir_chamado_interno")
+        self.assertEqual(verificar("TKT-0007", e, self.con), (True, []))
+        self.con.close()
+        db.recriar_banco()
+        self.con = db.conectar()
+        db.registrar_fato(self.con, "CLI-07", "acesso", "ssh", por="teste")
+        e = self.rodar("TKT-0007", [triagem("tecnico", termos=UPLOAD), ressalva(True, "ssh"),
+                                    texto("O guia KB-102 não cobre acesso por SSH; encaminhado ao analista.")])
+        self.assertEqual(e.desfecho["acao"], "fila_humana")
+        self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0007"), 0)
+
+    def test_sem_memoria_o_fato_nao_e_lido(self):
+        db.registrar_fato(self.con, "CLI-07", "acesso", "ssh", por="teste")
+        grafo_mod.MEMORIA = False
+        try:
+            e = self.rodar("TKT-0007", confirmador=None)
+        finally:
+            grafo_mod.MEMORIA = True
+        self.assertNotIn("Fatos confirmados", self.modelo.pedidos[1]["messages"][1]["content"])
+        self.assertIsNone(e.pendencia["fatos_cliente"])
+
+    # ---- a memória procedural que existe (docs/memoria.md §5): motivo da rejeição e candidatas
+
+    def rejeitar(self, ticket, motivo=None):
+        self.rodar(ticket, confirmador=None)
+        return retomar_grafo(ticket, "rejeitar", client=ModeloRoteirizado([]), con=self.con,
+                             verbose=False, motivo_rejeicao=motivo)
+
+    def test_rejeitar_com_motivo_grava_o_motivo_no_episodio_e_na_confirmacao(self):
+        e = self.rejeitar("TKT-0007", "caso_fora_do_guia")
+        self.assertEqual(e.confirmacoes[-1]["motivo_rejeicao"], "caso_fora_do_guia")
+        (ep,) = self.episodios()
+        self.assertEqual((ep["veredito"], ep["motivo_rejeicao"]), ("rejeitado", "caso_fora_do_guia"))
+        self.assertEqual(e.desfecho["motivo"], "acao_rejeitada")       # o desfecho gravado não muda
+
+    def test_rejeitar_sem_motivo_continua_valendo(self):
+        e = self.rejeitar("TKT-0007")
+        self.assertNotIn("motivo_rejeicao", e.confirmacoes[-1])
+        self.assertIsNone(self.episodios()[0]["motivo_rejeicao"])
+
+    def test_motivo_invalido_ou_com_aprovacao_e_recusado_sem_gastar_a_resposta(self):
+        self.rodar("TKT-0007", confirmador=None)
+        for decisao, motivo in (("rejeitar", "nao_gostei"), ("aprovar", "guia_errado")):
+            with self.assertRaises(ValueError):
+                retomar_grafo("TKT-0007", decisao, client=ModeloRoteirizado([]), con=self.con,
+                              verbose=False, motivo_rejeicao=motivo)
+        self.assertEqual(len(db.pendencias_aguardando(self.con, "TKT-0007")), 1)   # a pausa continua
+        self.assertEqual(self.episodios(), [])
+
+    def test_a_tela_separa_as_rejeicoes_por_motivo(self):
+        self.rejeitar("TKT-0007", "guia_errado")
+        self.rejeitar("TKT-0007")
+        p = self.rodar("TKT-0007", confirmador=None).pendencia
+        self.assertEqual(p["precedentes"]["guia"]["rejeicoes_por_motivo"], {"guia_errado": 1, "sem motivo": 1})
+        import io, contextlib, main
+        tela = io.StringIO()
+        with contextlib.redirect_stdout(tela):
+            main.mostrar_pendencia(p)
+        self.assertIn("2 rejeitada(s) (1 sem motivo, 1 guia_errado)", tela.getvalue())
+
+    def test_candidata_a_regra_exige_tres_correcoes_recentes_do_mesmo_padrao(self):
+        self.rejeitar("TKT-0007", "caso_fora_do_guia")
+        self.rejeitar("TKT-0007", "caso_fora_do_guia")
+        self.rejeitar("TKT-0007", "resumo_ruim")
+        self.assertEqual(db.candidatas_a_regra(self.con), [])          # 2 + 1: nenhum padrão chegou a 3
+        self.rejeitar("TKT-0007", "caso_fora_do_guia")
+        antes = self.episodios()
+        (c,) = db.candidatas_a_regra(self.con)
+        self.assertEqual((c["kb_id"], c["padrao"], c["quantidade"], c["chamados"]),
+                         ("KB-102", "caso_fora_do_guia", 3, ["TKT-0007"]))
+        self.assertIn("nao_cobre", c["destino"])
+        self.assertEqual(self.episodios(), antes)                      # o relatório só lê
+        depois = datetime.now().astimezone() + timedelta(days=db.EPISODIO_RECENTE_DIAS + 1)
+        self.assertEqual(db.candidatas_a_regra(self.con, agora=depois), [])   # correção antiga não conta
+
+    def test_o_laco_recusa_o_motivo_da_rejeicao(self):
+        from test_offline import ModeloRoteirizado as ModeloDoLaco, ROTEIROS as ROTEIROS_DO_LACO
+        from agente import rodar
+        rodar("TKT-0007", client=ModeloDoLaco(ROTEIROS_DO_LACO["TKT-0007"]), modelo="fake", con=self.con,
+              verbose=False)
+        with self.assertRaises(EdicaoRecusada):
+            retomar("TKT-0007", "rejeitar", client=ModeloDoLaco([]), con=self.con, verbose=False,
+                    motivo_rejeicao="guia_errado")
+        self.assertEqual(len(db.pendencias_aguardando(self.con, "TKT-0007")), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

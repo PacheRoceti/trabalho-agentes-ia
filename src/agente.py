@@ -377,7 +377,7 @@ class EdicaoRecusada(Exception):
 def retomar(id_ticket: str, decisao: str, *, client, con, por: str = "analista de suporte",
             agora: datetime | None = None, orcamento: Orcamento | None = None,
             log_dir: Path | None = None, verbose: bool = True,
-            resumo: str | None = None) -> Estado | None:
+            resumo: str | None = None, motivo_rejeicao: str | None = None) -> Estado | None:
     """Conclui a ação irreversível que ficou à espera do analista e continua a execução pausada.
 
     `decisao` é "aprovar", "rejeitar" ou "vencer" (só aplica o prazo, sem resposta de ninguém).
@@ -405,7 +405,10 @@ def retomar(id_ticket: str, decisao: str, *, client, con, por: str = "analista d
         pasta = registro["checkpoint"].get("log_dir")
         return retomar_grafo(id_ticket, decisao, client=client, con=con, por=por, agora=agora,
                              log_dir=Path(pasta) if pasta else log_dir, verbose=verbose,
-                             resumo=resumo)
+                             resumo=resumo, motivo_rejeicao=motivo_rejeicao)
+    if motivo_rejeicao is not None:
+        raise EdicaoRecusada("o motivo da rejeição é registrado só no grafo; esta ação foi pausada "
+                             "pelo laço (--laco). Rejeite sem --motivo.")
     if resumo is not None:
         raise EdicaoRecusada("a aprovação com edição existe só no grafo; esta ação foi pausada "
                              "pelo laço (--laco). Aprove sem --resumo, ou rejeite.")

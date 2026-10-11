@@ -406,8 +406,83 @@ def medir_triagem():
     (SAIDA / "triagem.txt").write_text("\n".join(_texto) + "\n", encoding="utf-8")
 
 
+# Perguntas do bloco 7, sobre o KB-102 ("ssh"). As X12, X13, C9 e C10 foram escritas em 11/10/2026
+# DEPOIS do ressalva-v3.md e ANTES de medir, sem repetir o exemplo do prompt ("entrar no servidor
+# pelo terminal"): X5 e X7 são parecidas com esse exemplo, e sozinhas não provariam nada.
+FATOS_EXCECOES = ("P7", "X2", "X5", "X6", "X7")
+FATOS_CONTROLES = ("P2", "A2", "C2", "C3", "C4")
+FATOS_NOVAS = [
+    {"id": "X12", "grupo": "exceção", "texto": "Não consigo conectar no servidor com o PuTTY, aparece acesso negado."},
+    {"id": "X13", "grupo": "exceção", "texto": "A minha chave pública deixou de ser aceita pelo servidor, dá permission denied."},
+    {"id": "C9", "grupo": "controle", "texto": "Depois de restaurar o backup, o sistema não consegue gravar na pasta de anexos: permissão negada."},
+    {"id": "C10", "grupo": "controle", "texto": "O site não deixa enviar imagens, aparece erro de permissão na pasta de mídia."},
+]
+
+
+def medir_fatos(prompt: str | None = None):
+    """Bloco 7: a memória semântica no nó `conferir_ressalva`. O guia é o KB-102, que declara não
+    cobrir "ssh" e que o ressalva-v1 não lê (0 de 15). Cada pergunta passa pelo nó em três
+    condições: sem fato, com o fato acesso=ssh e com o fato acesso=painel. Esperado: a exceção é
+    barrada; o controle NÃO é barrado, com qualquer fato (o fato sozinho não basta)."""
+    os.environ.setdefault("CHECKPOINT_DB", ":memory:")
+    import grafo
+    from agente import criar_cliente
+    if prompt:
+        grafo.PROMPT_RESSALVA = grafo.PROMPTS / prompt
+    nome = grafo.PROMPT_RESSALVA.stem
+    db.recriar_banco()
+    con = db.conectar()
+    modelo = os.environ["LLM_MODELO"]
+    ctx = grafo.Contexto(client=criar_cliente(), con=con, verbose=False)
+    a = db.buscar_artigo(con, "KB-102")
+    frases = [f.strip() for f in a["nao_cobre"].split(";") if f.strip()]
+    # um cliente do seed para cada condição: o fato é lido do banco, como no grafo
+    clientes = {"sem fato": "CLI-01", "acesso=ssh": "CLI-02", "acesso=painel": "CLI-03"}
+    db.registrar_fato(con, "CLI-02", "acesso", "ssh", por="medição")
+    db.registrar_fato(con, "CLI-03", "acesso", "painel", por="medição")
+    dizer(f"7. OS FATOS DO CLIENTE NO NÓ DA RESSALVA  prompt: {grafo.PROMPT_RESSALVA.name}  modelo de chat: {modelo}  "
+          f"{time.strftime('%d/%m/%Y')}  guia KB-102 (não cobre: {', '.join(frases)})  "
+          f"{REPETICOES} repetições, temperature=0\n")
+    perguntas = ([{**p, "grupo": "exceção"} for p in ASSUNTO if p["id"] in FATOS_EXCECOES]
+                 + [{**p, "grupo": "controle"} for p in ASSUNTO if p["id"] in FATOS_CONTROLES] + FATOS_NOVAS)
+    perguntas.sort(key=lambda p: p["grupo"] != "exceção")
+    linhas, resumo = [], {}
+    dizer(f"   {'#':<5}{'grupo':<10}" + "".join(f"{c:<26}" for c in clientes) + "(respostas do nó: cai na ressalva?)")
+    for p in perguntas:
+        esperado, linha = p["grupo"] == "exceção", {"id": p["id"], "grupo": p["grupo"], "texto": p["texto"]}
+        celulas = []
+        for condicao, cliente in clientes.items():
+            ticket = {"id": "MEDICAO", "cliente": "(medição)", "plano": "-", "anexo_log": None,
+                      "historico_cliente": [], "_cliente_id": cliente}
+            votos = []
+            for _ in range(REPETICOES):
+                state = {"id_ticket": "MEDICAO", "modelo": modelo, "temperatura": 0.0, "texto": p["texto"],
+                         "ticket": ticket, "ressalvas_do_melhor": frases, "passos": [],
+                         "candidatos": [{"kb_id": "KB-102", "titulo": a["titulo"], "causa": a["causa"], "score": 0.7}]}
+                time.sleep(1.1)
+                out = grafo.conferir_ressalva(state, ctx)
+                votos.append(None if out.get("termino") else out["passos"][0]["resultado"]["cai_na_ressalva"])
+            certos = sum(v is esperado for v in votos)
+            linha[condicao] = {"votos": votos, "certas": certos}
+            r = resumo.setdefault((p["grupo"], condicao), [0, 0])
+            r[0] += certos
+            r[1] += REPETICOES
+            celulas.append(f"{'/'.join('sim' if v else 'não' if v is False else 'erro' for v in votos)} ({certos}/{REPETICOES})")
+        dizer(f"   {p['id']:<5}{p['grupo']:<10}" + "".join(f"{c:<26}" for c in celulas))
+        linhas.append(linha)
+    dizer("\n   respostas certas (exceção = sim, controle = não):")
+    for grupo in ("exceção", "controle"):
+        dizer(f"   {grupo:<10}" + "   ".join(f"{c}: {resumo[(grupo, c)][0]} de {resumo[(grupo, c)][1]}" for c in clientes))
+    resultado["fatos"] = linhas
+    (SAIDA / f"fatos-{nome}.json").write_text(json.dumps(resultado, ensure_ascii=False, indent=1), encoding="utf-8")
+    (SAIDA / f"fatos-{nome}.txt").write_text("\n".join(_texto) + "\n", encoding="utf-8")
+    db.recriar_banco()                           # os fatos da medição não ficam no banco
+
+
 if __name__ == "__main__":
-    if sys.argv[1:2] == ["ressalva"]:
+    if sys.argv[1:2] == ["fatos"]:
+        medir_fatos(sys.argv[2] if len(sys.argv) > 2 else None)
+    elif sys.argv[1:2] == ["ressalva"]:
         medir_ressalva(sys.argv[2] if len(sys.argv) > 2 else None)
     elif sys.argv[1:2] == ["triagem"]:
         medir_triagem()

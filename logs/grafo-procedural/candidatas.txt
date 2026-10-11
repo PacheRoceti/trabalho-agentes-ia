@@ -1,0 +1,4 @@
+1 padrão(ões) com 3 ou mais correções do analista nos últimos 90 dias
+  guia KB-102, caso_fora_do_guia: 3 vez(es) (chamados TKT-0007; episódios 1, 2, 3)
+    onde olhar: revisar o guia: falta declarar a situação em nao_cobre
+Nada foi alterado: escrever ou não uma regra é decisão de uma pessoa.

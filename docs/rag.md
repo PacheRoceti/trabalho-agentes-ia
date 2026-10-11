@@ -254,12 +254,17 @@ Por isso o trecho de ressalva embedado **não foi implementado**: a medição n�
 A ressalva **literal** (a frase de `nao_cobre` escrita no relato) continua em código, com o redutor
 de 0,4 sobre o score.
 
-**O modelo as lê.** O nó `conferir_ressalva` (`src/grafo.py`, prompt `ressalva-v1.md`) recebe o
+**O modelo as lê.** O nó `conferir_ressalva` (`src/grafo.py`) recebe o
 relato, o log, o guia e a lista das situações que ele não cobre, e responde se o relato cai numa
 delas. O código só aplica o redutor, e só aceita uma `frase` que esteja na lista do guia: o modelo
 pode **baixar** o score, nunca subir, e não cria uma exceção que o guia não declare. O nó só roda
 quando o primeiro guia passaria do limiar, ainda não caiu numa ressalva literal e declara
 `nao_cobre`. Hoje isso vale para oito guias (KB-102, 104, 107, 111, 112, 113, 114 e 115).
+
+**O prompt em uso é o `ressalva-v3.md`** desde 11/10/2026: é o `ressalva-v1.md` mais uma regra sobre
+os fatos do cliente confirmados pelo analista (memória semântica, `memoria.md` §4). A medição abaixo é a
+do v1; refeita com o v3 e sem fatos, deu os mesmos números em todas as linhas
+(`logs/rag-medicao/ressalva-v3.txt`).
 
 **O que foi medido, no corpus de 16 guias** (`python src/medir_rag.py ressalva`, 11/10/2026,
 `ministral-8b-latest`, `temperature=0`, 3 repetições por pergunta;
@@ -290,6 +295,10 @@ primeira medição do nó (corpus de 7 guias); X6, X7, C4 e C5, depois dela e an
   KB-102 em primeiro, o nó diz "não cai", e o sistema agiria sobre um guia que não cobre o caso. O
   último guarda desse erro é o analista, e a tela do H1 passou a mostrar o que o guia declara não cobrir
   (`humano.md` §2.1).
+- **Com um fato do cliente cadastrado, o "ssh" passa a ser lido.** Isto vale para o cliente **sem fato**.
+  Quando um analista confirmou `acesso=ssh` para o cliente, o nó (com o `ressalva-v3.md`) barrou as 7
+  exceções medidas do KB-102 nas 3 repetições, ao custo de 1 dos 7 controles barrado. A medição e os
+  limites estão em `memoria.md` §4.3.
 - **O `ressalva-v2.md` não foi adotado.** Medido no corpus de 7 guias (`logs/rag-medicao/ressalva-v2-corpus7.txt`),
   acertou 5 de 15 no KB-102 (P7, X6), mas nessas perguntas o primeiro guia é o KB-103, que não declara
   ressalvas, e o nó nem roda; onde o nó roda sobre o KB-102 (X5, X7), o v2 também dizia "não cai". Barrou um controle
@@ -572,7 +581,9 @@ busca com outros termos quando a primeira vem fraca.
   e descartado (mudaria o critério do H1, "ação irreversível"). Uma defesa não medida fica registrada: a
   distância entre o primeiro e o segundo guia, que seria uma heurística nova.
 - **A ressalva `ssh` do KB-102 não é lida pelo modelo (§4.2).** Decisão do grupo: aceitar e
-  documentar. A reescrita da frase em `nao_cobre` (dado) ficou sem testar.
+  documentar. A reescrita da frase em `nao_cobre` (dado) ficou sem testar. Para o cliente com o fato
+  `acesso=ssh` confirmado por um analista, o nó passa a lê-la (`memoria.md` §4.3); sem o fato, continua
+  como está.
 - Margem do portão: o segundo guia de um chamado chega a 0,50 e 0,53 (§4.3).
 - Calibração e teste usam o mesmo corpus de 16 guias, e o conjunto de 55 perguntas foi escrito pelo mesmo grupo.
 - Preço do `mistral-embed` não verificado: os tokens de embedding estão no log (`tokens_embedding`), mas

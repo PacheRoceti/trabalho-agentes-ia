@@ -1,0 +1,410 @@
+{
+ "fatos": [
+  {
+   "id": "P7",
+   "grupo": "exceção",
+   "texto": "Recebo permissão negada quando tento entrar por SSH no servidor.",
+   "sem fato": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 0
+   },
+   "acesso=ssh": {
+    "votos": [
+     true,
+     true,
+     true
+    ],
+    "certas": 3
+   },
+   "acesso=painel": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 0
+   }
+  },
+  {
+   "id": "X2",
+   "grupo": "exceção",
+   "texto": "Aparece permissão negada no login por SSH, mas só com a minha chave.",
+   "sem fato": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 0
+   },
+   "acesso=ssh": {
+    "votos": [
+     true,
+     true,
+     true
+    ],
+    "certas": 3
+   },
+   "acesso=painel": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 0
+   }
+  },
+  {
+   "id": "X5",
+   "grupo": "exceção",
+   "texto": "Dá permissão negada quando tento acessar o servidor por terminal remoto.",
+   "sem fato": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 0
+   },
+   "acesso=ssh": {
+    "votos": [
+     true,
+     true,
+     true
+    ],
+    "certas": 3
+   },
+   "acesso=painel": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 0
+   }
+  },
+  {
+   "id": "X6",
+   "grupo": "exceção",
+   "texto": "A minha conexão por SSH dá permissão negada, mesmo com a chave que sempre usei.",
+   "sem fato": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 0
+   },
+   "acesso=ssh": {
+    "votos": [
+     true,
+     true,
+     true
+    ],
+    "certas": 3
+   },
+   "acesso=painel": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 0
+   }
+  },
+  {
+   "id": "X7",
+   "grupo": "exceção",
+   "texto": "Ao fazer login no servidor pelo terminal aparece permissão negada.",
+   "sem fato": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 0
+   },
+   "acesso=ssh": {
+    "votos": [
+     true,
+     true,
+     true
+    ],
+    "certas": 3
+   },
+   "acesso=painel": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 0
+   }
+  },
+  {
+   "id": "X12",
+   "grupo": "exceção",
+   "texto": "Não consigo conectar no servidor com o PuTTY, aparece acesso negado.",
+   "sem fato": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 0
+   },
+   "acesso=ssh": {
+    "votos": [
+     true,
+     true,
+     true
+    ],
+    "certas": 3
+   },
+   "acesso=painel": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 0
+   }
+  },
+  {
+   "id": "X13",
+   "grupo": "exceção",
+   "texto": "A minha chave pública deixou de ser aceita pelo servidor, dá permission denied.",
+   "sem fato": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 0
+   },
+   "acesso=ssh": {
+    "votos": [
+     true,
+     true,
+     true
+    ],
+    "certas": 3
+   },
+   "acesso=painel": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 0
+   }
+  },
+  {
+   "id": "P2",
+   "grupo": "controle",
+   "texto": "Todo upload do meu site falha com permissão negada, não consigo salvar arquivos.",
+   "sem fato": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   },
+   "acesso=ssh": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   },
+   "acesso=painel": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   }
+  },
+  {
+   "id": "A2",
+   "grupo": "controle",
+   "texto": "Não consigo enviar imagens para o site, dá erro de permissão ao gravar.",
+   "sem fato": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   },
+   "acesso=ssh": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   },
+   "acesso=painel": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   }
+  },
+  {
+   "id": "C2",
+   "grupo": "controle",
+   "texto": "Todos os uploads de imagens do site falham com permissão negada na pasta de arquivos.",
+   "sem fato": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   },
+   "acesso=ssh": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   },
+   "acesso=painel": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   }
+  },
+  {
+   "id": "C3",
+   "grupo": "controle",
+   "texto": "Não consigo gravar arquivos no servidor: permissão negada desde a migração.",
+   "sem fato": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   },
+   "acesso=ssh": {
+    "votos": [
+     true,
+     true,
+     true
+    ],
+    "certas": 0
+   },
+   "acesso=painel": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   }
+  },
+  {
+   "id": "C4",
+   "grupo": "controle",
+   "texto": "Depois que migrei meu blog, os uploads de fotos falham com permissão negada.",
+   "sem fato": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   },
+   "acesso=ssh": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   },
+   "acesso=painel": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   }
+  },
+  {
+   "id": "C9",
+   "grupo": "controle",
+   "texto": "Depois de restaurar o backup, o sistema não consegue gravar na pasta de anexos: permissão negada.",
+   "sem fato": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   },
+   "acesso=ssh": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   },
+   "acesso=painel": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   }
+  },
+  {
+   "id": "C10",
+   "grupo": "controle",
+   "texto": "O site não deixa enviar imagens, aparece erro de permissão na pasta de mídia.",
+   "sem fato": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   },
+   "acesso=ssh": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   },
+   "acesso=painel": {
+    "votos": [
+     false,
+     false,
+     false
+    ],
+    "certas": 3
+   }
+  }
+ ]
+}

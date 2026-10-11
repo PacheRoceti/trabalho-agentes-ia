@@ -55,7 +55,7 @@ GRAFO   src/grafo.py · objeto GRAFO, compilado uma vez · thread_id = id do cha
       ◇ o 1º guia passa de 0,5, não tem ressalva literal e declara situações que não cobre?
       ├─ não ──────────────────────────────────────────────────────────► [decidir]
       ▼ sim
-  [conferir_ressalva]  [M] UMA chamada · ressalva-v1.md · temperature=0 · JSON validado
+  [conferir_ressalva]  [M] UMA chamada · ressalva-v3.md · temperature=0 · JSON validado
       │                ◆D6 o relato cai numa das situações que o guia NÃO cobre? (sim ou não)
       │                [C] só BAIXA o score (× 0,4), e só com uma frase da lista do guia
       │                [C] antes da chamada: os mesmos tetos ───────────────────────► ●T2

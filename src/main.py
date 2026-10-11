@@ -31,7 +31,7 @@
                                                     grava em logs/NOME/ (não sobrescreve os logs
                                                     versionados). --prompt escolhe outro arquivo de
                                                     src/prompts/ para o LAÇO, e por isso já implica
-                                                    --laco: o grafo usa triagem-v1.md, ressalva-v1.md e redigir-v1.md
+                                                    --laco: o grafo usa triagem-v1.md, ressalva-v3.md e redigir-v1.md
 """
 import argparse
 import json
@@ -85,6 +85,22 @@ def mostrar_pendencia(pendencia: dict):
     if pendencia.get("guia_nao_cobre"):
         print(f"     ATENÇÃO: o guia {pendencia['kb_id']} declara que NÃO cobre: "
               f"{'; '.join(pendencia['guia_nao_cobre'])}. Confira se o relato cai numa dessas situações.")
+    memoria = pendencia.get("precedentes") or {}
+    guia = memoria.get("guia") or {}
+    if guia.get("decisoes") or guia.get("decisoes_antigas"):
+        print(f"     MEMÓRIA: nos últimos {guia['janela_dias']} dias o analista decidiu {guia['decisoes']} "
+              f"vez(es) sobre o guia {guia['kb_id']}: {guia['rejeitados']} rejeitada(s)"
+              + (" (" + ", ".join(f"{n} {m}" for m, n in guia["rejeicoes_por_motivo"].items()) + ")"
+                 if guia.get("rejeicoes_por_motivo") else "") + ", "
+              + f"{guia['editados']} aprovada(s) com edição, {guia['aprovados']} aprovada(s)"
+              + (f". Mais {guia['decisoes_antigas']} decisão(ões) antiga(s), que não contam"
+                 if guia["decisoes_antigas"] else ""))
+    for chave, valor in (pendencia.get("fatos_cliente") or {}).items():
+        print(f"     FATO CONFIRMADO do cliente: {chave} = {valor} ({db.FATOS_ACEITOS[chave][valor]})")
+    for p in memoria.get("cliente") or []:
+        print(f"     MEMÓRIA: {p['ticket']} em {p['em']}, mesmo cliente e categoria: guia {p['kb_id']}, "
+              f"gravado {p['desfecho'] or 'nada'}" + (f", analista: {p['veredito']}" if p["veredito"] else "")
+              + (" (antigo)" if p["antigo"] else ""))
     print(f"     se aprovada: abre um chamado interno para {pendencia.get('time_destino')}"
           + (f", com prioridade {prioridade}" if prioridade else "")
           + ". Não há como apagar nem encerrar o chamado por aqui")
@@ -129,7 +145,7 @@ def executar(id_ticket: str, client, modelo: str, precos, confirmador, con,
              prazo_confirmacao_min: float = PRAZO_CONFIRMACAO_MIN,
              grafo: bool = True) -> bool | None:
     caso = GABARITO.get(id_ticket, {}).get("caso", "sem gabarito")
-    prompt = "triagem-v1.md + ressalva-v1.md + redigir-v1.md (grafo)" if grafo else prompt_arquivo.name
+    prompt = "triagem-v1.md + ressalva-v3.md + redigir-v1.md (grafo)" if grafo else prompt_arquivo.name
     print(f"\n{'=' * 78}\n{id_ticket}  (caso: {caso})  modelo: {modelo}  prompt: {prompt}\n")
     desligadas = [nome for nome, ligada in (("o filtro de guias revogados", db.FILTRAR_REVOGADOS),
                                             ("o desempate por data", db.DESEMPATAR_POR_DATA))
@@ -173,6 +189,12 @@ def main():
                     help="lista as ações irreversíveis que aguardam o analista")
     ap.add_argument("--aprovar", metavar="TICKET", help="o analista aprova a ação pendente do chamado")
     ap.add_argument("--rejeitar", metavar="TICKET", help="o analista rejeita a ação pendente do chamado")
+    ap.add_argument("--motivo", choices=list(db.MOTIVOS_REJEICAO),
+                    help="com --rejeitar: por que o analista rejeitou. Vai para a memória episódica "
+                         "e para o relatório --candidatas (só no grafo). Opcional")
+    ap.add_argument("--candidatas", action="store_true",
+                    help="lista os padrões de correção do analista que se repetiram (memória "
+                         "procedural: material para uma pessoa escrever uma regra). Só lê; não chama a API")
     ap.add_argument("--resumo", metavar="TEXTO",
                     help="com --aprovar: aprova EDITANDO, abrindo o chamado com este resumo no lugar "
                          "do redigido pelo modelo (só no grafo)")
@@ -191,6 +213,12 @@ def main():
     ap.add_argument("--sem-desempate-data", action="store_true",
                     help="EXPERIMENTO: desliga o desempate por data de publicação entre as versões "
                          "de um mesmo procedimento (docs/rag.md §2.1). Exige --rodada")
+    ap.add_argument("--fato", nargs=2, metavar=("CLIENTE", "CHAVE=VALOR"),
+                    help="o analista confirma um fato do ambiente do cliente (memória semântica), "
+                         "ex.: --fato CLI-07 acesso=ssh. Vocabulário fechado, em db.FATOS_ACEITOS")
+    ap.add_argument("--sem-memoria", action="store_true",
+                    help="o grafo não lê nem grava a memória episódica nesta execução: é como duas "
+                         "rodadas ficam comparáveis (docs/memoria.md §2.4)")
     ap.add_argument("--busca", choices=["vetorial", "palavra"], default="vetorial",
                     help="como o grafo recupera os guias: vetorial (o cosseno do relato; padrão) ou "
                          "palavra (a busca da Parte 1). 'palavra' é experimento: exige --rodada")
@@ -199,14 +227,45 @@ def main():
     if args.reset:
         db.recriar_banco()
         print("Banco simulado recriado a partir de dados/seed.sql")
+    if args.fato:                        # não chama a API: é uma escrita do analista no banco
+        cliente, par = args.fato
+        chave, _, valor = par.partition("=")
+        con = db.conectar()
+        try:
+            fato = db.registrar_fato(con, cliente, chave.strip(), valor.strip(),
+                                     por="analista de suporte (terminal)")
+        except db.FatoRecusado as r:
+            con.close()
+            sys.exit(f"Fato recusado: {r}")
+        print(f"{cliente}: {chave} = {valor} ({fato['texto']})"
+              + ("" if fato["mudou"] else "  [já era o valor confirmado]")
+              + (f"  [substituiu: {fato['substituiu']}]" if fato.get("substituiu") else ""))
+        con.close()
+        if not (args.ticket or args.todos or args.pendencias or args.aprovar or args.rejeitar):
+            return
+    if args.candidatas:                  # só leitura, sem API
+        con = db.conectar()
+        candidatas = db.candidatas_a_regra(con)
+        con.close()
+        print(f"{len(candidatas)} padrão(ões) com {db.MINIMO_CANDIDATA} ou mais correções do analista "
+              f"nos últimos {db.EPISODIO_RECENTE_DIAS} dias")
+        for c in candidatas:
+            print(f"  guia {c['kb_id']}, {c['padrao']}: {c['quantidade']} vez(es) "
+                  f"(chamados {', '.join(c['chamados'])}; episódios {', '.join(map(str, c['episodios']))})")
+            print(f"    onde olhar: {c['destino']}")
+        print("Nada foi alterado: escrever ou não uma regra é decisão de uma pessoa.")
+        if not (args.ticket or args.todos or args.pendencias or args.aprovar or args.rejeitar):
+            return
     resposta = args.aprovar or args.rejeitar
     if args.reset and not (args.ticket or args.todos or args.pendencias or resposta):
         return
     if args.aprovar and args.rejeitar:
         sys.exit("Use --aprovar ou --rejeitar, um de cada vez.")
+    if args.motivo is not None and not args.rejeitar:
+        sys.exit("--motivo vale só com --rejeitar: é o motivo da rejeição.")
     if args.resumo is not None and not args.aprovar:
         sys.exit("--resumo vale só com --aprovar: é a aprovação com o resumo corrigido.")
-    if not (args.ticket or args.todos or args.pendencias or resposta):
+    if not (args.ticket or args.todos or args.pendencias or resposta or args.fato or args.candidatas):
         ap.print_help()
         return
     if args.sem_filtro_revogados or args.sem_desempate_data:
@@ -223,6 +282,11 @@ def main():
             sys.exit("--busca vale só para o grafo: o laço da Parte 1 sempre busca por palavra.")
         import grafo as modulo_grafo
         modulo_grafo.BUSCA = "palavra"
+    if args.sem_memoria:
+        if args.laco or args.prompt:
+            sys.exit("--sem-memoria vale só para o grafo: o laço da Parte 1 não tem memória.")
+        import grafo as modulo_grafo
+        modulo_grafo.MEMORIA = False
     if args.todos and not args.auto_aprovar:
         sys.exit("--todos recria o banco a cada caso, e uma ação pendente se perderia: "
                  "use --todos --auto-aprovar.")
@@ -239,7 +303,7 @@ def main():
     confirmador = confirmador_auto if args.auto_aprovar else None
     if args.grafo and (args.laco or args.prompt):
         sys.exit("--grafo não combina com --laco nem com --prompt: --prompt vale só para o laço "
-                 "(o grafo usa triagem-v1.md, ressalva-v1.md e redigir-v1.md).")
+                 "(o grafo usa triagem-v1.md, ressalva-v3.md e redigir-v1.md).")
     # O grafo é o caminho padrão. --prompt escolhe um prompt do laço, e por isso implica --laco.
     usar_grafo = not (args.laco or args.prompt)
     # O grafo nunca grava em logs/: é lá que estão os logs do laço citados no README e no io.md.
@@ -251,6 +315,9 @@ def main():
 
     if not args.todos:                   # --todos recria o banco a cada caso: não há o que vencer
         con = db.conectar()
+        esquecidos = db.esquecer_episodios(con)      # decaimento: o que passou de um ano sai da memória
+        if esquecidos:
+            print(f"\nMemória episódica: {esquecidos} episódio(s) com mais de {db.EPISODIO_MAX_DIAS} dias removido(s)")
         # O prazo vale antes da pessoa: o que venceu sem resposta vai para a fila humana agora.
         for estado in vencer_pendencias(client=client, con=con, log_dir=log_dir):
             print(f"\n{'=' * 78}\n{estado.id_ticket}  PRAZO DE CONFIRMAÇÃO VENCIDO: encaminhado à fila humana\n")
@@ -259,7 +326,7 @@ def main():
             try:
                 estado = retomar(resposta, "aprovar" if args.aprovar else "rejeitar", client=client,
                                  con=con, por="analista de suporte (terminal)", log_dir=log_dir,
-                                 resumo=args.resumo)
+                                 resumo=args.resumo, motivo_rejeicao=args.motivo)
             except EdicaoRecusada as r:
                 con.close()
                 sys.exit(f"\n{resposta}  EDIÇÃO RECUSADA: {r}\nNada foi gravado; a ação continua "

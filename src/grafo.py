@@ -50,7 +50,7 @@ from saida import montar_saida
 RAIZ = Path(__file__).resolve().parent.parent
 PROMPT_TRIAGEM = PROMPTS / "triagem-v1.md"
 PROMPT_REDIGIR = PROMPTS / "redigir-v1.md"
-PROMPT_RESSALVA = PROMPTS / "ressalva-v1.md"
+PROMPT_RESSALVA = PROMPTS / "ressalva-v3.md"
 
 MAX_TENTATIVAS_TRIAGEM = 2     # saída fora do contrato volta ao modelo uma vez
 MAX_REDACOES = 2               # texto reprovado pelo nó `validar` volta ao modelo uma vez
@@ -347,6 +347,13 @@ def conferir_ressalva(state, ctx):
                f"Causa: {melhor['causa']}\n\nSituações que o procedimento NÃO cobre:\n"
                + "\n".join(f"- {f}" for f in frases))
     argumentos = {"kb_id": melhor["kb_id"], "situacoes": frases}
+    # Memória semântica: os fatos do ambiente do cliente que o analista confirmou entram como
+    # contexto do relato. O nó continua só podendo baixar o score.
+    fatos = db.fatos_do_cliente(ctx.con, (state.get("ticket") or {}).get("_cliente_id")) if MEMORIA else {}
+    if fatos:
+        usuario += ("\n\nFatos confirmados sobre o ambiente do cliente:\n"
+                    + "\n".join(f"- {f['texto']}" for f in fatos.values()))
+        argumentos["fatos"] = {c: f["valor"] for c, f in fatos.items()}
     consumo, erro = {}, None
     for _ in range(MAX_TENTATIVAS_RESSALVA):
         motivo = _teto({**state, **_somar(state, consumo)}, ctx)
@@ -500,6 +507,13 @@ def pedir_confirmacao(state, ctx):
                  "guia_nao_cobre": [f.strip() for f in artigo["nao_cobre"].split(";") if f.strip()],
                  "plano": state["ticket"]["plano"],
                  "escopo_do_plano": (db.ficha_do_plano(ctx.con, state["ticket"]["plano"]) or {}).get("escopo"),
+                 # Memória episódica: o que o analista já decidiu sobre este guia e os últimos
+                 # episódios do cliente na categoria. Só informa: o desfecho já está decidido.
+                 "precedentes": db.precedentes(ctx.con, proposto["kb_id"], state["ticket"]["_cliente_id"],
+                                               artigo["categoria"]) if MEMORIA else None,
+                 # Memória semântica: os fatos do ambiente do cliente confirmados por um analista.
+                 "fatos_cliente": {c: f["valor"] for c, f in db.fatos_do_cliente(
+                     ctx.con, state["ticket"]["_cliente_id"]).items()} if MEMORIA else None,
                  "pedido_em": pedido_em.isoformat(timespec="seconds"),
                  "vence_em": vence_em.isoformat(timespec="seconds")}
     pendencia_id = None
@@ -518,7 +532,7 @@ def confirmar(state, ctx):
     Aprovar EDITANDO: a resposta traz o resumo corrigido pelo analista. O original do modelo fica
     registrado ao lado, e é o texto aprovado que o nó `gravar` escreve."""
     pendencia = state["pendencia"]
-    resumo_aprovado = None
+    resumo_aprovado = motivo_rejeicao = None
     if ctx.confirmador is not None:        # --auto-aprovar e testes: a resposta vem na hora
         ok, por = ctx.confirmador(pendencia)
         status, quando = ("aprovada" if ok else "rejeitada"), _agora()
@@ -533,10 +547,14 @@ def confirmar(state, ctx):
         novo = (resposta.get("resumo") or "").strip()
         if status == "aprovada" and novo and novo != (pendencia["resumo"] or "").strip():
             resumo_aprovado = novo         # prazo vencido ou rejeição: a edição não vale nada
+        if status == "rejeitada":          # o motivo só vale numa rejeição dada no prazo
+            motivo_rejeicao = resposta.get("motivo_rejeicao")
     confirmacao = {"pendencia": pendencia, "aprovado": status == "aprovada", "por": por,
                    "status": status, "resolvido_em": quando, "editado": resumo_aprovado is not None}
     if resumo_aprovado is not None:
         confirmacao.update(resumo_original=pendencia["resumo"], resumo_aprovado=resumo_aprovado)
+    if motivo_rejeicao:
+        confirmacao["motivo_rejeicao"] = motivo_rejeicao
     return {"confirmacao": confirmacao,
             "passos": [_passo(state, "confirmar", {"kb_id": pendencia["kb_id"]},
                               {"status": status, "por": por, "editado": confirmacao["editado"]})]}
@@ -708,7 +726,40 @@ def _estado_de(v: dict, **extra) -> Estado:
     return e
 
 
-def _concluir(id_ticket: str, log_dir: Path | None, estourou: bool = False) -> Estado:
+# Memória episódica (docs/memoria.md §1.3 e §2.2). Ligada, cada execução concluída do grafo grava
+# um episódio, e a tela do H1 mostra os precedentes. `--sem-memoria` desliga a leitura e a escrita,
+# para duas rodadas continuarem comparáveis (§2.4). O laço da Parte 1 não tem memória.
+MEMORIA = True
+
+
+def _episodio(v: dict, e: Estado, con) -> dict:
+    """O registro episódico da execução, só com campos estruturados do estado: nada do texto do
+    cliente, do log anexado ou do que o modelo redigiu."""
+    proposto, ticket = v.get("desfecho_proposto") or {}, v.get("ticket") or {}
+    desfecho, conf = v.get("desfecho") or {}, v.get("confirmacao")
+    kb_id = proposto.get("kb_id")
+    artigo = db.buscar_artigo(con, kb_id) if kb_id else None
+    score = next((c["score"] for c in v.get("candidatos") or [] if c["kb_id"] == kb_id), None)
+    veredito = None
+    if conf:
+        veredito = {"aprovada": "editado" if conf.get("editado") else "aprovado",
+                    "rejeitada": "rejeitado", "vencida": "vencido"}[conf["status"]]
+    motivo = desfecho.get("motivo") or proposto.get("motivo") or e.motivo
+    resumo = (f"{v['id_ticket']}: classe {v.get('classe') or 'sem triagem'}; "
+              + (f"guia {kb_id} (score {score}); " if kb_id else "sem guia; ")
+              + f"proposto {proposto.get('acao') or 'nada'}; gravado {desfecho.get('acao') or 'nada'}"
+              + (f"; analista: {veredito}" if veredito else "")
+              + (f" ({conf['motivo_rejeicao']})" if conf and conf.get("motivo_rejeicao") else "")
+              + f"; término {e.termino.value}")
+    return {"ticket_externo": v["id_ticket"], "cliente_id": ticket.get("_cliente_id"),
+            "classe": v.get("classe"), "categoria": artigo["categoria"] if artigo else None,
+            "kb_id": kb_id, "score": score, "acao_proposta": proposto.get("acao"),
+            "desfecho": desfecho.get("acao"), "motivo": motivo, "veredito": veredito,
+            "motivo_rejeicao": (conf or {}).get("motivo_rejeicao"),
+            "termino": e.termino.value, "resumo": resumo, "criado_em": _agora()}
+
+
+def _concluir(id_ticket: str, log_dir: Path | None, con, estourou: bool = False) -> Estado:
     """Lê o que ficou no checkpoint depois de uma invocação e devolve o `Estado`, com o log."""
     foto = GRAFO.get_state(_config(id_ticket))
     v = foto.values
@@ -722,6 +773,10 @@ def _concluir(id_ticket: str, log_dir: Path | None, estourou: bool = False) -> E
                                f"(prazo de {v['prazo_confirmacao_min']:g} minutos)"))
     else:
         e = _estado_de(v)
+    episodio = None
+    if MEMORIA and (estourou or not foto.next):   # execução pausada ainda não é um episódio
+        episodio = _episodio(v, e, con)
+        episodio["id"] = db.registrar_episodio(con, episodio)
     if log_dir is not None:
         log_dir.mkdir(parents=True, exist_ok=True)
         registro = e.para_dict()
@@ -729,7 +784,7 @@ def _concluir(id_ticket: str, log_dir: Path | None, estourou: bool = False) -> E
         registro.update(motor="langgraph", classe=v.get("classe"), log_diverge=v.get("log_diverge"),
                         desfecho_proposto=v.get("desfecho_proposto"),
                         tentativas_redacao=v.get("tentativas_redacao", 0),
-                        tokens_embedding=v.get("tokens_embedding", 0),
+                        tokens_embedding=v.get("tokens_embedding", 0), episodio=episodio,
                         segundos_gastos=round(v.get("segundos_gastos", 0.0), 3))
         (log_dir / f"{id_ticket}.json").write_text(
             json.dumps(registro, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -755,13 +810,14 @@ def rodar_grafo(id_ticket: str, *, client, modelo: str, con, temperatura: float 
     try:
         GRAFO.invoke(inicial, _config(id_ticket), context=ctx)
     except GraphRecursionError:
-        return _concluir(id_ticket, log_dir, estourou=True)
-    return _concluir(id_ticket, log_dir)
+        return _concluir(id_ticket, log_dir, con, estourou=True)
+    return _concluir(id_ticket, log_dir, con)
 
 
 def retomar_grafo(id_ticket: str, decisao: str, *, client, con, por: str = "analista de suporte",
                   agora: datetime | None = None, log_dir: Path | None = None,
-                  verbose: bool = True, resumo: str | None = None) -> Estado | None:
+                  verbose: bool = True, resumo: str | None = None,
+                  motivo_rejeicao: str | None = None) -> Estado | None:
     """Responde ao `interrupt` do H1 e deixa o grafo continuar. Mesmo contrato de agente.retomar():
     devolve None quando não há o que fazer (nada pausado, "vencer" antes do prazo, ou resposta
     repetida: a segunda aprovação não encontra pausa e não grava nada).
@@ -772,6 +828,10 @@ def retomar_grafo(id_ticket: str, decisao: str, *, client, con, por: str = "anal
     `interrupt`: edição recusada levanta EdicaoRecusada e a ação continua à espera."""
     if decisao not in ("aprovar", "rejeitar", "vencer"):
         raise ValueError(f"decisão inválida: {decisao}")
+    # O motivo é conferido antes de responder ao `interrupt`: motivo inválido não gasta a rejeição.
+    if motivo_rejeicao is not None and (decisao != "rejeitar" or motivo_rejeicao not in db.MOTIVOS_REJEICAO):
+        raise ValueError(f"motivo de rejeição inválido para '{decisao}': {motivo_rejeicao} "
+                         f"(só com rejeitar; aceitos: {', '.join(db.MOTIVOS_REJEICAO)})")
     foto = GRAFO.get_state(_config(id_ticket))
     if "confirmar" not in foto.next:
         return None
@@ -788,5 +848,7 @@ def retomar_grafo(id_ticket: str, decisao: str, *, client, con, por: str = "anal
             raise EdicaoRecusada(f"resumo corrigido recusado: {erro['erro']} "
                                  f"(esperado: {erro['esperado']})")
         resposta["resumo"] = resumo.strip()
+    if motivo_rejeicao is not None:
+        resposta["motivo_rejeicao"] = motivo_rejeicao
     GRAFO.invoke(Command(resume=resposta), _config(id_ticket), context=ctx)
-    return _concluir(id_ticket, log_dir)
+    return _concluir(id_ticket, log_dir, con)

@@ -1,0 +1,21 @@
+7. OS FATOS DO CLIENTE NO NÓ DA RESSALVA  prompt: ressalva-v3.md  modelo de chat: ministral-8b-latest  11/10/2026  guia KB-102 (não cobre: ssh)  3 repetições, temperature=0
+
+   #    grupo     sem fato                  acesso=ssh                acesso=painel             (respostas do nó: cai na ressalva?)
+   P7   exceção   não/não/não (0/3)         sim/sim/sim (3/3)         não/não/não (0/3)         
+   X2   exceção   não/não/não (0/3)         sim/sim/sim (3/3)         não/não/não (0/3)         
+   X5   exceção   não/não/não (0/3)         sim/sim/sim (3/3)         não/não/não (0/3)         
+   X6   exceção   não/não/não (0/3)         sim/sim/sim (3/3)         não/não/não (0/3)         
+   X7   exceção   não/não/não (0/3)         sim/sim/sim (3/3)         não/não/não (0/3)         
+   X12  exceção   não/não/não (0/3)         sim/sim/sim (3/3)         não/não/não (0/3)         
+   X13  exceção   não/não/não (0/3)         sim/sim/sim (3/3)         não/não/não (0/3)         
+   P2   controle  não/não/não (3/3)         não/não/não (3/3)         não/não/não (3/3)         
+   A2   controle  não/não/não (3/3)         não/não/não (3/3)         não/não/não (3/3)         
+   C2   controle  não/não/não (3/3)         não/não/não (3/3)         não/não/não (3/3)         
+   C3   controle  não/não/não (3/3)         sim/sim/sim (0/3)         não/não/não (3/3)         
+   C4   controle  não/não/não (3/3)         não/não/não (3/3)         não/não/não (3/3)         
+   C9   controle  não/não/não (3/3)         não/não/não (3/3)         não/não/não (3/3)         
+   C10  controle  não/não/não (3/3)         não/não/não (3/3)         não/não/não (3/3)         
+
+   respostas certas (exceção = sim, controle = não):
+   exceção   sem fato: 0 de 21   acesso=ssh: 21 de 21   acesso=painel: 0 de 21
+   controle  sem fato: 21 de 21   acesso=ssh: 18 de 21   acesso=painel: 21 de 21

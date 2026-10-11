@@ -86,6 +86,19 @@ do `TKT-0007`, pelo grafo (`logs/grafo-h1-tela/TKT-0007.json`):
   guia declara alguma situação.
 - **`plano` e `escopo_do_plano`** vêm da ficha do plano do cliente (`planos_fichas`). É contexto: nenhuma
   regra de decisão usa o plano. O mesmo texto vai ao modelo que redige o resumo (`redigir`).
+- **`precedentes`** (11/10/2026) vem da memória episódica (`memoria.md` §3): quantas vezes o analista
+  aprovou, editou ou rejeitou este guia nos últimos 90 dias, e os últimos episódios do mesmo cliente na
+  mesma categoria. A tela repete isso em linhas `MEMÓRIA:`, que só aparecem quando há o que mostrar. É
+  aviso: o desfecho proposto não muda com ele. A tela copiada acima é anterior a este campo; a nova está
+  em `logs/grafo-memoria-2/`.
+- **Rejeitar dizendo por quê** (11/10/2026): `--rejeitar TKT-0007 --motivo caso_fora_do_guia` (ou
+  `guia_errado`, `resumo_ruim`, `outro`). O motivo é opcional, não muda o que a rejeição grava, e vai
+  para a memória: a linha `MEMÓRIA:` passa a separar as rejeições por motivo, e `--candidatas` lista os
+  padrões que se repetiram (`memoria.md` §5). Só no grafo.
+- **`fatos_cliente`** (11/10/2026) vem da memória semântica (`memoria.md` §4): os fatos do ambiente do
+  cliente que um analista confirmou (`--fato CLI-07 acesso=ssh`). A tela os repete em linhas
+  `FATO CONFIRMADO`. Com o fato `acesso: ssh` ao lado do aviso de que o guia não cobre `ssh`, o analista
+  tem os dois dados para conferir. A tela com o fato está em `logs/grafo-fatos-controle/`.
 - O laço (`--laco`) não preenche esses campos.
 
 **As três respostas aceitas**, dentro do prazo:
