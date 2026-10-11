@@ -16,7 +16,7 @@ from types import SimpleNamespace as NS
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 import db                                    # noqa: E402
-from agente import Orcamento, Termino, retomar, rodar, vencer_pendencias  # noqa: E402
+from agente import EdicaoRecusada, Orcamento, Termino, retomar, rodar, vencer_pendencias  # noqa: E402
 from verificar import verificar              # noqa: E402
 
 
@@ -260,6 +260,16 @@ class TestAgente(unittest.TestCase):
         self.assertIsNone(self.retomar("TKT-0007", "aprovar"))        # aprovar duas vezes
         self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0007"), 1)
 
+    def test_o_laco_recusa_a_aprovacao_com_edicao(self):
+        """Aprovar editando (--aprovar X --resumo "...") existe só no grafo. No laço a edição é
+        recusada antes de qualquer escrita, e a ação continua à espera."""
+        self.rodar("TKT-0007", confirmador=None)
+        with self.assertRaises(EdicaoRecusada):
+            retomar("TKT-0007", "aprovar", client=ModeloRoteirizado([turno(texto="Concluído.")]),
+                    con=self.con, verbose=False, resumo="Resumo corrigido pelo analista de suporte.")
+        self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0007"), 0)
+        self.assertEqual(len(db.pendencias_aguardando(self.con, "TKT-0007")), 1)
+
     def test_prazo_vencido_vai_a_fila_humana_com_as_consideracoes_do_agente(self):
         self.rodar("TKT-0007", confirmador=None)
         self.assertIsNone(self.retomar("TKT-0007", "vencer", minutos=19))   # ainda no prazo
@@ -461,6 +471,17 @@ class TestAgente(unittest.TestCase):
             self.assertEqual(dados["termino"], "respondeu")
             self.assertEqual([p["ferramenta"] for p in dados["passos"]],
                              ["consultar_ticket", "registrar_encaminhamento"])
+
+    def test_entrada_fechada_usa_o_texto_registrado(self):
+        """`< NUL` no Windows: o terminal diz que é terminal e a leitura acaba na hora. O programa
+        não pode quebrar: trata como Enter em branco e usa o texto registrado para o id."""
+        from unittest import mock
+        import main
+        fechada = NS(isatty=lambda: True)
+        with mock.patch.object(main.sys, "stdin", fechada), \
+                mock.patch("builtins.input", side_effect=EOFError):
+            self.assertIsNone(main.ler_texto("TKT-0001", None))
+        self.assertEqual(main.ler_texto("TKT-0001", "  meu site caiu "), "  meu site caiu ")
 
 
 if __name__ == "__main__":

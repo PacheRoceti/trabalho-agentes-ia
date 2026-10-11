@@ -9,6 +9,19 @@ real ou pessoal entra no repositório nem no contexto do modelo.
 - `gabarito.json` — a resposta que um analista humano daria para cada chamado.
   É o verificador (item 2.6): 8 casos rotulados à mão.
 
+Dois arquivos são **gerados** e ignorados pelo git:
+
+- `tickets.db` — o banco simulado, criado a partir do `seed.sql`. Além das tabelas do seed
+  (`clientes`, `tickets_externos`, `kb_artigos`, `chamados_internos`, `encaminhamentos`), tem duas
+  que **não estão no seed** e nascem em `src/db.py`, sempre vazias:
+  - `pendencias` — a fila do analista de suporte: a ação irreversível à espera de confirmação, a
+    hora do pedido, a hora em que o prazo de 20 minutos vence e o status (`aguardando`,
+    `aprovada`, `rejeitada`, `vencida`, `substituida`);
+  - `avisos_gestor` — o aviso ao gestor quando o prazo vence num chamado que seria P1.
+- `checkpoints.db` — o checkpoint do grafo (LangGraph, `SqliteSaver`), endereçado pelo id do
+  chamado. Guarda a execução pausada à espera do analista. `--reset` **não** o apaga; uma
+  execução nova do mesmo chamado substitui o checkpoint anterior.
+
 ## Os casos difíceis, nomeados (item 2.8)
 
 | Chamado | Caso | O que testa | Desfecho esperado |

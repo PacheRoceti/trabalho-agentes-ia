@@ -39,7 +39,8 @@ from openai import APIConnectionError, APIStatusError, RateLimitError
 from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
 
 import db
-from agente import PROMPTS, Estado, Orcamento, Passo, Termino, _agora, _commit, _entrada, _ler_prompt
+from agente import (PROMPTS, EdicaoRecusada, Estado, Orcamento, Passo, Termino, _agora, _commit,
+                    _entrada, _ler_prompt)
 from ferramentas import (LIMIAR_CONFIANCA, MOTIVO_PRAZO_VENCIDO, MOTIVO_REJEITADA,
                          PRAZO_CONFIRMACAO_MIN, ErroFatal, ErroRecuperavel,
                          _exigir_pedido_sem_informacao_interna, encaminhar_pendencia)
@@ -371,19 +372,26 @@ def redigir(state, ctx):
                               None if erro else {"texto": redigido}, erro)]}
 
 
+def _erro_do_texto(con, acao: str, texto: str) -> dict | None:
+    """A regra do texto de um desfecho: tamanho mínimo e, no pedido ao cliente, nenhuma informação
+    interna. Vale para o que o modelo redige (nó `validar`) e para o que o analista corrige na
+    aprovação com edição (retomar_grafo): quem escreve muda, a regra não."""
+    minimo = 20 if acao == "abrir_chamado_interno" else 10
+    if len((texto or "").strip()) < minimo:
+        return {"erro": "texto curto demais ou ausente", "esperado": f"pelo menos {minimo} caracteres"}
+    if acao == "devolver_cliente":
+        try:
+            _exigir_pedido_sem_informacao_interna(con, texto)
+        except ErroRecuperavel as r:
+            return r.payload
+    return None
+
+
 def validar(state, ctx):
     """CÓDIGO. O avaliador do texto: tamanho mínimo e, no pedido ao cliente, nenhuma informação
     interna. São as validações das ferramentas de escrita do laço."""
     acao, texto = state["desfecho_proposto"]["acao"], state.get("texto_redigido") or ""
-    minimo = 20 if acao == "abrir_chamado_interno" else 10
-    erro = None
-    if len(texto.strip()) < minimo:
-        erro = {"erro": "texto curto demais ou ausente", "esperado": f"pelo menos {minimo} caracteres"}
-    elif acao == "devolver_cliente":
-        try:
-            _exigir_pedido_sem_informacao_interna(ctx.con, texto)
-        except ErroRecuperavel as r:
-            erro = r.payload
+    erro = _erro_do_texto(ctx.con, acao, texto)
     if erro is None:
         return {"erro_validacao": None}
     return {"erro_validacao": erro, "passos": [_passo(state, "validar", {"desfecho": acao}, erro=erro)]}
@@ -397,9 +405,12 @@ def pedir_confirmacao(state, ctx):
     artigo = db.buscar_artigo(ctx.con, proposto["kb_id"])
     pedido_em = datetime.now().astimezone()
     vence_em = pedido_em + timedelta(minutes=state["prazo_confirmacao_min"])
+    # A prioridade entra na tela como PREVISTA: é a regra da abertura (procedimento + reincidência)
+    # aplicada agora. A do chamado é calculada de novo na gravação, e ninguém a edita.
     pendencia = {"ferramenta": "abrir_chamado_interno", "id_ticket": state["id_ticket"],
                  "categoria": artigo["categoria"], "resumo": state["texto_redigido"],
                  "time_destino": artigo["time_destino"], "kb_id": proposto["kb_id"],
+                 "prioridade_prevista": db.prioridade_prevista(ctx.con, state["ticket"], artigo),
                  "pedido_em": pedido_em.isoformat(timespec="seconds"),
                  "vence_em": vence_em.isoformat(timespec="seconds")}
     pendencia_id = None
@@ -414,8 +425,11 @@ def pedir_confirmacao(state, ctx):
 
 def confirmar(state, ctx):
     """⏸ H1. Só pausa e lê a resposta: nada com efeito colateral acontece antes do `interrupt`.
-    Quem decide é o relógio antes da pessoa: resposta depois do `vence_em` é prazo vencido."""
+    Quem decide é o relógio antes da pessoa: resposta depois do `vence_em` é prazo vencido.
+    Aprovar EDITANDO: a resposta traz o resumo corrigido pelo analista. O original do modelo fica
+    registrado ao lado, e é o texto aprovado que o nó `gravar` escreve."""
     pendencia = state["pendencia"]
+    resumo_aprovado = None
     if ctx.confirmador is not None:        # --auto-aprovar e testes: a resposta vem na hora
         ok, por = ctx.confirmador(pendencia)
         status, quando = ("aprovada" if ok else "rejeitada"), _agora()
@@ -427,11 +441,16 @@ def confirmar(state, ctx):
         else:
             status = {"aprovar": "aprovada", "rejeitar": "rejeitada"}[resposta["decisao"]]
         db.resolver_pendencia(ctx.con, state["pendencia_id"], status, quando, por)
+        novo = (resposta.get("resumo") or "").strip()
+        if status == "aprovada" and novo and novo != (pendencia["resumo"] or "").strip():
+            resumo_aprovado = novo         # prazo vencido ou rejeição: a edição não vale nada
     confirmacao = {"pendencia": pendencia, "aprovado": status == "aprovada", "por": por,
-                   "status": status, "resolvido_em": quando}
+                   "status": status, "resolvido_em": quando, "editado": resumo_aprovado is not None}
+    if resumo_aprovado is not None:
+        confirmacao.update(resumo_original=pendencia["resumo"], resumo_aprovado=resumo_aprovado)
     return {"confirmacao": confirmacao,
             "passos": [_passo(state, "confirmar", {"kb_id": pendencia["kb_id"]},
-                              {"status": status, "por": por})]}
+                              {"status": status, "por": por, "editado": confirmacao["editado"]})]}
 
 
 def gravar(state, ctx):
@@ -442,6 +461,8 @@ def gravar(state, ctx):
     acao = proposto["acao"]
     if acao == "abrir_chamado_interno":
         if state["confirmacao"]["status"] == "aprovada":
+            # aprovado com edição: grava o resumo do analista, e não o do modelo
+            texto = state["confirmacao"].get("resumo_aprovado") or texto
             resultado = db.abrir_chamado(ctx.con, state["ticket"], texto,
                                          db.buscar_artigo(ctx.con, proposto["kb_id"]))
             desfecho = {"acao": acao, "kb_id": proposto["kb_id"], **resultado}
@@ -633,10 +654,15 @@ def rodar_grafo(id_ticket: str, *, client, modelo: str, con, temperatura: float 
 
 def retomar_grafo(id_ticket: str, decisao: str, *, client, con, por: str = "analista de suporte",
                   agora: datetime | None = None, log_dir: Path | None = None,
-                  verbose: bool = True) -> Estado | None:
+                  verbose: bool = True, resumo: str | None = None) -> Estado | None:
     """Responde ao `interrupt` do H1 e deixa o grafo continuar. Mesmo contrato de agente.retomar():
     devolve None quando não há o que fazer (nada pausado, "vencer" antes do prazo, ou resposta
-    repetida: a segunda aprovação não encontra pausa e não grava nada)."""
+    repetida: a segunda aprovação não encontra pausa e não grava nada).
+
+    `resumo` é a aprovação COM EDIÇÃO. Só o resumo é editável: categoria, time e prioridade vêm
+    do procedimento, e trocar o procedimento é outra ação (o caminho para ela é rejeitar). O texto
+    do analista passa pela mesma regra do texto do modelo, e é conferido ANTES de responder ao
+    `interrupt`: edição recusada levanta EdicaoRecusada e a ação continua à espera."""
     if decisao not in ("aprovar", "rejeitar", "vencer"):
         raise ValueError(f"decisão inválida: {decisao}")
     foto = GRAFO.get_state(_config(id_ticket))
@@ -647,5 +673,13 @@ def retomar_grafo(id_ticket: str, decisao: str, *, client, con, por: str = "anal
         return None
     ctx = Contexto(client=client, con=con, verbose=verbose)
     resposta = {"decisao": decisao, "por": por, "quando": agora.isoformat(timespec="seconds")}
+    if resumo is not None:
+        if decisao != "aprovar":
+            raise EdicaoRecusada("só a aprovação aceita um resumo corrigido")
+        erro = _erro_do_texto(con, "abrir_chamado_interno", resumo)
+        if erro:
+            raise EdicaoRecusada(f"resumo corrigido recusado: {erro['erro']} "
+                                 f"(esperado: {erro['esperado']})")
+        resposta["resumo"] = resumo.strip()
     GRAFO.invoke(Command(resume=resposta), _config(id_ticket), context=ctx)
     return _concluir(id_ticket, log_dir)

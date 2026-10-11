@@ -18,7 +18,7 @@ os.environ["CHECKPOINT_DB"] = ":memory:"     # antes de importar o grafo: nada d
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 import db                                    # noqa: E402
-from agente import Orcamento, Termino, retomar, vencer_pendencias  # noqa: E402
+from agente import EdicaoRecusada, Orcamento, Termino, retomar, vencer_pendencias  # noqa: E402
 from grafo import GRAFO, LIMITE_SUPERPASSOS, retomar_grafo, rodar_grafo  # noqa: E402
 from verificar import verificar              # noqa: E402
 
@@ -247,6 +247,73 @@ class TestGrafo(unittest.TestCase):
         self.assertEqual([e.id_ticket for e in vencidos], ["TKT-0003"])
         e = retomar("TKT-0007", "aprovar", client=ModeloRoteirizado([]), con=self.con, verbose=False)
         self.assertEqual(e.desfecho["acao"], "abrir_chamado_interno")
+
+    # ---- aprovar editando (só o resumo, só no grafo)
+
+    CORRIGIDO = "Upload falha com permissão negada desde hoje; o cliente não relatou restauração recente."
+
+    def editar(self, ticket, decisao, resumo, minutos=0):
+        agora = datetime.now().astimezone() + timedelta(minutes=minutos)
+        return retomar_grafo(ticket, decisao, client=ModeloRoteirizado([]), con=self.con,
+                             agora=agora, verbose=False, resumo=resumo)
+
+    def test_a_tela_da_pausa_mostra_a_prioridade_prevista(self):
+        self.rodar("TKT-0003", confirmador=None)
+        self.rodar("TKT-0007", confirmador=None)
+        previstas = {p["ticket_externo"]: p["acao"]["prioridade_prevista"]
+                     for p in db.pendencias_aguardando(self.con)}
+        self.assertEqual(previstas, {"TKT-0003": "P1", "TKT-0007": "P2"})   # reincidência sobe um nível
+
+    def test_aprovar_editando_grava_o_resumo_do_analista_e_guarda_o_do_modelo(self):
+        pausado = self.rodar("TKT-0007", confirmador=None)
+        original = pausado.pendencia["resumo"]
+        e = self.editar("TKT-0007", "aprovar", self.CORRIGIDO)
+        self.assertEqual(e.termino, Termino.RESPONDEU)
+        self.assertEqual(verificar("TKT-0007", e, self.con), (True, []))
+        c = e.confirmacoes[-1]
+        self.assertEqual((c["status"], c["editado"]), ("aprovada", True))
+        self.assertEqual((c["resumo_original"], c["resumo_aprovado"]), (original, self.CORRIGIDO))
+        self.assertEqual(e.saida.resultado.texto, self.CORRIGIDO)
+        (gravado,) = [r[0] for r in self.con.execute(
+            "SELECT resumo FROM chamados_internos WHERE ticket_externo = 'TKT-0007'")]
+        self.assertEqual(gravado, self.CORRIGIDO)
+        # o que o código garante não é editável: time e prioridade continuam vindo do procedimento
+        self.assertEqual((e.desfecho["time_destino"], e.desfecho["prioridade"]), ("Infraestrutura", "P2"))
+        self.assertEqual(e.n_chamadas_modelo, 2)                            # editar não chama o modelo
+
+    def test_aprovar_editando_duas_vezes_nao_duplica(self):
+        self.rodar("TKT-0007", confirmador=None)
+        self.editar("TKT-0007", "aprovar", self.CORRIGIDO)
+        self.assertIsNone(self.editar("TKT-0007", "aprovar", self.CORRIGIDO + " (de novo)"))
+        self.assertIsNone(self.retomar("TKT-0007", "aprovar"))
+        self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0007"), 1)
+        (gravado,) = [r[0] for r in self.con.execute(
+            "SELECT resumo FROM chamados_internos WHERE ticket_externo = 'TKT-0007'")]
+        self.assertEqual(gravado, self.CORRIGIDO)                           # a segunda não reescreve
+
+    def test_edicao_invalida_e_recusada_e_a_pausa_continua(self):
+        self.rodar("TKT-0007", confirmador=None)
+        with self.assertRaises(EdicaoRecusada):
+            self.editar("TKT-0007", "aprovar", "curto")
+        with self.assertRaises(EdicaoRecusada):
+            self.editar("TKT-0007", "rejeitar", self.CORRIGIDO)             # rejeição não leva resumo
+        self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0007"), 0)
+        self.assertEqual(len(db.pendencias_aguardando(self.con, "TKT-0007")), 1)
+        e = self.editar("TKT-0007", "aprovar", self.CORRIGIDO)              # a aprovação não foi gasta
+        self.assertEqual(e.desfecho["acao"], "abrir_chamado_interno")
+
+    def test_edicao_depois_do_prazo_nao_vale(self):
+        self.rodar("TKT-0007", confirmador=None)
+        e = self.editar("TKT-0007", "aprovar", self.CORRIGIDO, minutos=21)
+        self.assertEqual((e.desfecho["acao"], e.desfecho["motivo"]), ("fila_humana", "confirmacao_nao_recebida"))
+        self.assertEqual((e.confirmacoes[-1]["status"], e.confirmacoes[-1]["editado"]), ("vencida", False))
+        self.assertNotIn(self.CORRIGIDO, e.saida.resultado.texto)           # vai o resumo do agente
+        self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0007"), 0)
+
+    def test_resumo_igual_ao_proposto_nao_conta_como_edicao(self):
+        pausado = self.rodar("TKT-0007", confirmador=None)
+        e = self.editar("TKT-0007", "aprovar", pausado.pendencia["resumo"])
+        self.assertEqual((e.confirmacoes[-1]["status"], e.confirmacoes[-1]["editado"]), ("aprovada", False))
 
     def test_rejeicao_na_hora_pelo_confirmador(self):
         e = self.rodar("TKT-0003", confirmador=NAO)

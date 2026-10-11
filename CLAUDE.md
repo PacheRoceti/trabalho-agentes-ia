@@ -13,7 +13,7 @@ O caminho padrão é o **grafo em LangGraph** da Parte 2 (`src/grafo.py`, com ch
 Ambiente: Windows, venv em `.venv`, Python 3.10+. Não há linter, formatador nem build.
 
 ```bash
-.venv/Scripts/python.exe -m unittest discover -s tests        # testes offline: sem chave, sem rede (62 testes: 41 do laço, 21 do grafo)
+.venv/Scripts/python.exe -m unittest discover -s tests        # testes offline: sem chave, sem rede (63 testes: 42 do laço, 21 do grafo)
 .venv/Scripts/python.exe -m unittest tests.test_offline.TestAgente.test_orcamento_de_passos   # um teste só
 
 python src/main.py TKT-0001 "texto do chamado"                # uma execução pelo grafo (usa a API); log em logs/grafo/

@@ -369,9 +369,15 @@ def _finalizar(e: Estado, log_dir: Path | None) -> None:
 
 # ================================================================ A RETOMADA
 
+class EdicaoRecusada(Exception):
+    """A aprovação com edição não foi aceita (texto inválido, ou caminho que não a oferece). Nada
+    foi gravado e a ação continua à espera do analista."""
+
+
 def retomar(id_ticket: str, decisao: str, *, client, con, por: str = "analista de suporte",
             agora: datetime | None = None, orcamento: Orcamento | None = None,
-            log_dir: Path | None = None, verbose: bool = True) -> Estado | None:
+            log_dir: Path | None = None, verbose: bool = True,
+            resumo: str | None = None) -> Estado | None:
     """Conclui a ação irreversível que ficou à espera do analista e continua a execução pausada.
 
     `decisao` é "aprovar", "rejeitar" ou "vencer" (só aplica o prazo, sem resposta de ninguém).
@@ -382,7 +388,10 @@ def retomar(id_ticket: str, decisao: str, *, client, con, por: str = "analista d
     Depois da escrita o laço continua, para o modelo dar a frase final.
 
     Devolve None quando não há o que fazer: nenhuma pendência aguardando, "vencer" antes do
-    prazo, ou pendência que outra chamada já resolveu (a segunda aprovação não repete nada)."""
+    prazo, ou pendência que outra chamada já resolveu (a segunda aprovação não repete nada).
+
+    `resumo` é a aprovação COM EDIÇÃO: o analista corrige o resumo do chamado interno antes de
+    deixar seguir. Só o grafo a oferece; no laço ela é recusada (EdicaoRecusada)."""
     if decisao not in ("aprovar", "rejeitar", "vencer"):
         raise ValueError(f"decisão inválida: {decisao}")
     registros = db.pendencias_aguardando(con, id_ticket)
@@ -395,7 +404,11 @@ def retomar(id_ticket: str, decisao: str, *, client, con, por: str = "analista d
         from grafo import retomar_grafo
         pasta = registro["checkpoint"].get("log_dir")
         return retomar_grafo(id_ticket, decisao, client=client, con=con, por=por, agora=agora,
-                             log_dir=Path(pasta) if pasta else log_dir, verbose=verbose)
+                             log_dir=Path(pasta) if pasta else log_dir, verbose=verbose,
+                             resumo=resumo)
+    if resumo is not None:
+        raise EdicaoRecusada("a aprovação com edição existe só no grafo; esta ação foi pausada "
+                             "pelo laço (--laco). Aprove sem --resumo, ou rejeite.")
     agora = agora or datetime.now().astimezone()
     vencida = agora >= datetime.fromisoformat(registro["vence_em"])
     if decisao == "vencer" and not vencida:

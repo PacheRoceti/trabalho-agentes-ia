@@ -13,6 +13,9 @@
   o analista tem 20 minutos para responder (--prazo-confirmacao MIN muda o prazo da execução):
     python src/main.py --pendencias                 o que aguarda o analista, e quanto tempo falta
     python src/main.py --aprovar TKT-0007           abre o chamado e conclui a execução pausada
+    python src/main.py --aprovar TKT-0007 --resumo "texto corrigido"
+                                                    aprova EDITANDO: o chamado é aberto com o resumo
+                                                    do analista (só o resumo é editável; só no grafo)
     python src/main.py --rejeitar TKT-0007          o chamado interno não é aberto
   Rejeitada a ação ou vencido o prazo, o chamado vai para a fila humana com as considerações do
   agente. No prazo vencido de um chamado que seria P1, o gestor também é avisado (tabela
@@ -41,7 +44,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 import db
-from agente import (PROMPT_ARQUIVO, PROMPTS, Orcamento, criar_cliente, retomar, rodar,
+from agente import (PROMPT_ARQUIVO, PROMPTS, EdicaoRecusada, Orcamento, criar_cliente, retomar, rodar,
                     vencer_pendencias)
 from ferramentas import PRAZO_CONFIRMACAO_MIN
 from verificar import GABARITO, verificar
@@ -78,8 +81,13 @@ def mostrar_pendencia(pendencia: dict):
     resta = (datetime.fromisoformat(pendencia["vence_em"]) - datetime.now().astimezone()).total_seconds()
     print(f"     faltam: {max(resta, 0) / 60:.0f} min" if resta > 0 else "     PRAZO VENCIDO")
     id_ticket = pendencia["id_ticket"]
-    print(f"     responder: python src/main.py --aprovar {id_ticket}   |   --rejeitar {id_ticket}")
+    prioridade = pendencia.get("prioridade_prevista")
+    print(f"     se aprovada: abre um chamado interno para {pendencia.get('time_destino')}"
+          + (f", com prioridade {prioridade}" if prioridade else "")
+          + ". Não há como apagar nem encerrar o chamado por aqui")
     print("     rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta")
+    print(f"     responder: python src/main.py --aprovar {id_ticket}   |   --rejeitar {id_ticket}")
+    print(f"     aprovar corrigindo o resumo: python src/main.py --aprovar {id_ticket} --resumo \"texto corrigido\"")
 
 
 def ler_texto(id_ticket: str, texto: str | None) -> str | None:
@@ -87,7 +95,10 @@ def ler_texto(id_ticket: str, texto: str | None) -> str | None:
     Devolve None quando nada foi digitado (Enter em branco, ou execução sem terminal): aí o
     programa usa o texto já registrado para o id, simulando o evento de abertura."""
     if texto is None and sys.stdin.isatty():
-        texto = input(f"Texto do chamado {id_ticket} (Enter em branco usa o texto registrado):\n> ")
+        try:
+            texto = input(f"Texto do chamado {id_ticket} (Enter em branco usa o texto registrado):\n> ")
+        except EOFError:       # entrada fechada (ex.: `< NUL` no Windows, que ainda se diz terminal)
+            texto = None
     return texto if texto and texto.strip() else None
 
 
@@ -151,6 +162,9 @@ def main():
                     help="lista as ações irreversíveis que aguardam o analista")
     ap.add_argument("--aprovar", metavar="TICKET", help="o analista aprova a ação pendente do chamado")
     ap.add_argument("--rejeitar", metavar="TICKET", help="o analista rejeita a ação pendente do chamado")
+    ap.add_argument("--resumo", metavar="TEXTO",
+                    help="com --aprovar: aprova EDITANDO, abrindo o chamado com este resumo no lugar "
+                         "do redigido pelo modelo (só no grafo)")
     ap.add_argument("--prazo-confirmacao", type=float, default=PRAZO_CONFIRMACAO_MIN, metavar="MIN",
                     help=f"prazo do analista para esta execução, em minutos (padrão: {PRAZO_CONFIRMACAO_MIN})")
     ap.add_argument("--reset", action="store_true", help="recria o banco simulado")
@@ -170,6 +184,8 @@ def main():
         return
     if args.aprovar and args.rejeitar:
         sys.exit("Use --aprovar ou --rejeitar, um de cada vez.")
+    if args.resumo is not None and not args.aprovar:
+        sys.exit("--resumo vale só com --aprovar: é a aprovação com o resumo corrigido.")
     if not (args.ticket or args.todos or args.pendencias or resposta):
         ap.print_help()
         return
@@ -206,12 +222,26 @@ def main():
             print(f"\n{'=' * 78}\n{estado.id_ticket}  PRAZO DE CONFIRMAÇÃO VENCIDO: encaminhado à fila humana\n")
             mostrar(estado)
         if resposta:
-            estado = retomar(resposta, "aprovar" if args.aprovar else "rejeitar", client=client,
-                             con=con, por="analista de suporte (terminal)", log_dir=log_dir)
+            try:
+                estado = retomar(resposta, "aprovar" if args.aprovar else "rejeitar", client=client,
+                                 con=con, por="analista de suporte (terminal)", log_dir=log_dir,
+                                 resumo=args.resumo)
+            except EdicaoRecusada as r:
+                con.close()
+                sys.exit(f"\n{resposta}  EDIÇÃO RECUSADA: {r}\nNada foi gravado; a ação continua "
+                         f"aguardando o analista.")
             if estado is None:
                 print(f"\nNão há confirmação pendente para {resposta}.")
             else:
-                print(f"\n{'=' * 78}\n{resposta}  {'APROVADO' if args.aprovar else 'REJEITADO'} pelo analista\n")
+                ultima = estado.confirmacoes[-1] if estado.confirmacoes else {}
+                veredito = "REJEITADO" if args.rejeitar else (
+                    "APROVADO COM EDIÇÃO" if ultima.get("editado") else "APROVADO")
+                if args.resumo is not None and ultima.get("status") == "aprovada" and not ultima.get("editado"):
+                    veredito += " (o resumo enviado é igual ao proposto: sem edição)"
+                print(f"\n{'=' * 78}\n{resposta}  {veredito} pelo analista\n")
+                if ultima.get("editado"):
+                    print(f"  RESUMO DO MODELO:   {ultima['resumo_original']}")
+                    print(f"  RESUMO DO ANALISTA: {ultima['resumo_aprovado']}\n")
                 mostrar(estado)
         if args.pendencias:
             pendentes = db.pendencias_aguardando(con)

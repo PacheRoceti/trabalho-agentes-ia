@@ -88,3 +88,17 @@ Preços de lista consultados em 21/09/2026 (agregadores; confirmar na página of
 - Ministral 3 (3B, 8B, 14B) — AI Pricing Guru, base de 02/09/2026: https://www.aipricing.guru/mistral-ai-pricing/
 - Família Ministral 3, tarifas simétricas — BenchLM, verificado em 18/09/2026: https://benchlm.ai/mistral/api-pricing
 - Plano gratuito (Experiment): https://pricepertoken.com/endpoints/mistral/free e https://www.free-model.com/providers/mistral-ai/ (as fontes divergem sobre limites e sobre uso dos dados para treino; conferir no painel da conta, em Limits)
+
+---
+
+## Framework do grafo (Parte 2)
+
+- Enunciado da Parte 2, que define o que o grafo, o estado e a pausa precisam ter:
+  https://github.com/celsocrivelaro/senac-agentes-llm/blob/main/trabalho/02-segunda-entrega.md
+- LangGraph, versão 1.2.14 (fixada no `requirements.txt`): https://pypi.org/project/langgraph/
+  e o repositório https://github.com/langchain-ai/langgraph
+- Checkpointer em SQLite, versão 3.1.1: https://pypi.org/project/langgraph-checkpoint-sqlite/
+
+O que o `src/grafo.py` usa da biblioteca (`StateGraph`, `context_schema`, `interrupt`,
+`Command(resume=...)`, `SqliteSaver`, `recursion_limit`) foi conferido contra o código das versões
+instaladas, e não contra um tutorial: a assinatura de várias dessas peças mudou entre versões.
