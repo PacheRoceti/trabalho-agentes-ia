@@ -5,6 +5,11 @@
 > existe em código**, no grafo. Onde os dois divergem vale o código, e o §1.6 lista cada
 > divergência. O §1.7 responde à fronteira entre checkpoint, memória e RAG (§5.1 do enunciado).
 >
+> **Atualização de 12/10/2026 (memória procedural).** O grafo passou a carregar uma regra
+> aprendida no prompt do nó `redigir` (`src/prompts/regras-redigir-v2.md`, §5.1). É a primeira
+> regra, e entrou como exceção declarada à política do §1.4: veio da leitura das rodadas pelo
+> grupo, e não de três correções do analista.
+>
 > **Atualização de 12/10/2026.** A escrita de memória ganhou chave de idempotência, com
 > `ja_existia` no retorno (§1.4). O checkpoint do grafo passou a ser apagado quando a execução
 > conclui, como o §1.4 já dizia e o código não fazia. Entraram o §1.6 e o §1.7.
@@ -86,6 +91,15 @@ Soma dos tetos: 6.000 tokens, dentro de uma janela de trabalho assumida de 8.000
 2. trechos recuperados, de 3 para 1 artigo (o de maior score);
 3. passos mais antigos da trajetória, um de cada vez, até caber — nunca o passo mais recente, nunca o prompt, nunca o objetivo.
 
+> **Situação em 12/10/2026: a ordem está declarada e não está implementada.** Ela foi desenhada
+> para o laço, que reenvia a trajetória a cada volta e por isso cresce. O grafo não tem
+> trajetória na janela: cada nó de modelo monta a própria mensagem, e a chamada média medida é de
+> 849 tokens (§1.6, que traz a ordem adaptada ao que o grafo envia). Nenhuma execução medida
+> chegou perto de encher a janela, então um corte seria código que nada aciona. **Fica como melhoria
+> futura**, na forma mínima: cortar o começo do log anexado acima de um tamanho, mantendo o fim,
+> que é o mais recente. É o único risco concreto de hoje: um log muito grande vai inteiro numa
+> chamada, e o que o segura é o teto de 30 mil tokens, que encerra a execução em vez de cortar.
+
 ### 1.3 As três memórias de longo prazo, no case
 
 | Tipo | O que guarda no case | Estrutura | Como é recuperada |
@@ -101,7 +115,7 @@ A reincidência é o exemplo mais claro de por que a estrutura decorre do padrã
 **Quem escreve:**
 - **episódica**: o **código** extrai, ao fim de cada execução (qualquer término; a ação que o analista rejeita termina em `respondeu`, com desfecho `fila_humana` e motivo `acao_rejeitada`), os campos estruturados do `Estado` — nunca o texto livre que o modelo escreveu como resposta final, porque texto livre é exatamente o que a rodada 2 mostrou não ser confiável ("registrei" sem ter registrado);
 - **semântica**: o **código** também, por regra determinística (a mesma consulta SQL que já existe), nunca o modelo — um fato como "plano do cliente" tem peso de negócio demais para depender de o modelo tê-lo lido certo. **Como ficou (§4):** o plano e a reincidência não foram guardados de novo, e o que a memória semântica guarda são fatos do ambiente do cliente, escritos **só por uma pessoa** (`main.py --fato`). O código não escreve fato nenhum;
-- **procedural**: só o **humano** (analista ou o grupo), em revisão, nunca automático — é a lição da rodada 2: prompt mexido sem supervisão piorou o resultado de 5 para 3 em 7. Uma regra procedural só entra no prompt depois de aparecer em pelo menos 3 correções do mesmo padrão, revisadas por uma pessoa.
+- **procedural**: só o **humano** (analista ou o grupo), em revisão, nunca automático — é a lição da rodada 2: prompt mexido sem supervisão piorou o resultado de 5 para 3 em 7. Uma regra procedural só entra no prompt depois de aparecer em pelo menos 3 correções do mesmo padrão, revisadas por uma pessoa. **Exceção declarada (12/10/2026):** a primeira regra em uso (§5.1) não passou por esse corte. Ela veio de um defeito que o grupo achou lendo as rodadas, porque 8 chamados simulados não produzem três correções de um analista de verdade. A política continua valendo para as próximas.
 
 **Volume por execução:** 1 registro episódico (≈150 a 250 tokens); 0 ou 1 atualização semântica (só quando um fato realmente muda — o plano do cliente, por exemplo; não a cada execução); 0 escritas procedurais por execução (é processo em lote, periódico, não por chamado).
 
@@ -166,11 +180,22 @@ O agente só conversa com o cliente em um caso: quando falta informação para c
 | O que vai ao checkpoint | o `Estado` do laço, com `historico` e `passos` | o `EstadoGrafo` inteiro, gravado pelo `SqliteSaver` a cada superpasso. Não há lista de mensagens (`arquitetura.md` §4) |
 | Quando o checkpoint some | ao fim da execução; sobrevive em `aguardando_humano` e `aguardando_cliente` | ao fim da execução; sobrevive em `aguardando_humano`. O término `aguardando_cliente` não existe (o H3 não foi implementado) |
 | Campo `pedido_cliente` | guarda o pedido enviado e a resposta | não existe. O pedido enviado é uma linha em `encaminhamentos`, com `enviado_em`, e a contagem é feita no banco |
-| Episódica | índice por similaridade, lido no passo de busca | tabela `episodios`, lida por **consulta exata** (guia; cliente e categoria), só para a tela do H1 (§3) |
+| Episódica | índice por similaridade, lido no passo de busca | tabela `episodios`, lida por **consulta exata** (guia; cliente e categoria), só para a tela do H1 (§3). A razão está abaixo da tabela |
 | Semântica | plano e reincidência por cliente, escritos pelo código | fatos do ambiente do cliente, escritos por uma pessoa (§4). Plano e reincidência continuam vindo do sistema de tickets |
-| Procedural | regra no prompt, depois de 3 correções revisadas | nenhuma regra. Existem o motivo da rejeição e o relatório `--candidatas` (§5) |
+| Procedural | regra no prompt do laço, nascida de decisões de triagem que o analista reverte, depois de 3 correções revisadas | uma regra, no prompt do nó `redigir` do grafo, escrita por uma pessoa num arquivo próprio (§5.1). O analista só vê as duas pausas (H1 e H2) e não tem como reverter uma decisão de triagem: as correções que o sistema registra são a rejeição com motivo e a aprovação com edição, e por isso a regra mira o texto. A primeira regra não veio das 3 correções (exceção do §1.4) |
 | Ordem de descarte (§1.2) | memória, depois trechos, depois passos antigos | **nenhum código corta a janela.** Ver abaixo |
-| Remoção a pedido do titular (§2.3) | cinco estruturas, com varredura | não implementada (§3 e §4, limites) |
+| Remoção a pedido do titular (§2.3) | cinco estruturas, com varredura | **não escolhida** (decisão de 12/10/2026): o §2.3 traz a razão e onde o identificador fica |
+
+**Por que a episódica não é por similaridade (situação em 12/10/2026).** O índice de embeddings
+do §1.3 não foi feito, e não será na Parte 2. Duas decisões tomadas depois do desenho o
+dispensam: o episódio guarda só campos estruturados, nunca o texto do cliente nem o do modelo
+(§1.4), então não há texto para embedar; e a memória só avisa o analista, sem entrar em regra de
+decisão (§3). Com isso, a pergunta que a memória responde é "o que já foi decidido sobre este
+guia, e para este cliente nesta categoria?", e uma chave a resolve: é o mesmo argumento que o
+enunciado usa para a semântica (buscar por similaridade é caro e impreciso quando uma chave
+resolve). O que se perde: o precedente de um chamado **parecido** que caiu em outro guia, ou em
+nenhum, não aparece. Fazer por similaridade exigiria guardar o texto do chamado na memória de
+longo prazo, o que desfaz a regra do §1.4 e amplia o que fica sem resposta no §2.3.
 
 **A janela, no grafo.** O §1.2 foi medido no laço, que reenvia a trajetória a cada volta. O grafo
 não tem trajetória na janela: cada nó de modelo monta a própria mensagem com o que precisa
@@ -195,7 +220,7 @@ situações que o guia não cobre. **Essa ordem não está implementada, e nada 
 mesma rodada, a execução com as chamadas maiores (`TKT-0002`) teve 1.045 tokens por chamada na
 média; o log guarda o total da execução, e não o de cada chamada. O que existe é o teto de 30 mil
 tokens por execução, conferido antes de cada chamada. Um log anexado muito grande iria inteiro
-numa chamada.
+numa chamada. O corte do começo do log fica como melhoria futura (nota do §1.2).
 
 ### 1.7 Checkpoint, memória e RAG: a fronteira, no case (§5.1)
 
@@ -258,6 +283,14 @@ No corpus a seleção é por relevância de verdade: de 16 guias, a busca traz a
 
 ## Decisão 2 — Como o agente esquece
 
+As causas escolhidas, das três do enunciado (§5.4):
+
+| Causa | Escolhida? | O que faz no sistema |
+|---|---|---|
+| Contradição | **sim** | nos guias, o revogado é filtrado e a versão mais nova vence, com o descarte registrado (§2.1); no fato do cliente, o valor novo substitui o anterior, que fica na tabela com a data (§4) |
+| Decaimento | **sim** | nos episódios: até 90 dias conta, de 90 a 365 aparece como antigo, depois é apagado (§2.2 e §3) |
+| Remoção a pedido | **não** | nada; a razão e o que fica sem resposta estão no §2.3 |
+
 ### 2.1 Contradição — o fato que mudou
 
 No case, o que mais pode se contradizer são os **procedimentos técnicos** (fonte D de `docs/base-de-conhecimento-v2.md`), porque é deles que vêm o time de destino e a prioridade de cada chamado. Exemplo: a versão antiga do procedimento de SSL (KB-101) mandava renovar o certificado manualmente pelo painel e escalar para a Segurança com P1; a versão vigente (KB-101-A) manda conferir o certbot e anotar para a Infraestrutura com P2. Os dois textos são igualmente parecidos com o relato "meu certificado SSL venceu", e a busca por similaridade não tem como saber qual vale. Se a versão antiga vencer, o erro não fica no texto: vira um chamado P1 aberto para o time errado.
@@ -274,21 +307,51 @@ Justificativa no domínio: um incidente de infraestrutura resolvido há 90 dias 
 
 **Efeito:** entre 90 e 365 dias, o episódio é **rebaixado** (entra na busca por similaridade, mas com peso reduzido, perdendo para episódios recentes em caso de empate); depois de 365 dias, é **removido**. A memória semântica (fatos por cliente) não decai pelo tempo — decai por contradição, quando um fato novo substitui o antigo (ex.: cliente mudou de plano).
 
-### 2.3 Remoção — o titular solicitou
+### 2.3 Remoção — o titular solicitou: não escolhida (decisão de 12/10/2026)
 
-**Estruturas em que o identificador de um cliente pode ter caído**, além das três memórias:
+O enunciado (§5.4) trata as três causas como um cardápio. **O grupo escolheu duas, contradição e
+decaimento, e não implementa a remoção a pedido.** Não há função nem comando de remoção no
+código.
 
-| Estrutura | Por que o identificador está lá | Como remover |
+**A razão.** A remoção responde à privacidade, e o que o sistema guarda de um cliente é pouco e
+tem prazo:
+
+- o episódio guarda o `cliente_id` e campos estruturados, sem o nome, o texto do cliente, o log
+  anexado nem o texto redigido (§3), e é apagado aos 365 dias (§2.2);
+- o fato do cliente tem vocabulário fechado (três chaves, sobre o ambiente técnico) e só entra
+  por uma pessoa (§4);
+- o checkpoint, que guarda o texto do cliente por inteiro, é apagado ao fim da execução (§1.4).
+
+**O que fica sem resposta, e é limite assumido.** O case é de uma empresa de hospedagem, e uma
+de verdade guardaria dado de pessoa. Se um cliente real pedisse a remoção, este sistema não
+teria como atender sem apagar tudo (`python src/main.py --reset` recria o banco inteiro). O
+identificador ficaria em:
+
+| Estrutura | O que guarda do cliente | Como sai hoje |
 |---|---|---|
-| Memória episódica | o texto do chamado e o resumo do desfecho citam o cliente | remover o registro do índice por `cliente_id` |
-| Memória semântica | é, por definição, indexada por `cliente_id` | remover a linha da tabela |
-| Memória procedural | improvável, mas possível: uma regra aprendida a partir da correção de um caso específico pode, por descuido, ter sido escrita citando o cliente em vez de generalizada | busca textual pelo nome/id no prompt; se achar, reescrever a regra de forma genérica ou remover |
-| **Checkpoint** | os `passos` guardam os argumentos passados às ferramentas, que incluem o texto do chamado e, portanto, dados do cliente; o `pedido_cliente` guarda a resposta do cliente | apagar o checkpoint da execução (ou das execuções) daquele `id_ticket`/`cliente_id` |
-| **Log** (`logs/*.json`) | grava argumentos e resultados de cada chamada de ferramenta, incluindo `consultar_ticket` (nome do cliente, plano) e o `resumo` gravado em `abrir_chamado_interno` | apagar ou redigir (substituir por `[removido]`) os campos que citam o cliente nos arquivos de log daquele ticket |
+| `episodios` | `cliente_id`, chamado, guia, desfecho, veredito | só pelo decaimento (365 dias) ou pelo `--reset` |
+| `fatos_cliente` | `cliente_id`, chave e valor; o valor substituído continua na tabela, com a data | só pelo `--reset` |
+| `pendencias` | a ação como o analista a viu; no H2, com o relato do cliente | só pelo `--reset` |
+| Checkpoint | o estado inteiro, com o texto do cliente | apagado ao fim da execução; o da execução pausada fica até a resposta ou o prazo |
+| Logs (`logs/**/*.json` e as saídas de terminal) | o nome do cliente e o plano (resultado de `consultar_ticket`), o texto do chamado, o texto redigido, o `cliente_id` no campo `episodio` | **não sai** |
+| Memória procedural | nada: nenhuma regra é escrita no prompt (§5) | não se aplica |
 
-**Verificação, independente da remoção:** depois de apagar, varrer todas as cinco estruturas acima procurando o identificador (`cliente_id`, nome do cliente, e-mail se houver) — uma busca de texto simples nos arquivos de log e no checkpoint, uma consulta `WHERE cliente_id = ?` nas tabelas semânticas e episódicas, e uma busca textual no prompt para a procedural. Só depois dessa varredura não encontrar nada é que a remoção pode ser declarada concluída. Rodar o `delete()` e confiar no retorno não basta — foi o mesmo erro, em espírito, que o verificador do case já pegou uma vez (o modelo dizer "registrei" sem ter registrado): a alegação de que algo foi feito não substitui checar que foi.
+**Os logs são o ponto mais difícil.** Aqui eles são versionados no git de propósito, porque são
+a evidência das medições, e os dados são fictícios. Apagar ou mascarar um arquivo não tiraria o
+dado dos commits anteriores nem dos clones já feitos, e o texto livre (o relato, o que o modelo
+redigiu) não é coberto por uma busca pelo nome. Num sistema real a resposta seria de desenho, e
+não de remoção: os logs ficariam fora do versionamento, guardariam só o `cliente_id`, com o nome
+na tabela de clientes, e teriam prazo de retenção. Nada disso está implementado.
 
-**Sobre reconstrução de índice:** na escala deste projeto (algumas centenas a poucos milhares de episódios por ano), o índice de similaridade episódico pode ser um índice simples (lista de embeddings, sem estrutura compilada tipo ANN), o que torna a remoção um recorte direto na lista, sem custo de reconstrução. Essa é uma escolha deliberada para **evitar** o problema descrito no exercício: se o volume crescer a ponto de exigir um índice compilado que só suporta remoção por reconstrução completa, isso precisa ser declarado explicitamente nesse momento, porque nessa hora a remoção deixa de ser imediata e a memória fica, na prática, permanente até a próxima janela de manutenção.
+**O que se perde por não ter a remoção.** Das três razões do enunciado para esquecer:
+
+- **privacidade:** sem resposta, como dito acima;
+- **custo:** coberto pelo decaimento dos episódios; `fatos_cliente` cresce pouco (uma linha por
+  fato confirmado por pessoa);
+- **recuperação de incidente:** um fato errado do cliente é corrigido por outro `--fato`, que o
+  substitui (contradição). Um episódio errado não tem correção: fica até os 365 dias. Como o
+  episódio só avisa o analista e não entra em regra de decisão (§3), o dano é um aviso errado na
+  tela do H1.
 
 ### 2.4 O preço: o sistema deixou de ser reprodutível
 
@@ -332,7 +395,7 @@ decidiu 1 vez(es) sobre o guia KB-102: 1 rejeitada(s)" e o episódio anterior do
 **Limites assumidos.**
 - A contagem não distingue por que o analista rejeitou: uma rejeição por resumo ruim pesa igual a uma por guia errado.
 - Rodar de novo o mesmo chamado conta como precedente dele mesmo (é o caso da demonstração).
-- A remoção a pedido do titular (§2.3) **não está implementada** para a tabela `episodios` nem para os logs. O checkpoint da execução concluída é apagado desde 12/10/2026 (§1.4), o que não é remoção a pedido: é o ciclo de vida dele.
+- Não há remoção a pedido do titular: o grupo não escolheu essa causa (§2.3). O episódio sai pelo decaimento, e o log não sai. O checkpoint da execução concluída é apagado desde 12/10/2026 (§1.4), o que não é remoção a pedido: é o ciclo de vida dele.
 - O laço da Parte 1 (`--laco`) não lê nem grava episódios.
 - O log da execução ganhou o campo `episodio` (o registro gravado), e os logs anteriores a esta data não o têm.
 
@@ -411,14 +474,15 @@ pelo nó em três condições. Respostas certas (exceção barrada, controle nã
   parecido com X5 e X7; X12 e X13 foram escritas depois do prompt, sem repetir o exemplo.
 - Um cliente pode ter mais de um fato; a medição usou um fato por cliente.
 - O fato vale enquanto ninguém o corrigir: não há data de validade nem revisão periódica.
-- A remoção a pedido do titular (§2.3) não está implementada para `fatos_cliente`.
+- Não há remoção a pedido do titular (§2.3): um fato sai da leitura quando outro o substitui, e a linha antiga continua na tabela.
 - O laço da Parte 1 não lê fatos.
 
-## 5. O que existe em código: a parte da memória procedural que não muda o prompt (11/10/2026)
+## 5. O que existe em código: a memória procedural (11/10 e 12/10/2026)
 
 O §1.4 decide que só uma pessoa escreve regra, depois de pelo menos 3 correções do mesmo padrão.
-O que foi implementado é o que vem **antes** da regra: saber por que o analista corrigiu, e contar
-os padrões. **Nenhuma regra é escrita, e nada novo vai ao modelo.**
+Em 11/10/2026 foi implementado o que vem **antes** da regra: saber por que o analista corrigiu, e
+contar os padrões. Essa parte não escreve regra e não manda nada novo ao modelo; é o que este
+trecho descreve. A regra carregada no prompt entrou em 12/10/2026 e está no §5.1.
 
 | | O que é | Onde |
 |---|---|---|
@@ -428,7 +492,10 @@ os padrões. **Nenhuma regra é escrita, e nada novo vai ao modelo.**
 | Relatório de candidatas | `python src/main.py --candidatas`: os padrões (guia + motivo, e guia + aprovação com edição) com 3 ou mais correções nos últimos 90 dias, e onde uma pessoa deveria olhar. As correções do pedido ao cliente não têm guia: agrupam-se só pelo padrão e aparecem como "pedido ao cliente" | `db.candidatas_a_regra`, `db.MINIMO_CANDIDATA` |
 
 Onde olhar, por padrão: `caso_fora_do_guia` aponta o `nao_cobre` do guia; `guia_errado`, a triagem
-e a busca; `resumo_ruim`, `mensagem_ruim` e aprovação com edição, o prompt do `redigir`;
+e a busca; `resumo_ruim` e aprovação com edição do resumo, o prompt do `redigir` e as regras
+aprendidas (§5.1); `mensagem_ruim` e aprovação com edição da mensagem, o texto padrão do pedido
+(`grafo.PEDIDO_AO_CLIENTE`), que desde 12/10/2026 não é mais texto do modelo (o relatório
+apontava o prompt do `redigir` até essa data);
 `informacao_suficiente`, o prompt da triagem (o relato bastava, e o agente pediu informação);
 `outro` e rejeição sem motivo são listados sem destino.
 
@@ -440,7 +507,7 @@ motivos do H2 e o padrão sem guia estão provados por testes offline
 `test_h2_candidata_a_regra_do_pedido_ao_cliente_nao_tem_guia`); com o modelo real só foi
 exercitada a recusa de um motivo do H1 (`logs/grafo-h2/`, `humano.md` §2.4).
 
-**O que não muda no agente.** O grafo é o mesmo (12 nós, as mesmas arestas), nenhum prompt mudou e
+**O que essa parte não muda no agente.** O grafo é o mesmo (12 nós, as mesmas arestas), nenhum prompt mudou e
 não há chamada a mais ao modelo. O desfecho gravado pela rejeição é o de antes (`fila_humana`, motivo
 `acao_rejeitada`). O motivo é conferido antes de responder ao `interrupt`: motivo inválido, ou motivo
 numa aprovação, é recusado e a ação continua à espera. Uma rejeição depois do prazo vira prazo
@@ -455,9 +522,9 @@ tela trouxe "3 rejeitada(s) (3 caso_fora_do_guia)" (`logs/grafo-procedural-tela/
 escolhido na demonstração é arbitrário: serve para mostrar o mecanismo, e não diz que o KB-102
 tem um defeito.
 
-**O que não existe.** O arquivo de regras carregado junto de um prompt, com cada regra datada,
-ligada aos episódios de origem e medida antes de entrar; e o teste que recusa regra citando
-cliente ou chamado (§2.3). Isso muda o que vai ao modelo e exige nova medição.
+**O que não existe.** A ligação do relatório ao texto corrigido: o `--candidatas` diz o padrão
+e a contagem, e não o log em que estão o resumo original e o aprovado. Quem for escrever uma
+regra a partir dele precisa achar o log pelo chamado e pela data.
 
 **Limites assumidos.**
 - O corte de 3 correções vem do §1.4, e não de medição.
@@ -465,6 +532,74 @@ cliente ou chamado (§2.3). Isso muda o que vai ao modelo e exige nova medição
 - Rodar o mesmo chamado três vezes conta como três correções (foi o que a demonstração fez).
 - O motivo é a palavra do analista, num vocabulário de quatro valores; `outro` não orienta nada.
 - A rejeição dada na hora por um confirmador fica sem motivo, e o laço da Parte 1 recusa `--motivo`.
+
+### 5.1 A regra carregada no prompt (12/10/2026)
+
+**A estrutura.** A memória procedural guarda como fazer, e a estrutura é **texto no prompt de
+sistema**: uma regra vale para toda execução, então não há o que buscar. O texto mora em
+`src/prompts/regras-redigir-v2.md`, versionado como os prompts, e `grafo._sistema_do_redigir`
+o anexa ao fim do `redigir-v3.md` em toda chamada do nó. A justificativa está no código, no
+bloco "MEMÓRIA PROCEDURAL" do fim de `src/grafo.py`.
+
+| | |
+|---|---|
+| Em que nó | só o `redigir`. É o único nó de modelo que não decide nada: o desfecho chega pronto, então uma regra ruim estraga um texto, e não uma decisão |
+| Quem escreve | uma pessoa, à mão, no arquivo. O modelo e o código não escrevem regra. Uma regra por versão do arquivo, medida em rodada própria |
+| Volume | 0 escritas por execução. O arquivo em uso tem uma regra, que custa 55 tokens de entrada em cada redação (medido) |
+| O que é recusado | regra que cite um cliente ou um chamado (`CLI-`, `TKT-`, `INC-`): a regra nasce do erro num chamado e não pode carregar o titular dele (enunciado §5.4). A conferência é em código, na carga (`grafo._regras_aprendidas`); recusada, a execução termina em `erro_fatal`, sem redigir. O cabeçalho de documentação do arquivo pode citar o chamado de origem, porque não vai ao modelo |
+| Como desliga | `--sem-memoria`: o prompt do `redigir` volta a ser só o `redigir-v3.md` |
+| No log | o campo `prompt` traz o nome do arquivo de regras, junto dos três prompts |
+
+Testes offline (`tests/test_grafo.py`): `test_as_regras_aprendidas_vao_ao_prompt_do_redigir_e_so_a_ele`,
+`test_sem_memoria_as_regras_aprendidas_nao_sao_carregadas` e
+`test_regra_que_cita_cliente_ou_chamado_e_recusada`.
+
+**A regra, e de onde veio.** No `TKT-0001` (certificado SSL vencido), a anotação para o analista
+citava o domínio "acmecontabilidade.com.br", que não está no relato, no log anexado nem no banco:
+o modelo o monta a partir do nome do cliente. O defeito foi achado pelo grupo na leitura das
+rodadas (`prompts.md` §2.1 e §2.3), e é a exceção ao corte de 3 correções declarada no §1.4.
+
+**Como é conferida.** `python conferir_regras.py logs/NOME` lê os logs de uma rodada e lista os
+domínios do texto redigido que não estão no que o nó recebeu. Não chama a API. Aplicado às dez
+rodadas anteriores à regra, achou o domínio inventado em 3 (uma do `redigir-v1.md`, uma do v2 e
+uma do v3), sempre no `TKT-0001`.
+
+**A medição.** Três execuções dos 8 casos com cada arquivo, em 12/10/2026, `ministral-8b-latest`,
+`temperature=0`, commit `c849ce1 + alterações locais`, contra as três do `redigir-v3.md` sem
+regra (`logs/grafo-redigir-v3-1/` a `-3/`, commit `9d5c211 + alterações locais`):
+
+| | sem regra | `regras-redigir-v1.md` (`logs/grafo-regras-v1-1/` a `-3/`) | `regras-redigir-v2.md` (`logs/grafo-regras-v2-1/` a `-3/`) |
+|---|---|---|---|
+| Verificador | 8 de 8 nas três | 8 de 8 nas três | 8 de 8 nas três |
+| Rodadas com domínio inventado | 1 de 3 | **2 de 3** | **0 de 3** |
+| Redações reprovadas pelo nó `validar` | 0 de 21 | 0 de 21 | 0 de 21 |
+| Tokens de entrada a mais, por redação | | 91 | 55 |
+| Tokens, na rodada (entrada + saída) | 13.122 a 13.191 | 13.781 a 13.876 | 13.400 a 13.511 |
+| Custo a preço de lista, na rodada | US$ 0,00198 | US$ 0,00207 | US$ 0,00201 a 0,00203 |
+
+- **O v1 não funcionou, e não foi adotado.** A regra proibia ("não monte um domínio a partir do
+  nome do cliente") e dava uma frase para pôr no lugar ("domínio não informado"). Nas duas
+  rodadas com o defeito, o texto traz o domínio inventado e, colada nele, a frase: "Conferir DNS
+  do domínio **acmecontabilidade.com.br** (domínio não informado)". A frase apareceu ainda em
+  outros textos, 2 ou 3 dos 7 de cada rodada.
+- **O v2 é a mesma regra, dizendo só o que escrever** ("escreva apenas 'o domínio do cliente',
+  sem endereço nenhum"). O domínio inventado não apareceu em nenhuma das três rodadas. É o
+  arquivo em uso.
+
+**Limites assumidos.**
+- **Três rodadas não separam a regra do acaso.** Sem regra o defeito aparece em 1 de 3 rodadas
+  (3 de 10, contando as anteriores), e só no `TKT-0001`. Zero em três é compatível com a regra
+  funcionar e com sorte.
+- **A regra tem um efeito que ninguém pediu.** A expressão "o domínio do cliente" passou a
+  aparecer em 3 a 5 dos 7 textos de cada rodada (sem a regra, em nenhum), e em parte deles o
+  texto não falava de domínio: "O domínio do cliente apresenta falha no upload de arquivos"
+  (`TKT-0007`). Não está errado, e é pior do que o texto de antes.
+- **A conferência só enxerga domínio**, por expressão regular. Os outros textos foram lidos, e
+  não há verificador de conteúdo (`prompts.md` §1).
+- **A regra não veio das 3 correções do analista** (§1.4). O caminho do relatório `--candidatas`
+  até uma regra nunca foi percorrido com correções de verdade.
+- **Nenhuma regra é esquecida sozinha.** Sair do prompt é apagar a linha do arquivo, numa versão
+  nova; não há decaimento nem contradição para regras (§2).
 
 ## O que o agente não guarda, e o que perde quando perde
 

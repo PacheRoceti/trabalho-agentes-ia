@@ -60,6 +60,9 @@ python src/main.py --todos --auto-aprovar   # os 8 casos, cada um a partir do ba
 python src/main.py --reset                  # recria o banco simulado
 python src/main.py TKT-0001 --laco          # o mesmo chamado pelo laço da Parte 1, e não pelo grafo; logs em logs/
 python conferir_grafo.py                    # imprime os nós, as arestas e os campos do grafo compilado (sem chave)
+python demonstrar_reducer.py                # o que o grafo faz com um campo SEM reducer (sem chave); docs/grafo.md §3.2
+python demonstrar_reducer.py --real         # o mesmo, com o modelo de verdade (usa a API)
+python conferir_regras.py logs/grafo-regras-v2-1   # confere a regra aprendida do redigir nos logs de uma rodada (sem chave)
 ```
 
 **Dois caminhos.** O padrão é o grafo em LangGraph (`src/grafo.py`): o modelo classifica e redige, e o código decide o desfecho. Os logs dele vão para `logs/grafo/`. Com `--laco`, o chamado passa pelo laço da Parte 1 (`src/agente.py`), que grava em `logs/`; `--prompt ARQUIVO` escolhe um prompt do laço e já implica `--laco`. A entrada, a saída validada, o verificador e os comandos `--pendencias`, `--aprovar` e `--rejeitar` são os mesmos nos dois.
@@ -198,7 +201,7 @@ Como ler: o agente consultou o registro do chamado (passo 0), buscou na base (pa
 
 **A base de conhecimento.** No grafo a busca é vetorial (`mistral-embed`), sobre 15 guias vigentes; um nó em que o modelo lê as exceções de cada guia cobre parte do que o vetor não enxerga ([`docs/rag.md`](docs/rag.md) §4). Limite assumido: nenhum limiar separa bem as perguntas sem resposta na base, e 5 de 31 delas ainda levam a uma ação. No laço a busca é por palavras-chave, que não entende sinônimos.
 
-**O que ele lembra.** O grafo grava um registro por execução concluída e mostra ao analista, na tela da confirmação, o que já foi decidido sobre o mesmo guia; o analista pode registrar fatos do ambiente de um cliente (`--fato`). A memória só informa: nenhuma decisão do sistema a lê ([`docs/memoria.md`](docs/memoria.md)).
+**O que ele lembra.** O grafo grava um registro por execução concluída e mostra ao analista, na tela da confirmação, o que já foi decidido sobre o mesmo guia; o analista pode registrar fatos do ambiente de um cliente (`--fato`). O nó que redige carrega ainda uma regra que a leitura das execuções ensinou (não escrever um domínio que ninguém informou), guardada em `src/prompts/regras-redigir-v2.md` e escrita por uma pessoa. A memória só informa e orienta o texto: nenhuma decisão do sistema a lê ([`docs/memoria.md`](docs/memoria.md)).
 
 **Quando ele não sabe.** Não chuta: o score da base abaixo de 0,5, um id inexistente ou um relato que contradiz o log anexado terminam em `fila_humana`, com uma mensagem que diz o que foi encontrado e por que um humano deve olhar.
 
@@ -211,7 +214,11 @@ src/         grafo.py (o grafo em LangGraph: o caminho padrão) · vetorial.py (
              verificar.py · main.py · medir_rag.py (as medições de docs/rag.md) · comparar_modelos.py
              (item 3.3 da Parte 1) · ver_log.py · testar_api.py
 conferir_grafo.py   imprime o grafo compilado, para conferir com o desenho (docs/arquitetura.md §9)
+demonstrar_reducer.py   roda o grafo com e sem reducer (docs/grafo.md §3.2); grava logs/grafo-reducer/
+conferir_regras.py   lê os logs de uma rodada e confere a regra aprendida do redigir (docs/memoria.md §5.1)
 src/prompts/ no grafo, em uso: triagem-v1.md · ressalva-v3.md · redigir-v3.md (carregados por grafo.py)
+             regras-redigir-v2.md (as regras aprendidas, anexadas ao redigir-v3.md) · regras-redigir-v1.md
+             (medido e não adotado)
              ressalva-v1.md, redigir-v1.md e redigir-v2.md (anteriores) · ressalva-v2.md (medido e não adotado)
              no laço, em uso: agente-v5.md e lembrete-v1.md (carregados por agente.py)
              agente-v1.md a agente-v4.md (histórico) · agente-v5-sem-frase.md (variante do teste da regra da frase,

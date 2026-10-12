@@ -16,8 +16,9 @@
 >
 > **As medições citadas nos §3, §5 e §8 são de 10/10/2026**, anteriores à busca vetorial, ao nó
 > `conferir_ressalva`, ao H2 e ao `redigir-v3.md`. As rodadas dos 8 casos com o código e os
-> prompts em uso são `logs/grafo-redigir-v3-1/` a `-3/` (12/10/2026): 8 de 8 nas três, 16
-> chamadas ao modelo e cerca de 13,2 mil tokens cada (`grafo.md` §6.5).
+> prompts em uso são `logs/grafo-regras-v2-1/` a `-3/` (12/10/2026): 8 de 8 nas três, 16
+> chamadas ao modelo e cerca de 13,4 mil tokens cada. São as de `logs/grafo-redigir-v3-1/` a
+> `-3/` (`grafo.md` §6.5) mais a regra aprendida do `redigir` (`memoria.md` §5.1).
 >
 > O histórico da decisão (v1 no papel → v2 construída) continua em
 > [`arquitetura-v2.md`](arquitetura-v2.md).
@@ -81,6 +82,8 @@ GRAFO   src/grafo.py · objeto GRAFO, compilado uma vez · thread_id = id do cha
       │                    técnico, score ≥ 0,5, guia "anotar" ...... anotacao_interna
       ▼
   [redigir]            [M] UMA chamada · redigir-v3.md · temperature=0 · JSON {texto}
+      │                [C] antes: anexa ao prompt as regras aprendidas (MEMÓRIA procedural,
+      │                    src/prompts/regras-redigir-v2.md)                          leitura
       │                ◆D5 o texto: resumo do chamado ou mensagem do encaminhamento.
       │                    O desfecho chega decidido; o modelo não o troca
       │                [C] no pedido ao cliente (devolver_cliente) o modelo NÃO é chamado:
@@ -160,8 +163,11 @@ MEMÓRIA   entre execuções, em dados/tickets.db; só o grafo lê e grava (docs
   fatos_cliente ....... SEMÂNTICA. Fatos do ambiente do cliente, de vocabulário fechado,
                         escritos só por uma pessoa (main.py --fato). Lidos por chave em
                         [conferir_ressalva] e em [pedir_confirmacao]
-  procedural .......... NÃO HÁ regra aprendida no prompt. Existe o motivo da rejeição,
-                        gravado no episódio, e o relatório main.py --candidatas, que só lê
+  procedural .......... PROCEDURAL. Não é tabela: é texto, em src/prompts/regras-redigir-v2.md,
+                        escrito só por uma pessoa e anexado ao prompt de [redigir] em toda
+                        chamada. Regra que cita cliente ou chamado é recusada na carga.
+                        Antes da regra: o motivo da rejeição, gravado no episódio, e o
+                        relatório main.py --candidatas, que só lê
   As tabelas nascem em src/db.py. --todos e --reset as zeram junto com o banco.
   O que também atravessa execuções é registro do banco (as duas releituras de DADOS).
   logs/…/TKT-0000.json guarda a trajetória; o sistema grava e nunca lê.
@@ -312,7 +318,8 @@ e o log diz como o modelo leu cada chamado. O que o modelo escreve fora dos camp
 tetos e o confirmador ficam no `Contexto` (o `context_schema` do grafo): são passados a cada
 chamada e não são serializados.
 
-O que é derivado e não guardado, e a razão de cada reducer, estão em `grafo.md` §3.2 e §3.3.
+O que é derivado e não guardado, a razão de cada reducer e a demonstração do que acontece sem
+ele (`demonstrar_reducer.py`) estão em `grafo.md` §3.2 e §3.3.
 
 ## 5. O orçamento
 
@@ -866,6 +873,7 @@ errado era o desenho.
 |---|---|
 | Tabela de padrões usados, com a justificativa (§6.2) | `grafo.md` §2 |
 | Tabela de campos do estado do grafo, com reducers (§7.1) | §4 deste documento; a coluna do reducer confere com a saída acima |
+| O que o sistema faz sem o reducer, com uma execução (§7.2) | `grafo.md` §3.2; `python demonstrar_reducer.py` (com `--real`, o modelo de verdade); saídas em `logs/grafo-reducer/` |
 | O que o framework não deu (§6.5) e a decisão que virou parâmetro (§6.6) | `grafo.md` §4 e §5 |
 
 ### 9.4 Os pontos de parada, no grafo (§8.1)

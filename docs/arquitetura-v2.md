@@ -97,6 +97,17 @@ chamado), o grafo pausa com `interrupt` e a resposta do cliente retoma a mesma c
 (`thread_id` = id do chamado) para refazer a triagem — o mesmo checkpointer da confirmação
 do analista.
 
+> **Situação em 12/10/2026: o teto de re-busca com reformulação não foi feito, e não será na
+> Parte 2.** A promessa supunha a busca por palavra, em que o resultado depende dos termos que o
+> modelo escolhe. No grafo a consulta é o relato inteiro do cliente, comparado por vetor
+> (`rag.md` §4.1): não há termos para reformular, e a busca roda uma vez. Três razões para não
+> acrescentar a volta: (1) ela devolveria ao modelo uma decisão que saiu dele de propósito, e o
+> nível de autonomia defendido é workflow com roteador (`arquitetura.md` §8); (2) a medição não a
+> pede: nas perguntas com resposta o guia certo veio em primeiro lugar, e o defeito da busca é o
+> oposto, a pergunta sem resposta que passa do limiar (`rag.md` §4.3), que buscar de novo não
+> trata; (3) o `grafo.md` §2 registra a perda: quando o portão recusa, o modelo não tem outra
+> tentativa. A busca repetida continua existindo só no laço (`--laco`).
+
 ## 4. Prompt engineering (item 4.3)
 
 Um único ponto de chamada ao modelo — o laço em `src/agente.py` — com um único

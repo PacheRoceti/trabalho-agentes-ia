@@ -21,6 +21,12 @@
 As duas primeiras linhas pertencem ao laço (`--laco`), e as três últimas ao grafo, que é o
 caminho padrão.
 
+**As regras aprendidas não são uma etapa nova.** Desde 12/10/2026 o prompt de sistema do nó
+`redigir` é o `redigir-v3.md` seguido do texto de `regras-redigir-v2.md`, a memória procedural
+do grafo (`memoria.md` §5.1). A chamada, a técnica e o contrato são os da linha da redação; o
+que muda é que uma parte do prompt é escrita depois, a partir do que as execuções mostraram, e
+tem conferência própria (`python conferir_regras.py logs/NOME`).
+
 **A entrada da triagem.** A mensagem de usuário é montada pelo código (`_entrada`, em
 `src/agente.py`): o id do chamado, o id do cliente e, abaixo, o texto que o cliente escreveu. Um id
 que não existe chega sem texto. Como o texto já está na entrada, `consultar_ticket` não o devolve de
@@ -78,6 +84,8 @@ antes de enviar o texto ao modelo.
 | `redigir-v1.md` | histórico: foi o prompt do nó até 12/10/2026 | nenhuma redação reprovada pelo nó `validar`; a mensagem ao cliente não pergunta nada em 15 execuções de 15 (§2.1) |
 | `redigir-v2.md` | histórico: foi o prompt do nó por algumas horas de 12/10/2026 | 8 de 8 em três rodadas; a mensagem ao cliente faz as três perguntas nas três (§2.1). Foi a medição dele que levou o pedido a virar texto padrão (§2.2) |
 | `redigir-v3.md` | **em uso** (grafo), para quatro dos cinco desfechos | 8 de 8 em três rodadas, com 119 tokens de entrada a menos por redação (§2.3) |
+| `regras-redigir-v1.md` | regras aprendidas do `redigir` (memória procedural); medido e **não adotado** | 8 de 8 em três rodadas; o domínio inventado apareceu em 2 de 3, contra 1 de 3 sem a regra (`memoria.md` §5.1) |
+| `regras-redigir-v2.md` | **em uso** (grafo): anexado ao fim do `redigir-v3.md`, salvo com `--sem-memoria` | 8 de 8 em três rodadas; domínio inventado em 0 de 3; 55 tokens de entrada a mais por redação (`memoria.md` §5.1) |
 
 Todos os resultados são de `ministral-8b-latest` com `temperature=0`. Os prompts do laço são
 carregados por `src/agente.py` (`PROMPT_ARQUIVO`, `LEMBRETE_ARQUIVO`) e os do grafo por
@@ -474,9 +482,10 @@ deste teste. Ficam aqui como histórico; as conclusões acima são as do teste n
   fora dos 8 casos (as três execuções medidas são dos mesmos).
 - Fazer a regra da frase também em um prompt do grafo, que é o caminho padrão (o §3 testou o do
   laço).
-- Tratar os dois defeitos de conteúdo que a leitura das rodadas achou no `redigir` (§2.1): o
-  resumo que diz que um score acima do limiar "não atinge o limiar", e o domínio inventado na
-  anotação. Não foram tratados no v2, que mudou uma regra só.
+- Tratar o defeito de conteúdo que continua sem regra (§2.1): o resumo que diz que um score
+  acima do limiar "não atinge o limiar". O outro, o domínio inventado na anotação, virou a
+  primeira regra aprendida do `redigir` em 12/10/2026 (`regras-redigir-v2.md`, `memoria.md`
+  §5.1): não apareceu em três rodadas, que não bastam para separar a regra do acaso.
 - Medir o `redigir-v2.md` em outro relato de informação insuficiente: o gabarito tem um (§2.1).
 - Acrescentar uma linha no §1 se uma etapa de modelo nova nascer (hoje não há resposta do RAG nem
   extração para a memória).

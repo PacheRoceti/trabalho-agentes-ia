@@ -253,8 +253,62 @@ Consequência prática dos reducers: uma execução nova no mesmo thread somaria
 isso `rodar_grafo()` apaga o thread do chamado antes de começar (`src/grafo.py:874`), mesmo com o
 checkpoint da execução concluída já apagado ao fim dela (§7): o que pode ter sobrado é uma pausa.
 
-**A demonstração do que acontece sem reducer está por fazer**, e depende de uma decisão: o
-enunciado pede a demonstração num grafo com nós paralelos, e este grafo não tem nenhum.
+#### A demonstração: o que o sistema faz sem o reducer
+
+`python demonstrar_reducer.py` (sem chave, sem API) compila o grafo de verdade duas vezes: com o
+`EstadoGrafo` como está e com uma cópia em que alguns campos perderam o
+`Annotated[..., operator.add]`. Os nós, as arestas e o roteiro do modelo são os mesmos; cada
+chamada ao modelo roteirizado gasta 1.050 tokens. A saída está em
+`logs/grafo-reducer/saida-terminal.txt` (12/10/2026, langgraph 1.2.14, commit `c849ce1`).
+
+**Este grafo não tem nós paralelos**, e o defeito aparece do mesmo jeito: os nós rodam em
+sequência, cada um escreve numa volta, e o campo sem reducer fica com o valor do último.
+
+| Campo sem reducer | Caso | Com `operator.add` | Sem reducer | Levanta exceção? |
+|---|---|---|---|---|
+| `passos` | `TKT-0003` | 8 passos no estado | **1 passo**, o último (`abrir_chamado_interno`); o chamado é aberto igual e o término é `respondeu` | não |
+| `n_chamadas_modelo`, `tokens_entrada`, `tokens_saida`, `custo_usd` | `TKT-0003`, com o teto de tokens em 2.000 | para antes da 3ª chamada: `orcamento_esgotado` (`tokens: 2100/2000`), nada gravado | **faz as 3 chamadas, gasta 3.150 tokens, abre o chamado** e registra 1 chamada e 1.050 tokens; término `respondeu` | não |
+| `tentativas_redacao` | `TKT-0004`, com um texto que o `validar` reprova sempre | 2 redações e `erro_fatal` ("recusado em 2 tentativas"), 3 chamadas | o contador fica em 1 para sempre: **9 chamadas e 9.450 tokens**, até o `LIMITE_SUPERPASSOS` | sim, `GraphRecursionError` |
+
+O que cada linha ensina:
+
+- **`passos`**: é o caso do enunciado. Nada falha, o que foi gravado no banco é idêntico, e a
+  trajetória some do estado, que é de onde o log e a saída a leem.
+- **Consumo**: é o mais grave aqui. O teto de tokens é conferido antes de cada chamada com o
+  total do estado (`_teto`); sem a soma, ele vê só a última chamada e nunca dispara. O orçamento
+  deixa de valer sem erro, e o log registra um terço do que foi gasto.
+- **`tentativas_redacao`**: este não é silencioso. O laço `redigir` ↔ `validar` perde o limite, e
+  quem para a execução é o `recursion_limit`. Sem ele, não pararia.
+
+**Com o modelo real.** `python demonstrar_reducer.py --real` repete as duas primeiras linhas
+com o `ministral-8b-latest` (`temperature=0`) e a busca vetorial, no mesmo `TKT-0003`. A saída
+está em `logs/grafo-reducer/saida-terminal-real.txt` (12/10/2026, commit `c849ce1`, 11 chamadas
+ao modelo). "Gasto" é o consumo que a API devolveu em cada chamada, anotado fora do estado.
+
+| Campo sem reducer | Com `operator.add` | Sem reducer | Levanta exceção? |
+|---|---|---|---|
+| `passos` | 8 passos; 3 chamadas, 2.460 tokens gastos e 2.460 no estado | **1 passo**; o chamado é aberto igual, término `respondeu` | não |
+| Consumo, com o teto de tokens em 1.016 | para antes da 3ª chamada: `orcamento_esgotado` (`tokens: 1375/1016`), nada gravado | **3 chamadas (686, 661 e 1.143), 2.490 tokens gastos, chamado aberto**; o estado registra 1 chamada e 1.143 tokens | não |
+
+O teto de 1.016 não é o do sistema (30.000): o script o põe entre a maior chamada antes da
+última (686) e a soma delas (1.346), medidas na primeira execução, porque um chamado só não
+chega perto do teto real. A linha do `tentativas_redacao` não foi executada com o modelo real:
+ela depende de um texto que o `validar` reprove sempre, e o modelo não o escreve a pedido.
+
+**Num grafo com ramos paralelos** (um grafo mínimo, no mesmo script, com dois ramos que escrevem
+um item cada em `achados`):
+
+| Situação | Com `operator.add` | Sem reducer |
+|---|---|---|
+| Ramos de tamanhos diferentes: `b` escreve uma volta depois de `a` | os 2 achados | **só o do ramo `b`**, sem erro: é o defeito que o enunciado descreve |
+| Ramos que escrevem na mesma volta | os 2 achados | `InvalidUpdateError` ("Can receive only one value per step") |
+
+**Limite honesto.** Na versão instalada do LangGraph a perda silenciosa só acontece quando as
+escritas caem em voltas diferentes; na mesma volta o framework recusa. A cópia do estado sem
+reducer é montada no script, e o teto de tokens das duas medições foi escolhido para o defeito
+aparecer num chamado só. Com o modelo real há uma execução de cada variante, de um caso. Nenhum
+teste offline fixa esse comportamento; ele pode mudar com a versão do LangGraph, e o script é o
+que o confere.
 
 ### 3.3 O que não está no estado (§7.3)
 
@@ -285,7 +339,10 @@ O sistema tem um agente só. Não há estado passado entre agentes.
 
 Contagem de 12/10/2026, sobre o `src/grafo.py` desta data: **166 linhas de código nas quatro
 frentes, de 671 do arquivo** (uma em cada quatro). A regra da contagem: linha de código é a que
-não está em branco, não é só comentário e não é docstring; o arquivo tem 944 linhas ao todo.
+não está em branco, não é só comentário e não é docstring; o arquivo tinha 944 linhas ao todo.
+Depois da contagem, ainda em 12/10/2026, o arquivo ganhou 44 linhas **no fim** (a carga das
+regras aprendidas, `memoria.md` §5.1) e passou a 988. Elas não entram em nenhuma das quatro
+frentes, e as linhas citadas abaixo não mudaram de lugar.
 
 | Frente | O que o LangGraph deu | O que continuou sendo código nosso | Linhas |
 |---|---|---|---|
@@ -519,8 +576,10 @@ pelo modelo (`prompts.md` §2.2). Mais três execuções dos 8 casos, com as mes
 
 A chamada a menos é a redação do `TKT-0005`, que passou de 2 chamadas e 1.483 tokens para 1
 chamada e 621 a 624. Os outros sete casos não mudaram de caminho. As três últimas linhas são do
-`redigir-v3.md`, que é o v2 sem a regra do pedido ao cliente (`prompts.md` §2.3): **são as
-rodadas do código e dos prompts em uso.** A pausa do H2 com o texto padrão, aprovada por outro processo, está em
+`redigir-v3.md`, que é o v2 sem a regra do pedido ao cliente (`prompts.md` §2.3). Ainda em
+12/10/2026 o nó `redigir` passou a carregar uma regra aprendida (`regras-redigir-v2.md`); **as
+rodadas do código e dos prompts em uso** são `logs/grafo-regras-v2-1/` a `-3/`: 8 de 8 nas três,
+16 chamadas e 13.400 a 13.511 tokens (`memoria.md` §5.1). A pausa do H2 com o texto padrão, aprovada por outro processo, está em
 `logs/grafo-pedido-padrao-h2/` (`humano.md` §2.4).
 
 ## 7. Limites do que foi implementado
@@ -542,6 +601,5 @@ rodadas do código e dos prompts em uso.** A pausa do H2 com o texto padrão, ap
 
 - Medir o grafo em chamados fora dos 8 casos: as três rodadas são dos mesmos casos (§6).
 - Exercitar o prazo vencido com o modelo real, e com log (§6.1).
-- Fazer a demonstração do campo sem reducer (§3.2).
 - Implementar o H3 (`humano.md` §7), e com ele o nó `aguardar_cliente`. O H2 existe desde
   12/10/2026 (§6.3).
