@@ -13,7 +13,8 @@ real ou pessoal entra no repositório nem no contexto do modelo.
   `data_publicacao` são fictícias.
 - `perguntas-rag.json` — o conjunto de perguntas do RAG (as dez do enunciado e as escritas para calibrar a busca vetorial), com o guia que responde a cada uma. Usado por `src/medir_rag.py`.
 - `gabarito.json` — a resposta que um analista humano daria para cada chamado.
-  É o verificador (item 2.6): 8 casos rotulados à mão.
+  É o verificador (item 2.6): 40 casos rotulados à mão, os 8 da Parte 1 e os 32 da ampliação de
+  12/10/2026 (abaixo).
 
 Dois arquivos são **gerados** e ignorados pelo git:
 
@@ -54,6 +55,39 @@ escrito **antes** de qualquer prompt (nos 7 casos originais; o `TKT-0007` e a
 regra de texto do `TKT-0002` vieram depois). O `TKT-0002`, o `TKT-0003` e o `TKT-0006` só
 passam se o sistema tratar o caso difícil de fato.
 
-**Limite honesto:** 8 casos não são um conjunto de avaliação. Na Parte 2 o
-gabarito cresce para ~40 casos, e o portão de confiança passa a ser calibrado
-com perguntas sem resposta na base.
+## A ampliação de 12/10/2026: `TKT-0101` a `TKT-0132`
+
+Trinta e dois chamados novos levam o gabarito de 8 para 40 casos. Onze são os casos sintéticos de
+`exercicios/aula-11-avaliacao.md` (1, 2, 5, 7, 8, 12, 13, 14, 15, 18 e 19), com o texto de lá; os
+outros 21 foram escritos para cobrir o que faltava. A razão de cada rótulo está na `_nota` da
+entrada, em `gabarito.json`.
+
+| Chamados | Desfecho esperado | O que testam |
+|---|---|---|
+| `TKT-0101` a `0105` | `abrir_chamado_interno` | os guias "escalar" sem armadilha de histórico: 502 constante (KB-104, P1), DNS relatado direto (KB-106, P1), pedido de execução "corrijam agora" (KB-102, P2), banco recusando conexão com **log que confirma o relato** (KB-107, P1) e bloqueio indevido do firewall de aplicação, o primeiro chamado para a **Segurança** (KB-112, P2) |
+| `TKT-0106` a `0109` | `abrir_chamado_interno` | a regra de reincidência: dentro da janela sem o cliente afirmar (`0106`, P2 vira **P1**); afirmada pelo cliente, mas com 42 dias, fora da janela (`0107`, fica **P2**); num guia que já é P1 (`0108`); histórico de outra categoria (`0109`, fica **P2**) |
+| `TKT-0110` a `0118` | `anotacao_interna` | um caso para cada guia "anotar" (KB-105, KB-101-A, KB-103, KB-108, KB-109, KB-110, KB-111, KB-113, KB-114). O `0111` exige "P1 urgente" num guia de anotação |
+| `TKT-0119` a `0122` | `fila_humana` | sem procedimento (WordPress), fora da alçada (encerrar; mudar prioridade) e instrução injetada no texto do cliente |
+| `TKT-0123`, `0124` | `fila_humana` | divergência entre relato e log, no desenho do `TKT-0002`: SSH × DNS e site fora do ar × certificado vencido. A mensagem tem de citar os dois lados |
+| `TKT-0125` a `0127` | `fila_humana` | o guia mais próximo não cobre o caso: recebimento de e-mail (KB-111), ataque (KB-112) e restauração de backup (KB-105, que não declara essa ressalva) |
+| `TKT-0128` a `0130` | `fila_comercial` | cobrança em duplicidade, cancelamento e um pedido de contratação que traz um sintoma técnico |
+| `TKT-0131`, `0132` | `devolver_cliente` | "ajuda" e um relato que diz o serviço, mas não o sintoma |
+
+Com a ampliação, os 15 guias vigentes têm ao menos um caso. Total dos 40: 11 abrem chamado
+interno, 10 anotam, 12 vão à fila humana, 4 à comercial e 3 voltam ao cliente.
+
+**O que o seed ganhou para esses casos:** os clientes `CLI-08` a `CLI-10`, cada um com um chamado
+antigo (`TKT-0088` a `TKT-0090`) e um chamado interno no histórico. Essas linhas vêm depois da do
+`TKT-0087`, que continua sendo o `INC-0001`; elas são `INC-0002` a `INC-0004`. Consequência: o
+primeiro chamado interno aberto numa execução, que era o `INC-0002`, passou a ser o `INC-0005`. Os
+documentos que citam `INC-0002` (`docs/humano.md`, `docs/grafo.md`, `docs/arquitetura.md`,
+`docs/rag.md`) descrevem logs anteriores a esta mudança e continuam valendo para eles.
+
+**Limite honesto:** os 32 casos novos foram rotulados **antes** de qualquer execução e estão
+**AINDA NÃO MEDIDOS**: nenhuma rodada registrada em `logs/` os inclui, e todo "8 de 8" dos
+documentos é dos 8 casos da Parte 1. Os rótulos são de quem escreveu os casos, sem revisão de um
+analista de fora do grupo, e três são discutíveis (`TKT-0124`, `TKT-0130` e `TKT-0132`, com a razão
+na `_nota`). A segunda volta dos casos 17 e 18 da aula 11 (a resposta do cliente ao pedido de
+informação) fica de fora, porque essa espera não existe no código. O `TKT-0108` não distingue
+reincidência de ausência dela, porque as duas dão P1. E 40 casos escritos por quem conhece os
+guias continuam sendo poucos: o limiar do portão de confiança não foi recalibrado com eles.
