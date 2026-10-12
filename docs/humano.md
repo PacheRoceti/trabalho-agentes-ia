@@ -275,8 +275,13 @@ os mesmos tokens; a segunda aprovação não encontrou nada pendente; no banco, 
 com `enviado_em`, uma pendência `aprovada` e nenhum chamado interno.
 
 Limites: quem respondeu foi quem fazia a demonstração, 5 segundos depois da pausa, e não um
-analista; a rejeição e o prazo vencido do H2 estão nos testes offline
-(`tests/test_grafo.py`, os 13 testes `test_h2_*`) e não foram executados com o modelo real.
+analista. A rejeição e o prazo vencido do H2, que estavam só nos testes offline
+(`tests/test_grafo.py`, os 13 testes `test_h2_*`), foram executados com o modelo real ainda em
+12/10/2026 (`logs/grafo-h2-rejeicao/` e `logs/grafo-h2-vencido/`, commit `4aa9818`). Nos dois
+cenários o `TKT-0005` foi para a `fila_humana` com a mensagem redigida, nenhum
+`devolver_cliente` foi gravado (o único pedido do chamado não foi gasto) e não houve aviso ao
+gestor. Na rejeição, o motivo `informacao_suficiente` ficou no episódio. O prazo vencido foi
+provocado com `--prazo-confirmacao 0.02`; a tabela e os limites estão em `grafo.md` §6.7.
 
 ## 3. A implementação, e a dependência do checkpoint (§8.3)
 
@@ -308,7 +313,10 @@ A tabela `pendencias` continua sendo a fila do analista nos dois caminhos: é el
 foram executadas com o modelo real em `logs/grafo-pausa/` (10/10/2026, commit `083d132`): pausa às 23:51:58, aprovação por outro processo às 23:52:02, e uma segunda aprovação que não encontrou nada pendente (`grafo.md` §6.1). Os testes de
 `tests/test_grafo.py` cobrem aprovar, aprovar duas vezes, rejeitar e prazo vencido. Com o modelo
 real, a rejeição do H1 foi executada em 11/10/2026 (`logs/grafo-memoria-1/`,
-`logs/grafo-procedural/`); o prazo vencido, não.
+`logs/grafo-procedural/`), e o prazo vencido em 12/10/2026 (`logs/grafo-h1-vencido/`): o
+`TKT-0003`, que seria P1, pausou com o prazo encurtado para 1,2 segundo; o comando seguinte
+gravou a `fila_humana` e o aviso ao gestor, sem abrir chamado interno, e a aprovação tardia não
+encontrou nada pendente (`grafo.md` §6.7).
 
 ## 4. O que acontece se ninguém responder, ou se a pessoa rejeitar (§8.4)
 
@@ -432,12 +440,15 @@ não um analista.
 
 ## 7. O que falta para este item
 
-- Exercitar o prazo vencido do H1 no grafo com o modelo real, e com log. A aprovação está em
-  `logs/grafo-pausa/`, e a rejeição em `logs/grafo-memoria-1/` (sem motivo) e
-  `logs/grafo-procedural/` (com motivo), de 11/10/2026.
+- Exercitar o prazo vencido com o prazo de verdade. No H1 e no H2 ele foi executado com o
+  modelo real em 12/10/2026 (`logs/grafo-h1-vencido/` e `logs/grafo-h2-vencido/`), com o prazo
+  encurtado para 1,2 segundo (`grafo.md` §6.7). A aprovação do H1 está em `logs/grafo-pausa/`,
+  e a rejeição em `logs/grafo-memoria-1/` (sem motivo) e `logs/grafo-procedural/` (com motivo),
+  de 11/10/2026.
 - Implementar o H3: a pausa em `aguardando_cliente` e a retomada com a resposta, com o prazo de
   3 dias úteis contado do `enviado_em` do pedido (§2.4).
-- Exercitar a rejeição e o prazo vencido do H2 com o modelo real, e com log.
+- Exercitar os outros motivos de rejeição do H2 (`mensagem_ruim`, `outro`) com o modelo real: a
+  demonstração de `logs/grafo-h2-rejeicao/` usou `informacao_suficiente`.
 - Rever o texto padrão do pedido (`PEDIDO_AO_CLIENTE`) quando a base ganhar guia de um serviço
   novo: nada avisa que a lista ficou velha (`prompts.md` §2.2).
 - Separar a aprovação do envio, se um canal de mensagem (um MCP simulado, por exemplo) for

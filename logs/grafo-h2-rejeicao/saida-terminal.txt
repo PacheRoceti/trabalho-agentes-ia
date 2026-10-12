@@ -1,0 +1,125 @@
+$ python src/main.py TKT-0005 --rodada grafo-h2-rejeicao
+
+==============================================================================
+TKT-0005  (caso: informacao_insuficiente)  modelo: ministral-8b-latest  prompt: triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md (grafo)
+
+  nó consultar         consultar_ticket {"id_ticket": "TKT-0005"} -> ok
+  nó triagem           triagem {} -> ok
+  nó decidir           decidir {} -> ok
+  nó redigir           redigir {"desfecho": "devolver_cliente", "texto_padrao": true} -> ok
+  ENTRADA: Meu servidor não está funcionando direito.
+
+  TERMINO: aguardando_humano | desfecho: nenhum | passos: 4 | chamadas ao modelo: 1 | lembretes: 0 | tokens: 624 | custo: US$ 0.00009
+  motivo: aguardando a confirmação do analista até 2026-10-12T18:58:52-03:00 (prazo de 20 minutos)
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0005",
+      "executado_em": "2026-10-12T18:38:51-03:00",
+      "termino": "aguardando_humano",
+      "resultado": {
+        "acao": null,
+        "texto": null,
+        "chamado_interno": null,
+        "time_destino": null,
+        "prioridade": null
+      },
+      "fonte": {
+        "tipo": "registro_do_chamado",
+        "kb_id": null,
+        "score": null,
+        "registros": [
+          "TKT-0005"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "triagem",
+          "decidir",
+          "redigir"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": false,
+        "motivo": "a execução terminou sem desfecho (aguardando_humano: aguardando a confirmação do analista até 2026-10-12T18:58:52-03:00 (prazo de 20 minutos))"
+      }
+    }
+
+  >> AÇÃO IRREVERSÍVEL aguardando o analista de suporte:
+     ferramenta: devolver_cliente
+     id_ticket: TKT-0005
+     relato: Meu servidor não está funcionando direito.
+     mensagem: Para darmos andamento ao seu chamado, precisamos de mais informações:
+1. Qual serviço está com problema (site, e-mail, banco de dados, FTP/SFTP, acesso SSH, backup ou tarefa agendada)?
+2. Qual é o domínio ou o endereço afetado? Se for banco de dados, qual é o nome do banco?
+3. Qual mensagem ou código de erro aparece (por exemplo: 403, 502, "permissão negada")? Copie o texto como ele é exibido.
+4. Em que data e hora o problema começou? Ele acontece sempre ou só às vezes?
+5. Alguma coisa mudou pouco antes (publicação de nova versão, migração, restauração de backup, troca de senha)?
+     plano: Hospedagem Start
+     pedido_em: 2026-10-12T18:38:52-03:00
+     vence_em: 2026-10-12T18:58:52-03:00
+     faltam: 20 min
+     se aprovada: o pedido é registrado como enviado ao cliente e não tem volta (o sistema simulado não tem canal de mensagem). É o único pedido de informação permitido neste chamado
+     rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta
+     responder: python src/main.py --aprovar TKT-0005   |   --rejeitar TKT-0005
+     aprovar corrigindo a mensagem: python src/main.py --aprovar TKT-0005 --mensagem "texto corrigido"
+     rejeitar dizendo por quê: python src/main.py --rejeitar TKT-0005 --motivo mensagem_ruim | informacao_suficiente | outro
+[código de saída: 0]
+
+$ python src/main.py --rejeitar TKT-0005 --motivo informacao_suficiente --rodada grafo-h2-rejeicao
+  nó confirmar         confirmar {"acao": "devolver_cliente"} -> ok
+  nó gravar            registrar_encaminhamento {"id_ticket": "TKT-0005", "destino": "fila_humana", "mensagem": "Ação rejeitada pelo anali -> ok
+
+==============================================================================
+TKT-0005  REJEITADO pelo analista
+
+  ENTRADA: Meu servidor não está funcionando direito.
+
+  TERMINO: respondeu | desfecho: fila_humana | passos: 6 | chamadas ao modelo: 1 | lembretes: 0 | tokens: 624 | custo: US$ 0.00009
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0005",
+      "executado_em": "2026-10-12T18:38:51-03:00",
+      "termino": "respondeu",
+      "resultado": {
+        "acao": "fila_humana",
+        "texto": "Ação rejeitada pelo analista de suporte. Ação proposta pelo agente e NÃO executada: enviar ao cliente o pedido de informação (o único permitido neste chamado). Sustentação: a triagem não encontrou no relato o serviço afetado nem o sintoma. Mensagem redigida: Para darmos andamento ao seu chamado, precisamos de mais informações:\n1. Qual serviço está com problema (site, e-mail, banco de dados, FTP/SFTP, acesso SSH, backup ou tarefa agendada)?\n2. Qual é o domínio ou o endereço afetado? Se for banco de dados, qual é o nome do banco?\n3. Qual mensagem ou código de erro aparece (por exemplo: 403, 502, \"permissão negada\")? Copie o texto como ele é exibido.\n4. Em que data e hora o problema começou? Ele acontece sempre ou só às vezes?\n5. Alguma coisa mudou pouco antes (publicação de nova versão, migração, restauração de backup, troca de senha)?",
+        "chamado_interno": null,
+        "time_destino": null,
+        "prioridade": null
+      },
+      "fonte": {
+        "tipo": "registro_do_chamado",
+        "kb_id": null,
+        "score": null,
+        "registros": [
+          "TKT-0005"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "triagem",
+          "decidir",
+          "redigir",
+          "confirmar",
+          "registrar_encaminhamento"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": false,
+        "motivo": "o analista rejeitou a ação proposta: ela não foi executada"
+      }
+    }
+[código de saída: 0]
+
+$ python src/main.py --rejeitar TKT-0005 --motivo informacao_suficiente --rodada grafo-h2-rejeicao   (de novo)
+
+Não há confirmação pendente para TKT-0005.
+[código de saída: 0]
+
+CONFERÊNCIA NO BANCO (TKT-0005)
+  pendencias: 1 linha(s)
+    status=rejeitada | pedido_em=2026-10-12T18:38:52-03:00 | vence_em=2026-10-12T18:58:52-03:00 | resolvido_em=2026-10-12T18:38:54-03:00 | resolvido_por=analista de suporte (terminal)
+  encaminhamentos: 1 linha(s)
+    destino=fila_humana | kb_id=None | criado_em=2026-09-21 12:00 | enviado_em=None | mensagem=Ação rejeitada pelo analista de suporte. Ação proposta pelo agente e NÃO executada: enviar ao cliente o pedido
+  chamados_internos: 0 linha(s)
+  avisos_gestor: 0 linha(s)
+  episodios: 1 linha(s)
+    kb_id=None | acao_proposta=devolver_cliente | desfecho=fila_humana | veredito=rejeitado | motivo_rejeicao=informacao_suficiente | motivo=acao_rejeitada

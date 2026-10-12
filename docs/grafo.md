@@ -509,9 +509,9 @@ interno para o `TKT-0007`, uma pendência com status `aprovada`, nenhum encaminh
 
 O que isso mostra: o estado atravessou dois processos pelo checkpointer em SQLite; a retomada
 não refez triagem, busca nem redação (os tokens não mudaram); e a segunda aprovação não criou
-nada. Limites: quem aprovou foi quem rodou o comando, 4 segundos depois, e não um analista; o
-prazo vencido não foi exercitado com o modelo real. A rejeição foi, no dia seguinte
-(`logs/grafo-memoria-1/` e `logs/grafo-procedural/`, `memoria.md` §3 e §5).
+nada. Limites: quem aprovou foi quem rodou o comando, 4 segundos depois, e não um analista. A
+rejeição foi exercitada no dia seguinte (`logs/grafo-memoria-1/` e `logs/grafo-procedural/`,
+`memoria.md` §3 e §5), e o prazo vencido em 12/10/2026 (§6.7).
 
 ### 6.2 Aprovar editando, com o modelo real
 
@@ -645,6 +645,44 @@ Limites desta medição:
 - **Aprovação automática:** nenhuma das 11 confirmações de cada rodada passou por uma pessoa.
 - **O laço não foi medido nos 40 casos.** A comparação do §6 continua sendo a dos 8.
 
+### 6.7 O prazo vencido e a rejeição do pedido ao cliente, com o modelo real
+
+Três caminhos da pausa que até 12/10/2026 só os testes offline cobriam. Cada um partiu do banco
+recriado (`--reset`), sem `--auto-aprovar`, com um comando por processo (`ministral-8b-latest`,
+commit `4aa9818`):
+
+| Pasta | Pausa | Comandos | O que aconteceu | Chamadas · tokens |
+|---|---|---|---|---|
+| `logs/grafo-h1-vencido/` | H1, `TKT-0003` (o chamado seria P1) | `TKT-0003 --prazo-confirmacao 0.02`; `--pendencias`; `--aprovar TKT-0003` | pausou em `confirmar` às 18:38:44, com prazo até 18:38:45. O `--pendencias` das 18:38:48 achou o prazo vencido: o grafo continuou de `confirmar` e gravou `fila_humana`, com o aviso ao gestor. A aprovação tardia respondeu "Não há confirmação pendente" | 3 · 2.520 |
+| `logs/grafo-h2-rejeicao/` | H2, `TKT-0005` | `TKT-0005`; `--rejeitar TKT-0005 --motivo informacao_suficiente`, duas vezes | pausou às 18:38:52 com o texto padrão do pedido. A rejeição das 18:38:54 gravou `fila_humana`; a segunda não encontrou nada pendente | 1 · 624 |
+| `logs/grafo-h2-vencido/` | H2, `TKT-0005` | `TKT-0005 --prazo-confirmacao 0.02`; `--pendencias` | pausou às 18:38:58, com prazo até 18:38:59. O `--pendencias` das 18:39:03 venceu a ação e gravou `fila_humana` | 1 · 621 |
+
+Conferência no banco, ao fim de cada cenário (está no `saida-terminal.txt` de cada pasta):
+
+| | Pendência | Encaminhamentos | Chamado interno | Aviso ao gestor | Episódio |
+|---|---|---|---|---|---|
+| H1 vencido | `vencida`, "ninguém: prazo vencido" | 1 `fila_humana` | nenhum | **1, P1**, motivo `confirmacao_nao_recebida` | veredito `vencido` |
+| H2 rejeitado | `rejeitada`, pelo analista | 1 `fila_humana`; nenhum `devolver_cliente` | nenhum | nenhum | veredito `rejeitado`, motivo `informacao_suficiente` |
+| H2 vencido | `vencida`, "ninguém: prazo vencido" | 1 `fila_humana`; nenhum `devolver_cliente` | nenhum | nenhum | veredito `vencido` |
+
+O que isso mostra: nos três, a ação proposta não foi executada e o chamado foi para a fila humana
+com as considerações do agente; o aviso ao gestor saiu só no H1 de um chamado P1, como decidido
+(`humano.md` §2.4 e §4); o relógio valeu antes da pessoa; e a retomada não chamou o modelo (as
+chamadas e os tokens da pausa e do log final são os mesmos).
+
+Limites:
+
+- **O prazo foi encurtado para 1,2 segundo** (`--prazo-confirmacao 0.02`). O que fica
+  demonstrado é o caminho do código quando o prazo vence, e não uma espera de 20 minutos.
+- **O prazo é conferido por um comando, e não cronometrado.** Quem venceu a ação foi o
+  `--pendencias` seguinte, 3 a 4 segundos depois (`humano.md` §4).
+- **Não há log da pausa em arquivo próprio.** Cada pasta tem o log final (`TKT-0003.json`,
+  `TKT-0005.json`), que foi gravado por cima do da pausa; o momento da pausa está só no
+  `saida-terminal.txt`. Em `logs/grafo-pausa/` e `logs/grafo-h2/` existe o `-pausado.json`.
+- **Quem rejeitou foi quem rodou os comandos**, 2 segundos depois da pausa, e não um analista.
+- **A rejeição do H2 foi feita com um motivo só** (`informacao_suficiente`), e o motivo vai ao
+  episódio, e não ao texto do encaminhamento.
+
 ## 7. Limites do que foi implementado
 
 - **A fila do analista continua sendo a tabela `pendencias`.** O `interrupt` guarda a execução; a
@@ -666,6 +704,7 @@ Limites desta medição:
   onde não cabe, o score a um centésimo do limiar e o relato que diz o serviço sem o sintoma.
 - Medir o grafo em chamados que não foram escritos pelo grupo: os 40 casos são de quem conhece
   os guias (§6.6).
-- Exercitar o prazo vencido com o modelo real, e com log (§6.1).
+- Exercitar o prazo vencido com o prazo de verdade, de 20 minutos: a demonstração do §6.7
+  encurtou o prazo para 1,2 segundo.
 - Implementar o H3 (`humano.md` §7), e com ele o nó `aguardar_cliente`. O H2 existe desde
   12/10/2026 (§6.3).

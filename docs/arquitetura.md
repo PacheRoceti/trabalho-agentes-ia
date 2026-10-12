@@ -467,9 +467,13 @@ resumos; a mesma aprovação enviada de novo não encontrou nada pendente. No ba
 interno, uma pendência `aprovada`, nenhum encaminhamento (`humano.md` §5).
 
 Dois limites dessas demonstrações: quem respondeu foi quem rodou os comandos, segundos depois, e
-não um analista; e o prazo vencido, no grafo, está coberto só por testes offline
-(`tests/test_grafo.py`). A rejeição do H1 foi exercitada com o modelo real em 11/10/2026
-(`logs/grafo-memoria-1/` e `logs/grafo-procedural/`); a do H2, não.
+não um analista; e o prazo vencido, no grafo, foi provocado com o prazo encurtado para 1,2
+segundo, e não esperado por 20 minutos. A rejeição do H1 foi exercitada com o modelo real em
+11/10/2026 (`logs/grafo-memoria-1/` e `logs/grafo-procedural/`). Em 12/10/2026 foram
+exercitados o prazo vencido do H1 (`logs/grafo-h1-vencido/`: fila humana e aviso ao gestor, sem
+chamado interno) e a rejeição e o prazo vencido do H2 (`logs/grafo-h2-rejeicao/` e
+`logs/grafo-h2-vencido/`: fila humana, nenhum pedido gravado, nenhum aviso). A tabela está em
+`grafo.md` §6.7.
 
 Limites do que foi implementado:
 
