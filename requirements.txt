@@ -1,5 +1,5 @@
 openai==3.16.2
-python-dotenv==1.2.2
+python-dotenv==1.2.4
 pydantic==2.14.0
 langgraph==1.2.14
 langgraph-checkpoint-sqlite==3.1.1

@@ -67,7 +67,7 @@ python conferir_regras.py logs/grafo-regras-v2-1   # confere a regra aprendida d
 
 **Dois caminhos.** O padrão é o grafo em LangGraph (`src/grafo.py`): o modelo classifica e redige, e o código decide o desfecho. Os logs dele vão para `logs/grafo/`. Com `--laco`, o chamado passa pelo laço da Parte 1 (`src/agente.py`), que grava em `logs/`; `--prompt ARQUIVO` escolhe um prompt do laço e já implica `--laco`. A entrada, a saída validada, o verificador e os comandos `--pendencias`, `--aprovar` e `--rejeitar` são os mesmos nos dois.
 
-**O que foi medido no grafo:** 8 de 8 casos no verificador em três execuções (10/10/2026; `logs/grafo/`, `logs/grafo-rodada-2/`, `logs/grafo-rodada-3/`), cada uma com 15 chamadas ao modelo e cerca de 12,6 mil tokens nos 8 casos. O laço, na rodada 3 do `agente-v5.md`, deu 7 de 8, com 31 chamadas e 69.889 tokens ([`docs/grafo.md`](docs/grafo.md) §6). Essas três rodadas são anteriores à busca vetorial e ao nó da ressalva. Com os dois, a rodada de 11/10/2026 deu 8 de 8, com 17 chamadas e 14.440 tokens (`logs/grafo-fatos/`). Com o código e os prompts de 12/10/2026 (o pedido ao cliente esperando o analista, em texto padrão, e o `redigir-v3.md`), três rodadas deram 8 de 8, com 16 chamadas e cerca de 13,2 mil tokens cada (`logs/grafo-redigir-v3-1/` a `-3/`; [`docs/grafo.md`](docs/grafo.md) §6.5). Ainda em 12/10/2026 o gabarito passou de 8 para 40 casos, os 32 novos rotulados antes de rodar: três rodadas deram **36 de 40**, com 89 chamadas e cerca de 76 mil tokens cada (`logs/grafo-40-1/` a `-3/`). As quatro falhas são as mesmas nas três e foram todas para a fila humana; nenhum chamado interno foi aberto indevidamente ([`docs/grafo.md`](docs/grafo.md) §6.6). **O exemplo abaixo e os de `docs/io.md` são do laço**, de quando ele era o caminho padrão: para repeti-los hoje, acrescente `--laco` ao comando.
+**O que foi medido no grafo:** 8 de 8 casos no verificador em três execuções (10/10/2026; `logs/grafo/`, `logs/grafo-rodada-2/`, `logs/grafo-rodada-3/`), cada uma com 15 chamadas ao modelo e cerca de 12,6 mil tokens nos 8 casos. O laço, na rodada 3 do `agente-v5.md`, deu 7 de 8, com 31 chamadas e 69.889 tokens ([`docs/grafo.md`](docs/grafo.md) §6). Essas três rodadas são anteriores à busca vetorial e ao nó da ressalva. Com os dois, a rodada de 11/10/2026 deu 8 de 8, com 17 chamadas e 14.440 tokens (`logs/grafo-fatos/`). Com o código e os prompts de 12/10/2026 (o pedido ao cliente esperando o analista, em texto padrão, e o `redigir-v3.md`), três rodadas deram 8 de 8, com 16 chamadas e cerca de 13,2 mil tokens cada (`logs/grafo-redigir-v3-1/` a `-3/`; [`docs/grafo.md`](docs/grafo.md) §6.5). Ainda em 12/10/2026 o gabarito passou de 8 para 40 casos, os 32 novos rotulados antes de rodar: três rodadas deram **36 de 40**, com 89 chamadas e cerca de 76 mil tokens cada (`logs/grafo-40-1/` a `-3/`). As quatro falhas são as mesmas nas três e foram todas para a fila humana; nenhum chamado interno foi aberto indevidamente ([`docs/grafo.md`](docs/grafo.md) §6.6). **O exemplo abaixo e os de `docs/io.md` são do grafo**, copiados de `logs/grafo-40-1/` (12/10/2026, commit `4aa9818`).
 
 **Os seis casos do enunciado (Parte 2, §9), e onde está o log de cada um.** Os casos 1 a 4 são da rodada `logs/grafo-redigir-v3-1/` (grafo, 12/10/2026, `ministral-8b-latest`, commit `9d5c211 + alterações locais`, os prompts em uso).
 
@@ -77,7 +77,7 @@ python conferir_regras.py logs/grafo-regras-v2-1   # confere a regra aprendida d
 | 2 | divergência | `TKT-0002` | `logs/grafo-redigir-v3-1/TKT-0002.json` | a triagem marcou que o log anexado aponta outro serviço; `fila_humana`, motivo `divergencia_relato_log` |
 | 3 | registro inexistente | `TKT-0999` | `logs/grafo-redigir-v3-1/TKT-0999.json` (grafo) e `logs/TKT-0999.json` (laço) | no grafo o id inexistente é uma rota do código: `fila_humana`, motivo `id_inexistente`, e o modelo só redige. O erro de ferramenta que **o modelo** contorna está no log do laço: a ferramenta devolve o erro e ele registra a fila humana, depois de 1 lembrete |
 | 4 | não deve disparar a ação principal | `TKT-0004` | `logs/grafo-redigir-v3-1/TKT-0004.json` | `fila_comercial`, sem busca e sem chamado interno |
-| 5 | pergunta fora do corpus | não há | **não há log de ponta a ponta** | a pergunta fora do corpus ("Como instalo o WordPress no meu site?") foi medida só na busca: o melhor guia fica abaixo do limiar (`docs/rag.md` §4.1; `logs/rag-medicao/saida.txt`, linha da P10). Falta passá-la pelo grafo, com log. A recusa que tem log é a do `TKT-0006` (`logs/grafo-redigir-v3-1/TKT-0006.json`): guia com score abaixo de 0,5, `fila_humana` |
+| 5 | pergunta fora do corpus | `TKT-0119` | `logs/grafo-40-1/TKT-0119.json` | "Instalem o WordPress e configurem o tema do meu site": não é comercial e não tem guia na base. O melhor guia da busca (KB-110) ficou com score 0,38, abaixo do limiar: `fila_humana`, com suficiência negativa e o motivo escrito, sem chamado interno e sem anotação (`docs/io.md` §3.6). É da rodada dos 40 casos (12/10/2026, commit `4aa9818`), e não da rodada dos casos 1 a 4. A pergunta do conjunto do RAG ("Como instalo o WordPress no meu site?", P10) foi medida só na busca (`docs/rag.md` §4.1). Outra recusa com log é a do `TKT-0006` (`logs/grafo-redigir-v3-1/TKT-0006.json`) |
 | 6 | a ação que para e espera | `TKT-0007` | `logs/grafo-caso-6/` | pausa, uma edição recusada, aprovação com edição e a segunda aprovação sem duplicar (`saida-terminal.txt`). O mesmo para o pedido ao cliente, com o `TKT-0005`, em `logs/grafo-h2/` (aprovação com edição) e `logs/grafo-pedido-padrao-h2/` (o texto padrão do pedido, em uso) |
 
 **Quando o grafo para e espera alguém.** Abrir chamado interno é irreversível. Sem `--auto-aprovar`, a execução para antes de gravar, mostra a ação exata (id, categoria, resumo, time, procedimento, prioridade prevista, hora do pedido e do prazo) e a consequência de aprová-la, e termina em `aguardando_humano`. O analista tem 20 minutos para responder, de outro terminal; `--pendencias` lista o que espera. São três respostas:
@@ -90,7 +90,7 @@ Uma sequência real (pausar, listar, uma edição recusada, aprovar editando e a
 
 **O pedido de informação ao cliente também espera o analista** (desde 12/10/2026, só no grafo). A mensagem chega ao cliente e não tem volta, então o `devolver_cliente` pausa do mesmo jeito, com o mesmo prazo. A tela mostra o relato do cliente e a mensagem, que é um texto padrão com cinco perguntas (serviço, domínio ou banco, erro, data e hora, o que mudou), e não texto do modelo ([`docs/prompts.md`](docs/prompts.md) §2.2). As respostas são `--aprovar TKT-0000`, `--aprovar TKT-0000 --mensagem "texto corrigido"` (a mensagem do analista passa pela mesma regra: nenhuma informação interna) e `--rejeitar TKT-0000`, com `--motivo mensagem_ruim`, `informacao_suficiente` ou `outro`, se quiser. Rejeitado ou vencido, o chamado vai para a fila humana e o único pedido permitido do chamado não é gasto. **Limite:** o sistema simulado não tem canal de mensagem; "enviar" é gravar o pedido com a hora do envio. Sequência real em `logs/grafo-h2/saida-terminal.txt`, e o que ela achou em [`docs/humano.md`](docs/humano.md) §2.4.
 
-Os chamados disponíveis são `TKT-0001` a `TKT-0007` e o inexistente `TKT-0999` (ver [`dados/README.md`](dados/README.md)).
+Os chamados disponíveis são os 40 do gabarito: `TKT-0001` a `TKT-0007` e o inexistente `TKT-0999`, da Parte 1, e `TKT-0101` a `TKT-0132`, da ampliação de 12/10/2026 (ver [`dados/README.md`](dados/README.md)).
 
 **O que o sistema faz.** Lê o texto do chamado e o histórico do cliente no sistema de tickets, decide se o assunto é técnico, comercial ou de informação insuficiente, consulta a base de conhecimento e dá **um desfecho** ao chamado. Quando o desfecho é abrir um chamado interno (ação irreversível), ele para, grava a ação pendente e espera a confirmação do analista de suporte, que tem **20 minutos** para aprovar ou rejeitar (`--aprovar` / `--rejeitar`). Se o analista rejeita, ou não responde no prazo, o chamado interno não é aberto: o chamado vai para a fila humana com a ação que o agente propôs. Quando o prazo vence e o chamado interno seria P1, o gestor de suporte também é avisado (tabela `avisos_gestor`).
 
@@ -113,14 +113,75 @@ Como interpretar o término (`TERMINO:` na saída):
 | `orcamento_esgotado` | passou de 30 mil tokens, US$ 0,05, 90 s ou do limite de passos (20 superpassos no grafo; 8 passos no laço); o motivo diz qual teto |
 | `erro_fatal` | não há como continuar: API fora ou chave inválida; no grafo, resposta do modelo fora do contrato 2 vezes ou texto redigido reprovado 2 vezes; no laço, modelo que encerra sem desfecho depois de 2 lembretes |
 
-**Exemplo completo, com entrada e saída reais.** É o caminho feliz do [`docs/io.md`](docs/io.md) §3.1:
-execução de `2026-10-10T15:45:26-03:00`, com `ministral-8b-latest` e o prompt `agente-v5.md`, commit
-`861a948`. O log completo está em `logs/TKT-0001.json`; os outros exemplos (recusa, fora do
-escopo, entrada incompleta e entrada ambígua) estão no `docs/io.md` §3.
+**Exemplo completo, com entrada e saída reais.** É o caminho feliz do [`docs/io.md`](docs/io.md) §3.1,
+pelo grafo: execução de `2026-10-12T17:37:33-03:00`, com `ministral-8b-latest` e os prompts em uso
+(`triagem-v1.md`, `ressalva-v3.md`, `redigir-v3.md`, `regras-redigir-v2.md`), commit `4aa9818`.
+O log completo está em `logs/grafo-40-1/TKT-0001.json`; os outros exemplos (recusa, fora do escopo,
+entrada incompleta, entrada ambígua e pergunta fora do corpus) estão no `docs/io.md` §3.
 
-> **Sobre o id `KB-101` nestes logs.** Em 11/10/2026 a base passou a nomear as versões: o guia com letra é a atualização do guia sem letra. O procedimento de SSL vigente, que aparece aqui como `KB-101`, hoje é o `KB-101-A`; o `KB-101` de hoje é a versão antiga, revogada (`rag.md` §2.1). O texto do procedimento não mudou.
+O que a pessoa digita: `python src/main.py TKT-0001 "texto do chamado"`. Esta execução veio da
+rodada `python src/main.py --todos --auto-aprovar --rodada grafo-40-1`, que usa o texto registrado
+no banco para o chamado. Entrada (o campo `entrada` do log):
 
-**Os oito logs de `logs/`.** São todos do laço (hoje, `--laco`), com `ministral-8b-latest`, o prompt `agente-v5.md`
+```
+O certificado SSL do meu site venceu ontem e a renovação automática não rodou. O navegador mostra aviso de site não seguro para os meus clientes.
+```
+
+A trajetória (um passo por nó do grafo, como o terminal a mostrou em `logs/grafo-40-1/saida-demonstracao.txt`; o terminal corta as linhas longas):
+
+```
+  nó consultar         consultar_ticket {"id_ticket": "TKT-0001"} -> ok
+  nó triagem           triagem {} -> ok
+  nó buscar            buscar_base_conhecimento {"termos": ["certificado ssl", "renovacao automática", "navegador", "aviso site não seguro -> ok
+  nó decidir           decidir {} -> ok
+  nó redigir           redigir {"desfecho": "anotacao_interna"} -> ok
+  nó gravar            registrar_encaminhamento {"id_ticket": "TKT-0001", "destino": "anotacao_interna", "mensagem": "Verificar se o desaf -> ok
+
+  TERMINO: respondeu | desfecho: anotacao_interna | passos: 6 | chamadas ao modelo: 2 | lembretes: 0 | tokens: 1765 | custo: US$ 0.00026
+```
+
+Saída (o objeto validado, campo `saida` do log):
+
+```json
+{
+  "id_ticket": "TKT-0001",
+  "executado_em": "2026-10-12T17:37:33-03:00",
+  "termino": "respondeu",
+  "resultado": {
+    "acao": "anotacao_interna",
+    "texto": "Verificar se o desafio HTTP-01 está falhando devido a porta 80 bloqueada ou DNS do domínio do cliente apontando para outro IP. Executar o comando `certbot renew --dry-run` para testar a renovação automática e, caso necessário, reativar o timer do certbot conforme procedimento **KB-101-A**.",
+    "chamado_interno": null,
+    "time_destino": null,
+    "prioridade": null
+  },
+  "fonte": {
+    "tipo": "procedimento_da_base",
+    "kb_id": "KB-101-A",
+    "score": 0.66,
+    "registros": [
+      "TKT-0001"
+    ],
+    "ferramentas": [
+      "consultar_ticket",
+      "triagem",
+      "buscar_base_conhecimento",
+      "decidir",
+      "redigir",
+      "registrar_encaminhamento"
+    ]
+  },
+  "suficiencia": {
+    "suficiente": true,
+    "motivo": "procedimento KB-101-A com score 0.66, igual ou acima do limiar 0.5"
+  }
+}
+```
+
+Como ler: o grafo consultou o registro do chamado, a triagem classificou o assunto como técnico, e a busca encontrou o guia KB-101-A com score 0,66, acima do limiar de 0,5. Como o guia é "anotar", o nó `decidir` (código) escolheu a anotação, o modelo redigiu o texto e o grafo o gravou, **sem abrir chamado interno**: por isso `chamado_interno`, `time_destino` e `prioridade` estão nulos. `suficiencia.suficiente: true` quer dizer que o sistema teve base para agir sozinho, e `fonte` diz qual. Foram 2 chamadas ao modelo (triagem e redação). O custo é o simulado a preço de lista; no plano gratuito o gasto real é zero. O texto gravado traz marcação de Markdown que o modelo escreveu: a redação não tem verificador.
+
+> **Sobre o id `KB-101` nos logs do laço.** Em 11/10/2026 a base passou a nomear as versões: o guia com letra é a atualização do guia sem letra. O procedimento de SSL vigente, que aparece aqui como `KB-101`, hoje é o `KB-101-A`; o `KB-101` de hoje é a versão antiga, revogada (`rag.md` §2.1). O texto do procedimento não mudou.
+
+**Os oito logs de `logs/`, do laço.** São todos do laço (hoje, `--laco`), com `ministral-8b-latest`, o prompt `agente-v5.md`
 e `--auto-aprovar`, de 10/10/2026, e todos têm o campo `saida` validado. Vieram de duas execuções
 no mesmo dia, e não de uma rodada só:
 
@@ -142,60 +203,8 @@ campo `saida`, e os do `TKT-0003` e do `TKT-0007` ainda tinham o texto antigo do
 **O que não foi refeito:** `logs/saida-demonstracao.txt`. Ele continua sendo a saída de terminal da
 rodada 4, com o `agente-v3.md` e o seed antigo (6 de 8, `docs/modelos.md` §3.3-C), e **não
 corresponde aos oito logs acima**. Só um `--todos` o regrava, e ele regrava também os cinco logs
-das 15h, citados com data e tokens no `docs/io.md`. As rodadas completas do `agente-v5.md`, com a
+das 15h, que foram os exemplos do `docs/io.md` até 12/10/2026. As rodadas completas do `agente-v5.md`, com a
 saída de terminal de cada uma, estão em `logs/rodada-1-prompt-v5/` a `logs/rodada-3-prompt-v5/`.
-
-Entrada (comando: `python src/main.py TKT-0001 --auto-aprovar`; o texto do chamado é o campo `entrada` do log):
-
-```
-O certificado SSL do meu site venceu ontem e a renovação automática não rodou. O navegador mostra aviso de site não seguro para os meus clientes.
-```
-
-A trajetória (os passos gravados no log, no formato em que o terminal os mostra):
-
-```
-  passo 0 [leitura ] consultar_ticket {"id_ticket": "TKT-0001"} -> ok
-  passo 1 [leitura ] buscar_base_conhecimento {"termos": ["certificado ssl venceu", "renovacao automática não rodou", "aviso navegador site não seguro"]} -> ok
-  passo 2 [ESCRITA ] registrar_encaminhamento {"id_ticket": "TKT-0001", "destino": "anotacao_interna", "mensagem": "Certificado SSL não renovou automaticame -> ok
-
-  TERMINO: respondeu | desfecho: anotacao_interna | passos: 3 | chamadas ao modelo: 4 | lembretes: 0 | tokens: 8822 | custo: US$ 0.00132
-```
-
-Saída (o objeto validado, campo `saida` do log):
-
-```json
-{
-  "id_ticket": "TKT-0001",
-  "executado_em": "2026-10-10T15:45:26-03:00",
-  "termino": "respondeu",
-  "resultado": {
-    "acao": "anotacao_interna",
-    "texto": "Certificado SSL não renovou automaticamente. Sugestão: conferir DNS do domínio e liberação da porta 80; rodar \"certbot renew --dry-run\"; reativar o timer do certbot.",
-    "chamado_interno": null,
-    "time_destino": null,
-    "prioridade": null
-  },
-  "fonte": {
-    "tipo": "procedimento_da_base",
-    "kb_id": "KB-101",
-    "score": 0.62,
-    "registros": [
-      "TKT-0001"
-    ],
-    "ferramentas": [
-      "consultar_ticket",
-      "buscar_base_conhecimento",
-      "registrar_encaminhamento"
-    ]
-  },
-  "suficiencia": {
-    "suficiente": true,
-    "motivo": "procedimento KB-101 com score 0.62, igual ou acima do limiar 0.5"
-  }
-}
-```
-
-Como ler: o agente consultou o registro do chamado (passo 0), buscou na base (passo 1) e encontrou o procedimento KB-101 com score 0,62, acima do limiar de 0,5. Como o procedimento é "anotar", ele registrou uma anotação com a correção sugerida para o analista (passo 2) e **não abriu chamado interno**: por isso `chamado_interno`, `time_destino` e `prioridade` estão nulos. `suficiencia.suficiente: true` quer dizer que o sistema teve base para agir sozinho, e `fonte` diz qual. O custo é o simulado a preço de lista; no plano gratuito o gasto real é zero.
 
 **O que ele não faz.** Não executa correções, não encerra chamados, não altera prioridade (só o gestor reclassifica) e só fala diretamente com o cliente para pedir a informação que falta (`devolver_cliente`, no máximo um pedido por chamado). No grafo o pedido espera a confirmação do analista e é registrado como enviado; **não há canal de mensagem, e a espera pela resposta do cliente não foi implementada**: a execução termina depois do envio. No laço (`--laco`) o pedido é gravado sem confirmação.
 

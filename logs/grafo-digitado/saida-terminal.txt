@@ -1,0 +1,150 @@
+$ python src/main.py --reset
+Banco simulado recriado a partir de dados/seed.sql
+
+$ python src/main.py TKT-0007 "meu site nao salva mais arquivo nenhum, todo upload da erro de permissao negada. preciso voltar a publicar hj" --rodada grafo-digitado
+
+==============================================================================
+TKT-0007  (caso: escalonamento_simples)  modelo: ministral-8b-latest  prompt: triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md (grafo)
+
+  nó consultar         consultar_ticket {"id_ticket": "TKT-0007"} -> ok
+  nó triagem           triagem {} -> ok
+  nó buscar            buscar_base_conhecimento {"termos": ["site", "nao", "salva", "arquivo", "erro"]} -> ok
+  nó conferir_ressalva conferir_ressalva {"kb_id": "KB-102", "situacoes": ["ssh"]} -> ok
+  nó decidir           decidir {} -> ok
+  nó redigir           redigir {"desfecho": "abrir_chamado_interno"} -> ok
+  ENTRADA: meu site nao salva mais arquivo nenhum, todo upload da erro de permissao negada. preciso voltar a publicar hj
+
+  TERMINO: aguardando_humano | desfecho: nenhum | passos: 6 | chamadas ao modelo: 3 | lembretes: 0 | tokens: 2438 | custo: US$ 0.00037
+  motivo: aguardando a confirmação do analista até 2026-10-12T19:46:45-03:00 (prazo de 20 minutos)
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0007",
+      "executado_em": "2026-10-12T19:26:41-03:00",
+      "termino": "aguardando_humano",
+      "resultado": {
+        "acao": null,
+        "texto": null,
+        "chamado_interno": null,
+        "time_destino": null,
+        "prioridade": null
+      },
+      "fonte": {
+        "tipo": "registro_do_chamado",
+        "kb_id": "KB-102",
+        "score": 0.68,
+        "registros": [
+          "TKT-0007"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "triagem",
+          "buscar_base_conhecimento",
+          "conferir_ressalva",
+          "decidir",
+          "redigir"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": false,
+        "motivo": "a execução terminou sem desfecho (aguardando_humano: aguardando a confirmação do analista até 2026-10-12T19:46:45-03:00 (prazo de 20 minutos))"
+      }
+    }
+
+  >> AÇÃO IRREVERSÍVEL aguardando o analista de suporte:
+     ferramenta: abrir_chamado_interno
+     id_ticket: TKT-0007
+     categoria: permissao_arquivos
+     resumo: O cliente relata que o site do domínio do cliente não está salvando arquivos, retornando erro de 'permissão negada' em uploads. O histórico não confirma ocorrências anteriores. O procedimento **KB-102** (score 0.68) sugere que arquivos ou pastas podem ter dono ou permissões incorretas, comum após restauração ou migração. **Escopo**: VPS Pro (servidor gerenciado). Requer acesso de administrador para correção via `chown/chmod`. **Ação**: Verificar permissões nos arquivos da aplicação do cliente.
+     time_destino: Infraestrutura
+     kb_id: KB-102
+     prioridade_prevista: P2
+     guia_publicado_em: 2026-10-06
+     guia_nao_cobre: ['ssh']
+     plano: VPS Pro
+     escopo_do_plano: Servidor virtual gerenciado pela empresa. O suporte cobre o sistema operacional, a rede, os certificados, o firewall e os backups da VPS. A aplicação instalada pelo cliente dentro da VPS está fora do escopo do suporte. Atendimento por chamado, em horário comercial.
+     precedentes: {'guia': {'kb_id': 'KB-102', 'janela_dias': 90, 'decisoes': 0, 'aprovados': 0, 'editados': 0, 'rejeitados': 0, 'decisoes_antigas': 0, 'rejeicoes_por_motivo': {}}, 'cliente': []}
+     fatos_cliente: {}
+     pedido_em: 2026-10-12T19:26:45-03:00
+     vence_em: 2026-10-12T19:46:45-03:00
+     faltam: 20 min
+     ATENÇÃO: o guia KB-102 declara que NÃO cobre: ssh. Confira se o relato cai numa dessas situações.
+     se aprovada: abre um chamado interno para Infraestrutura, com prioridade P2. Não há como apagar nem encerrar o chamado por aqui
+     rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta
+     responder: python src/main.py --aprovar TKT-0007   |   --rejeitar TKT-0007
+     aprovar corrigindo o resumo: python src/main.py --aprovar TKT-0007 --resumo "texto corrigido"
+
+$ python src/main.py --pendencias --rodada grafo-digitado
+
+1 ação(ões) aguardando o analista de suporte
+
+  >> AÇÃO IRREVERSÍVEL aguardando o analista de suporte:
+     ferramenta: abrir_chamado_interno
+     id_ticket: TKT-0007
+     categoria: permissao_arquivos
+     resumo: O cliente relata que o site do domínio do cliente não está salvando arquivos, retornando erro de 'permissão negada' em uploads. O histórico não confirma ocorrências anteriores. O procedimento **KB-102** (score 0.68) sugere que arquivos ou pastas podem ter dono ou permissões incorretas, comum após restauração ou migração. **Escopo**: VPS Pro (servidor gerenciado). Requer acesso de administrador para correção via `chown/chmod`. **Ação**: Verificar permissões nos arquivos da aplicação do cliente.
+     time_destino: Infraestrutura
+     kb_id: KB-102
+     prioridade_prevista: P2
+     guia_publicado_em: 2026-10-06
+     guia_nao_cobre: ['ssh']
+     plano: VPS Pro
+     escopo_do_plano: Servidor virtual gerenciado pela empresa. O suporte cobre o sistema operacional, a rede, os certificados, o firewall e os backups da VPS. A aplicação instalada pelo cliente dentro da VPS está fora do escopo do suporte. Atendimento por chamado, em horário comercial.
+     precedentes: {'guia': {'kb_id': 'KB-102', 'janela_dias': 90, 'decisoes': 0, 'aprovados': 0, 'editados': 0, 'rejeitados': 0, 'decisoes_antigas': 0, 'rejeicoes_por_motivo': {}}, 'cliente': []}
+     fatos_cliente: {}
+     pedido_em: 2026-10-12T19:26:45-03:00
+     vence_em: 2026-10-12T19:46:45-03:00
+     faltam: 20 min
+     ATENÇÃO: o guia KB-102 declara que NÃO cobre: ssh. Confira se o relato cai numa dessas situações.
+     se aprovada: abre um chamado interno para Infraestrutura, com prioridade P2. Não há como apagar nem encerrar o chamado por aqui
+     rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta
+     responder: python src/main.py --aprovar TKT-0007   |   --rejeitar TKT-0007
+     aprovar corrigindo o resumo: python src/main.py --aprovar TKT-0007 --resumo "texto corrigido"
+
+$ python src/main.py --aprovar TKT-0007 --resumo "Cliente relata falta de permissão para poder subir/editar arquivos, verificamos que user está correto. Caso escalado conforme KB-102" --rodada grafo-digitado   (às 19:33:46)
+  nó confirmar         confirmar {"kb_id": "KB-102"} -> ok
+  nó gravar            abrir_chamado_interno {"id_ticket": "TKT-0007", "resumo": "Cliente relata falta de permissão para poder subir/ed -> ok
+
+==============================================================================
+TKT-0007  APROVADO COM EDIÇÃO pelo analista
+
+  RESUMO DO MODELO:   O cliente relata que o site do domínio do cliente não está salvando arquivos, retornando erro de 'permissão negada' em uploads. O histórico não confirma ocorrências anteriores. O procedimento **KB-102** (score 0.68) sugere que arquivos ou pastas podem ter dono ou permissões incorretas, comum após restauração ou migração. **Escopo**: VPS Pro (servidor gerenciado). Requer acesso de administrador para correção via `chown/chmod`. **Ação**: Verificar permissões nos arquivos da aplicação do cliente.
+  RESUMO DO ANALISTA: Cliente relata falta de permissão para poder subir/editar arquivos, verificamos que user está correto. Caso escalado conforme KB-102
+
+  ENTRADA: meu site nao salva mais arquivo nenhum, todo upload da erro de permissao negada. preciso voltar a publicar hj
+
+  TERMINO: respondeu | desfecho: abrir_chamado_interno | passos: 8 | chamadas ao modelo: 3 | lembretes: 0 | tokens: 2438 | custo: US$ 0.00037
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0007",
+      "executado_em": "2026-10-12T19:26:41-03:00",
+      "termino": "respondeu",
+      "resultado": {
+        "acao": "abrir_chamado_interno",
+        "texto": "Cliente relata falta de permissão para poder subir/editar arquivos, verificamos que user está correto. Caso escalado conforme KB-102",
+        "chamado_interno": "INC-0005",
+        "time_destino": "Infraestrutura",
+        "prioridade": "P2"
+      },
+      "fonte": {
+        "tipo": "procedimento_da_base",
+        "kb_id": "KB-102",
+        "score": 0.68,
+        "registros": [
+          "TKT-0007"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "triagem",
+          "buscar_base_conhecimento",
+          "conferir_ressalva",
+          "decidir",
+          "redigir",
+          "confirmar",
+          "abrir_chamado_interno"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": true,
+        "motivo": "procedimento KB-102 com score 0.68, igual ou acima do limiar 0.5"
+      }
+    }

@@ -7,7 +7,8 @@ conhece o modelo, e nenhuma decide nada de negócio além de regras
 determinísticas (prioridade, reincidência, idempotência).
 
 SQLite porque não exige servidor: o projeto precisa rodar do zero em <5 min.
-Na Parte 2 esta camada vira servidor MCP; trocar SQLite por outro banco
+Esta camada é a candidata a virar servidor MCP, o que ficou para a Parte 3
+(não há servidor MCP no repositório); trocar SQLite por outro banco
 (MySQL, Postgres) é mexer só neste arquivo.
 """
 import hashlib

@@ -2,14 +2,16 @@
 
 > **Estado deste documento.** O contrato de saída (§2) **está implementado** em `src/saida.py`
 > (Pydantic), e o log passou a gravar data, hora e commit de cada execução (10/10/2026). O contrato
-> de entrada (§1) **também**: o programa recebe o texto do chamado, digitado, junto do id. Os cinco
-> exemplos (§3) são **execuções reais de 10/10/2026**, do commit `861a948`, copiadas de `logs/`.
+> de entrada (§1) **também**: o programa recebe o texto do chamado, digitado, junto do id. Os seis
+> exemplos (§3) são **execuções reais do grafo, de 12/10/2026**, do commit `4aa9818`, copiadas de
+> `logs/grafo-40-1/`.
 >
-> **12/10/2026: os exemplos são do laço da Parte 1, e não do grafo, que é o caminho padrão.**
-> O contrato de saída é o mesmo nos dois, mas o conteúdo mudou: no grafo a busca é vetorial, o
-> guia de SSL vigente é o `KB-101-A` e o pedido ao cliente espera o analista. Refazer os cinco
-> pelo grafo está pendente (§5); os mesmos chamados pelo grafo, com o código e os prompts de
-> 12/10/2026, estão em `logs/grafo-redigir-v3-1/`.
+> **12/10/2026: os exemplos passaram a ser do grafo, que é o caminho padrão.** Até aqui eram do
+> laço da Parte 1 (10/10/2026, commit `861a948`). O contrato de saída é o mesmo nos dois, mas o
+> conteúdo mudou: no grafo a busca é vetorial, o guia de SSL vigente é o `KB-101-A` e o pedido ao
+> cliente espera o analista e é texto padrão. Entrou um sexto exemplo, a pergunta fora do corpus
+> (`TKT-0119`, §3.6), e um sétimo, com o texto digitado na linha de comando e a confirmação dada
+> por uma pessoa (`TKT-0007`, §3.7; `logs/grafo-digitado/`, commit `15398e0`). **A espera pela resposta do cliente (H3) não foi construída** (§5).
 
 ## 1. A entrada
 
@@ -100,143 +102,155 @@ fora do contrato. O log grava também `executado_em` e `commit`; o commit vem co
 
 ## 3. Os exemplos
 
-> **Sobre o id `KB-101` nestes logs.** Em 11/10/2026 a base passou a nomear as versões: o guia com letra é a atualização do guia sem letra. O procedimento de SSL vigente, que aparece aqui como `KB-101`, hoje é o `KB-101-A`; o `KB-101` de hoje é a versão antiga, revogada (`rag.md` §2.1). O texto do procedimento não mudou.
+São sete exemplos, todos execuções reais **do grafo**, o caminho padrão. O sétimo (§3.7) é uma
+execução avulsa, com o texto digitado e a confirmação de uma pessoa, e traz os próprios dados. Os
+seis primeiros são da mesma rodada:
+`logs/grafo-40-1/`, de 12/10/2026, commit `4aa9818`, com `ministral-8b-latest`, `temperature=0` e os
+prompts em uso (`triagem-v1.md`, `ressalva-v3.md`, `redigir-v3.md`, `regras-redigir-v2.md`). O comando da rodada foi
+`python src/main.py --todos --auto-aprovar --rodada grafo-40-1`, que roda os 40 casos do gabarito,
+cada um a partir do banco recriado; o resultado da rodada inteira (36 de 40) está em `grafo.md`
+§6.6. Cada exemplo traz a entrada como chegou, o objeto de saída completo (com os campos nulos), a
+data e a hora da execução, o commit e o log correspondente. O log tem ainda a trajetória
+(`passos`), que não faz parte do contrato de saída.
 
-Os cinco exemplos são execuções reais de 10/10/2026, do commit `861a948`, com `ministral-8b-latest`,
-prompt `agente-v5.md` e `temperature=0`. Cada um traz a entrada como chegou, o objeto de saída
-completo (com os campos nulos), a data e a hora da execução, o commit e o log correspondente em
-`logs/`. Os outros três logs da pasta (`TKT-0003`, `TKT-0007` e `TKT-0999`) são do mesmo dia e do
-mesmo prompt, de uma execução posterior (21h22, commit `2ffb2b5 + alterações locais`), e não são
-exemplos deste documento. O log tem ainda a trajetória (`passos`), que não faz parte do contrato de saída.
+**A entrada, nestes exemplos.** `--todos` não recebe texto digitado: usa o texto registrado no
+banco simulado para cada chamado (§1), e é esse texto que o log guarda no campo `entrada`. Para
+repetir um deles digitando o texto: `python src/main.py TKT-0001 "texto" --auto-aprovar --rodada NOME`
+(sem `--rodada`, o log vai para `logs/grafo/`, por cima do que está lá).
 
-**Os exemplos são do laço da Parte 1.** Foram executados quando ele era o caminho padrão do
-`main.py`. Hoje o padrão é o grafo, e o comando de cada exemplo equivale a acrescentar `--laco`.
-O contrato de saída é o mesmo nos dois caminhos (`src/saida.py`); os mesmos cinco chamados pelo
-grafo estão em `logs/grafo/`, com o campo `saida` no mesmo formato, e não foram copiados para cá.
+**`fonte.ferramentas`, no grafo.** A lista traz um item por nó que deixou passo no log, e não só
+ferramentas: `triagem`, `decidir`, `redigir` e `confirmar` são nós do grafo. A consulta ao
+chamado, a busca na base e a gravação aparecem com os nomes das ferramentas do laço.
+
+**Os exemplos anteriores eram do laço da Parte 1** (10/10/2026, commit `861a948`, prompt
+`agente-v5.md`, busca por palavra). Saíram deste documento em 12/10/2026 e continuam no histórico
+do git; os logs deles continuam em `logs/TKT-0001.json` a `logs/TKT-0006.json`, na tabela
+"Os oito logs de `logs/`" do README. O contrato de saída é o mesmo nos dois caminhos.
 
 Limite: o "agora" do banco simulado é fixo (`2026-09-21 12:00`, em `src/db.py`) e não é a data da
-execução, que está em `executado_em`.
+execução, que está em `executado_em`. Com `--auto-aprovar`, nenhuma confirmação dos seis primeiros
+passou por uma pessoa; a do §3.7 passou.
 
 ### 3.1 O caminho feliz: `TKT-0001`
 
-**Entrada** (comando: `python src/main.py TKT-0001 --auto-aprovar`; o texto é o campo `entrada` do log):
+**Entrada** (o campo `entrada` do log):
 
 ```
 O certificado SSL do meu site venceu ontem e a renovação automática não rodou. O navegador mostra aviso de site não seguro para os meus clientes.
 ```
 
-**Saída** (campo `saida` de `logs/TKT-0001.json`, completo):
+**Saída** (campo `saida` de `logs/grafo-40-1/TKT-0001.json`, completo):
 
 ```json
 {
   "id_ticket": "TKT-0001",
-  "executado_em": "2026-10-10T15:45:26-03:00",
+  "executado_em": "2026-10-12T17:37:33-03:00",
   "termino": "respondeu",
   "resultado": {
     "acao": "anotacao_interna",
-    "texto": "Certificado SSL não renovou automaticamente. Sugestão: conferir DNS do domínio e liberação da porta 80; rodar \"certbot renew --dry-run\"; reativar o timer do certbot.",
+    "texto": "Verificar se o desafio HTTP-01 está falhando devido a porta 80 bloqueada ou DNS do domínio do cliente apontando para outro IP. Executar o comando `certbot renew --dry-run` para testar a renovação automática e, caso necessário, reativar o timer do certbot conforme procedimento **KB-101-A**.",
     "chamado_interno": null,
     "time_destino": null,
     "prioridade": null
   },
   "fonte": {
     "tipo": "procedimento_da_base",
-    "kb_id": "KB-101",
-    "score": 0.62,
+    "kb_id": "KB-101-A",
+    "score": 0.66,
     "registros": [
       "TKT-0001"
     ],
     "ferramentas": [
       "consultar_ticket",
+      "triagem",
       "buscar_base_conhecimento",
+      "decidir",
+      "redigir",
       "registrar_encaminhamento"
     ]
   },
   "suficiencia": {
     "suficiente": true,
-    "motivo": "procedimento KB-101 com score 0.62, igual ou acima do limiar 0.5"
+    "motivo": "procedimento KB-101-A com score 0.66, igual ou acima do limiar 0.5"
   }
 }
 ```
 
-Execução de `2026-10-10T15:45:26-03:00`, commit `861a948`, log em `logs/TKT-0001.json` (4 chamadas ao modelo, 8822 tokens).
+Execução de `2026-10-12T17:37:33-03:00`, commit `4aa9818`, log em `logs/grafo-40-1/TKT-0001.json` (2 chamadas ao modelo, 1.765 tokens, mais 1.779 tokens de embedding).
 
-**O que ler aqui:** `suficiencia.suficiente` é `true` porque `fonte` aponta o procedimento KB-101
-com score 0,62, acima do limiar de 0,5. O procedimento é "anotar", então `resultado.acao` é
-`anotacao_interna` e os três campos do chamado interno ficam nulos: nenhum chamado foi aberto. O
-`resultado.texto` traz os passos do KB-101, sem nada acrescentado.
+**O que ler aqui:** `suficiencia.suficiente` é `true` porque `fonte` aponta o guia KB-101-A com score 0,66, acima do limiar de 0,5. O guia é "anotar", então `resultado.acao` é `anotacao_interna` e os três campos do chamado interno ficam nulos: nenhum chamado foi aberto. O `resultado.texto` traz os passos do KB-101-A (porta 80, DNS, `certbot renew --dry-run`, o timer do certbot). O `KB-101`, versão antiga e revogada do mesmo guia, não aparece: a busca o descarta (`rag.md` §2.1).
+
+Ressalva sobre este exemplo: o texto gravado tem marcação de Markdown (`**KB-101-A**`, crases), que o modelo escreveu e nenhuma regra retira. A redação não tem verificador (`prompts.md` §4).
 
 ### 3.2 A recusa: `TKT-0006`
 
-**Entrada** (comando: `python src/main.py TKT-0006 --auto-aprovar`; o texto é o campo `entrada` do log):
+**Entrada** (o campo `entrada` do log):
 
 ```
 Meu site está dando erro 502 de vez em quando, mais ou menos desde o deploy de ontem. Às vezes funciona normal.
 ```
 
-**Saída** (campo `saida` de `logs/TKT-0006.json`, completo):
+**Saída** (campo `saida` de `logs/grafo-40-1/TKT-0006.json`, completo):
 
 ```json
 {
   "id_ticket": "TKT-0006",
-  "executado_em": "2026-10-10T15:48:21-03:00",
+  "executado_em": "2026-10-12T17:38:09-03:00",
   "termino": "respondeu",
   "resultado": {
     "acao": "fila_humana",
-    "texto": "O cliente relata erro 502 intermitente após deploy, mas o artigo encontrado (KB-104) tem ressalva: não cobre casos em que o erro ocorre 'às vezes'. O anexo_log não está disponível para análise. Um analista deve verificar o comportamento do site e os logs para identificar a causa real.",
+    "texto": "O cliente relata que o site do domínio do cliente apresenta erro 502 de forma intermitente, desde o deploy realizado ontem, com períodos em que funciona normalmente. Não há log anexado para análise. O procedimento encontrado (KB-104) possui score 0.24, abaixo do limiar de confiança (0.5), e contém ressalva: não cobre o caso relatado ('as vezes'). Além disso, a causa descrita no procedimento (falha constante) não condiz com o relato do cliente. O suporte não possui escopo para a aplicação ou o deploy realizado pelo cliente.",
     "chamado_interno": null,
     "time_destino": null,
     "prioridade": null
   },
   "fonte": {
     "tipo": "busca_sem_correspondencia",
-    "kb_id": "KB-104",
-    "score": 0.4,
+    "kb_id": "KB-106",
+    "score": 0.48,
     "registros": [
       "TKT-0006"
     ],
     "ferramentas": [
       "consultar_ticket",
+      "triagem",
       "buscar_base_conhecimento",
+      "decidir",
+      "redigir",
       "registrar_encaminhamento"
     ]
   },
   "suficiencia": {
     "suficiente": false,
-    "motivo": "o melhor procedimento encontrado (KB-104, score 0.4) ficou abaixo do limiar 0.5"
+    "motivo": "o melhor procedimento encontrado (KB-106, score 0.48) ficou abaixo do limiar 0.5"
   }
 }
 ```
 
-Execução de `2026-10-10T15:48:21-03:00`, commit `861a948`, log em `logs/TKT-0006.json` (4 chamadas ao modelo, 8825 tokens).
+Execução de `2026-10-12T17:38:09-03:00`, commit `4aa9818`, log em `logs/grafo-40-1/TKT-0006.json` (2 chamadas ao modelo, 1.792 tokens, mais 1.768 tokens de embedding).
 
-**O que ler aqui:** `suficiencia.suficiente` é `false`, e o motivo diz por quê: o melhor
-procedimento (KB-104) ficou com score 0,4, abaixo do limiar. Em vez de uma correção, o sistema
-registrou em `resultado.texto` o que encontrou e por que um analista deve olhar: o KB-104 tem uma
-ressalva, não cobre o erro que acontece "às vezes". É a correspondência parcial que o caso testa
-(o guia cobre a falha constante; o relato é intermitente), e nenhum chamado interno foi aberto.
+**O que ler aqui:** `suficiencia.suficiente` é `false`, e o motivo diz por quê: o melhor procedimento ficou abaixo do limiar. Em vez de uma correção, o sistema registrou em `resultado.texto` o que encontrou e por que um analista deve olhar: o guia do assunto (KB-104, erro 5xx depois do deploy) cobre a falha constante, e o relato é de erro que acontece "às vezes". É a correspondência parcial que o caso testa, e nenhum chamado interno foi aberto.
 
-Ressalva sobre este exemplo: a frase "O anexo_log não está disponível para análise", no texto
-registrado, não é motivo da recusa; o chamado simplesmente não tem log anexado.
+Ressalva sobre este exemplo: `fonte` e `resultado.texto` citam guias diferentes. No log (`scores_kb`), o KB-104 ficou com 0,24, e o KB-106 e o KB-110 com 0,48. `fonte` traz o de maior score (KB-106), e o texto fala do KB-104, que é o guia do assunto. Os dois estão abaixo do limiar, e o desfecho é o mesmo; quem lê só `fonte` vê um guia que o texto não menciona. O 0,48 está a dois centésimos do portão (`rag.md` §6). A expressão "o domínio do cliente", num relato que não fala de domínio, é o efeito colateral medido da regra aprendida (`memoria.md` §5.1).
 
 ### 3.3 Fora do escopo: `TKT-0004`
 
-**Entrada** (comando: `python src/main.py TKT-0004 --auto-aprovar`; o texto é o campo `entrada` do log):
+**Entrada** (o campo `entrada` do log):
 
 ```
 Olá, quero fazer upgrade do meu plano para um servidor dedicado. Podem me passar valores e prazo de migração?
 ```
 
-**Saída** (campo `saida` de `logs/TKT-0004.json`, completo):
+**Saída** (campo `saida` de `logs/grafo-40-1/TKT-0004.json`, completo):
 
 ```json
 {
   "id_ticket": "TKT-0004",
-  "executado_em": "2026-10-10T15:48:10-03:00",
+  "executado_em": "2026-10-12T17:38:03-03:00",
   "termino": "respondeu",
   "resultado": {
     "acao": "fila_comercial",
-    "texto": "Cliente solicitou upgrade para servidor dedicado, com informações sobre valores e prazo de migração.",
+    "texto": "O cliente solicitou informações sobre valores e prazo de migração para um servidor dedicado, solicitando upgrade do plano atual (Hospedagem Start).",
     "chamado_interno": null,
     "time_destino": null,
     "prioridade": null
@@ -250,6 +264,9 @@ Olá, quero fazer upgrade do meu plano para um servidor dedicado. Podem me passa
     ],
     "ferramentas": [
       "consultar_ticket",
+      "triagem",
+      "decidir",
+      "redigir",
       "registrar_encaminhamento"
     ]
   },
@@ -260,31 +277,28 @@ Olá, quero fazer upgrade do meu plano para um servidor dedicado. Podem me passa
 }
 ```
 
-Execução de `2026-10-10T15:48:10-03:00`, commit `861a948`, log em `logs/TKT-0004.json` (3 chamadas ao modelo, 6201 tokens).
+Execução de `2026-10-12T17:38:03-03:00`, commit `4aa9818`, log em `logs/grafo-40-1/TKT-0004.json` (2 chamadas ao modelo, 1.456 tokens, sem busca).
 
-**O que ler aqui:** `resultado.acao` é `fila_comercial` e `fonte.ferramentas` tem só
-`consultar_ticket` e `registrar_encaminhamento`: o agente reconheceu o assunto como comercial, não
-consultou a base de procedimentos e não tratou o pedido como defeito. A suficiência é positiva
-porque a classificação dispensa a base. É o caso que não deve disparar a ação principal.
+**O que ler aqui:** `resultado.acao` é `fila_comercial`, e `fonte.ferramentas` não tem `buscar_base_conhecimento`: a triagem classificou o assunto como comercial, o grafo não consultou a base de procedimentos e não tratou o pedido como defeito. A suficiência é positiva porque a classificação dispensa a base. O plano citado no texto ("Hospedagem Start") vem do registro do cliente. É o caso que não deve disparar a ação principal.
 
 ### 3.4 Entrada incompleta: `TKT-0005`
 
-**Entrada** (comando: `python src/main.py TKT-0005 --auto-aprovar`; o texto é o campo `entrada` do log):
+**Entrada** (o campo `entrada` do log):
 
 ```
 Meu servidor não está funcionando direito.
 ```
 
-**Saída** (campo `saida` de `logs/TKT-0005.json`, completo):
+**Saída** (campo `saida` de `logs/grafo-40-1/TKT-0005.json`, completo):
 
 ```json
 {
   "id_ticket": "TKT-0005",
-  "executado_em": "2026-10-10T15:48:52-03:00",
+  "executado_em": "2026-10-12T17:38:07-03:00",
   "termino": "respondeu",
   "resultado": {
     "acao": "devolver_cliente",
-    "texto": "O serviço ou servidor afetado; o erro ou comportamento observado; desde quando ocorre.",
+    "texto": "Para darmos andamento ao seu chamado, precisamos de mais informações:\n1. Qual serviço está com problema (site, e-mail, banco de dados, FTP/SFTP, acesso SSH, backup ou tarefa agendada)?\n2. Qual é o domínio ou o endereço afetado? Se for banco de dados, qual é o nome do banco?\n3. Qual mensagem ou código de erro aparece (por exemplo: 403, 502, \"permissão negada\")? Copie o texto como ele é exibido.\n4. Em que data e hora o problema começou? Ele acontece sempre ou só às vezes?\n5. Alguma coisa mudou pouco antes (publicação de nova versão, migração, restauração de backup, troca de senha)?",
     "chamado_interno": null,
     "time_destino": null,
     "prioridade": null
@@ -298,6 +312,10 @@ Meu servidor não está funcionando direito.
     ],
     "ferramentas": [
       "consultar_ticket",
+      "triagem",
+      "decidir",
+      "redigir",
+      "confirmar",
       "registrar_encaminhamento"
     ]
   },
@@ -308,101 +326,273 @@ Meu servidor não está funcionando direito.
 }
 ```
 
-Execução de `2026-10-10T15:48:52-03:00`, commit `861a948`, log em `logs/TKT-0005.json` (3 chamadas ao modelo, 6162 tokens).
+Execução de `2026-10-12T17:38:07-03:00`, commit `4aa9818`, log em `logs/grafo-40-1/TKT-0005.json` (1 chamada ao modelo, 621 tokens, sem busca).
 
-**O que ler aqui:** o texto não diz qual serviço é afetado nem qual o sintoma. `resultado.acao` é
-`devolver_cliente`, com suficiência negativa, e `resultado.texto` é o pedido ao cliente: só a lista
-do que falta (serviço ou servidor afetado, erro ou comportamento, desde quando), sem promessa e
-sem informação interna. `fonte.ferramentas` mostra que o agente não buscou na base: classificou
-antes, e um relato sem serviço nem sintoma não vai à busca. Nenhum chamado interno foi aberto.
+**O que ler aqui:** o texto não diz qual serviço é afetado nem qual o sintoma. `resultado.acao` é `devolver_cliente`, com suficiência negativa, e `resultado.texto` é o pedido ao cliente: o texto padrão do código (`grafo.PEDIDO_AO_CLIENTE`), com cinco perguntas, sem promessa e sem informação interna. Não é texto do modelo, e por isso a execução fez uma chamada só, a da triagem (`prompts.md` §2.2). `fonte.ferramentas` não tem busca: um relato sem serviço nem sintoma não vai à base. Nenhum chamado interno foi aberto.
 
-Limite: este exemplo é do laço, em que o pedido fica gravado e a execução termina. **No grafo,
-desde 12/10/2026, o pedido espera a confirmação do analista** (H2): sem `--auto-aprovar` a
-execução termina em `aguardando_humano`, com `resultado.acao` nulo, e o pedido só é gravado
-depois da aprovação (`humano.md` §2.4; execução real em `logs/grafo-h2/`). A pausa em "aguardando
-cliente" e a retomada da mesma conversa com a resposta não estão implementadas (`case.md` §2.4).
-
-**A mensagem do grafo, antes e depois de 12/10/2026.** Aqui o texto lista o que falta (serviço,
-erro, desde quando). No grafo, a mensagem que o `redigir-v1.md` escrevia para o mesmo chamado
-repetia a queixa e não perguntava nada, em 15 execuções de 15, e o caso passava: nem o contrato
-de saída nem o verificador leem o conteúdo do texto. Desde 12/10/2026 o pedido é **texto padrão
-do código**, e não do modelo: `resultado.texto` abre com "Para darmos andamento ao seu chamado,
-precisamos de mais informações:" e faz cinco perguntas (o serviço; o domínio ou o nome do banco;
-a mensagem ou o código de erro; a data e a hora; o que mudou antes). Está em
-`logs/grafo-redigir-v3-1/TKT-0005.json`, e a razão em `prompts.md` §2.1 e §2.2.
+Limites deste exemplo: (1) o item `confirmar` em `fonte.ferramentas` é a confirmação do analista antes do envio (H2), que aqui foi automática (`--auto-aprovar`). Sem a opção, a execução termina em `aguardando_humano`, com `resultado.acao` nulo, e o pedido só é gravado depois da aprovação (`humano.md` §2.4; execução real em `logs/grafo-pedido-padrao-h2/`). (2) "Enviar" é gravar a linha com `enviado_em`: não há canal de mensagem. (3) **A espera pela resposta do cliente não foi construída** (H3): a execução termina aqui, e a resposta seria o texto de uma execução nova do mesmo chamado (`case.md` §2.1).
 
 ### 3.5 Entrada ambígua: `TKT-0002`
 
-O relato fala de um serviço (webmail) e o log anexado aponta a causa em outro (DNS). Há na base um
-procedimento de DNS que casa bem com o log e abriria um chamado P1; o sistema não escolhe sozinho
-entre as duas leituras.
+O relato fala de um serviço (webmail) e o log anexado aponta a causa em outro (DNS). O sistema não escolhe sozinho entre as duas leituras.
 
-**Entrada** (comando: `python src/main.py TKT-0002 --auto-aprovar`; o texto é o campo `entrada` do log):
+**Entrada** (o campo `entrada` do log):
 
 ```
 Meu Webmail está fora do ar desde cedo, ninguém da empresa consegue ler e-mail.
 ```
 
-**Saída** (campo `saida` de `logs/TKT-0002.json`, completo):
+**Saída** (campo `saida` de `logs/grafo-40-1/TKT-0002.json`, completo):
 
 ```json
 {
   "id_ticket": "TKT-0002",
-  "executado_em": "2026-10-10T15:47:35-03:00",
+  "executado_em": "2026-10-12T17:37:39-03:00",
   "termino": "respondeu",
   "resultado": {
     "acao": "fila_humana",
-    "texto": "Divergência entre relato do cliente e anexo_log: o cliente relata que o webmail está fora do ar, mas o log mostra falha de resolução DNS no domínio zeta.com.br (SERVFAIL) e nameserver não respondendo. Verificar se o problema é restrito ao DNS ou afeta outros serviços.",
+    "texto": "O cliente relata que o **webmail** está fora do ar desde cedo, afirmando que nenhum colaborador da empresa consegue acessar e-mails. No entanto, o log anexado mostra que o **serviço de DNS** do domínio do cliente (`zeta.com.br`) apresenta falha de resolução (`SERVFAIL`) e o nameserver `ns1.zeta.com.br` não responde (timeout). Ao acessar o webmail diretamente pelo **IP do servidor** (`203.0.113.40/webmail`), a tela de login abre normalmente, indicando que o problema está restrito à camada de resolução de nomes.",
+    "chamado_interno": null,
+    "time_destino": null,
+    "prioridade": null
+  },
+  "fonte": {
+    "tipo": "busca_sem_correspondencia",
+    "kb_id": "KB-111",
+    "score": 0.47,
+    "registros": [
+      "TKT-0002"
+    ],
+    "ferramentas": [
+      "consultar_ticket",
+      "triagem",
+      "buscar_base_conhecimento",
+      "decidir",
+      "redigir",
+      "registrar_encaminhamento"
+    ]
+  },
+  "suficiencia": {
+    "suficiente": false,
+    "motivo": "o melhor procedimento encontrado (KB-111, score 0.47) ficou abaixo do limiar 0.5"
+  }
+}
+```
+
+Execução de `2026-10-12T17:37:39-03:00`, commit `4aa9818`, log em `logs/grafo-40-1/TKT-0002.json` (2 chamadas ao modelo, 2.059 tokens, mais 1.761 tokens de embedding).
+
+**O que ler aqui:** `resultado.acao` é `fila_humana`, com suficiência negativa, e `resultado.texto` declara as duas leituras: o cliente relata o webmail fora do ar; o log mostra falha de resolução DNS e o nameserver sem resposta. Quem marcou a divergência foi a triagem (`log_diverge: true` no log), e o nó `decidir`, que é código, mandou o chamado à fila humana com o motivo `divergencia_relato_log` (campo `desfecho_proposto` do log). Nenhum chamado interno foi aberto.
+
+Ressalva sobre este exemplo: o motivo da divergência não está no contrato de saída. `suficiencia.motivo` diz que o melhor procedimento (KB-111, 0,47) ficou abaixo do limiar, o que é verdade e não é a razão da decisão; a razão está em `resultado.texto` e, no log, em `desfecho_proposto`. A busca aqui usa o relato (webmail), e não o log: o guia de DNS (KB-106), que no laço passava do portão com 0,67, ficou aqui com 0,45 (`scores_kb` do log).
+
+### 3.6 Pergunta fora do corpus: `TKT-0119`
+
+É o caso 5 do enunciado (§9): um pedido que não é comercial e não tem guia na base. O chamado é um dos 32 da ampliação do gabarito (`dados/README.md`).
+
+**Entrada** (o campo `entrada` do log):
+
+```
+Instalem o WordPress e configurem o tema do meu site
+```
+
+**Saída** (campo `saida` de `logs/grafo-40-1/TKT-0119.json`, completo):
+
+```json
+{
+  "id_ticket": "TKT-0119",
+  "executado_em": "2026-10-12T17:42:41-03:00",
+  "termino": "respondeu",
+  "resultado": {
+    "acao": "fila_humana",
+    "texto": "O cliente solicitou a instalação do WordPress e configuração do tema para o domínio do cliente, mas o procedimento encontrado (KB-110 - Site em laço de redirecionamentos, score 0.38) não corresponde ao caso relatado. Além disso, o procedimento possui escopo fora da cobertura do plano Hospedagem Start (desenvolvimento/correção de código do site). Não há logs ou histórico de chamados para embasar a busca. O score está abaixo do limiar de confiança (0.5), e o procedimento não aborda a solicitação do cliente.",
+    "chamado_interno": null,
+    "time_destino": null,
+    "prioridade": null
+  },
+  "fonte": {
+    "tipo": "busca_sem_correspondencia",
+    "kb_id": "KB-110",
+    "score": 0.38,
+    "registros": [
+      "TKT-0119"
+    ],
+    "ferramentas": [
+      "consultar_ticket",
+      "triagem",
+      "buscar_base_conhecimento",
+      "decidir",
+      "redigir",
+      "registrar_encaminhamento"
+    ]
+  },
+  "suficiencia": {
+    "suficiente": false,
+    "motivo": "o melhor procedimento encontrado (KB-110, score 0.38) ficou abaixo do limiar 0.5"
+  }
+}
+```
+
+Execução de `2026-10-12T17:42:41-03:00`, commit `4aa9818`, log em `logs/grafo-40-1/TKT-0119.json` (2 chamadas ao modelo, 1.755 tokens, mais 1.748 tokens de embedding).
+
+**O que ler aqui:** `suficiencia.suficiente` é `false`: o guia mais próximo (KB-110, laço de redirecionamentos) ficou com score 0,38, abaixo do limiar, e o texto diz que ele não corresponde ao pedido. O sistema não respondeu pelo conhecimento do modelo nem anotou um guia qualquer: `fila_humana`, com o que foi encontrado e por que uma pessoa deve olhar. Os três campos do chamado interno ficam nulos.
+
+Ressalva sobre este exemplo: o texto diz "para o domínio do cliente" (o cliente não falou em domínio; `memoria.md` §5.1), e a redação não tem verificador. A pergunta do conjunto do RAG ("Como instalo o WordPress no meu site?", P10) foi medida só na busca (`rag.md` §4.1); este chamado é o mesmo assunto de ponta a ponta.
+
+### 3.7 Texto digitado e confirmação por uma pessoa: `TKT-0007`
+
+Os seis exemplos acima vieram de uma rodada `--todos`, com o texto do banco e aprovação automática.
+Este é o único com **o texto digitado na linha de comando** e com **a confirmação dada por uma
+pessoa**, sem `--auto-aprovar`. São três comandos (a execução, `--pendencias` e `--aprovar`), um por processo, a partir do banco
+recriado (`python src/main.py --reset`); a saída de terminal de todos está em
+`logs/grafo-digitado/saida-terminal.txt`.
+
+**Entrada** (o que foi digitado, com a grafia como está: sem acentos e com abreviação):
+
+```bash
+python src/main.py TKT-0007 "meu site nao salva mais arquivo nenhum, todo upload da erro de permissao negada. preciso voltar a publicar hj" --rodada grafo-digitado
+```
+
+**Saída na pausa** (campo `saida` de `logs/grafo-digitado/TKT-0007-pausado.json`, completo):
+
+```json
+{
+  "id_ticket": "TKT-0007",
+  "executado_em": "2026-10-12T19:26:41-03:00",
+  "termino": "aguardando_humano",
+  "resultado": {
+    "acao": null,
+    "texto": null,
     "chamado_interno": null,
     "time_destino": null,
     "prioridade": null
   },
   "fonte": {
     "tipo": "registro_do_chamado",
-    "kb_id": "KB-106",
-    "score": 0.67,
+    "kb_id": "KB-102",
+    "score": 0.68,
     "registros": [
-      "TKT-0002"
+      "TKT-0007"
     ],
     "ferramentas": [
       "consultar_ticket",
+      "triagem",
       "buscar_base_conhecimento",
-      "registrar_encaminhamento"
+      "conferir_ressalva",
+      "decidir",
+      "redigir"
     ]
   },
   "suficiencia": {
     "suficiente": false,
-    "motivo": "havia procedimento com score igual ou acima do limiar (KB-106, 0.67), mas o agente não agiu sozinho; o motivo está no texto registrado no resultado"
+    "motivo": "a execução terminou sem desfecho (aguardando_humano: aguardando a confirmação do analista até 2026-10-12T19:46:45-03:00 (prazo de 20 minutos))"
   }
 }
 ```
 
-Execução de `2026-10-10T15:47:35-03:00`, commit `861a948`, log em `logs/TKT-0002.json` (4 chamadas ao modelo, 9943 tokens).
+**O que ler na pausa:** `termino` é `aguardando_humano` e `resultado` está inteiro nulo: nada foi
+gravado. A suficiência é negativa porque a execução ainda não tem desfecho, e o motivo traz a hora
+em que o prazo vence. `fonte` já mostra o que sustenta a ação proposta (KB-102, score 0,68). A
+tela da pendência, que não faz parte do contrato de saída, mostrou a ação, o resumo redigido pelo
+modelo, o time, a prioridade prevista (P2), o aviso de que o guia não cobre `ssh` e a consequência
+de aprovar (`saida-terminal.txt`).
 
-**O que ler aqui:** havia um procedimento acima do limiar (`fonte.kb_id` KB-106, score 0,67) e
-mesmo assim `resultado.acao` é `fila_humana`, com suficiência negativa: o motivo diz que o agente
-não agiu sozinho, e `resultado.texto` declara as duas leituras (o cliente relata o webmail fora do
-ar; o log mostra falha de resolução DNS e o nameserver sem resposta). `fonte.tipo` é
-`registro_do_chamado` porque o que sustenta a decisão é o log anexado ao chamado, não o
-procedimento. Nenhum chamado interno foi aberto.
+**A resposta da pessoa.** O pedido de confirmação saiu às 19:26:45, com prazo até 19:46:45. Às
+19:33:47 veio a resposta, **aprovar editando**, com o resumo escrito por quem aprovou:
 
-Ressalva sobre este exemplo: neste caso só o prompt impede o agente de agir sobre o log. O score do
-KB-106 passa do portão de confiança, e em uma execução anterior do mesmo chamado, no mesmo dia, o
-agente chegou a abrir o chamado indevido (o log dessa execução foi sobrescrito).
+```bash
+python src/main.py --aprovar TKT-0007 --resumo "Cliente relata falta de permissão para poder subir/editar arquivos, verificamos que user está correto. Caso escalado conforme KB-102" --rodada grafo-digitado
+```
+
+**Saída final** (campo `saida` de `logs/grafo-digitado/TKT-0007.json`, completo):
+
+```json
+{
+  "id_ticket": "TKT-0007",
+  "executado_em": "2026-10-12T19:26:41-03:00",
+  "termino": "respondeu",
+  "resultado": {
+    "acao": "abrir_chamado_interno",
+    "texto": "Cliente relata falta de permissão para poder subir/editar arquivos, verificamos que user está correto. Caso escalado conforme KB-102",
+    "chamado_interno": "INC-0005",
+    "time_destino": "Infraestrutura",
+    "prioridade": "P2"
+  },
+  "fonte": {
+    "tipo": "procedimento_da_base",
+    "kb_id": "KB-102",
+    "score": 0.68,
+    "registros": [
+      "TKT-0007"
+    ],
+    "ferramentas": [
+      "consultar_ticket",
+      "triagem",
+      "buscar_base_conhecimento",
+      "conferir_ressalva",
+      "decidir",
+      "redigir",
+      "confirmar",
+      "abrir_chamado_interno"
+    ]
+  },
+  "suficiencia": {
+    "suficiente": true,
+    "motivo": "procedimento KB-102 com score 0.68, igual ou acima do limiar 0.5"
+  }
+}
+```
+
+Execução de `2026-10-12T19:26:41-03:00`, commit `15398e0`, com `ministral-8b-latest` e os prompts em
+uso; logs em `logs/grafo-digitado/` (3 chamadas ao modelo, 2.438 tokens, mais 1.768 tokens de
+embedding; os mesmos números na pausa e no fim, porque a retomada não chama o modelo).
+
+**O que ler aqui:** o texto digitado, sem acentos e com "hj", chegou ao guia certo: KB-102 com
+score 0,68 (o texto registrado no banco para o mesmo chamado deu 0,72 em
+`logs/grafo-40-1/TKT-0007.json`). O nó `conferir_ressalva` rodou, porque o guia declara não cobrir
+`ssh`, e não baixou o score: o relato não fala em SSH. `resultado.texto` é o resumo **da pessoa**,
+e não o do modelo; `chamado_interno`, `time_destino` e `prioridade` (INC-0005, Infraestrutura, P2)
+vieram do código, a partir do guia, e não eram editáveis. O log guarda os dois textos em
+`confirmacoes` (`resumo_original` e `resumo_aprovado`). No banco: um chamado interno para o
+`TKT-0007`, a pendência com status `aprovada`, nenhum encaminhamento, e um episódio com o veredito
+`editado`.
+
+Limites deste exemplo:
+
+- **Quem respondeu é um integrante do grupo, e não um analista de suporte.** Ele leu a ação
+  pendente e o resumo do modelo e escreveu o resumo corrigido. O texto do chamado foi escrito para
+  a demonstração.
+- **A regra do resumo editado olha só o tamanho.** A edição passa pela mesma regra do texto do
+  modelo, que no resumo de um chamado interno confere o tamanho mínimo (20 caracteres,
+  `_erro_do_texto` em `src/grafo.py`).
+- `TKT-0007-pausado.json` é uma cópia do log feita antes da aprovação: o log final é gravado por
+  cima do da pausa.
+- É um chamado e uma execução. A segunda aprovação, que não duplica nada, está demonstrada em
+  `logs/grafo-caso-6/` (`humano.md` §5), e não foi repetida aqui.
 
 ## 4. A entrada que não dá para atender (§1.4)
 
 | Situação | O que o sistema faz | Exemplo real |
 |---|---|---|
 | **fora do escopo** | redireciona à fila comercial, sem consultar a base e sem abrir chamado | `TKT-0004`, §3.3 |
-| **incompleta** | pede ao cliente o serviço afetado, o sintoma e desde quando (`devolver_cliente`), no máximo uma vez; no grafo, depois da confirmação do analista. No grafo o pedido é um texto padrão com cinco perguntas, desde 12/10/2026 (§3.4) | `TKT-0005`, §3.4; `logs/grafo-redigir-v3-1/TKT-0005.json` |
+| **incompleta** | pede ao cliente o que falta (`devolver_cliente`), no máximo uma vez e depois da confirmação do analista. O pedido é um texto padrão com cinco perguntas (§3.4). A espera pela resposta não foi construída: a execução termina com o pedido gravado como enviado | `TKT-0005`, §3.4 |
 | **ambígua** | não age sozinho: envia à fila humana declarando as duas leituras | `TKT-0002`, §3.5 |
+
+A recusa por falta de base, que não é uma dessas três, está no §3.2 (`TKT-0006`, correspondência
+parcial) e no §3.6 (`TKT-0119`, pedido sem guia na base).
 
 ## 5. O que falta para este item
 
 - O contrato de entrada e o de saída estão implementados e valem nos dois caminhos.
-- **Refazer os cinco exemplos pelo grafo.** Os do §3 são do laço, com a busca por palavra e o id
-  antigo do guia de SSL. Os mesmos chamados pelo grafo, com o código e os prompts atuais, estão
-  em `logs/grafo-redigir-v3-1/` (12/10/2026), e não foram copiados para cá.
-- A confirmação do analista antes do envio do pedido existe desde 12/10/2026 (H2). Faltam a
-  espera pela resposta do cliente e a retomada da conversa (H3).
+- Os exemplos do §3 são do grafo desde 12/10/2026. Os seis primeiros vieram de uma rodada
+  `--todos`, com o texto do banco e aprovação automática (`logs/grafo-40-1/`). O exemplo com o
+  texto digitado na linha de comando e a confirmação dada por uma pessoa existe desde o mesmo dia
+  (§3.7, `logs/grafo-digitado/`). **Falta** repeti-lo com um analista de suporte de verdade
+  respondendo (quem respondeu é do grupo), e fazer o mesmo para o pedido ao cliente (H2) e para
+  uma rejeição: o §3.7 é uma aprovação com edição do H1.
+- O motivo da decisão nem sempre está em `suficiencia.motivo`: na divergência entre relato e log
+  ele diz "score abaixo do limiar", e a razão de verdade fica no texto e no log (§3.5). E `fonte`
+  pode trazer um guia diferente do que o texto cita (§3.2).
+- **H3 não construído.** A confirmação do analista antes do envio do pedido existe desde
+  12/10/2026 (H2). A espera pela resposta do cliente e a retomada da conversa não foram
+  construídas: não há término `aguardando_cliente`, e a resposta do cliente não é entrada de
+  nenhuma execução em curso (`case.md` §2.1; `humano.md` §7).
