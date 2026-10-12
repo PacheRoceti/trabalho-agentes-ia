@@ -1,0 +1,307 @@
+{
+  "execucao_id": "TKT-0104-bb7e8cf8",
+  "id_ticket": "TKT-0104",
+  "executado_em": "2026-10-12T17:38:52-03:00",
+  "commit": "4aa9818",
+  "entrada": "Desde que o servidor foi reiniciado hoje cedo, o sistema da imobiliária não abre: aparece erro de conexão recusada com o banco de dados.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-107",
+    "chamado_interno": "INC-0005",
+    "time_destino": "Infraestrutura",
+    "prioridade": "P1",
+    "reincidencias_confirmadas_no_sistema": 0,
+    "ja_existia": false
+  },
+  "pendencia": null,
+  "confirmacoes": [
+    {
+      "pendencia": {
+        "ferramenta": "abrir_chamado_interno",
+        "id_ticket": "TKT-0104",
+        "categoria": "banco_dados",
+        "resumo": "O domínio do cliente apresenta erro de conexão recusada com o banco de dados após reinício do servidor (08:41). O log anexado confirma erro **Connection refused** (111) ao tentar conectar ao banco em **db.zeta.com.br**, com o mesmo erro replicado em requisição SQL à página `/imoveis`. O histórico não registra ocorrências anteriores. O procedimento **KB-107** (score 0.68) sugere limitação de conexões simultâneas ou serviço do banco parado após reinício. Requer escalada para análise técnica.",
+        "time_destino": "Infraestrutura",
+        "kb_id": "KB-107",
+        "prioridade_prevista": "P1",
+        "guia_publicado_em": "2026-04-22",
+        "guia_nao_cobre": [
+          "lento",
+          "lentidao",
+          "consulta demorada"
+        ],
+        "plano": "Hospedagem Business",
+        "escopo_do_plano": "Hospedagem compartilhada com mais contas de e-mail e mais espaço em disco que o Start. O suporte cobre o ambiente do servidor e acompanha a configuração de domínio e de e-mail da empresa. Não cobre o código do site do cliente. Atendimento por chamado e por telefone, em horário comercial.",
+        "precedentes": {
+          "guia": {
+            "kb_id": "KB-107",
+            "janela_dias": 90,
+            "decisoes": 0,
+            "aprovados": 0,
+            "editados": 0,
+            "rejeitados": 0,
+            "decisoes_antigas": 0,
+            "rejeicoes_por_motivo": {}
+          },
+          "cliente": []
+        },
+        "fatos_cliente": {},
+        "pedido_em": "2026-10-12T17:39:00-03:00",
+        "vence_em": "2026-10-12T17:59:00-03:00"
+      },
+      "aprovado": true,
+      "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+      "status": "aprovada",
+      "resolvido_em": "2026-10-12T17:39:00-03:00",
+      "editado": false
+    }
+  ],
+  "n_chamadas_modelo": 3,
+  "lembretes": 0,
+  "tokens_entrada": 2489,
+  "tokens_saida": 298,
+  "custo_usd": 0.000418,
+  "scores_kb": {
+    "KB-107": 0.68,
+    "KB-106": 0.54,
+    "KB-102": 0.53
+  },
+  "saida": {
+    "id_ticket": "TKT-0104",
+    "executado_em": "2026-10-12T17:38:52-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "abrir_chamado_interno",
+      "texto": "O domínio do cliente apresenta erro de conexão recusada com o banco de dados após reinício do servidor (08:41). O log anexado confirma erro **Connection refused** (111) ao tentar conectar ao banco em **db.zeta.com.br**, com o mesmo erro replicado em requisição SQL à página `/imoveis`. O histórico não registra ocorrências anteriores. O procedimento **KB-107** (score 0.68) sugere limitação de conexões simultâneas ou serviço do banco parado após reinício. Requer escalada para análise técnica.",
+      "chamado_interno": "INC-0005",
+      "time_destino": "Infraestrutura",
+      "prioridade": "P1"
+    },
+    "fonte": {
+      "tipo": "procedimento_da_base",
+      "kb_id": "KB-107",
+      "score": 0.68,
+      "registros": [
+        "TKT-0104"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "conferir_ressalva",
+        "decidir",
+        "redigir",
+        "confirmar",
+        "abrir_chamado_interno"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": true,
+      "motivo": "procedimento KB-107 com score 0.68, igual ou acima do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0104"
+      },
+      "resultado": {
+        "id": "TKT-0104",
+        "aberto_em": "2026-09-21 08:47",
+        "status": "novo",
+        "anexo_log": "2026-09-21 08:41 mysql -h db.zeta.com.br -u zeta_app -p -> ERROR 2003 (HY000): Can't connect to MySQL server on db.zeta.com.br (111 Connection refused). 2026-09-21 08:43 página /imoveis do sistema -> SQLSTATE[HY000] [2002] Connection refused.",
+        "cliente": "Zeta Imóveis",
+        "plano": "Hospedagem Business",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "conexão recusada",
+          "banco de dados",
+          "mysql",
+          "erro conexão"
+        ],
+        "justificativa": "o cliente relata erro de conexão com banco de dados após reinicialização do servidor, e o log confirma a falha de conexão ao MySQL"
+      },
+      "erro": null,
+      "ms": 2055
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "conexão recusada",
+          "banco de dados",
+          "mysql",
+          "erro conexão"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-107",
+            "titulo": "Banco de dados recusando conexões",
+            "score": 0.68,
+            "cosseno": 0.875,
+            "causa": "Limite de conexões simultâneas do servidor de banco de dados atingido, ou serviço do banco parado depois do reinício do servidor.",
+            "solucao": "Conferir se o serviço do banco está ativo e quantas conexões estão abertas; reiniciar o serviço e ajustar o limite de conexões da conta.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-106",
+            "titulo": "Falha de resolução DNS do domínio",
+            "score": 0.54,
+            "cosseno": 0.818,
+            "causa": "Nameserver do domínio fora do ar ou zona DNS com registro inválido.",
+            "solucao": "Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-102",
+            "titulo": "Permissão negada ao gravar arquivos",
+            "score": 0.53,
+            "cosseno": 0.815,
+            "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+            "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1327
+    },
+    {
+      "indice": 3,
+      "ferramenta": "conferir_ressalva",
+      "argumentos": {
+        "kb_id": "KB-107",
+        "situacoes": [
+          "lento",
+          "lentidao",
+          "consulta demorada"
+        ]
+      },
+      "resultado": {
+        "cai_na_ressalva": false,
+        "frase": "",
+        "motivo": "O relato descreve um erro de conexão recusada com o banco de dados após reinício do servidor, sem mencionar lentidão, consulta demorada ou qualquer situação listada nas ressalvas.",
+        "score_antes": 0.68,
+        "score_depois": 0.68
+      },
+      "erro": null,
+      "ms": 1809
+    },
+    {
+      "indice": 4,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "abrir_chamado_interno",
+        "kb_id": "KB-107",
+        "motivo": "procedimento_escalar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 5,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "abrir_chamado_interno"
+      },
+      "resultado": {
+        "texto": "O domínio do cliente apresenta erro de conexão recusada com o banco de dados após reinício do servidor (08:41). O log anexado confirma erro **Connection refused** (111) ao tentar conectar ao banco em **db.zeta.com.br**, com o mesmo erro replicado em requisição SQL à página `/imoveis`. O histórico não registra ocorrências anteriores. O procedimento **KB-107** (score 0.68) sugere limitação de conexões simultâneas ou serviço do banco parado após reinício. Requer escalada para análise técnica."
+      },
+      "erro": null,
+      "ms": 2815
+    },
+    {
+      "indice": 6,
+      "ferramenta": "confirmar",
+      "argumentos": {
+        "kb_id": "KB-107"
+      },
+      "resultado": {
+        "status": "aprovada",
+        "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+        "editado": false
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 7,
+      "ferramenta": "abrir_chamado_interno",
+      "argumentos": {
+        "id_ticket": "TKT-0104",
+        "resumo": "O domínio do cliente apresenta erro de conexão recusada com o banco de dados após reinício do servidor (08:41). O log anexado confirma erro **Connection refused** (111) ao tentar conectar ao banco em **db.zeta.com.br**, com o mesmo erro replicado em requisição SQL à página `/imoveis`. O histórico não registra ocorrências anteriores. O procedimento **KB-107** (score 0.68) sugere limitação de conexões simultâneas ou serviço do banco parado após reinício. Requer escalada para análise técnica.",
+        "kb_id": "KB-107"
+      },
+      "resultado": {
+        "chamado_interno": "INC-0005",
+        "time_destino": "Infraestrutura",
+        "prioridade": "P1",
+        "reincidencias_confirmadas_no_sistema": 0,
+        "ja_existia": false
+      },
+      "erro": null,
+      "ms": 19
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-107",
+    "motivo": "procedimento_escalar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1780,
+  "episodio": {
+    "execucao_id": "TKT-0104-bb7e8cf8",
+    "ticket_externo": "TKT-0104",
+    "cliente_id": "CLI-06",
+    "classe": "tecnico",
+    "categoria": "banco_dados",
+    "kb_id": "KB-107",
+    "score": 0.68,
+    "acao_proposta": "abrir_chamado_interno",
+    "desfecho": "abrir_chamado_interno",
+    "motivo": "procedimento_escalar",
+    "veredito": "aprovado",
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0104: classe tecnico; guia KB-107 (score 0.68); proposto abrir_chamado_interno; gravado abrir_chamado_interno; analista: aprovado; término respondeu",
+    "criado_em": "2026-10-12T17:39:00-03:00",
+    "id": 1,
+    "chave": "cfca7fb54e27cf42",
+    "ja_existia": false
+  },
+  "segundos_gastos": 8.029
+}

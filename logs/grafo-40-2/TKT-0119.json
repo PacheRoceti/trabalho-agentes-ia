@@ -1,0 +1,219 @@
+{
+  "execucao_id": "TKT-0119-32d39663",
+  "id_ticket": "TKT-0119",
+  "executado_em": "2026-10-12T17:50:22-03:00",
+  "commit": "4aa9818",
+  "entrada": "Instalem o WordPress e configurem o tema do meu site",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1538,
+  "tokens_saida": 215,
+  "custo_usd": 0.000263,
+  "scores_kb": {
+    "KB-110": 0.38,
+    "KB-102": 0.36,
+    "KB-104": 0.35
+  },
+  "saida": {
+    "id_ticket": "TKT-0119",
+    "executado_em": "2026-10-12T17:50:22-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O cliente solicitou a instalação do WordPress e configuração do tema para o domínio do cliente, mas o procedimento encontrado (KB-110 - Site em laço de redirecionamentos, score 0.38) não corresponde ao caso relatado. Além disso, o procedimento possui escopo fora da cobertura do plano Hospedagem Start (desenvolvimento/correção de código do site). O suporte não cobre a instalação de sistemas de gerenciamento de conteúdo ou configuração de temas, que são responsabilidade do cliente. Nenhum log ou histórico de chamados internos foi anexado para análise.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "busca_sem_correspondencia",
+      "kb_id": "KB-110",
+      "score": 0.38,
+      "registros": [
+        "TKT-0119"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o melhor procedimento encontrado (KB-110, score 0.38) ficou abaixo do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0119"
+      },
+      "resultado": {
+        "id": "TKT-0119",
+        "aberto_em": "2026-09-21 10:22",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Gama Cursos Online",
+        "plano": "Hospedagem Start",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "instalacao wordpress",
+          "configurar tema"
+        ],
+        "justificativa": "O cliente solicita instalação de um sistema específico e configuração de tema, ambos relacionados a hospedagem e funcionamento do site."
+      },
+      "erro": null,
+      "ms": 709
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "instalacao wordpress",
+          "configurar tema"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-110",
+            "titulo": "Site em laço de redirecionamentos",
+            "score": 0.38,
+            "cosseno": 0.753,
+            "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+            "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-102",
+            "titulo": "Permissão negada ao gravar arquivos",
+            "score": 0.36,
+            "cosseno": 0.746,
+            "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+            "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.35,
+            "cosseno": 0.741,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 833
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "score_abaixo_do_limiar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "O cliente solicitou a instalação do WordPress e configuração do tema para o domínio do cliente, mas o procedimento encontrado (KB-110 - Site em laço de redirecionamentos, score 0.38) não corresponde ao caso relatado. Além disso, o procedimento possui escopo fora da cobertura do plano Hospedagem Start (desenvolvimento/correção de código do site). O suporte não cobre a instalação de sistemas de gerenciamento de conteúdo ou configuração de temas, que são responsabilidade do cliente. Nenhum log ou histórico de chamados internos foi anexado para análise."
+      },
+      "erro": null,
+      "ms": 1380
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0119",
+        "destino": "fila_humana",
+        "mensagem": "O cliente solicitou a instalação do WordPress e configuração do tema para o domínio do cliente, mas o procedimento encontrado (KB-110 - Site em laço de redirecionamentos, score 0.38) não corresponde ao caso relatado. Além disso, o procedimento possui escopo fora da cobertura do plano Hospedagem Start (desenvolvimento/correção de código do site). O suporte não cobre a instalação de sistemas de gerenciamento de conteúdo ou configuração de temas, que são responsabilidade do cliente. Nenhum log ou histórico de chamados internos foi anexado para análise."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 16
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "score_abaixo_do_limiar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1748,
+  "episodio": {
+    "execucao_id": "TKT-0119-32d39663",
+    "ticket_externo": "TKT-0119",
+    "cliente_id": "CLI-03",
+    "classe": "tecnico",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "fila_humana",
+    "desfecho": "fila_humana",
+    "motivo": "score_abaixo_do_limiar",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0119: classe tecnico; sem guia; proposto fila_humana; gravado fila_humana; término respondeu",
+    "criado_em": "2026-10-12T17:50:25-03:00",
+    "id": 1,
+    "chave": "e77f17004937d5cd",
+    "ja_existia": false
+  },
+  "segundos_gastos": 2.94
+}

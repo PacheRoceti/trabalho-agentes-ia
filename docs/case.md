@@ -340,12 +340,15 @@ O custo do erro é **assimétrico**: abrir chamado interno indevidamente (o time
 1. **Parte 1:** acerta o desfecho em **≥ 6 de 8** casos rotulados (75%, a mesma proporção dos 30 de 40 do grupo). **Parte 2:** ≥ 30 de 40, incluindo os três tipos do grupo: retorna chamados incompletos ao cliente; redireciona chamado aberto na fila errada; faz a interação interna com proposta de resolução ou abre ticket interno baseado na KB correta.
    **Situação em 12/10/2026:** o gabarito passou a ter os 40 casos rotulados
    (`dados/gabarito.json`: os 8 da Parte 1 e `TKT-0101` a `TKT-0132`, descritos em
-   `dados/README.md`), mas a meta de ≥ 30 de 40 está **AINDA NÃO MEDIDA**: os 32 casos novos foram
-   rotulados antes de qualquer execução e nenhuma rodada os inclui. Nos 8 casos da Parte 1, o
-   grafo deu 8 de 8 nas três rodadas de 10/10/2026 e na de 11/10/2026 (`grafo.md` §6;
-   `logs/grafo-fatos/`). Fora deles, o que há de medido são as perguntas de `rag.md` §3 e §4, que
-   medem a busca e o nó da ressalva, e não o desfecho gravado.
-2. **Em ambas:** **0 chamados internos abertos indevidamente** nos casos em que o gabarito manda não abrir (`TKT-0001`, `TKT-0002`, `TKT-0004`, `TKT-0005`, `TKT-0006`, `TKT-0999`). No `TKT-0005`, isso vale para a primeira volta: nenhum chamado é aberto antes da resposta do cliente ao pedido de informação.
+   `dados/README.md`), rotulados antes de qualquer execução. **Medido no mesmo dia:** o grafo deu
+   **36 de 40** em três rodadas (`logs/grafo-40-1/` a `-3/`; `grafo.md` §6.6), acima da meta de
+   ≥ 30. São 8 de 8 nos casos da Parte 1 e 28 de 32 nos novos. Os três tipos do grupo aparecem:
+   2 de 3 chamados incompletos devolvidos ao cliente, 4 de 4 redirecionados à fila comercial, 9
+   de 10 anotações internas e 9 de 11 chamados internos abertos com o guia certo. As quatro
+   falhas são as mesmas nas três rodadas (`TKT-0105`, `TKT-0106`, `TKT-0111` e `TKT-0132`) e em
+   todas o chamado foi para a fila humana. Limites: os rótulos são do próprio grupo, a aprovação
+   foi automática, e três rodadas iguais dos mesmos 40 casos não são 120 casos.
+2. **Em ambas:** **0 chamados internos abertos indevidamente** nos casos em que o gabarito manda não abrir (`TKT-0001`, `TKT-0002`, `TKT-0004`, `TKT-0005`, `TKT-0006`, `TKT-0999`). Nas três rodadas dos 40 casos (12/10/2026), nenhum dos 29 casos em que o gabarito manda não abrir teve chamado interno aberto. No `TKT-0005`, isso vale para a primeira volta: nenhum chamado é aberto antes da resposta do cliente ao pedido de informação.
 
 **Resultado medido na Parte 1** (rodada 4, `ministral-8b-latest`, `logs/`): **6 de 8** e **0 chamados abertos indevidamente**: os dois critérios foram atingidos. Falharam `TKT-0003` (o modelo vai à fila humana por causa da afirmação "terceira vez") e `TKT-0007` (a busca por palavra não casou "encheu" com "cheio"). Na comparação de modelos, o `ministral-14b-latest` abriu um chamado indevido no `TKT-0006` (com aprovação automática) e não atingiu o critério 2. Detalhes em `docs/modelos.md` §3.3. Limite do critério: os dois casos que falharam são os únicos de escalonamento, então os critérios foram atingidos sem nenhuma abertura correta de chamado interno; o resultado mostra que o agente não age quando não deve, mas ainda não que escala quando deve.
 

@@ -1,0 +1,221 @@
+{
+  "execucao_id": "TKT-0002-5386c3ed",
+  "id_ticket": "TKT-0002",
+  "executado_em": "2026-10-12T17:51:15-03:00",
+  "commit": "4aa9818",
+  "entrada": "Meu Webmail está fora do ar desde cedo, ninguém da empresa consegue ler e-mail.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1813,
+  "tokens_saida": 230,
+  "custo_usd": 0.000306,
+  "scores_kb": {
+    "KB-111": 0.47,
+    "KB-106": 0.45,
+    "KB-104": 0.45
+  },
+  "saida": {
+    "id_ticket": "TKT-0002",
+    "executado_em": "2026-10-12T17:51:15-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O cliente relata que o **webmail** está fora do ar desde cedo, afirmando que nenhum colaborador da empresa consegue acessar e-mails. No entanto, o log anexado mostra que o **serviço de DNS** do domínio do cliente apresenta falha de resolução (`SERVFAIL`) e o nameserver `ns1.zeta.com.br` não responde (timeout). Ao acessar o webmail diretamente pelo **IP do servidor** (`203.0.113.40`), a tela de login abre normalmente, indicando que o problema está restrito à resolução de nomes.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "busca_sem_correspondencia",
+      "kb_id": "KB-111",
+      "score": 0.47,
+      "registros": [
+        "TKT-0002"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o melhor procedimento encontrado (KB-111, score 0.47) ficou abaixo do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0002"
+      },
+      "resultado": {
+        "id": "TKT-0002",
+        "aberto_em": "2026-09-21 09:15",
+        "status": "novo",
+        "anexo_log": "2026-09-21 09:08 nslookup mail.zeta.com.br -> falha de resolução DNS: SERVFAIL. 2026-09-21 09:09 nslookup -type=ns zeta.com.br -> nameserver ns1.zeta.com.br não responde (timeout). 2026-09-21 09:10 acesso ao webmail direto pelo IP do servidor (https://203.0.113.40/webmail) -> a tela de login abre normalmente.",
+        "cliente": "Zeta Imóveis",
+        "plano": "Hospedagem Business",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": true,
+        "termos_busca": [
+          "webmail fora ar",
+          "resolucao dns",
+          "nameserver nao responde"
+        ],
+        "justificativa": "o cliente relata problema no webmail, mas o log aponta falha no DNS e nameserver, que não é o serviço principal relatado"
+      },
+      "erro": null,
+      "ms": 893
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "webmail fora ar",
+          "resolucao dns",
+          "nameserver nao responde"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-111",
+            "titulo": "Envio de e-mail rejeitado ou marcado como spam",
+            "score": 0.47,
+            "cosseno": 0.791,
+            "causa": "Registros SPF ou DKIM do domínio ausentes ou incorretos, ou IP de envio em lista de bloqueio.",
+            "solucao": "Conferir os registros SPF e DKIM da zona do domínio e consultar as listas de bloqueio para o IP de envio; corrigir a zona e reenviar uma mensagem de teste.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-106",
+            "titulo": "Falha de resolução DNS do domínio",
+            "score": 0.45,
+            "cosseno": 0.782,
+            "causa": "Nameserver do domínio fora do ar ou zona DNS com registro inválido.",
+            "solucao": "Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.45,
+            "cosseno": 0.781,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1324
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "divergencia_relato_log"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "O cliente relata que o **webmail** está fora do ar desde cedo, afirmando que nenhum colaborador da empresa consegue acessar e-mails. No entanto, o log anexado mostra que o **serviço de DNS** do domínio do cliente apresenta falha de resolução (`SERVFAIL`) e o nameserver `ns1.zeta.com.br` não responde (timeout). Ao acessar o webmail diretamente pelo **IP do servidor** (`203.0.113.40`), a tela de login abre normalmente, indicando que o problema está restrito à resolução de nomes."
+      },
+      "erro": null,
+      "ms": 1911
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0002",
+        "destino": "fila_humana",
+        "mensagem": "O cliente relata que o **webmail** está fora do ar desde cedo, afirmando que nenhum colaborador da empresa consegue acessar e-mails. No entanto, o log anexado mostra que o **serviço de DNS** do domínio do cliente apresenta falha de resolução (`SERVFAIL`) e o nameserver `ns1.zeta.com.br` não responde (timeout). Ao acessar o webmail diretamente pelo **IP do servidor** (`203.0.113.40`), a tela de login abre normalmente, indicando que o problema está restrito à resolução de nomes."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 15
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": true,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "divergencia_relato_log"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1761,
+  "episodio": {
+    "execucao_id": "TKT-0002-5386c3ed",
+    "ticket_externo": "TKT-0002",
+    "cliente_id": "CLI-06",
+    "classe": "tecnico",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "fila_humana",
+    "desfecho": "fila_humana",
+    "motivo": "divergencia_relato_log",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0002: classe tecnico; sem guia; proposto fila_humana; gravado fila_humana; término respondeu",
+    "criado_em": "2026-10-12T17:51:19-03:00",
+    "id": 1,
+    "chave": "7c2f2b938c83f236",
+    "ja_existia": false
+  },
+  "segundos_gastos": 4.147
+}

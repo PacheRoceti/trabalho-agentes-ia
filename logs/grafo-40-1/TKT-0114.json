@@ -1,0 +1,224 @@
+{
+  "execucao_id": "TKT-0114-3fd11739",
+  "id_ticket": "TKT-0114",
+  "executado_em": "2026-10-12T17:41:40-03:00",
+  "commit": "4aa9818",
+  "entrada": "A tarefa agendada no crontab que gera os relatórios toda madrugada não executa há três dias. Se eu rodo o script à mão, funciona.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "anotacao_interna",
+    "kb_id": "KB-109",
+    "encaminhamento": 1,
+    "destino": "anotacao_interna"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1584,
+  "tokens_saida": 202,
+  "custo_usd": 0.000268,
+  "scores_kb": {
+    "KB-109": 0.77,
+    "KB-105": 0.59,
+    "KB-102": 0.52
+  },
+  "saida": {
+    "id_ticket": "TKT-0114",
+    "executado_em": "2026-10-12T17:41:40-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "anotacao_interna",
+      "texto": "Conferir a sintaxe da entrada no crontab do usuário do cliente, o caminho absoluto do script de geração de relatórios e os registros de execução do cron. Testar o script manualmente com o mesmo usuário para validar se o problema persiste fora do agendamento. **Nota:** O procedimento KB-109 (score 0.77) não cobre a verificação de permissões de execução do usuário sobre o script, que deve ser validada manualmente.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "procedimento_da_base",
+      "kb_id": "KB-109",
+      "score": 0.77,
+      "registros": [
+        "TKT-0114"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": true,
+      "motivo": "procedimento KB-109 com score 0.77, igual ou acima do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0114"
+      },
+      "resultado": {
+        "id": "TKT-0114",
+        "aberto_em": "2026-09-21 09:25",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Eta Engenharia",
+        "plano": "VPS Pro",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "crontab",
+          "nao",
+          "executa",
+          "relatorios"
+        ],
+        "justificativa": "o cliente relata falha específica em serviço de agendamento de tarefas no servidor (crontab) com sintoma de não execução"
+      },
+      "erro": null,
+      "ms": 3415
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "crontab",
+          "nao",
+          "executa",
+          "relatorios"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-109",
+            "titulo": "Tarefa agendada (cron) não executa",
+            "score": 0.77,
+            "cosseno": 0.909,
+            "causa": "Entrada do crontab com sintaxe inválida, caminho do script errado ou usuário sem direito de execução sobre o script.",
+            "solucao": "Conferir a sintaxe da entrada no crontab, o caminho absoluto do script e o registro de execução do cron; testar o script à mão com o mesmo usuário.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-105",
+            "titulo": "Backup diário falhou",
+            "score": 0.59,
+            "cosseno": 0.837,
+            "causa": "Cota de armazenamento de backup excedida ou janela de backup sobreposta a outra tarefa.",
+            "solucao": "Conferir a cota do storage de backup e o agendamento; reexecutar o job manualmente.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-102",
+            "titulo": "Permissão negada ao gravar arquivos",
+            "score": 0.52,
+            "cosseno": 0.809,
+            "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+            "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 6709
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "anotacao_interna",
+        "kb_id": "KB-109",
+        "motivo": "procedimento_anotar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "anotacao_interna"
+      },
+      "resultado": {
+        "texto": "Conferir a sintaxe da entrada no crontab do usuário do cliente, o caminho absoluto do script de geração de relatórios e os registros de execução do cron. Testar o script manualmente com o mesmo usuário para validar se o problema persiste fora do agendamento. **Nota:** O procedimento KB-109 (score 0.77) não cobre a verificação de permissões de execução do usuário sobre o script, que deve ser validada manualmente."
+      },
+      "erro": null,
+      "ms": 3301
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0114",
+        "destino": "anotacao_interna",
+        "mensagem": "Conferir a sintaxe da entrada no crontab do usuário do cliente, o caminho absoluto do script de geração de relatórios e os registros de execução do cron. Testar o script manualmente com o mesmo usuário para validar se o problema persiste fora do agendamento. **Nota:** O procedimento KB-109 (score 0.77) não cobre a verificação de permissões de execução do usuário sobre o script, que deve ser validada manualmente.",
+        "kb_id": "KB-109"
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "anotacao_interna"
+      },
+      "erro": null,
+      "ms": 17
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "anotacao_interna",
+    "kb_id": "KB-109",
+    "motivo": "procedimento_anotar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1777,
+  "episodio": {
+    "execucao_id": "TKT-0114-3fd11739",
+    "ticket_externo": "TKT-0114",
+    "cliente_id": "CLI-07",
+    "classe": "tecnico",
+    "categoria": "cron_tarefas",
+    "kb_id": "KB-109",
+    "score": 0.77,
+    "acao_proposta": "anotacao_interna",
+    "desfecho": "anotacao_interna",
+    "motivo": "procedimento_anotar",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0114: classe tecnico; guia KB-109 (score 0.77); proposto anotacao_interna; gravado anotacao_interna; término respondeu",
+    "criado_em": "2026-10-12T17:41:53-03:00",
+    "id": 1,
+    "chave": "b230969e91e6b6c8",
+    "ja_existia": false
+  },
+  "segundos_gastos": 13.445
+}

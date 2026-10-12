@@ -589,7 +589,10 @@ regra (`logs/grafo-redigir-v3-1/` a `-3/`, commit `9d5c211 + alterações locais
 **Limites assumidos.**
 - **Três rodadas não separam a regra do acaso.** Sem regra o defeito aparece em 1 de 3 rodadas
   (3 de 10, contando as anteriores), e só no `TKT-0001`. Zero em três é compatível com a regra
-  funcionar e com sorte.
+  funcionar e com sorte. As três rodadas dos 40 casos, do mesmo dia (`logs/grafo-40-1/` a `-3/`,
+  `grafo.md` §6.6), somam mais três sem o defeito: 38 redações em cada uma, nenhuma com domínio
+  que o nó não recebeu. São seis rodadas em zero, e não há rodada dos 40 casos sem a regra para
+  comparar.
 - **A regra tem um efeito que ninguém pediu.** A expressão "o domínio do cliente" passou a
   aparecer em 3 a 5 dos 7 textos de cada rodada (sem a regra, em nenhum), e em parte deles o
   texto não falava de domínio: "O domínio do cliente apresenta falha no upload de arquivos"

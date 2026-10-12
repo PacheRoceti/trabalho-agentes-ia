@@ -18,7 +18,9 @@
 > `conferir_ressalva`, ao H2 e ao `redigir-v3.md`. As rodadas dos 8 casos com o código e os
 > prompts em uso são `logs/grafo-regras-v2-1/` a `-3/` (12/10/2026): 8 de 8 nas três, 16
 > chamadas ao modelo e cerca de 13,4 mil tokens cada. São as de `logs/grafo-redigir-v3-1/` a
-> `-3/` (`grafo.md` §6.5) mais a regra aprendida do `redigir` (`memoria.md` §5.1).
+> `-3/` (`grafo.md` §6.5) mais a regra aprendida do `redigir` (`memoria.md` §5.1). Com o
+> gabarito ampliado para 40 casos, três rodadas do mesmo dia deram 36 de 40
+> (`logs/grafo-40-1/` a `-3/`), com as quatro falhas indo para a fila humana (`grafo.md` §6.6).
 >
 > O histórico da decisão (v1 no papel → v2 construída) continua em
 > [`arquitetura-v2.md`](arquitetura-v2.md).
@@ -614,7 +616,9 @@ Limites desta medição:
 
 - **São os mesmos 8 casos, e os dois prompts foram escritos depois de ver as falhas do laço
   neles.** Três rodadas iguais mostram que o resultado se repete nestes casos; não mostram que o
-  sistema generaliza.
+  sistema generaliza. Em 12/10/2026 o grafo foi medido em 32 casos que ele não tinha visto,
+  rotulados antes de rodar: 28 de 32, e 36 de 40 no total, em três rodadas (`grafo.md` §6.6).
+  Os casos novos também são do grupo.
 - **A redação não tem verificador.** O que se confere é o desfecho gravado.
 - **A primeira rodada é de um commit anterior** à troca do caminho padrão; o `src/grafo.py` das
   três é o mesmo, salvo o texto de abertura do arquivo.
@@ -626,7 +630,8 @@ vez (objeto `GRAFO`), com `langgraph==1.2.14` e `langgraph-checkpoint-sqlite==3.
 `requirements.txt`. É o caminho padrão do `main.py`; o laço da Parte 1 roda com `--laco`, para
 os dois serem comparados nos mesmos casos. Foi medido três vezes com o modelo real, 8 de 8 no
 verificador nas três (§8; `grafo.md` §6), e a pausa do [H1] foi demonstrada entre processos
-(§7). O que é do código está provado por 75 testes offline (`tests/test_grafo.py`).
+(§7). Com o gabarito de 40 casos, deu 36 de 40 em três rodadas (`grafo.md` §6.6). O que é do
+código está provado por 78 testes offline (`tests/test_grafo.py`).
 
 O §1 mostra o sistema inteiro (entrada, dados, checkpoint, términos). Esta seção mostra o mesmo
 grafo nó a nó, com a chave de cada aresta condicional, para ser conferido contra o código.

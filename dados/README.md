@@ -83,9 +83,14 @@ primeiro chamado interno aberto numa execução, que era o `INC-0002`, passou a 
 documentos que citam `INC-0002` (`docs/humano.md`, `docs/grafo.md`, `docs/arquitetura.md`,
 `docs/rag.md`) descrevem logs anteriores a esta mudança e continuam valendo para eles.
 
-**Limite honesto:** os 32 casos novos foram rotulados **antes** de qualquer execução e estão
-**AINDA NÃO MEDIDOS**: nenhuma rodada registrada em `logs/` os inclui, e todo "8 de 8" dos
-documentos é dos 8 casos da Parte 1. Os rótulos são de quem escreveu os casos, sem revisão de um
+**Medição (12/10/2026):** os 32 casos novos foram rotulados **antes** de qualquer execução. Três
+rodadas dos 40 casos pelo grafo deram **36 de 40** (`logs/grafo-40-1/` a `-3/`): 8 de 8 nos casos
+da Parte 1 e 28 de 32 nos novos. Falharam, nas três, `TKT-0105`, `TKT-0106`, `TKT-0111` e
+`TKT-0132`, todos indo para a fila humana; a causa de cada um está em `docs/grafo.md` §6.6. Os
+rótulos não foram mudados depois da medição.
+
+**Limite honesto:** todo "8 de 8" dos documentos é dos 8 casos da Parte 1, de rodadas anteriores
+à ampliação. Os rótulos são de quem escreveu os casos, sem revisão de um
 analista de fora do grupo, e três são discutíveis (`TKT-0124`, `TKT-0130` e `TKT-0132`, com a razão
 na `_nota`). A segunda volta dos casos 17 e 18 da aula 11 (a resposta do cliente ao pedido de
 informação) fica de fora, porque essa espera não existe no código. O `TKT-0108` não distingue

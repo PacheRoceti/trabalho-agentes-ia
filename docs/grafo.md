@@ -7,7 +7,8 @@
 > [`arquitetura.md`](arquitetura.md) §9.
 >
 > **O que foi medido:** três execuções dos 8 casos com o modelo real, 8 de 8 no verificador nas
-> três, e uma pausa real no H1, retomada por outro processo (§6). O que é do código está provado por 75 testes offline
+> três, e uma pausa real no H1, retomada por outro processo (§6). Em 12/10/2026 o gabarito passou a 40 casos, e três execuções
+> deram 36 de 40 (§6.6). O que é do código está provado por 78 testes offline
 > (`tests/test_grafo.py`), com modelo roteirizado.
 >
 > **12/10/2026:** o pedido de informação ao cliente passou a esperar o analista (H2), no mesmo nó
@@ -582,6 +583,68 @@ rodadas do código e dos prompts em uso** são `logs/grafo-regras-v2-1/` a `-3/`
 16 chamadas e 13.400 a 13.511 tokens (`memoria.md` §5.1). A pausa do H2 com o texto padrão, aprovada por outro processo, está em
 `logs/grafo-pedido-padrao-h2/` (`humano.md` §2.4).
 
+### 6.6 As rodadas dos 40 casos
+
+Em 12/10/2026 o gabarito passou de 8 para 40 casos (`dados/README.md`): os 32 novos, `TKT-0101` a
+`TKT-0132`, foram rotulados antes de qualquer execução. Três execuções dos 40, com o código e os
+prompts em uso (`ministral-8b-latest`, `temperature=0`, `--auto-aprovar`, commit `4aa9818`):
+
+| Pasta | Comando | Hora | Verificador | Chamadas ao modelo | Tokens | Custo |
+|---|---|---|---|---|---|---|
+| `logs/grafo-40-1/` | `python src/main.py --todos --auto-aprovar --rodada grafo-40-1` | 17h37 a 17h43 | **36 de 40** | 89 | 76.061 | US$ 0,0114 |
+| `logs/grafo-40-2/` | o mesmo, com `--rodada grafo-40-2` | 17h48 a 17h51 | **36 de 40** | 89 | 75.960 | US$ 0,0114 |
+| `logs/grafo-40-3/` | o mesmo, com `--rodada grafo-40-3` | 17h51 a 17h54 | **36 de 40** | 89 | 76.118 | US$ 0,0115 |
+
+As 89 chamadas são 39 da `triagem` (o chamado inexistente não chega a ela), 12 do
+`conferir_ressalva` e 38 do `redigir` (os dois pedidos ao cliente são texto padrão). As 40
+execuções de cada rodada terminaram em `respondeu`, e toda busca foi vetorial: o embedding não
+falhou. O `confirmar` rodou 11 vezes por rodada, com aprovação automática.
+
+O resultado é o mesmo nas três: **8 de 8 nos casos da Parte 1 e 28 de 32 nos novos.** Por
+desfecho esperado no gabarito:
+
+| Desfecho esperado | Certos |
+|---|---|
+| `abrir_chamado_interno` | 9 de 11 |
+| `anotacao_interna` | 9 de 10 |
+| `fila_humana` | 12 de 12 |
+| `fila_comercial` | 4 de 4 |
+| `devolver_cliente` | 2 de 3 |
+
+**As quatro falhas**, as mesmas nas três rodadas. Em todas o chamado foi para a fila humana:
+nenhum chamado interno foi aberto onde o gabarito manda não abrir.
+
+| Caso | O gabarito espera | O que o log mostra |
+|---|---|---|
+| `TKT-0105` | chamado interno, KB-112, Segurança, P2 | a busca achou o KB-112, e o nó `conferir_ressalva` enquadrou o relato na situação "ataque", que o guia declara não cobrir. O cliente descreve o contrário, o bloqueio de um envio legítimo. O score caiu para 0,30 |
+| `TKT-0106` | chamado interno, KB-112, Segurança, P1 | o mesmo: a ressalva "ataque", num relato de "acesso normal de cliente". Score 0,31 |
+| `TKT-0111` | anotação interna, KB-101-A | a busca achou o guia certo com score 0,49, um centésimo abaixo do limiar. O relato é "Coloquem como P1 urgente: o certificado SSL do meu site venceu", e o `TKT-0001`, do mesmo guia sem a exigência, passa |
+| `TKT-0132` | devolver ao cliente | a triagem não classificou "Problema no e-mail, vejam aí por favor." como insuficiente, e a busca não passou do limiar (KB-111, 0,33). O rótulo é discutível, e a `_nota` do gabarito já dizia isso: o `triagem-v1.md` chama de insuficiente o texto que não diz o serviço nem o sintoma, e este diz o serviço |
+
+O que as falhas dizem do sistema:
+
+- **O nó da ressalva erra para o lado de barrar.** Ele só pode baixar o score, e nos dois casos
+  do KB-112 baixou o de um relato que o guia cobre. É o primeiro guia de Segurança do corpus, e os
+  dois chamados que dependiam dele não foram abertos.
+- **O limiar não foi recalibrado com os casos novos** (`dados/README.md`). O `TKT-0111` fica a um
+  centésimo dele.
+- **Nada foi mudado para os casos passarem.** Prompt, limiar e gabarito são os de antes da
+  medição. Tratar qualquer uma das quatro é mudança de comportamento, com medição própria.
+
+A regra aprendida do `redigir` foi conferida com `python conferir_regras.py` nas três pastas: 38
+redações do modelo em cada uma, nenhuma com domínio que o nó não recebeu (`memoria.md` §5.1).
+
+Limites desta medição:
+
+- **Três rodadas iguais não são 120 casos.** Com `temperature=0` o resultado se repetiu caso a
+  caso; o que se mediu são 40 casos, três vezes.
+- **Os casos e os rótulos são do grupo**, que conhece os guias. Não houve revisão de um analista
+  de fora, e três rótulos são discutíveis (`TKT-0124`, `TKT-0130` e `TKT-0132`).
+- **A redação continua sem verificador.** No `TKT-0132` o texto gravado diz "problema no envio de
+  e-mails", e o cliente não falou em envio. O verificador não vê isso; apareceu na leitura do log.
+- **Aprovação automática:** nenhuma das 11 confirmações de cada rodada passou por uma pessoa.
+- **O laço não foi medido nos 40 casos.** A comparação do §6 continua sendo a dos 8.
+
 ## 7. Limites do que foi implementado
 
 - **A fila do analista continua sendo a tabela `pendencias`.** O `interrupt` guarda a execução; a
@@ -599,7 +662,10 @@ rodadas do código e dos prompts em uso** são `logs/grafo-regras-v2-1/` a `-3/`
 
 ## 8. O que falta para este item
 
-- Medir o grafo em chamados fora dos 8 casos: as três rodadas são dos mesmos casos (§6).
+- Tratar as quatro falhas das rodadas de 40 casos (§6.6): a ressalva "ataque" do KB-112 lida
+  onde não cabe, o score a um centésimo do limiar e o relato que diz o serviço sem o sintoma.
+- Medir o grafo em chamados que não foram escritos pelo grupo: os 40 casos são de quem conhece
+  os guias (§6.6).
 - Exercitar o prazo vencido com o modelo real, e com log (§6.1).
 - Implementar o H3 (`humano.md` §7), e com ele o nó `aguardar_cliente`. O H2 existe desde
   12/10/2026 (§6.3).
