@@ -1,0 +1,44 @@
+Demonstração do campo sem reducer   12/10/2026 14:53   langgraph 1.2.14   commit c849ce1
+Modelo real: ministral-8b-latest, temperature=0, busca vetorial. "gastos" é o consumo que a API devolveu em cada chamada, anotado fora do estado.
+
+PARTE 1: O NOSSO GRAFO (src/grafo.py), com e sem o reducer, COM O MODELO REAL
+Mesmos nós, mesmas arestas, mesmo chamado (TKT-0003). Só muda a declaração do campo.
+
+1.1  `passos` sem reducer (TKT-0003)
+  COM operator.add
+    exceção levantada           nenhuma
+    término                     respondeu
+    gravado no banco            {'chamados_internos': 1, 'encaminhamentos': 0}
+    passos no estado            8: ['consultar_ticket', 'triagem', 'buscar_base_conhecimento', 'conferir_ressalva', 'decidir', 'redigir', 'confirmar', 'abrir_chamado_interno']
+    chamadas ao modelo          feitas: 3   no estado: 3
+    tokens                      gastos: 2460 [686, 660, 1114]   no estado: 2460
+    tentativas_redacao          1
+  SEM reducer
+    exceção levantada           nenhuma
+    término                     respondeu
+    gravado no banco            {'chamados_internos': 1, 'encaminhamentos': 0}
+    passos no estado            1: ['abrir_chamado_interno']
+    chamadas ao modelo          feitas: 3   no estado: 3
+    tokens                      gastos: 2432 [686, 662, 1084]   no estado: 2432
+    tentativas_redacao          1
+
+1.2  os campos de consumo sem reducer, com o teto de tokens em 1016 (TKT-0003)
+     O teto foi posto entre a maior chamada antes da última (686) e a soma delas (1346): a última chamada não deveria acontecer.
+  COM operator.add
+    exceção levantada           nenhuma
+    término                     orcamento_esgotado  (tokens: 1375/1016)
+    gravado no banco            {'chamados_internos': 0, 'encaminhamentos': 0}
+    passos no estado            5: ['consultar_ticket', 'triagem', 'buscar_base_conhecimento', 'conferir_ressalva', 'decidir']
+    chamadas ao modelo          feitas: 2   no estado: 2
+    tokens                      gastos: 1375 [686, 689]   no estado: 1375
+    tentativas_redacao          0
+  SEM reducer
+    exceção levantada           nenhuma
+    término                     respondeu
+    gravado no banco            {'chamados_internos': 1, 'encaminhamentos': 0}
+    passos no estado            8: ['consultar_ticket', 'triagem', 'buscar_base_conhecimento', 'conferir_ressalva', 'decidir', 'redigir', 'confirmar', 'abrir_chamado_interno']
+    chamadas ao modelo          feitas: 3   no estado: 1
+    tokens                      gastos: 2490 [686, 661, 1143]   no estado: 1143
+    tentativas_redacao          1
+
+1.3  `tentativas_redacao`: NÃO EXECUTADO com o modelo real. A demonstração depende de um texto que o `validar` reprove sempre, e o modelo real não o escreve a pedido; ela existe só com o modelo roteirizado (saida-terminal.txt).

@@ -1,0 +1,72 @@
+Demonstração do campo sem reducer   12/10/2026 14:53   langgraph 1.2.14   commit c849ce1
+Modelo roteirizado (sem API): cada chamada gasta 1.000 tokens de entrada e 50 de saída.
+
+PARTE 1: O NOSSO GRAFO (src/grafo.py), com e sem o reducer
+Mesmos nós, mesmas arestas, mesmo roteiro do modelo. Só muda a declaração do campo.
+
+1.1  `passos` sem reducer (TKT-0003)
+  COM operator.add
+    exceção levantada           nenhuma
+    término                     respondeu
+    gravado no banco            {'chamados_internos': 1, 'encaminhamentos': 0}
+    passos no estado            8: ['consultar_ticket', 'triagem', 'buscar_base_conhecimento', 'conferir_ressalva', 'decidir', 'redigir', 'confirmar', 'abrir_chamado_interno']
+    chamadas ao modelo          feitas: 3   no estado: 3
+    tokens                      gastos: 3150 [1050, 1050, 1050]   no estado: 3150
+    tentativas_redacao          1
+  SEM reducer
+    exceção levantada           nenhuma
+    término                     respondeu
+    gravado no banco            {'chamados_internos': 1, 'encaminhamentos': 0}
+    passos no estado            1: ['abrir_chamado_interno']
+    chamadas ao modelo          feitas: 3   no estado: 3
+    tokens                      gastos: 3150 [1050, 1050, 1050]   no estado: 3150
+    tentativas_redacao          1
+
+1.2  os campos de consumo sem reducer, com o teto de tokens em 2.000 (TKT-0003)
+     Cada chamada gasta 1.050 tokens: a terceira chamada não deveria acontecer.
+  COM operator.add
+    exceção levantada           nenhuma
+    término                     orcamento_esgotado  (tokens: 2100/2000)
+    gravado no banco            {'chamados_internos': 0, 'encaminhamentos': 0}
+    passos no estado            5: ['consultar_ticket', 'triagem', 'buscar_base_conhecimento', 'conferir_ressalva', 'decidir']
+    chamadas ao modelo          feitas: 2   no estado: 2
+    tokens                      gastos: 2100 [1050, 1050]   no estado: 2100
+    tentativas_redacao          0
+  SEM reducer
+    exceção levantada           nenhuma
+    término                     respondeu
+    gravado no banco            {'chamados_internos': 1, 'encaminhamentos': 0}
+    passos no estado            8: ['consultar_ticket', 'triagem', 'buscar_base_conhecimento', 'conferir_ressalva', 'decidir', 'redigir', 'confirmar', 'abrir_chamado_interno']
+    chamadas ao modelo          feitas: 3   no estado: 1
+    tokens                      gastos: 3150 [1050, 1050, 1050]   no estado: 1050
+    tentativas_redacao          1
+
+1.3  `tentativas_redacao` sem reducer, com um texto que o `validar` reprova sempre (TKT-0004)
+     O texto reprovado volta ao modelo uma vez (MAX_REDACOES = 2).
+  COM operator.add
+    exceção levantada           nenhuma
+    término                     erro_fatal  (texto redigido recusado em 2 tentativas: texto curto demais ou ausente)
+    gravado no banco            {'chamados_internos': 0, 'encaminhamentos': 0}
+    passos no estado            7: ['consultar_ticket', 'triagem', 'decidir', 'redigir', 'validar', 'redigir', 'validar']
+    chamadas ao modelo          feitas: 3   no estado: 3
+    tokens                      gastos: 3150 [1050, 1050, 1050]   no estado: 3150
+    tentativas_redacao          2
+  SEM reducer
+    exceção levantada           GraphRecursionError
+    término                     None
+    gravado no banco            {'chamados_internos': 0, 'encaminhamentos': 0}
+    passos no estado            19: ['consultar_ticket', 'triagem', 'decidir', 'redigir', 'validar', 'redigir', 'validar', 'redigir', 'validar', 'redigir', 'validar', 'redigir', 'validar', 'redigir', 'validar', 'redigir', 'validar', 'redigir', 'validar']
+    chamadas ao modelo          feitas: 9   no estado: 9
+    tokens                      gastos: 9450 [1050, 1050, 1050, 1050, 1050, 1050, 1050, 1050, 1050]   no estado: 9450
+    tentativas_redacao          1
+
+PARTE 2: UM GRAFO MÍNIMO COM DOIS RAMOS PARALELOS
+Os ramos `a` e `b` escrevem, cada um, um item no campo `achados`.
+
+2.1  ramos de tamanhos diferentes (`b` escreve uma volta depois de `a`)
+  COM operator.add   ['achado do ramo a', 'achado do ramo b']
+  SEM reducer        ['achado do ramo b']
+
+2.2  ramos que escrevem na mesma volta
+  COM operator.add   ['achado do ramo a', 'achado do ramo b']
+  SEM reducer        InvalidUpdateError: At key 'achados': Can receive only one value per step. Use an Annotated key to handle multiple values.
