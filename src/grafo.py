@@ -494,7 +494,7 @@ def redigir(state, ctx):
         usuario += (f"\n\nERRO DA TENTATIVA ANTERIOR: "
                     f"{json.dumps(state['erro_validacao'], ensure_ascii=False)}")
     try:
-        texto, consumo = _chamar(ctx, state, _ler_prompt(PROMPT_REDIGIR), usuario)
+        texto, consumo = _chamar(ctx, state, _sistema_do_redigir(), usuario)
     except ErroFatal as f:
         return {"termino": Termino.ERRO_FATAL.value, "motivo": str(f)}
     try:
@@ -776,7 +776,7 @@ def _estado_de(v: dict, **extra) -> Estado:
     e = Estado(
         id_ticket=v["id_ticket"], modelo=v["modelo"], execucao_id=v["execucao_id"],
         executado_em=v["executado_em"], commit=v.get("commit"), entrada=v.get("texto"),
-        prompt=f"{PROMPT_TRIAGEM.name} + {PROMPT_RESSALVA.name} + {PROMPT_REDIGIR.name}", temperatura=v.get("temperatura"),
+        prompt=prompts_em_uso(), temperatura=v.get("temperatura"),
         passos=[Passo(**p) for p in v.get("passos") or []],
         n_chamadas_modelo=v.get("n_chamadas_modelo", 0),
         tokens_entrada=v.get("tokens_entrada", 0), tokens_saida=v.get("tokens_saida", 0),
@@ -942,3 +942,47 @@ def retomar_grafo(id_ticket: str, decisao: str, *, client, con, por: str = "anal
         resposta["motivo_rejeicao"] = motivo_rejeicao
     GRAFO.invoke(Command(resume=resposta), _config(id_ticket), context=ctx)
     return _concluir(id_ticket, log_dir, con)
+
+
+# ================================================================ MEMÓRIA PROCEDURAL
+# Fica no fim do arquivo de propósito: docs/grafo.md §4 cita as linhas acima, uma a uma.
+#
+# A memória procedural guarda COMO FAZER: as regras que a leitura das execuções ensinou. A
+# estrutura é texto no prompt de sistema (docs/memoria.md §1.3 e §5), e não tabela nem índice,
+# porque uma regra vale para toda execução: não há o que buscar, ela é sempre carregada. Mora em
+# arquivo, como os prompts, para ter versão e histórico no git. Só uma pessoa a escreve.
+# As regras são do nó `redigir`, o único em que o modelo não decide nada: o desfecho chega
+# pronto, então uma regra ruim estraga um texto, e não uma decisão.
+REGRAS_REDIGIR = PROMPTS / "regras-redigir-v2.md"
+
+# Uma regra nasce do erro visto num chamado e não pode carregar o titular dele (enunciado §5.4):
+# os prefixos dos identificadores de cliente, de chamado externo e de chamado interno.
+IDENTIFICADORES_PROIBIDOS = ("CLI-", "TKT-", "INC-")
+
+
+def _regras_aprendidas(arquivo: Path | None = None) -> str:
+    """O texto das regras, sem o cabeçalho de documentação. Vazio com `--sem-memoria`.
+    Levanta ValueError se uma regra citar cliente ou chamado."""
+    if not MEMORIA:
+        return ""
+    regras = _ler_prompt(arquivo or REGRAS_REDIGIR)
+    citados = [i for i in IDENTIFICADORES_PROIBIDOS if i in regras]
+    if citados:
+        raise ValueError(f"regra aprendida cita identificador de cliente ou de chamado "
+                         f"({', '.join(citados)}): a regra não pode carregar o titular")
+    return regras
+
+
+def _sistema_do_redigir() -> str:
+    """O prompt de sistema do nó `redigir`: o prompt da etapa e, depois dele, as regras aprendidas."""
+    try:
+        regras = _regras_aprendidas()
+    except ValueError as v:
+        raise ErroFatal(str(v))
+    return "\n\n".join(parte for parte in (_ler_prompt(PROMPT_REDIGIR), regras) if parte)
+
+
+def prompts_em_uso() -> str:
+    """A combinação de prompts da execução, para o log. Com a memória ligada, inclui as regras."""
+    nomes = [PROMPT_TRIAGEM.name, PROMPT_RESSALVA.name, PROMPT_REDIGIR.name]
+    return " + ".join(nomes + ([REGRAS_REDIGIR.name] if MEMORIA else []))

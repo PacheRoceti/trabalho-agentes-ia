@@ -1,0 +1,140 @@
+{
+  "execucao_id": "TKT-0999-7baa21ae",
+  "id_ticket": "TKT-0999",
+  "executado_em": "2026-10-12T15:58:21-03:00",
+  "commit": "c849ce1 + alterações locais",
+  "entrada": null,
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v1.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 1,
+  "lembretes": 0,
+  "tokens_entrada": 763,
+  "tokens_saida": 41,
+  "custo_usd": 0.000121,
+  "scores_kb": {},
+  "saida": {
+    "id_ticket": "TKT-0999",
+    "executado_em": "2026-10-12T15:58:21-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O ID **TKT-0999** não foi encontrado no sistema de tickets. Verificar se há registro ou se o cliente confundiu o número do chamado.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "nenhuma",
+      "kb_id": null,
+      "score": null,
+      "registros": [],
+      "ferramentas": [
+        "consultar_ticket",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o chamado não foi encontrado no sistema de tickets"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0999"
+      },
+      "resultado": null,
+      "erro": {
+        "erro": "chamado não encontrado no sistema de tickets",
+        "recebido": "TKT-0999"
+      },
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "id_inexistente"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 2,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "O ID **TKT-0999** não foi encontrado no sistema de tickets. Verificar se há registro ou se o cliente confundiu o número do chamado."
+      },
+      "erro": null,
+      "ms": 634
+    },
+    {
+      "indice": 3,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0999",
+        "destino": "fila_humana",
+        "mensagem": "O ID **TKT-0999** não foi encontrado no sistema de tickets. Verificar se há registro ou se o cliente confundiu o número do chamado."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 16
+    }
+  ],
+  "motor": "langgraph",
+  "classe": null,
+  "log_diverge": null,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "id_inexistente"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 0,
+  "episodio": {
+    "execucao_id": "TKT-0999-7baa21ae",
+    "ticket_externo": "TKT-0999",
+    "cliente_id": null,
+    "classe": null,
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "fila_humana",
+    "desfecho": "fila_humana",
+    "motivo": "id_inexistente",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0999: classe sem triagem; sem guia; proposto fila_humana; gravado fila_humana; término respondeu",
+    "criado_em": "2026-10-12T15:58:22-03:00",
+    "id": 1,
+    "chave": "e1683e0cea8c2198",
+    "ja_existia": false
+  },
+  "segundos_gastos": 0.652
+}

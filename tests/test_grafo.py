@@ -9,6 +9,7 @@ real classifica certo: isso só `python src/main.py --todos --auto-aprovar` mede
 import json
 import os
 import sys
+import tempfile
 import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -757,6 +758,54 @@ class TestGrafo(unittest.TestCase):
             grafo_mod.MEMORIA = True
         self.assertIsNone(e.confirmacoes[-1]["pendencia"]["precedentes"])
         self.assertEqual(len(self.episodios()), 1)                     # só o semeado
+
+    # ---------------------------------------------------------------- memória procedural
+
+    def sistema_do_redigir(self):
+        """O prompt de sistema da última chamada ao modelo, que é a do nó `redigir`."""
+        return self.modelo.pedidos[-1]["messages"][0]["content"]
+
+    def test_as_regras_aprendidas_vao_ao_prompt_do_redigir_e_so_a_ele(self):
+        e = self.rodar("TKT-0001")
+        regras = grafo_mod._regras_aprendidas()
+        self.assertTrue(regras)                                        # o arquivo em uso tem regra
+        self.assertTrue(self.sistema_do_redigir().endswith(regras))
+        self.assertNotIn(regras, self.modelo.pedidos[0]["messages"][0]["content"])   # a triagem
+        self.assertIn(grafo_mod.REGRAS_REDIGIR.name, e.prompt)         # a combinação em uso, no log
+
+    def test_sem_memoria_as_regras_aprendidas_nao_sao_carregadas(self):
+        grafo_mod.MEMORIA = False
+        try:
+            e = self.rodar("TKT-0001")
+        finally:
+            grafo_mod.MEMORIA = True
+        self.assertEqual(self.sistema_do_redigir(), grafo_mod._ler_prompt(grafo_mod.PROMPT_REDIGIR))
+        self.assertNotIn(grafo_mod.REGRAS_REDIGIR.name, e.prompt)
+
+    def test_regra_que_cita_cliente_ou_chamado_e_recusada(self):
+        self.assertTrue(grafo_mod._regras_aprendidas())                # o arquivo em uso passa
+        with tempfile.TemporaryDirectory() as pasta:
+            for citado in ("CLI-07", "TKT-0001", "INC-0001"):
+                arquivo = Path(pasta) / "regras.md"
+                arquivo.write_text(f"<!-- cabeçalho: pode citar {citado} -->\n"
+                                   f"- No caso do {citado}, não cite o domínio.", encoding="utf-8")
+                with self.assertRaises(ValueError):
+                    grafo_mod._regras_aprendidas(arquivo)
+            # no cabeçalho de documentação o identificador é permitido: ele não vai ao modelo
+            arquivo.write_text("<!-- origem: TKT-0001 -->\n- Não cite domínio não informado.",
+                               encoding="utf-8")
+            self.assertEqual(grafo_mod._regras_aprendidas(arquivo), "- Não cite domínio não informado.")
+            # recusada na carga, a execução termina com motivo, e o modelo não é chamado para redigir
+            arquivo.write_text("- No TKT-0001, não cite o domínio.", encoding="utf-8")
+            original, grafo_mod.REGRAS_REDIGIR = grafo_mod.REGRAS_REDIGIR, arquivo
+            try:
+                e = self.rodar("TKT-0001")
+            finally:
+                grafo_mod.REGRAS_REDIGIR = original
+        self.assertEqual(e.termino.value, "erro_fatal")
+        self.assertIn("titular", e.motivo)
+        self.assertEqual(len(self.modelo.pedidos), 1)                  # só a triagem
+        self.assertIsNone(e.desfecho)
 
     # ---- a memória semântica (docs/memoria.md §4): fatos do cliente, confirmados pelo analista
 

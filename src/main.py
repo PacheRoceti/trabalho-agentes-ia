@@ -36,7 +36,8 @@
                                                     grava em logs/NOME/ (não sobrescreve os logs
                                                     versionados). --prompt escolhe outro arquivo de
                                                     src/prompts/ para o LAÇO, e por isso já implica
-                                                    --laco: o grafo usa triagem-v1.md, ressalva-v3.md e redigir-v3.md
+                                                    --laco: o grafo usa triagem-v1.md, ressalva-v3.md e redigir-v3.md,
+                                                    e as regras aprendidas de regras-redigir-v2.md
 """
 import argparse
 import json
@@ -160,7 +161,11 @@ def executar(id_ticket: str, client, modelo: str, precos, confirmador, con,
              prazo_confirmacao_min: float = PRAZO_CONFIRMACAO_MIN,
              grafo: bool = True) -> bool | None:
     caso = GABARITO.get(id_ticket, {}).get("caso", "sem gabarito")
-    prompt = "triagem-v1.md + ressalva-v3.md + redigir-v3.md (grafo)" if grafo else prompt_arquivo.name
+    if grafo:
+        import grafo as modulo_grafo         # importado só aqui: --laco não depende do LangGraph
+        prompt = f"{modulo_grafo.prompts_em_uso()} (grafo)"
+    else:
+        prompt = prompt_arquivo.name
     print(f"\n{'=' * 78}\n{id_ticket}  (caso: {caso})  modelo: {modelo}  prompt: {prompt}\n")
     desligadas = [nome for nome, ligada in (("o filtro de guias revogados", db.FILTRAR_REVOGADOS),
                                             ("o desempate por data", db.DESEMPATAR_POR_DATA))
@@ -168,7 +173,6 @@ def executar(id_ticket: str, client, modelo: str, precos, confirmador, con,
     if desligadas:
         print(f"  EXPERIMENTO: busca SEM {' e SEM '.join(desligadas)}\n")
     if grafo:
-        import grafo as modulo_grafo         # importado só aqui: --laco não depende do LangGraph
         from grafo import rodar_grafo
         if modulo_grafo.BUSCA == "palavra":
             print("  EXPERIMENTO: busca só por palavra (sem a busca vetorial)\n")
@@ -238,8 +242,9 @@ def main():
                     help="o analista confirma um fato do ambiente do cliente (memória semântica), "
                          "ex.: --fato CLI-07 acesso=ssh. Vocabulário fechado, em db.FATOS_ACEITOS")
     ap.add_argument("--sem-memoria", action="store_true",
-                    help="o grafo não lê nem grava a memória episódica nesta execução: é como duas "
-                         "rodadas ficam comparáveis (docs/memoria.md §2.4)")
+                    help="o grafo não lê nem grava a memória episódica nesta execução, e não carrega "
+                         "as regras aprendidas (regras-redigir-v2.md): é como duas rodadas ficam "
+                         "comparáveis (docs/memoria.md §2.4)")
     ap.add_argument("--busca", choices=["vetorial", "palavra"], default="vetorial",
                     help="como o grafo recupera os guias: vetorial (o cosseno do relato; padrão) ou "
                          "palavra (a busca da Parte 1). 'palavra' é experimento: exige --rodada")

@@ -140,14 +140,16 @@ CAMPOS_DA_CHAVE_DO_EPISODIO = ("execucao_id", "ticket_externo", "kb_id", "acao_p
 EPISODIO_RECENTE_DIAS = 90
 EPISODIO_MAX_DIAS = 365
 
-# Memória procedural, a parte que existe em código (docs/memoria.md §5): o analista pode dizer por
-# que rejeitou, e `candidatas_a_regra` conta os padrões que se repetem. Cada motivo aponta ONDE uma
-# pessoa deveria olhar; nada aqui escreve regra, prompt ou guia.
+# Memória procedural, a parte que vem ANTES da regra (docs/memoria.md §5): o analista pode dizer
+# por que rejeitou, e `candidatas_a_regra` conta os padrões que se repetem. Cada motivo aponta ONDE
+# uma pessoa deveria olhar; nada aqui escreve regra, prompt ou guia. A regra, quando uma pessoa a
+# escreve, mora em src/prompts/regras-redigir-vN.md e é carregada por grafo._regras_aprendidas.
 MOTIVOS_REJEICAO = {
     "guia_errado": "revisar a triagem e a busca: o guia proposto não era o do problema",
     "caso_fora_do_guia": "revisar o guia: falta declarar a situação em nao_cobre",
-    "resumo_ruim": "revisar o prompt do redigir: o resumo não serviu",
-    "mensagem_ruim": "revisar o prompt do redigir: a mensagem ao cliente não serviu",
+    "resumo_ruim": "revisar o prompt do redigir e as regras aprendidas: o resumo não serviu",
+    "mensagem_ruim": "revisar o texto padrão do pedido (grafo.PEDIDO_AO_CLIENTE): a mensagem ao "
+                     "cliente não serviu",
     "informacao_suficiente": "revisar o prompt da triagem: o relato bastava para classificar, e o "
                              "agente pediu informação ao cliente",
     "outro": "sem destino sugerido: ler os episódios",
@@ -159,9 +161,11 @@ MOTIVOS_POR_ACAO = {
     "abrir_chamado_interno": ("guia_errado", "caso_fora_do_guia", "resumo_ruim", "outro"),
     "devolver_cliente": ("mensagem_ruim", "informacao_suficiente", "outro"),
 }
-DESTINO_EDITADO = "revisar o prompt do redigir: o analista corrigiu o resumo antes de aprovar"
-DESTINO_EDITADO_PEDIDO = ("revisar o prompt do redigir: o analista corrigiu a mensagem ao cliente "
-                          "antes de aprovar")
+DESTINO_EDITADO = ("revisar o prompt do redigir e as regras aprendidas: o analista corrigiu o resumo "
+                   "antes de aprovar")
+# O pedido ao cliente é texto padrão do código desde 12/10/2026, e não texto do modelo.
+DESTINO_EDITADO_PEDIDO = ("revisar o texto padrão do pedido (grafo.PEDIDO_AO_CLIENTE): o analista "
+                          "corrigiu a mensagem ao cliente antes de aprovar")
 DESTINO_SEM_MOTIVO = "sem destino sugerido: as rejeições não trazem motivo"
 MINIMO_CANDIDATA = 3        # correções do mesmo padrão para virar candidata (memoria.md §1.4)
 
