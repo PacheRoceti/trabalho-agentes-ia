@@ -15,9 +15,10 @@ O que muda em relação ao laço (docs/grafo.md):
 A sequência de passos deixou de ser decisão do modelo: está nas arestas. Toda aresta
 condicional tem o mapa de destinos escrito (é o que conferir_grafo.py lê e imprime).
 
-Pausa: só o H1 (abrir chamado interno), com `interrupt` e checkpointer em SQLite. A fila do
-analista continua sendo a tabela `pendencias` (src/db.py); o estado da execução pausada fica no
-checkpoint do LangGraph, endereçado pelo thread_id = id do chamado.
+Pausa: o H1 (abrir chamado interno) e o H2 (enviar o pedido de informação ao cliente), no mesmo
+nó `confirmar`, com `interrupt` e checkpointer em SQLite. A fila do analista continua sendo a
+tabela `pendencias` (src/db.py); o estado da execução pausada fica no checkpoint do LangGraph,
+endereçado pelo thread_id = id do chamado. O H3 (a espera pela resposta do cliente) não existe.
 """
 import json
 import operator
@@ -64,6 +65,15 @@ MAX_TENTATIVAS_RESSALVA = 2    # saída fora do contrato volta ao modelo uma vez
 # 14); 20 dá folga e ainda corta
 # um laço que não devia existir. Estourado, a execução termina como `orcamento_esgotado`.
 LIMITE_SUPERPASSOS = 20
+
+# As duas ações que não têm volta e por isso esperam o analista (docs/humano.md §1), cada uma com
+# o único campo que ele pode corrigir ao aprovar e os nomes com que os dois textos vão ao log.
+#   H1  abrir_chamado_interno  não há ferramenta para apagar nem encerrar o chamado
+#   H2  devolver_cliente       a mensagem chega ao cliente
+CAMPO_EDITAVEL = {
+    "abrir_chamado_interno": ("resumo", "resumo_original", "resumo_aprovado"),
+    "devolver_cliente": ("mensagem", "mensagem_original", "mensagem_aprovada"),
+}
 
 
 # ================================================================ SAÍDAS DO MODELO
@@ -494,28 +504,18 @@ def pedir_confirmacao(state, ctx):
     separado do `interrupt` porque o nó que pausa roda de novo, desde o começo, na retomada: a
     hora do pedido e a linha em `pendencias` não podem ser refeitas."""
     proposto = state["desfecho_proposto"]
-    artigo = db.buscar_artigo(ctx.con, proposto["kb_id"])
     pedido_em = datetime.now().astimezone()
     vence_em = pedido_em + timedelta(minutes=state["prazo_confirmacao_min"])
-    # A prioridade entra na tela como PREVISTA: é a regra da abertura (procedimento + reincidência)
-    # aplicada agora. A do chamado é calculada de novo na gravação, e ninguém a edita.
-    pendencia = {"ferramenta": "abrir_chamado_interno", "id_ticket": state["id_ticket"],
-                 "categoria": artigo["categoria"], "resumo": state["texto_redigido"],
-                 "time_destino": artigo["time_destino"], "kb_id": proposto["kb_id"],
-                 "prioridade_prevista": db.prioridade_prevista(ctx.con, state["ticket"], artigo),
-                 "guia_publicado_em": artigo["data_publicacao"],
-                 "guia_nao_cobre": [f.strip() for f in artigo["nao_cobre"].split(";") if f.strip()],
-                 "plano": state["ticket"]["plano"],
-                 "escopo_do_plano": (db.ficha_do_plano(ctx.con, state["ticket"]["plano"]) or {}).get("escopo"),
-                 # Memória episódica: o que o analista já decidiu sobre este guia e os últimos
-                 # episódios do cliente na categoria. Só informa: o desfecho já está decidido.
-                 "precedentes": db.precedentes(ctx.con, proposto["kb_id"], state["ticket"]["_cliente_id"],
-                                               artigo["categoria"]) if MEMORIA else None,
-                 # Memória semântica: os fatos do ambiente do cliente confirmados por um analista.
-                 "fatos_cliente": {c: f["valor"] for c, f in db.fatos_do_cliente(
-                     ctx.con, state["ticket"]["_cliente_id"]).items()} if MEMORIA else None,
-                 "pedido_em": pedido_em.isoformat(timespec="seconds"),
-                 "vence_em": vence_em.isoformat(timespec="seconds")}
+    if proposto["acao"] == "devolver_cliente":
+        # H2. Não há guia, score nem prioridade: o que o analista julga é se o relato era mesmo
+        # insuficiente e se a mensagem pode ir ao cliente. Por isso a tela traz o relato.
+        pendencia = {"ferramenta": "devolver_cliente", "id_ticket": state["id_ticket"],
+                     "relato": state["texto"], "mensagem": state["texto_redigido"],
+                     "plano": state["ticket"]["plano"]}
+    else:
+        pendencia = _pendencia_do_chamado(state, ctx, proposto)
+    pendencia.update(pedido_em=pedido_em.isoformat(timespec="seconds"),
+                     vence_em=vence_em.isoformat(timespec="seconds"))
     pendencia_id = None
     if ctx.confirmador is None:            # ninguém responde na hora: entra na fila do analista
         pendencia_id = db.criar_pendencia(ctx.con, state["id_ticket"], pendencia,
@@ -526,13 +526,37 @@ def pedir_confirmacao(state, ctx):
     return {"pendencia": pendencia, "pendencia_id": pendencia_id}
 
 
+def _pendencia_do_chamado(state, ctx, proposto: dict) -> dict:
+    """H1: a abertura do chamado interno, como o analista a vê (sem as horas do pedido e do prazo)."""
+    artigo = db.buscar_artigo(ctx.con, proposto["kb_id"])
+    # A prioridade entra na tela como PREVISTA: é a regra da abertura (procedimento + reincidência)
+    # aplicada agora. A do chamado é calculada de novo na gravação, e ninguém a edita.
+    return {"ferramenta": "abrir_chamado_interno", "id_ticket": state["id_ticket"],
+            "categoria": artigo["categoria"], "resumo": state["texto_redigido"],
+            "time_destino": artigo["time_destino"], "kb_id": proposto["kb_id"],
+            "prioridade_prevista": db.prioridade_prevista(ctx.con, state["ticket"], artigo),
+            "guia_publicado_em": artigo["data_publicacao"],
+            "guia_nao_cobre": [f.strip() for f in artigo["nao_cobre"].split(";") if f.strip()],
+            "plano": state["ticket"]["plano"],
+            "escopo_do_plano": (db.ficha_do_plano(ctx.con, state["ticket"]["plano"]) or {}).get("escopo"),
+            # Memória episódica: o que o analista já decidiu sobre este guia e os últimos
+            # episódios do cliente na categoria. Só informa: o desfecho já está decidido.
+            "precedentes": db.precedentes(ctx.con, proposto["kb_id"], state["ticket"]["_cliente_id"],
+                                          artigo["categoria"]) if MEMORIA else None,
+            # Memória semântica: os fatos do ambiente do cliente confirmados por um analista.
+            "fatos_cliente": {c: f["valor"] for c, f in db.fatos_do_cliente(
+                ctx.con, state["ticket"]["_cliente_id"]).items()} if MEMORIA else None}
+
+
 def confirmar(state, ctx):
-    """⏸ H1. Só pausa e lê a resposta: nada com efeito colateral acontece antes do `interrupt`.
+    """⏸ H1 e H2. Só pausa e lê a resposta: nada com efeito colateral acontece antes do `interrupt`.
     Quem decide é o relógio antes da pessoa: resposta depois do `vence_em` é prazo vencido.
-    Aprovar EDITANDO: a resposta traz o resumo corrigido pelo analista. O original do modelo fica
-    registrado ao lado, e é o texto aprovado que o nó `gravar` escreve."""
+    Aprovar EDITANDO: a resposta traz o texto corrigido pelo analista (o resumo do chamado, no H1;
+    a mensagem ao cliente, no H2). O original do modelo fica registrado ao lado, e é o texto
+    aprovado que o nó `gravar` escreve."""
     pendencia = state["pendencia"]
-    resumo_aprovado = motivo_rejeicao = None
+    campo, chave_original, chave_aprovado = CAMPO_EDITAVEL[pendencia["ferramenta"]]
+    texto_aprovado = motivo_rejeicao = None
     if ctx.confirmador is not None:        # --auto-aprovar e testes: a resposta vem na hora
         ok, por = ctx.confirmador(pendencia)
         status, quando = ("aprovada" if ok else "rejeitada"), _agora()
@@ -544,38 +568,32 @@ def confirmar(state, ctx):
         else:
             status = {"aprovar": "aprovada", "rejeitar": "rejeitada"}[resposta["decisao"]]
         db.resolver_pendencia(ctx.con, state["pendencia_id"], status, quando, por)
-        novo = (resposta.get("resumo") or "").strip()
-        if status == "aprovada" and novo and novo != (pendencia["resumo"] or "").strip():
-            resumo_aprovado = novo         # prazo vencido ou rejeição: a edição não vale nada
+        novo = (resposta.get(campo) or "").strip()
+        if status == "aprovada" and novo and novo != (pendencia[campo] or "").strip():
+            texto_aprovado = novo          # prazo vencido ou rejeição: a edição não vale nada
         if status == "rejeitada":          # o motivo só vale numa rejeição dada no prazo
             motivo_rejeicao = resposta.get("motivo_rejeicao")
     confirmacao = {"pendencia": pendencia, "aprovado": status == "aprovada", "por": por,
-                   "status": status, "resolvido_em": quando, "editado": resumo_aprovado is not None}
-    if resumo_aprovado is not None:
-        confirmacao.update(resumo_original=pendencia["resumo"], resumo_aprovado=resumo_aprovado)
+                   "status": status, "resolvido_em": quando, "editado": texto_aprovado is not None}
+    if texto_aprovado is not None:
+        confirmacao.update({chave_original: pendencia[campo], chave_aprovado: texto_aprovado})
     if motivo_rejeicao:
         confirmacao["motivo_rejeicao"] = motivo_rejeicao
+    argumentos = ({"kb_id": pendencia["kb_id"]} if "kb_id" in pendencia
+                  else {"acao": pendencia["ferramenta"]})
     return {"confirmacao": confirmacao,
-            "passos": [_passo(state, "confirmar", {"kb_id": pendencia["kb_id"]},
+            "passos": [_passo(state, "confirmar", argumentos,
                               {"status": status, "por": por, "editado": confirmacao["editado"]})]}
 
 
 def gravar(state, ctx):
     """CÓDIGO. A única escrita de desfecho da execução. Abrir chamado é idempotente pela chave
-    ticket:kb_id; ação rejeitada ou vencida vira fila humana com as considerações (e o aviso ao
-    gestor, se o chamado seria P1), pela mesma função do laço."""
+    ticket:kb_id, e o pedido ao cliente pelo chamado (um por chamado); ação rejeitada ou vencida
+    vira fila humana com as considerações (e o aviso ao gestor, se o chamado seria P1), pela mesma
+    função do laço."""
     proposto, texto, id_ticket = state["desfecho_proposto"], state["texto_redigido"].strip(), state["id_ticket"]
     acao = proposto["acao"]
-    if acao == "abrir_chamado_interno":
-        if state["confirmacao"]["status"] == "aprovada":
-            # aprovado com edição: grava o resumo do analista, e não o do modelo
-            texto = state["confirmacao"].get("resumo_aprovado") or texto
-            resultado = db.abrir_chamado(ctx.con, state["ticket"], texto,
-                                         db.buscar_artigo(ctx.con, proposto["kb_id"]))
-            desfecho = {"acao": acao, "kb_id": proposto["kb_id"], **resultado}
-            argumentos = {"id_ticket": id_ticket, "resumo": texto, "kb_id": proposto["kb_id"]}
-            return {"desfecho": desfecho,
-                    "passos": [_passo(state, "abrir_chamado_interno", argumentos, resultado)]}
+    if acao in CAMPO_EDITAVEL and state["confirmacao"]["status"] != "aprovada":
         motivo = (MOTIVO_REJEITADA if state["confirmacao"]["status"] == "rejeitada"
                   else MOTIVO_PRAZO_VENCIDO)
         apoio = SimpleNamespace(prazo_confirmacao_min=state["prazo_confirmacao_min"],
@@ -583,6 +601,23 @@ def gravar(state, ctx):
                                 scores_kb={c["kb_id"]: c["score"] for c in state.get("candidatos") or []})
         argumentos, resultado = encaminhar_pendencia(apoio, ctx.con, state["pendencia"], motivo)
         return {"desfecho": apoio.desfecho,
+                "passos": [_passo(state, "registrar_encaminhamento", argumentos, resultado)]}
+    if acao in CAMPO_EDITAVEL:
+        # aprovado com edição: grava o texto do analista, e não o do modelo
+        texto = state["confirmacao"].get(CAMPO_EDITAVEL[acao][2]) or texto
+    if acao == "abrir_chamado_interno":
+        resultado = db.abrir_chamado(ctx.con, state["ticket"], texto,
+                                     db.buscar_artigo(ctx.con, proposto["kb_id"]))
+        desfecho = {"acao": acao, "kb_id": proposto["kb_id"], **resultado}
+        argumentos = {"id_ticket": id_ticket, "resumo": texto, "kb_id": proposto["kb_id"]}
+        return {"desfecho": desfecho,
+                "passos": [_passo(state, "abrir_chamado_interno", argumentos, resultado)]}
+    if acao == "devolver_cliente":
+        # O envio. Segunda barreira do "um pedido por chamado": a primeira é a contagem do nó
+        # `decidir`, feita antes da espera pelo analista.
+        resultado = db.registrar_pedido_cliente(ctx.con, id_ticket, texto)
+        argumentos = {"id_ticket": id_ticket, "destino": acao, "mensagem": texto}
+        return {"desfecho": {"acao": acao, "kb_id": None, **resultado},
                 "passos": [_passo(state, "registrar_encaminhamento", argumentos, resultado)]}
     kb_id = proposto["kb_id"] if acao == "anotacao_interna" else None
     resultado = db.registrar_encaminhamento(ctx.con, id_ticket, acao, texto, kb_id)
@@ -653,7 +688,7 @@ def _rota_validar(state) -> str:
     se a escrita é irreversível e pede a confirmação humana."""
     if state.get("erro_validacao"):
         return "redigir_de_novo" if state.get("tentativas_redacao", 0) < MAX_REDACOES else "encerrar"
-    if state["desfecho_proposto"]["acao"] == "abrir_chamado_interno":
+    if state["desfecho_proposto"]["acao"] in CAMPO_EDITAVEL:      # H1 e H2
         return "irreversivel"
     return "reversivel"
 
@@ -817,15 +852,17 @@ def rodar_grafo(id_ticket: str, *, client, modelo: str, con, temperatura: float 
 def retomar_grafo(id_ticket: str, decisao: str, *, client, con, por: str = "analista de suporte",
                   agora: datetime | None = None, log_dir: Path | None = None,
                   verbose: bool = True, resumo: str | None = None,
-                  motivo_rejeicao: str | None = None) -> Estado | None:
-    """Responde ao `interrupt` do H1 e deixa o grafo continuar. Mesmo contrato de agente.retomar():
-    devolve None quando não há o que fazer (nada pausado, "vencer" antes do prazo, ou resposta
-    repetida: a segunda aprovação não encontra pausa e não grava nada).
+                  motivo_rejeicao: str | None = None, mensagem: str | None = None) -> Estado | None:
+    """Responde ao `interrupt` (H1 ou H2) e deixa o grafo continuar. Mesmo contrato de
+    agente.retomar(): devolve None quando não há o que fazer (nada pausado, "vencer" antes do
+    prazo, ou resposta repetida: a segunda aprovação não encontra pausa e não grava nada).
 
-    `resumo` é a aprovação COM EDIÇÃO. Só o resumo é editável: categoria, time e prioridade vêm
-    do procedimento, e trocar o procedimento é outra ação (o caminho para ela é rejeitar). O texto
-    do analista passa pela mesma regra do texto do modelo, e é conferido ANTES de responder ao
-    `interrupt`: edição recusada levanta EdicaoRecusada e a ação continua à espera."""
+    `resumo` (H1) e `mensagem` (H2) são a aprovação COM EDIÇÃO. Só o texto é editável: categoria,
+    time e prioridade vêm do procedimento, e trocar o procedimento é outra ação (o caminho para ela
+    é rejeitar). O texto do analista passa pela mesma regra do texto do modelo (na mensagem ao
+    cliente, nenhuma informação interna), e é conferido ANTES de responder ao `interrupt`: edição
+    recusada levanta EdicaoRecusada e a ação continua à espera. O mesmo vale para o motivo da
+    rejeição, que tem de ser um dos da ação pendente (db.MOTIVOS_POR_ACAO)."""
     if decisao not in ("aprovar", "rejeitar", "vencer"):
         raise ValueError(f"decisão inválida: {decisao}")
     # O motivo é conferido antes de responder ao `interrupt`: motivo inválido não gasta a rejeição.
@@ -840,15 +877,29 @@ def retomar_grafo(id_ticket: str, decisao: str, *, client, con, por: str = "anal
         return None
     ctx = Contexto(client=client, con=con, verbose=verbose)
     resposta = {"decisao": decisao, "por": por, "quando": agora.isoformat(timespec="seconds")}
-    if resumo is not None:
+    acao = foto.values["pendencia"]["ferramenta"]
+    campo = CAMPO_EDITAVEL[acao][0]
+    for nome, corrigido in (("resumo", resumo), ("mensagem", mensagem)):
+        if corrigido is None:
+            continue
+        rotulo = {"resumo": "resumo corrigido", "mensagem": "mensagem corrigida"}[nome]
         if decisao != "aprovar":
-            raise EdicaoRecusada("só a aprovação aceita um resumo corrigido")
-        erro = _erro_do_texto(con, "abrir_chamado_interno", resumo)
+            raise EdicaoRecusada(f"só a aprovação aceita {'um ' if nome == 'resumo' else 'uma '}{rotulo}")
+        if nome != campo:
+            raise EdicaoRecusada(f"a ação pendente é {acao}: o texto que o analista pode corrigir "
+                                 f"é o campo '{campo}', e não '{nome}'")
+        erro = _erro_do_texto(con, acao, corrigido)
         if erro:
-            raise EdicaoRecusada(f"resumo corrigido recusado: {erro['erro']} "
-                                 f"(esperado: {erro['esperado']})")
-        resposta["resumo"] = resumo.strip()
+            achados = erro.get("recebido")
+            detalhe = (f"termos encontrados: {', '.join(achados)}; " if isinstance(achados, list) else "")
+            verbo = "recusado" if nome == "resumo" else "recusada"
+            raise EdicaoRecusada(f"{rotulo} {verbo}: {erro['erro']} "
+                                 f"({detalhe}esperado: {erro['esperado']})")
+        resposta[campo] = corrigido.strip()
     if motivo_rejeicao is not None:
+        if motivo_rejeicao not in db.MOTIVOS_POR_ACAO[acao]:
+            raise ValueError(f"motivo de rejeição '{motivo_rejeicao}' não vale para {acao} "
+                             f"(aceitos: {', '.join(db.MOTIVOS_POR_ACAO[acao])})")
         resposta["motivo_rejeicao"] = motivo_rejeicao
     GRAFO.invoke(Command(resume=resposta), _config(id_ticket), context=ctx)
     return _concluir(id_ticket, log_dir, con)

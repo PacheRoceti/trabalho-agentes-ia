@@ -1,0 +1,196 @@
+{
+  "execucao_id": "TKT-0005-18669",
+  "id_ticket": "TKT-0005",
+  "executado_em": "2026-10-12T12:24:29-03:00",
+  "commit": "e1f76e0 + alterações locais",
+  "entrada": "Meu servidor não está funcionando direito.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + ressalva-v3.md + redigir-v1.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "devolver_cliente",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "devolver_cliente",
+    "enviado_em": "2026-10-12T12:24:40-03:00",
+    "ja_existia": false
+  },
+  "pendencia": null,
+  "confirmacoes": [
+    {
+      "pendencia": {
+        "ferramenta": "devolver_cliente",
+        "id_ticket": "TKT-0005",
+        "relato": "Meu servidor não está funcionando direito.",
+        "mensagem": "O servidor do plano Hospedagem Start não está apresentando o funcionamento esperado. O problema ocorre desde quando foi relatado.",
+        "plano": "Hospedagem Start",
+        "pedido_em": "2026-10-12T12:24:35-03:00",
+        "vence_em": "2026-10-12T12:44:35-03:00"
+      },
+      "aprovado": true,
+      "por": "analista de suporte (terminal)",
+      "status": "aprovada",
+      "resolvido_em": "2026-10-12T12:24:40-03:00",
+      "editado": true,
+      "mensagem_original": "O servidor do plano Hospedagem Start não está apresentando o funcionamento esperado. O problema ocorre desde quando foi relatado.",
+      "mensagem_aprovada": "Para identificarmos o problema, informe qual site ou serviço está afetado, a mensagem de erro que aparece e desde quando isso ocorre."
+    }
+  ],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1346,
+  "tokens_saida": 98,
+  "custo_usd": 0.000217,
+  "scores_kb": {},
+  "saida": {
+    "id_ticket": "TKT-0005",
+    "executado_em": "2026-10-12T12:24:29-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "devolver_cliente",
+      "texto": "Para identificarmos o problema, informe qual site ou serviço está afetado, a mensagem de erro que aparece e desde quando isso ocorre.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "registro_do_chamado",
+      "kb_id": null,
+      "score": null,
+      "registros": [
+        "TKT-0005"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "decidir",
+        "redigir",
+        "confirmar",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o texto do chamado não informa o serviço afetado nem o sintoma; o pedido de informação ao cliente foi registrado"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0005"
+      },
+      "resultado": {
+        "id": "TKT-0005",
+        "aberto_em": "2026-09-21 10:31",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Delta Restaurantes",
+        "plano": "Hospedagem Start",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "insuficiente",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [],
+        "justificativa": "O texto não especifica qual serviço ou componente está afetado nem descreve sintomas claros para triagem técnica."
+      },
+      "erro": null,
+      "ms": 1488
+    },
+    {
+      "indice": 2,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "devolver_cliente",
+        "kb_id": null,
+        "motivo": "informacao_insuficiente"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 3,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "devolver_cliente"
+      },
+      "resultado": {
+        "texto": "O servidor do plano Hospedagem Start não está apresentando o funcionamento esperado. O problema ocorre desde quando foi relatado."
+      },
+      "erro": null,
+      "ms": 4315
+    },
+    {
+      "indice": 4,
+      "ferramenta": "confirmar",
+      "argumentos": {
+        "acao": "devolver_cliente"
+      },
+      "resultado": {
+        "status": "aprovada",
+        "por": "analista de suporte (terminal)",
+        "editado": true
+      },
+      "erro": null,
+      "ms": 14
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0005",
+        "destino": "devolver_cliente",
+        "mensagem": "Para identificarmos o problema, informe qual site ou serviço está afetado, a mensagem de erro que aparece e desde quando isso ocorre."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "devolver_cliente",
+        "enviado_em": "2026-10-12T12:24:40-03:00",
+        "ja_existia": false
+      },
+      "erro": null,
+      "ms": 11
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "insuficiente",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "devolver_cliente",
+    "kb_id": null,
+    "motivo": "informacao_insuficiente"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 0,
+  "episodio": {
+    "ticket_externo": "TKT-0005",
+    "cliente_id": "CLI-04",
+    "classe": "insuficiente",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "devolver_cliente",
+    "desfecho": "devolver_cliente",
+    "motivo": "informacao_insuficiente",
+    "veredito": "editado",
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0005: classe insuficiente; sem guia; proposto devolver_cliente; gravado devolver_cliente; analista: editado; término respondeu",
+    "criado_em": "2026-10-12T12:24:40-03:00",
+    "id": 1
+  },
+  "segundos_gastos": 5.856
+}

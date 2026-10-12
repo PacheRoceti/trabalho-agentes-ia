@@ -377,7 +377,8 @@ class EdicaoRecusada(Exception):
 def retomar(id_ticket: str, decisao: str, *, client, con, por: str = "analista de suporte",
             agora: datetime | None = None, orcamento: Orcamento | None = None,
             log_dir: Path | None = None, verbose: bool = True,
-            resumo: str | None = None, motivo_rejeicao: str | None = None) -> Estado | None:
+            resumo: str | None = None, motivo_rejeicao: str | None = None,
+            mensagem: str | None = None) -> Estado | None:
     """Conclui a ação irreversível que ficou à espera do analista e continua a execução pausada.
 
     `decisao` é "aprovar", "rejeitar" ou "vencer" (só aplica o prazo, sem resposta de ninguém).
@@ -391,7 +392,8 @@ def retomar(id_ticket: str, decisao: str, *, client, con, por: str = "analista d
     prazo, ou pendência que outra chamada já resolveu (a segunda aprovação não repete nada).
 
     `resumo` é a aprovação COM EDIÇÃO: o analista corrige o resumo do chamado interno antes de
-    deixar seguir. Só o grafo a oferece; no laço ela é recusada (EdicaoRecusada)."""
+    deixar seguir. `mensagem` é o mesmo para o pedido de informação ao cliente (H2). Só o grafo
+    as oferece; no laço elas são recusadas (EdicaoRecusada), e o laço nem pausa no pedido."""
     if decisao not in ("aprovar", "rejeitar", "vencer"):
         raise ValueError(f"decisão inválida: {decisao}")
     registros = db.pendencias_aguardando(con, id_ticket)
@@ -405,7 +407,10 @@ def retomar(id_ticket: str, decisao: str, *, client, con, por: str = "analista d
         pasta = registro["checkpoint"].get("log_dir")
         return retomar_grafo(id_ticket, decisao, client=client, con=con, por=por, agora=agora,
                              log_dir=Path(pasta) if pasta else log_dir, verbose=verbose,
-                             resumo=resumo, motivo_rejeicao=motivo_rejeicao)
+                             resumo=resumo, motivo_rejeicao=motivo_rejeicao, mensagem=mensagem)
+    if mensagem is not None:
+        raise EdicaoRecusada("a confirmação do pedido ao cliente existe só no grafo; esta ação foi "
+                             "pausada pelo laço (--laco), que só pausa na abertura de chamado.")
     if motivo_rejeicao is not None:
         raise EdicaoRecusada("o motivo da rejeição é registrado só no grafo; esta ação foi pausada "
                              "pelo laço (--laco). Rejeite sem --motivo.")

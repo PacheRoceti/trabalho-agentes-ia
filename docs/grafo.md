@@ -7,8 +7,11 @@
 > [`arquitetura.md`](arquitetura.md) §9.
 >
 > **O que foi medido:** três execuções dos 8 casos com o modelo real, 8 de 8 no verificador nas
-> três, e uma pausa real no H1, retomada por outro processo (§6). O que é do código está provado por 39 testes offline
+> três, e uma pausa real no H1, retomada por outro processo (§6). O que é do código está provado por 70 testes offline
 > (`tests/test_grafo.py`), com modelo roteirizado.
+>
+> **12/10/2026:** o pedido de informação ao cliente passou a esperar o analista (H2), no mesmo nó
+> `confirmar`, sem nó nem aresta novos (§6.3). A saída de `conferir_grafo.py` não mudou.
 >
 > **O grafo é o caminho padrão do `main.py`** desde 10/10/2026, e grava em `logs/grafo/`. O laço
 > da Parte 1 (`src/agente.py`) roda com `--laco` e grava em `logs/`, para os dois poderem ser
@@ -80,17 +83,18 @@ START
   ├─ "redigir_de_novo"  reprovado, 1ª vez ─────► [redigir]
   ├─ "encerrar"         reprovado, 2ª vez ─────► [finalizar]
   ├─ "reversivel" ─────────────────────────────► [gravar]
-  └─ "irreversivel"     abrir_chamado_interno
+  └─ "irreversivel"     abrir_chamado_interno (H1) ou devolver_cliente (H2)
         ▼
 [pedir_confirmacao]  código   monta a ação, marca pedido_em e vence_em (20 min), grava em `pendencias`
   │
   ▼
-[confirmar]          ⏸ H1     interrupt: espera o analista de suporte
+[confirmar]          ⏸ H1 H2  interrupt: espera o analista de suporte
   │                           decide: o relógio, depois a pessoa → aprovada · rejeitada · vencida
   ▼
-[gravar]             código   aprovada → abre o chamado interno (chave ticket:kb_id)
+[gravar]             código   aprovada, H1 → abre o chamado interno (chave ticket:kb_id)
+  │                           aprovada, H2 → registra o pedido como enviado (um por chamado)
   │                           rejeitada ou vencida → fila_humana com as considerações do agente
-  │                           vencida, e o chamado seria P1 → aviso ao gestor
+  │                           vencida, e o chamado seria P1 → aviso ao gestor (só no H1)
   │                           desfecho reversível → uma linha em `encaminhamentos`
   ▼
 [finalizar]          código   término, motivo e saída validada
@@ -111,8 +115,9 @@ Fora dos nós:
 - **Entrou o nó `pedir_confirmacao`.** O nó que chama `interrupt` roda de novo, desde o começo,
   na retomada. A hora do pedido e a linha em `pendencias` não podem ser refeitas, então ficam num
   nó anterior, que roda uma vez.
-- **Saiu o nó `aguardar_cliente`, e o `confirmar` atende só o H1.** A confirmação do pedido ao
-  cliente (H2) e a espera pela resposta dele (H3) não foram implementadas (`humano.md` §7).
+- **Saiu o nó `aguardar_cliente`.** A espera pela resposta do cliente (H3) não foi implementada
+  (`humano.md` §7). O `confirmar` atendia só o H1 até 12/10/2026; hoje atende também a
+  confirmação do pedido ao cliente (H2), como a proposta previa (§6.3).
 - **A triagem escolhe os termos de busca.** A busca é por palavra, e o relato inteiro dilui o
   score. Era uma das perguntas em aberto.
 
@@ -130,7 +135,7 @@ Fora dos nós:
 | `validar` | confere o texto redigido | não | validações de `src/ferramentas.py` |
 | `pedir_confirmacao` | monta a ação como o analista vai vê-la, marca o prazo e grava em `pendencias` | não | parte de `abrir_chamado_interno` |
 | `confirmar` | pausa com `interrupt` e lê a resposta | não | `Estado.confirmar` e `retomar`, em `src/agente.py` |
-| `gravar` | escreve o desfecho no banco | não | `abrir_chamado`, `registrar_encaminhamento` (`src/db.py`) e `encaminhar_pendencia` (`src/ferramentas.py`) |
+| `gravar` | escreve o desfecho no banco | não | `abrir_chamado`, `registrar_encaminhamento`, `registrar_pedido_cliente` (`src/db.py`; a última é só do grafo) e `encaminhar_pendencia` (`src/ferramentas.py`) |
 | `finalizar` | fixa término e motivo e valida a saída | não | bloco `finally` do laço e `montar_saida` |
 
 ### 1.2 As arestas condicionais, e quem decide cada uma (§6.3)
@@ -366,7 +371,9 @@ Limites desta medição:
 - **Aprovação automática nas três rodadas.** Com `--auto-aprovar` o nó `confirmar` recebe a
   resposta na hora, sem `interrupt`. A pausa foi medida à parte, logo abaixo.
 - **A redação não tem verificador.** O que se confere é o desfecho gravado, não o texto do resumo
-  nem o da mensagem.
+  nem o da mensagem. Isso esconde um defeito medido: nas três rodadas, a mensagem gravada para o
+  cliente no `TKT-0005` repete a queixa e não pergunta nada, e o caso passa no verificador
+  (`humano.md` §2.4).
 
 ### 6.1 A pausa e a retomada, com o modelo real
 
@@ -399,6 +406,25 @@ mesma aprovação, enviada de novo, não encontrou pausa. A edição não acresc
 resumo vai no valor do `Command(resume=...)`, o nó `confirmar` o registra em `confirmacao`, e o
 nó `gravar` o escreve. A saída de `conferir_grafo.py` não mudou. Detalhe em `humano.md` §2.1 e §5.
 
+### 6.3 A pausa do pedido ao cliente (H2), com o modelo real
+
+Em `logs/grafo-h2/` (12/10/2026, commit `e1f76e0` mais as alterações locais do H2): o `TKT-0005`
+pausou em `confirmar` com 4 passos, 2 chamadas ao modelo e 1.444 tokens, e nada gravado; uma
+edição com informação interna e um motivo de rejeição que é do H1 foram recusados antes de
+responder ao `interrupt`; a aprovação com a mensagem corrigida gravou o pedido com o texto do
+analista, com as mesmas 2 chamadas e 1.444 tokens; e a mesma aprovação, enviada de novo, não
+encontrou pausa.
+
+O que mudou no grafo foi uma linha de rota: `_rota_validar` devolve `irreversivel` também para
+`devolver_cliente`. Os nós `pedir_confirmacao`, `confirmar` e `gravar` passaram a tratar as duas
+ações (`CAMPO_EDITAVEL`, em `src/grafo.py`), e a rota do pedido ao cliente ganhou dois superpassos:
+o caminho mais longo do grafo continua sendo o técnico, com 14. Detalhe, tela e limites em
+`humano.md` §2.4.
+
+Efeito sobre as rodadas de `--todos --auto-aprovar`: o desfecho do `TKT-0005` é o mesmo, mas a
+trajetória ganha o passo `confirmar`. Os logs de `logs/grafo/`, `grafo-rodada-2/` e
+`grafo-rodada-3/` são anteriores e **não foram refeitos**: neles o `TKT-0005` tem um passo a menos.
+
 ## 7. Limites do que foi implementado
 
 - **A fila do analista continua sendo a tabela `pendencias`.** O `interrupt` guarda a execução; a
@@ -407,8 +433,11 @@ nó `gravar` o escreve. A saída de `conferir_grafo.py` não mudou. Detalhe em `
 - **Uma execução nova apaga o checkpoint anterior do mesmo chamado.** O thread é o id do chamado,
   e não há histórico de execuções no checkpointer; o histórico é o log.
 - **`gravar` não é idempotente para os encaminhamentos.** Abrir chamado tem a chave
-  `ticket:kb_id`. Um encaminhamento gravado duas vezes criaria duas linhas; o que impede isso
-  hoje é o nó rodar uma vez, e não uma chave.
+  `ticket:kb_id`, e o pedido ao cliente é idempotente pelo chamado
+  (`db.registrar_pedido_cliente`). Uma anotação ou um encaminhamento a uma fila gravado duas
+  vezes criaria duas linhas; o que impede isso hoje é o nó rodar uma vez, e não uma chave.
+- **O H2 não envia nada.** Aprovado o pedido, o que acontece é uma linha em `encaminhamentos`
+  com `enviado_em`: o sistema simulado não tem canal de mensagem (`humano.md` §2.4).
 
 ## 8. O que falta para este item
 
@@ -416,4 +445,5 @@ nó `gravar` o escreve. A saída de `conferir_grafo.py` não mudou. Detalhe em `
 - Exercitar a rejeição e o prazo vencido com o modelo real, e com log (§6.1).
 - Contar as linhas das quatro frentes do §4.
 - Fazer a demonstração do campo sem reducer (§3.2).
-- Implementar H2 e H3 (`humano.md` §7), e com eles o nó `aguardar_cliente`.
+- Implementar o H3 (`humano.md` §7), e com ele o nó `aguardar_cliente`. O H2 existe desde
+  12/10/2026 (§6.3).

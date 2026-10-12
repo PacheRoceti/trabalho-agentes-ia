@@ -84,25 +84,29 @@ GRAFO   src/grafo.py · objeto GRAFO, compilado uma vez · thread_id = id do cha
       ├─ não, 1ª vez ──► volta a [redigir], com o erro            (o único retorno do grafo)
       ├─ não, 2ª vez ──────────────────────────────────────────────────────────────► ●T3
       ├─ sim, desfecho reversível ─────────────────────────────────────► [gravar]
-      ▼ sim, abrir_chamado_interno: IRREVERSÍVEL
+      ▼ sim, abrir_chamado_interno ou devolver_cliente: IRREVERSÍVEL
   [pedir_confirmacao]  [C] monta a ação como o analista vai vê-la, marca pedido_em e
       │                    vence_em (20 min) e grava a linha em `pendencias`
       ▼
-  [confirmar]          [H1] interrupt: o ANALISTA DE SUPORTE aprova ou rejeita.
+  [confirmar]          [H1] [H2] interrupt: o ANALISTA DE SUPORTE aprova ou rejeita.
+      │                     H1 = abrir chamado interno; H2 = enviar o pedido ao cliente.
       │                     Enquanto espera, o processo termina ──────────────────► ●T4
       │                     e o estado fica no checkpoint (dados/checkpoints.db).
       │                     A resposta chega por outro processo e o grafo continua daqui:
-      │                       aprova no prazo        → aprovada (pode corrigir o resumo)
+      │                       aprova no prazo        → aprovada (pode corrigir o texto:
+      │                                                o resumo, no H1; a mensagem, no H2)
       │                       rejeita no prazo       → rejeitada
       │                       sem resposta em 20 min → vencida (o relógio vale antes da pessoa)
       ▼
   [gravar]             [C] a ÚNICA escrita de desfecho da execução                  escrita
-      │                    aprovada             → abre o chamado interno; categoria, time e
+      │                    aprovada, H1         → abre o chamado interno; categoria, time e
       │                                           prioridade vêm do procedimento; reincidência
       │                                           em 30 dias sobe um nível; a chave
       │                                           ticket:kb_id impede duplicata
+      │                    aprovada, H2         → registra o pedido como enviado ao cliente
+      │                                           (um por chamado; não há canal de mensagem)
       │                    rejeitada ou vencida → fila_humana, com as considerações do agente
-      │                    vencida, e seria P1  → grava também o aviso ao gestor
+      │                    vencida, e seria P1  → grava também o aviso ao gestor (só no H1)
       │                    desfecho reversível  → uma linha em `encaminhamentos`
       ▼
   [finalizar]          [C] término, motivo e a saída validada (src/saida.py) ──────► ●T1
@@ -155,15 +159,18 @@ divergência, termos, texto) e o código faz a leitura e a escrita.
 | consultar o chamado (`db.buscar_ticket`) | Lê o registro do chamado: log anexado, plano e histórico de chamados internos do cliente | nó `consultar`, em toda execução | leitura | não se aplica |
 | buscar na base (`vetorial.buscar`; `db.buscar_kb` é a busca por palavra, que ela usa e que o laço mantém) | Busca procedimentos por vetor e por palavras e devolve até 3 artigos, cada um com score de 0 a 1 e, quando o procedimento não cobre o caso relatado, uma `ressalva` | nó `buscar`, só na rota técnica | leitura | não se aplica |
 | abrir chamado interno (`db.abrir_chamado`) | Abre um chamado para o time responsável. O texto é o que o modelo redigiu; o `kb_id` vem da busca; categoria, time e prioridade são calculados pelo código | nó `gravar`, depois da aprovação no [H1] | escrita | **não**: não existe operação para apagar ou encerrar um chamado. A chave `ticket:kb_id` evita duplicata, mas não desfaz a abertura |
-| registrar encaminhamento (`db.registrar_encaminhamento`) | Registra um dos quatro desfechos que não abrem chamado: `fila_comercial`, `devolver_cliente`, `anotacao_interna`, `fila_humana` | nó `gravar` | escrita | sim: é uma linha em fila ou anotação, que uma pessoa lê e pode desconsiderar |
+| registrar encaminhamento (`db.registrar_encaminhamento`) | Registra um dos três desfechos internos que não abrem chamado: `fila_comercial`, `anotacao_interna`, `fila_humana` | nó `gravar` | escrita | sim: é uma linha em fila ou anotação, que uma pessoa lê e pode desconsiderar |
+| enviar o pedido ao cliente (`db.registrar_pedido_cliente`) | Registra o `devolver_cliente` com a hora do envio (`enviado_em`). Um por chamado: repetir devolve o que já existe | nó `gravar`, depois da aprovação no [H2] | escrita | **não**, pela regra do domínio: a mensagem chega ao cliente. No sistema simulado é uma linha, porque não há canal de mensagem |
 
 Não existe operação para encerrar chamado, mudar prioridade ou executar correção. A regra do
 domínio ("o agente nunca executa, nunca fecha, nunca reclassifica") é garantida pela ausência do
 código que faria isso, e não por um pedido no prompt.
 
-**`devolver_cliente` é reversível só porque ainda não envia nada.** Hoje a operação grava o pedido
-na tabela e a execução termina. Quando a mensagem passar a chegar ao cliente, a escrita deixa de
-ter volta e passa a exigir a confirmação do analista (`humano.md`, H2).
+**`devolver_cliente` passou a exigir a confirmação do analista (H2, 12/10/2026).** Até então a
+operação gravava o pedido direto, e era tratada como reversível porque não enviava nada. O envio
+continua sendo só o registro, com `enviado_em`: o que mudou é que ele acontece depois da
+aprovação, e por uma função própria, onde um canal de mensagem entraria (`humano.md` §2.4). No
+laço da Parte 1 o pedido continua gravado sem confirmação.
 
 **Onde foram parar os portões do laço.** No laço, seis portões em `src/ferramentas.py` recusavam
 a chamada errada e devolviam o erro ao modelo. No grafo as mesmas regras continuam, em outro
@@ -330,7 +337,9 @@ antes de virar ●T3.
 
 ## 7. O humano
 
-**Um único ponto em que o sistema para e espera: [H1].**
+**Um único nó em que o sistema para e espera, `confirmar`, para duas ações: abrir chamado
+interno [H1] e enviar o pedido de informação ao cliente [H2].** A tabela descreve o H1; o que
+muda no H2 vem logo depois dela.
 
 | | |
 |---|---|
@@ -343,6 +352,13 @@ antes de virar ●T3.
 | Se aprova no prazo | `gravar` abre o chamado e `finalizar` conclui; término ●T1 |
 | Se rejeita no prazo | o chamado interno **não** é aberto; `gravar` registra `fila_humana` com as considerações do agente (motivo `acao_rejeitada`); término ●T1 |
 | Se não responde em 20 minutos | o chamado interno **não** é aberto; `gravar` registra `fila_humana` com as considerações do agente (motivo `confirmacao_nao_recebida`); se o chamado seria **P1**, grava também o aviso ao gestor; término ●T1 |
+
+**O que muda no [H2]** (12/10/2026; `humano.md` §2.4): a tela traz o relato do cliente e a
+mensagem redigida, sem guia, score nem prioridade; o texto editável é a mensagem
+(`--aprovar TKT-0000 --mensagem "texto corrigido"`), que passa pela regra do pedido ao cliente
+(nenhuma informação interna); aprovado, `gravar` registra o pedido como enviado; rejeitado ou
+vencido, registra `fila_humana` com a mensagem redigida, e o pedido único do chamado não é gasto;
+o gestor não é avisado, porque não há prioridade prevista.
 
 **Como a pausa funciona.** São dois nós. `pedir_confirmacao` monta a ação, marca `pedido_em` e
 `vence_em` e grava a linha na tabela `pendencias`. `confirmar` chama `interrupt`. A separação
@@ -411,28 +427,30 @@ Limites do que foi implementado:
   vencidas são encaminhadas no começo do próximo comando do `main.py` (`vencer_pendencias`). Se
   ninguém rodar nada, o chamado fica na pausa até alguém rodar: a regra garante que a ação
   vencida nunca é executada, mas não garante que a fila humana a receba no minuto 20.
-- **Só o [H1] existe.** A confirmação do pedido ao cliente (H2) e a espera pela resposta dele
-  (H3) não foram implementadas (`humano.md` §7).
+- **O [H3] não existe.** A espera pela resposta do cliente não foi implementada
+  (`humano.md` §7): aprovado o pedido, a execução termina em ●T1.
+- **O [H2] não envia nada.** O sistema simulado não tem canal de mensagem: aprovar o pedido grava
+  uma linha com `enviado_em`. Não há falha de entrega nem reenvio (`humano.md` §2.4).
 - **A pausa fica em dois arquivos.** A fila do analista é a tabela `pendencias`
   (`dados/tickets.db`), e o estado da execução é o checkpoint (`dados/checkpoints.db`).
   `--reset` e `--todos` recriam o primeiro e não o segundo; por isso `--todos` exige
   `--auto-aprovar`.
-- **A edição é só do resumo, e pela linha de comando.** O analista redigita o texto inteiro; não
-  há editor que parta do resumo do modelo. E não se pede o motivo da rejeição.
+- **A edição é só do texto (o resumo ou a mensagem), e pela linha de comando.** O analista
+  redigita o texto inteiro; não há editor que parta do texto do modelo.
 
 `--auto-aprovar` troca o analista por uma aprovação automática e existe só para a demonstração:
 com ele o nó `confirmar` recebe a resposta na hora, sem `interrupt`. As três rodadas de 8 casos
 foram geradas assim.
 
-**Onde uma pessoa entra sem que o sistema espere por ela.** Os quatro destinos de
-`registrar_encaminhamento` entregam o chamado a alguém, mas a execução termina antes:
+**Onde uma pessoa entra sem que o sistema espere por ela.** Os destinos gravados em
+`encaminhamentos` entregam o chamado a alguém, mas a execução termina antes:
 
 | Destino | Quem lê |
 |---|---|
 | `fila_humana` | o analista de suporte, que decide o que fazer com o chamado |
 | `anotacao_interna` | o analista de suporte, que valida e executa a correção sugerida |
 | `fila_comercial` | o time comercial |
-| `devolver_cliente` | hoje ninguém: o pedido fica gravado e não é enviado. O desenho prevê um segundo ponto de parada, com a confirmação do analista antes do envio (no mesmo prazo de 20 minutos) e o prazo de 3 dias úteis para a resposta do cliente, depois do qual o chamado vai para a `fila_humana` (`case.md` §2.1) |
+| `devolver_cliente` | o analista de suporte confirma antes ([H2]); depois disso, hoje ninguém: o pedido fica registrado como enviado, mas não há canal que o leve ao cliente, nem espera pela resposta. O desenho prevê o prazo de 3 dias úteis para a resposta do cliente, depois do qual o chamado vai para a `fila_humana` (`case.md` §2.1) |
 
 ## 8. O nível de autonomia (§3.3)
 
@@ -614,17 +632,18 @@ START
   ├─ "redigir_de_novo"  reprovado, 1ª vez ─────► [redigir]
   ├─ "encerrar"         reprovado, 2ª vez ─────► [finalizar]
   ├─ "reversivel" ─────────────────────────────► [gravar]
-  └─ "irreversivel"     abrir_chamado_interno
+  └─ "irreversivel"     abrir_chamado_interno (H1) ou devolver_cliente (H2)
         ▼
 [pedir_confirmacao]  código   monta a ação, marca pedido_em e vence_em (20 min), grava em `pendencias`
   │
   ▼
-[confirmar]          ⏸ H1     interrupt: espera o analista de suporte
+[confirmar]          ⏸ H1 H2  interrupt: espera o analista de suporte
   │                           decide: o relógio, depois a pessoa → aprovada · rejeitada · vencida
   ▼
-[gravar]             código   aprovada → abre o chamado interno (chave ticket:kb_id)
+[gravar]             código   aprovada, H1 → abre o chamado interno (chave ticket:kb_id)
+  │                           aprovada, H2 → registra o pedido como enviado (um por chamado)
   │                           rejeitada ou vencida → fila_humana com as considerações do agente
-  │                           vencida, e o chamado seria P1 → aviso ao gestor
+  │                           vencida, e o chamado seria P1 → aviso ao gestor (só no H1)
   │                           desfecho reversível → uma linha em `encaminhamentos`
   ▼
 [finalizar]          código   término, motivo e saída validada
@@ -795,14 +814,17 @@ O desenho foi corrigido depois de escrever o código. A proposta anterior não t
 
 ### 9.4 Os pontos de parada, no grafo (§8.1)
 
-O grafo tem **um** ponto de parada, o [H1], no nó `confirmar`:
+O grafo tem **um** nó que para, o `confirmar`, e ele atende dois pontos de parada, o [H1] e,
+desde 12/10/2026, o [H2]:
 
 | | |
 |---|---|
-| Critério | ação irreversível (abrir chamado interno) |
+| Critério | ação irreversível: abrir chamado interno (H1) e enviar o pedido de informação ao cliente (H2) |
 | Como para | `interrupt`, com o estado no checkpointer em SQLite (`dados/checkpoints.db`), endereçado pelo `thread_id` = id do chamado |
 | Como continua | `Command(resume=...)`, por `retomar_grafo()`. Os comandos são os mesmos do laço: `--aprovar`, `--rejeitar` e o vencimento do prazo, que reconhecem pela pendência de qual dos dois caminhos é a pausa |
-| Regras | as do §7: 20 minutos, o relógio antes da pessoa, rejeição e prazo vencido na fila humana, aviso ao gestor no P1 vencido |
+| Regras | as do §7: 20 minutos, o relógio antes da pessoa, rejeição e prazo vencido na fila humana, aviso ao gestor no P1 vencido (só no H1) |
 
-A confirmação do pedido ao cliente (H2) e a espera pela resposta dele (H3) não existem no grafo
-nem no laço (`humano.md` §7).
+O H2 não mudou a saída de `conferir_grafo.py` (§9.2): a aresta `validar → pedir_confirmacao` é a
+mesma, com a chave `irreversivel`; mudou a regra que devolve a chave (`_rota_validar`). A espera
+pela resposta do cliente (H3) não existe no grafo nem no laço, e o H2 não existe no laço
+(`humano.md` §7).

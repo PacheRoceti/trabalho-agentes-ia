@@ -86,7 +86,8 @@ CREATE TABLE encaminhamentos (
     destino         TEXT NOT NULL,
     mensagem        TEXT NOT NULL,
     kb_id           TEXT,
-    criado_em       TEXT NOT NULL
+    criado_em       TEXT NOT NULL,
+    enviado_em      TEXT                   -- só no pedido ao cliente confirmado pelo analista (H2 do grafo)
 );
 
 -- ---------------------------------------------------------------- clientes

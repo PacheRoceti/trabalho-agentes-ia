@@ -215,12 +215,26 @@ def encaminhar_pendencia(estado, con, acao: dict, motivo: str) -> tuple[dict, di
     encaminha o chamado à fila humana com as considerações do agente: ação proposta, prioridade
     que o chamado teria, procedimento, score e texto redigido. No prazo vencido de um chamado que
     seria P1, grava também o aviso ao gestor.
+    A ação pode ser também o pedido de informação ao cliente (H2, só no grafo): aí as considerações
+    são a mensagem redigida, e NÃO há aviso ao gestor, porque um chamado que a triagem não
+    conseguiu classificar não tem prioridade prevista (decisão de 12/10/2026).
     Devolve os argumentos e o resultado da escrita, para a trajetória."""
     prazo = f"{estado.prazo_confirmacao_min:g} minutos"
     if motivo == MOTIVO_PRAZO_VENCIDO:
         abertura, por = f"Confirmação não recebida em {prazo}.", f"código: prazo de {prazo} vencido"
     else:
         abertura, por = "Ação rejeitada pelo analista de suporte.", "código: ação rejeitada pelo analista"
+    if acao.get("ferramenta") == "devolver_cliente":
+        mensagem = (
+            f"{abertura} Ação proposta pelo agente e NÃO executada: "
+            f"enviar ao cliente o pedido de informação (o único permitido neste chamado). "
+            f"Sustentação: a triagem não encontrou no relato o serviço afetado nem o sintoma. "
+            f"Mensagem redigida: {acao['mensagem'].strip()}")
+        resultado = db.registrar_encaminhamento(con, acao["id_ticket"], "fila_humana", mensagem, None)
+        estado.desfecho = {"acao": "fila_humana", "kb_id": None, **resultado, "motivo": motivo}
+        argumentos = {"id_ticket": acao["id_ticket"], "destino": "fila_humana", "mensagem": mensagem,
+                      "motivo": motivo}
+        return argumentos, {**resultado, "registrado_por": por}
     prioridade = db.prioridade_prevista(con, estado.ticket, db.buscar_artigo(con, acao["kb_id"]))
     mensagem = (
         f"{abertura} Ação proposta pelo agente e NÃO executada: "

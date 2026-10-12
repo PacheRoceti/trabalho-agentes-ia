@@ -17,6 +17,11 @@
                                                     aprova EDITANDO: o chamado é aberto com o resumo
                                                     do analista (só o resumo é editável; só no grafo)
     python src/main.py --rejeitar TKT-0007          o chamado interno não é aberto
+  Enviar o pedido de informação ao cliente também é irreversível, e no grafo pausa do mesmo jeito:
+    python src/main.py --aprovar TKT-0005           registra o pedido como enviado ao cliente
+    python src/main.py --aprovar TKT-0005 --mensagem "texto corrigido"
+                                                    aprova EDITANDO a mensagem (sem informação interna)
+    python src/main.py --rejeitar TKT-0005 --motivo informacao_suficiente
   Rejeitada a ação ou vencido o prazo, o chamado vai para a fila humana com as considerações do
   agente. No prazo vencido de um chamado que seria P1, o gestor também é avisado (tabela
   avisos_gestor). O prazo é aplicado no começo de qualquer comando que use o agente: não há
@@ -81,6 +86,16 @@ def mostrar_pendencia(pendencia: dict):
     resta = (datetime.fromisoformat(pendencia["vence_em"]) - datetime.now().astimezone()).total_seconds()
     print(f"     faltam: {max(resta, 0) / 60:.0f} min" if resta > 0 else "     PRAZO VENCIDO")
     id_ticket = pendencia["id_ticket"]
+    if pendencia.get("ferramenta") == "devolver_cliente":      # H2: o pedido de informação ao cliente
+        print("     se aprovada: o pedido é registrado como enviado ao cliente e não tem volta (o sistema "
+              "simulado não tem canal de mensagem). É o único pedido de informação permitido neste chamado")
+        print("     rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta")
+        print(f"     responder: python src/main.py --aprovar {id_ticket}   |   --rejeitar {id_ticket}")
+        print(f"     aprovar corrigindo a mensagem: python src/main.py --aprovar {id_ticket} "
+              f"--mensagem \"texto corrigido\"")
+        print(f"     rejeitar dizendo por quê: python src/main.py --rejeitar {id_ticket} --motivo "
+              + " | ".join(db.MOTIVOS_POR_ACAO["devolver_cliente"]))
+        return
     prioridade = pendencia.get("prioridade_prevista")
     if pendencia.get("guia_nao_cobre"):
         print(f"     ATENÇÃO: o guia {pendencia['kb_id']} declara que NÃO cobre: "
@@ -191,13 +206,19 @@ def main():
     ap.add_argument("--rejeitar", metavar="TICKET", help="o analista rejeita a ação pendente do chamado")
     ap.add_argument("--motivo", choices=list(db.MOTIVOS_REJEICAO),
                     help="com --rejeitar: por que o analista rejeitou. Vai para a memória episódica "
-                         "e para o relatório --candidatas (só no grafo). Opcional")
+                         "e para o relatório --candidatas (só no grafo). Opcional. Chamado interno: "
+                         "guia_errado, caso_fora_do_guia, resumo_ruim; pedido ao cliente: "
+                         "mensagem_ruim, informacao_suficiente; outro vale nos dois")
     ap.add_argument("--candidatas", action="store_true",
                     help="lista os padrões de correção do analista que se repetiram (memória "
                          "procedural: material para uma pessoa escrever uma regra). Só lê; não chama a API")
     ap.add_argument("--resumo", metavar="TEXTO",
                     help="com --aprovar: aprova EDITANDO, abrindo o chamado com este resumo no lugar "
                          "do redigido pelo modelo (só no grafo)")
+    ap.add_argument("--mensagem", metavar="TEXTO",
+                    help="com --aprovar, quando a ação pendente é o pedido de informação ao cliente: "
+                         "aprova EDITANDO, enviando esta mensagem no lugar da redigida pelo modelo. "
+                         "Passa pela mesma regra: nada de informação interna (só no grafo)")
     ap.add_argument("--prazo-confirmacao", type=float, default=PRAZO_CONFIRMACAO_MIN, metavar="MIN",
                     help=f"prazo do analista para esta execução, em minutos (padrão: {PRAZO_CONFIRMACAO_MIN})")
     ap.add_argument("--reset", action="store_true", help="recria o banco simulado")
@@ -250,7 +271,8 @@ def main():
         print(f"{len(candidatas)} padrão(ões) com {db.MINIMO_CANDIDATA} ou mais correções do analista "
               f"nos últimos {db.EPISODIO_RECENTE_DIAS} dias")
         for c in candidatas:
-            print(f"  guia {c['kb_id']}, {c['padrao']}: {c['quantidade']} vez(es) "
+            alvo = f"guia {c['kb_id']}" if c["kb_id"] else "pedido ao cliente"
+            print(f"  {alvo}, {c['padrao']}: {c['quantidade']} vez(es) "
                   f"(chamados {', '.join(c['chamados'])}; episódios {', '.join(map(str, c['episodios']))})")
             print(f"    onde olhar: {c['destino']}")
         print("Nada foi alterado: escrever ou não uma regra é decisão de uma pessoa.")
@@ -265,6 +287,11 @@ def main():
         sys.exit("--motivo vale só com --rejeitar: é o motivo da rejeição.")
     if args.resumo is not None and not args.aprovar:
         sys.exit("--resumo vale só com --aprovar: é a aprovação com o resumo corrigido.")
+    if args.mensagem is not None and not args.aprovar:
+        sys.exit("--mensagem vale só com --aprovar: é a aprovação com a mensagem ao cliente corrigida.")
+    if args.resumo is not None and args.mensagem is not None:
+        sys.exit("Use --resumo (chamado interno) ou --mensagem (pedido ao cliente): a ação pendente "
+                 "tem um texto só.")
     if not (args.ticket or args.todos or args.pendencias or resposta or args.fato or args.candidatas):
         ap.print_help()
         return
@@ -326,10 +353,15 @@ def main():
             try:
                 estado = retomar(resposta, "aprovar" if args.aprovar else "rejeitar", client=client,
                                  con=con, por="analista de suporte (terminal)", log_dir=log_dir,
-                                 resumo=args.resumo, motivo_rejeicao=args.motivo)
+                                 resumo=args.resumo, motivo_rejeicao=args.motivo,
+                                 mensagem=args.mensagem)
             except EdicaoRecusada as r:
                 con.close()
                 sys.exit(f"\n{resposta}  EDIÇÃO RECUSADA: {r}\nNada foi gravado; a ação continua "
+                         f"aguardando o analista.")
+            except ValueError as r:      # motivo que não é da ação pendente (db.MOTIVOS_POR_ACAO)
+                con.close()
+                sys.exit(f"\n{resposta}  RESPOSTA RECUSADA: {r}\nNada foi gravado; a ação continua "
                          f"aguardando o analista.")
             if estado is None:
                 print(f"\nNão há confirmação pendente para {resposta}.")
@@ -337,10 +369,14 @@ def main():
                 ultima = estado.confirmacoes[-1] if estado.confirmacoes else {}
                 veredito = "REJEITADO" if args.rejeitar else (
                     "APROVADO COM EDIÇÃO" if ultima.get("editado") else "APROVADO")
-                if args.resumo is not None and ultima.get("status") == "aprovada" and not ultima.get("editado"):
-                    veredito += " (o resumo enviado é igual ao proposto: sem edição)"
+                corrigido = args.resumo if args.resumo is not None else args.mensagem
+                if corrigido is not None and ultima.get("status") == "aprovada" and not ultima.get("editado"):
+                    veredito += " (o texto enviado é igual ao proposto: sem edição)"
                 print(f"\n{'=' * 78}\n{resposta}  {veredito} pelo analista\n")
-                if ultima.get("editado"):
+                if ultima.get("editado") and "mensagem_aprovada" in ultima:
+                    print(f"  MENSAGEM DO MODELO:   {ultima['mensagem_original']}")
+                    print(f"  MENSAGEM DO ANALISTA: {ultima['mensagem_aprovada']}\n")
+                elif ultima.get("editado"):
                     print(f"  RESUMO DO MODELO:   {ultima['resumo_original']}")
                     print(f"  RESUMO DO ANALISTA: {ultima['resumo_aprovado']}\n")
                 mostrar(estado)

@@ -24,6 +24,11 @@ Dois arquivos são **gerados** e ignorados pelo git:
     hora do pedido, a hora em que o prazo de 20 minutos vence e o status (`aguardando`,
     `aprovada`, `rejeitada`, `vencida`, `substituida`);
   - `avisos_gestor` — o aviso ao gestor quando o prazo vence num chamado que seria P1.
+
+  A tabela `encaminhamentos` tem a coluna `enviado_em`, preenchida só no pedido de informação ao
+  cliente que o analista confirmou no grafo (H2): é a hora do envio, do relógio de verdade. O
+  sistema simulado não tem canal de mensagem, então a linha é o envio. Um banco criado antes de
+  12/10/2026 ganha a coluna na primeira conexão (`db.conectar`).
 - `checkpoints.db` — o checkpoint do grafo (LangGraph, `SqliteSaver`), endereçado pelo id do
   chamado. Guarda a execução pausada à espera do analista. `--reset` **não** o apaga; uma
   execução nova do mesmo chamado substitui o checkpoint anterior.

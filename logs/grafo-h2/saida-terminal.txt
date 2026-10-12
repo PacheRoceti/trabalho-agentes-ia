@@ -1,0 +1,152 @@
+$ python src/main.py TKT-0005 --rodada grafo-h2   (sem texto: usa o texto registrado)
+Texto do chamado TKT-0005 (Enter em branco usa o texto registrado):
+> 
+==============================================================================
+TKT-0005  (caso: informacao_insuficiente)  modelo: ministral-8b-latest  prompt: triagem-v1.md + ressalva-v3.md + redigir-v1.md (grafo)
+
+  nó consultar         consultar_ticket {"id_ticket": "TKT-0005"} -> ok
+  nó triagem           triagem {} -> ok
+  nó decidir           decidir {} -> ok
+  nó redigir           redigir {"desfecho": "devolver_cliente"} -> ok
+  ENTRADA: Meu servidor não está funcionando direito.
+
+  TERMINO: aguardando_humano | desfecho: nenhum | passos: 4 | chamadas ao modelo: 2 | lembretes: 0 | tokens: 1444 | custo: US$ 0.00022
+  motivo: aguardando a confirmação do analista até 2026-10-12T12:44:35-03:00 (prazo de 20 minutos)
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0005",
+      "executado_em": "2026-10-12T12:24:29-03:00",
+      "termino": "aguardando_humano",
+      "resultado": {
+        "acao": null,
+        "texto": null,
+        "chamado_interno": null,
+        "time_destino": null,
+        "prioridade": null
+      },
+      "fonte": {
+        "tipo": "registro_do_chamado",
+        "kb_id": null,
+        "score": null,
+        "registros": [
+          "TKT-0005"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "triagem",
+          "decidir",
+          "redigir"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": false,
+        "motivo": "a execução terminou sem desfecho (aguardando_humano: aguardando a confirmação do analista até 2026-10-12T12:44:35-03:00 (prazo de 20 minutos))"
+      }
+    }
+
+  >> AÇÃO IRREVERSÍVEL aguardando o analista de suporte:
+     ferramenta: devolver_cliente
+     id_ticket: TKT-0005
+     relato: Meu servidor não está funcionando direito.
+     mensagem: O servidor do plano Hospedagem Start não está apresentando o funcionamento esperado. O problema ocorre desde quando foi relatado.
+     plano: Hospedagem Start
+     pedido_em: 2026-10-12T12:24:35-03:00
+     vence_em: 2026-10-12T12:44:35-03:00
+     faltam: 20 min
+     se aprovada: o pedido é registrado como enviado ao cliente e não tem volta (o sistema simulado não tem canal de mensagem). É o único pedido de informação permitido neste chamado
+     rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta
+     responder: python src/main.py --aprovar TKT-0005   |   --rejeitar TKT-0005
+     aprovar corrigindo a mensagem: python src/main.py --aprovar TKT-0005 --mensagem "texto corrigido"
+     rejeitar dizendo por quê: python src/main.py --rejeitar TKT-0005 --motivo mensagem_ruim | informacao_suficiente | outro
+[código de saída: 0]
+
+$ python src/main.py --pendencias
+
+1 ação(ões) aguardando o analista de suporte
+
+  >> AÇÃO IRREVERSÍVEL aguardando o analista de suporte:
+     ferramenta: devolver_cliente
+     id_ticket: TKT-0005
+     relato: Meu servidor não está funcionando direito.
+     mensagem: O servidor do plano Hospedagem Start não está apresentando o funcionamento esperado. O problema ocorre desde quando foi relatado.
+     plano: Hospedagem Start
+     pedido_em: 2026-10-12T12:24:35-03:00
+     vence_em: 2026-10-12T12:44:35-03:00
+     faltam: 20 min
+     se aprovada: o pedido é registrado como enviado ao cliente e não tem volta (o sistema simulado não tem canal de mensagem). É o único pedido de informação permitido neste chamado
+     rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta
+     responder: python src/main.py --aprovar TKT-0005   |   --rejeitar TKT-0005
+     aprovar corrigindo a mensagem: python src/main.py --aprovar TKT-0005 --mensagem "texto corrigido"
+     rejeitar dizendo por quê: python src/main.py --rejeitar TKT-0005 --motivo mensagem_ruim | informacao_suficiente | outro
+[código de saída: 0]
+
+$ python src/main.py --aprovar TKT-0005 --mensagem "Abrimos o INC-0001 com prioridade P1 para o seu caso."
+
+TKT-0005  EDIÇÃO RECUSADA: mensagem corrigida recusada: o pedido ao cliente cita informação interna ou promete prioridade (termos encontrados: inc-0001, p1, prioridade; esperado: só a lista do que falta: serviço ou servidor afetado, erro ou comportamento observado e desde quando ocorre)
+Nada foi gravado; a ação continua aguardando o analista.
+[código de saída: 1]
+
+$ python src/main.py --rejeitar TKT-0005 --motivo guia_errado
+
+TKT-0005  RESPOSTA RECUSADA: motivo de rejeição 'guia_errado' não vale para devolver_cliente (aceitos: mensagem_ruim, informacao_suficiente, outro)
+Nada foi gravado; a ação continua aguardando o analista.
+[código de saída: 1]
+
+$ python src/main.py --aprovar TKT-0005 --mensagem "Para identificarmos o problema, informe qual site ou serviço está afetado, a mensagem de erro que aparece e desde quando isso ocorre."
+  nó confirmar         confirmar {"acao": "devolver_cliente"} -> ok
+  nó gravar            registrar_encaminhamento {"id_ticket": "TKT-0005", "destino": "devolver_cliente", "mensagem": "Para identificarmos  -> ok
+
+==============================================================================
+TKT-0005  APROVADO COM EDIÇÃO pelo analista
+
+  MENSAGEM DO MODELO:   O servidor do plano Hospedagem Start não está apresentando o funcionamento esperado. O problema ocorre desde quando foi relatado.
+  MENSAGEM DO ANALISTA: Para identificarmos o problema, informe qual site ou serviço está afetado, a mensagem de erro que aparece e desde quando isso ocorre.
+
+  ENTRADA: Meu servidor não está funcionando direito.
+
+  TERMINO: respondeu | desfecho: devolver_cliente | passos: 6 | chamadas ao modelo: 2 | lembretes: 0 | tokens: 1444 | custo: US$ 0.00022
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0005",
+      "executado_em": "2026-10-12T12:24:29-03:00",
+      "termino": "respondeu",
+      "resultado": {
+        "acao": "devolver_cliente",
+        "texto": "Para identificarmos o problema, informe qual site ou serviço está afetado, a mensagem de erro que aparece e desde quando isso ocorre.",
+        "chamado_interno": null,
+        "time_destino": null,
+        "prioridade": null
+      },
+      "fonte": {
+        "tipo": "registro_do_chamado",
+        "kb_id": null,
+        "score": null,
+        "registros": [
+          "TKT-0005"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "triagem",
+          "decidir",
+          "redigir",
+          "confirmar",
+          "registrar_encaminhamento"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": false,
+        "motivo": "o texto do chamado não informa o serviço afetado nem o sintoma; o pedido de informação ao cliente foi registrado"
+      }
+    }
+[código de saída: 0]
+
+$ python src/main.py (o mesmo comando, de novo)
+
+Não há confirmação pendente para TKT-0005.
+[código de saída: 0]
+
+$ conferência no banco (dados/tickets.db), depois do último comando
+encaminhamento: {'id': 1, 'destino': 'devolver_cliente', 'mensagem': 'Para identificarmos o problema, informe qual site ou serviço está afetado, a mensagem de erro que aparece e desde quando isso ocorre.', 'criado_em': '2026-09-21 12:00', 'enviado_em': '2026-10-12T12:24:40-03:00'}
+pendência: {'id': 1, 'status': 'aprovada', 'pedido_em': '2026-10-12T12:24:35-03:00', 'vence_em': '2026-10-12T12:44:35-03:00', 'resolvido_em': '2026-10-12T12:24:40-03:00', 'resolvido_por': 'analista de suporte (terminal)'}
+chamados internos do TKT-0005: 0
+avisos ao gestor do TKT-0005: 0

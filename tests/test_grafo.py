@@ -449,6 +449,177 @@ class TestGrafo(unittest.TestCase):
         self.assertEqual((e.termino, e.desfecho["motivo"]), (Termino.RESPONDEU, "acao_rejeitada"))
         self.assertEqual(db.contar(self.con, "avisos_gestor", "TKT-0003"), 0)
 
+    # ---- a pausa do H2: o pedido de informação ao cliente (docs/humano.md §1 e §2.4)
+
+    PEDIDO = "Qual serviço está com problema, que erro aparece na tela e desde quando isso acontece?"
+
+    def responder(self, ticket, decisao, minutos=0, **kw):
+        agora = datetime.now().astimezone() + timedelta(minutes=minutos)
+        return retomar_grafo(ticket, decisao, client=ModeloRoteirizado([]), con=self.con,
+                             agora=agora, verbose=False, **kw)
+
+    def pedidos(self, ticket="TKT-0005"):
+        return [dict(l) for l in self.con.execute(
+            "SELECT * FROM encaminhamentos WHERE ticket_externo = ? AND destino = 'devolver_cliente'",
+            (ticket,))]
+
+    def test_h2_sem_resposta_o_pedido_ao_cliente_pausa_e_nada_e_gravado(self):
+        e = self.rodar("TKT-0005", confirmador=None)
+        self.assertEqual(e.termino, Termino.HUMANO)
+        self.assertIn("20 minutos", e.motivo)
+        self.assertEqual(GRAFO.get_state({"configurable": {"thread_id": "TKT-0005"}}).next, ("confirmar",))
+        self.assertEqual(db.contar(self.con, "encaminhamentos", "TKT-0005"), 0)
+        (p,) = db.pendencias_aguardando(self.con, "TKT-0005")
+        acao = p["acao"]
+        self.assertEqual((acao["ferramenta"], p["checkpoint"]["motor"]), ("devolver_cliente", "grafo"))
+        self.assertEqual(acao["relato"], db.buscar_ticket(self.con, "TKT-0005")["texto"])
+        self.assertEqual(acao["mensagem"], json.loads(ROTEIROS["TKT-0005"][1])["texto"])
+        for ausente in ("kb_id", "prioridade_prevista", "precedentes"):   # não há guia nem prioridade
+            self.assertNotIn(ausente, acao)
+        self.assertEqual(self.episodios(), [])
+        self.assertIsNone(e.saida.resultado.acao)
+
+    def test_h2_aprovar_envia_um_pedido_e_aprovar_de_novo_nao_duplica(self):
+        self.rodar("TKT-0005", confirmador=None)
+        e = self.responder("TKT-0005", "aprovar", minutos=19)
+        self.assertEqual(e.termino, Termino.RESPONDEU)
+        self.assertEqual(verificar("TKT-0005", e, self.con), (True, []))
+        self.assertEqual(self.nos(e), ["consultar_ticket", "triagem", "decidir", "redigir", "confirmar",
+                                       "registrar_encaminhamento"])
+        self.assertEqual(e.confirmacoes[-1]["status"], "aprovada")
+        self.assertEqual(e.n_chamadas_modelo, 2)                       # triagem e redação: a retomada não chama o modelo
+        (linha,) = self.pedidos()
+        self.assertEqual(linha["enviado_em"], e.desfecho["enviado_em"])
+        self.assertIsNotNone(linha["enviado_em"])
+        self.assertIsNone(self.responder("TKT-0005", "aprovar"))      # aprovar duas vezes
+        self.assertEqual(len(self.pedidos()), 1)
+        self.assertEqual(db.pendencias_aguardando(self.con), [])
+
+    def test_h2_rejeitar_vai_a_fila_humana_com_a_mensagem_e_nao_gasta_o_pedido(self):
+        pausado = self.rodar("TKT-0005", confirmador=None)
+        e = self.responder("TKT-0005", "rejeitar", minutos=5)
+        self.assertEqual((e.desfecho["acao"], e.desfecho["motivo"]), ("fila_humana", "acao_rejeitada"))
+        self.assertIn("rejeitada pelo analista", e.saida.resultado.texto)
+        self.assertIn(pausado.pendencia["mensagem"], e.saida.resultado.texto)
+        self.assertEqual(self.pedidos(), [])
+        self.assertFalse(e.saida.suficiencia.suficiente)
+        # o pedido barrado não chegou ao cliente: o único pedido do chamado continua disponível
+        self.assertEqual(self.rodar("TKT-0005").desfecho["acao"], "devolver_cliente")
+
+    def test_h2_prazo_vencido_vai_a_fila_humana_sem_avisar_o_gestor(self):
+        self.rodar("TKT-0005", confirmador=None)
+        self.assertIsNone(self.responder("TKT-0005", "vencer", minutos=19))   # ainda no prazo
+        e = self.responder("TKT-0005", "aprovar", minutos=21, mensagem=self.PEDIDO)   # aprovação tardia
+        self.assertEqual((e.desfecho["acao"], e.desfecho["motivo"]), ("fila_humana", "confirmacao_nao_recebida"))
+        self.assertEqual((e.confirmacoes[-1]["status"], e.confirmacoes[-1]["editado"]), ("vencida", False))
+        self.assertNotIn(self.PEDIDO, e.saida.resultado.texto)         # vai a mensagem do agente
+        self.assertEqual(self.pedidos(), [])
+        self.assertEqual(db.contar(self.con, "avisos_gestor", "TKT-0005"), 0)   # não há prioridade prevista
+
+    def test_h2_aprovar_editando_envia_a_mensagem_do_analista_e_guarda_a_do_modelo(self):
+        pausado = self.rodar("TKT-0005", confirmador=None)
+        # pelo caminho do main.py (agente.retomar): a pendência diz quem continua
+        e = retomar("TKT-0005", "aprovar", client=ModeloRoteirizado([]), con=self.con, verbose=False,
+                    mensagem=self.PEDIDO)
+        self.assertEqual(verificar("TKT-0005", e, self.con), (True, []))
+        c = e.confirmacoes[-1]
+        self.assertEqual((c["status"], c["editado"]), ("aprovada", True))
+        self.assertEqual((c["mensagem_original"], c["mensagem_aprovada"]),
+                         (pausado.pendencia["mensagem"], self.PEDIDO))
+        self.assertEqual(e.saida.resultado.texto, self.PEDIDO)
+        self.assertEqual([l["mensagem"] for l in self.pedidos()], [self.PEDIDO])
+        self.assertEqual(self.episodios()[0]["veredito"], "editado")
+
+    def test_h2_edicao_recusada_nao_gasta_a_aprovacao(self):
+        self.rodar("TKT-0005", confirmador=None)
+        recusadas = ({"mensagem": "Abrimos o INC-0001 com prioridade P1 para o seu caso."},   # informação interna
+                     {"mensagem": "oi"},                                                       # curta demais
+                     {"resumo": self.CORRIGIDO})                                               # campo de outra ação
+        for edicao in recusadas:
+            with self.subTest(edicao=edicao), self.assertRaises(EdicaoRecusada):
+                self.responder("TKT-0005", "aprovar", **edicao)
+        with self.assertRaises(EdicaoRecusada):
+            self.responder("TKT-0005", "rejeitar", mensagem=self.PEDIDO)     # rejeição não leva mensagem
+        self.assertEqual(db.contar(self.con, "encaminhamentos", "TKT-0005"), 0)
+        self.assertEqual(len(db.pendencias_aguardando(self.con, "TKT-0005")), 1)
+        e = self.responder("TKT-0005", "aprovar", mensagem=self.PEDIDO)      # a aprovação não foi gasta
+        self.assertEqual(e.desfecho["acao"], "devolver_cliente")
+        self.rodar("TKT-0007", confirmador=None)                             # e o H1 recusa --mensagem
+        with self.assertRaises(EdicaoRecusada):
+            self.responder("TKT-0007", "aprovar", mensagem=self.PEDIDO)
+        self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0007"), 0)
+
+    def test_h2_o_motivo_da_rejeicao_e_o_da_acao_pendente(self):
+        self.rodar("TKT-0005", confirmador=None)
+        with self.assertRaises(ValueError):
+            self.responder("TKT-0005", "rejeitar", motivo_rejeicao="guia_errado")   # motivo do H1
+        self.assertEqual(len(db.pendencias_aguardando(self.con, "TKT-0005")), 1)
+        e = self.responder("TKT-0005", "rejeitar", motivo_rejeicao="informacao_suficiente")
+        self.assertEqual(e.confirmacoes[-1]["motivo_rejeicao"], "informacao_suficiente")
+        (ep,) = self.episodios()
+        self.assertEqual((ep["kb_id"], ep["acao_proposta"], ep["desfecho"], ep["veredito"], ep["motivo_rejeicao"]),
+                         (None, "devolver_cliente", "fila_humana", "rejeitado", "informacao_suficiente"))
+        self.rodar("TKT-0007", confirmador=None)
+        with self.assertRaises(ValueError):
+            self.responder("TKT-0007", "rejeitar", motivo_rejeicao="mensagem_ruim")  # motivo do H2
+        self.assertEqual(len(db.pendencias_aguardando(self.con, "TKT-0007")), 1)
+
+    def test_h2_candidata_a_regra_do_pedido_ao_cliente_nao_tem_guia(self):
+        for _ in range(3):
+            self.rodar("TKT-0005", confirmador=None)
+            self.responder("TKT-0005", "rejeitar", motivo_rejeicao="informacao_suficiente")
+        (c,) = db.candidatas_a_regra(self.con)
+        self.assertEqual((c["kb_id"], c["acao"], c["padrao"], c["quantidade"]),
+                         (None, "devolver_cliente", "informacao_suficiente", 3))
+        self.assertIn("triagem", c["destino"])
+
+    def test_h2_o_episodio_nao_guarda_o_relato_nem_a_mensagem(self):
+        pausado = self.rodar("TKT-0005", confirmador=None)
+        self.responder("TKT-0005", "aprovar")
+        (ep,) = self.episodios()
+        guardado = json.dumps(ep, ensure_ascii=False)
+        self.assertNotIn(pausado.pendencia["relato"], guardado)
+        self.assertNotIn(pausado.pendencia["mensagem"], guardado)
+        self.assertEqual((ep["acao_proposta"], ep["desfecho"], ep["veredito"]),
+                         ("devolver_cliente", "devolver_cliente", "aprovado"))
+
+    def test_h2_a_tela_mostra_o_relato_a_consequencia_e_os_comandos_do_pedido(self):
+        p = self.rodar("TKT-0005", confirmador=None).pendencia
+        import io, contextlib, main
+        tela = io.StringIO()
+        with contextlib.redirect_stdout(tela):
+            main.mostrar_pendencia(p)
+        tela = tela.getvalue()
+        for trecho in (f"relato: {p['relato']}", f"mensagem: {p['mensagem']}", "único pedido de informação",
+                       "não tem canal de mensagem", '--aprovar TKT-0005 --mensagem "texto corrigido"',
+                       "--motivo mensagem_ruim | informacao_suficiente | outro"):
+            self.assertIn(trecho, tela)
+        self.assertNotIn("--resumo", tela)
+        self.assertNotIn("chamado interno", tela)
+
+    def test_h2_rejeicao_na_hora_pelo_confirmador(self):
+        e = self.rodar("TKT-0005", confirmador=NAO)
+        self.assertEqual((e.termino, e.desfecho["acao"], e.desfecho["motivo"]),
+                         (Termino.RESPONDEU, "fila_humana", "acao_rejeitada"))
+        self.assertEqual(self.pedidos(), [])
+
+    def test_h2_o_envio_e_idempotente_pelo_chamado(self):
+        primeiro = db.registrar_pedido_cliente(self.con, "TKT-0005", self.PEDIDO)
+        segundo = db.registrar_pedido_cliente(self.con, "TKT-0005", self.PEDIDO + " (de novo)")
+        self.assertEqual((primeiro["ja_existia"], segundo["ja_existia"]), (False, True))
+        self.assertEqual((segundo["encaminhamento"], segundo["enviado_em"]),
+                         (primeiro["encaminhamento"], primeiro["enviado_em"]))
+        self.assertEqual([l["mensagem"] for l in self.pedidos()], [self.PEDIDO])   # a segunda não reescreve
+
+    def test_h2_o_laco_nao_pausa_no_pedido_ao_cliente(self):
+        from test_offline import ModeloRoteirizado as ModeloDoLaco, ROTEIROS as ROTEIROS_DO_LACO
+        from agente import rodar
+        e = rodar("TKT-0005", client=ModeloDoLaco(ROTEIROS_DO_LACO["TKT-0005"]), modelo="fake",
+                  con=self.con, verbose=False)
+        self.assertEqual((e.termino, e.desfecho["acao"]), (Termino.RESPONDEU, "devolver_cliente"))
+        self.assertEqual(db.pendencias_aguardando(self.con), [])
+        self.assertEqual([l["enviado_em"] for l in self.pedidos()], [None])   # Parte 1: gravado, não enviado
+
     # ---- a memória episódica (docs/memoria.md §1.3 e §2.2): o código escreve, a tela do H1 lê
 
     def episodios(self):

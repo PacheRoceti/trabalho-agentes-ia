@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS episodios (
     acao_proposta  TEXT,                       -- o que o nó `decidir` propôs
     desfecho       TEXT,                       -- o que foi gravado (NULL = nada)
     motivo         TEXT,
-    veredito       TEXT,                       -- aprovado | editado | rejeitado | vencido | NULL (sem H1)
+    veredito       TEXT,                       -- aprovado | editado | rejeitado | vencido | NULL (sem H1 nem H2)
     motivo_rejeicao TEXT,                      -- o que o analista disse ao rejeitar (MOTIVOS_REJEICAO) ou NULL
     termino        TEXT NOT NULL,
     resumo         TEXT NOT NULL,              -- montado pelo código, nunca texto do modelo
@@ -140,9 +140,21 @@ MOTIVOS_REJEICAO = {
     "guia_errado": "revisar a triagem e a busca: o guia proposto não era o do problema",
     "caso_fora_do_guia": "revisar o guia: falta declarar a situação em nao_cobre",
     "resumo_ruim": "revisar o prompt do redigir: o resumo não serviu",
+    "mensagem_ruim": "revisar o prompt do redigir: a mensagem ao cliente não serviu",
+    "informacao_suficiente": "revisar o prompt da triagem: o relato bastava para classificar, e o "
+                             "agente pediu informação ao cliente",
     "outro": "sem destino sugerido: ler os episódios",
 }
+# Cada motivo fala de UMA das duas ações que o analista confirma (decisão de 12/10/2026): os do
+# chamado interno (H1) falam do guia e do resumo; os do pedido ao cliente (H2), da mensagem e da
+# triagem. `outro` vale nas duas.
+MOTIVOS_POR_ACAO = {
+    "abrir_chamado_interno": ("guia_errado", "caso_fora_do_guia", "resumo_ruim", "outro"),
+    "devolver_cliente": ("mensagem_ruim", "informacao_suficiente", "outro"),
+}
 DESTINO_EDITADO = "revisar o prompt do redigir: o analista corrigiu o resumo antes de aprovar"
+DESTINO_EDITADO_PEDIDO = ("revisar o prompt do redigir: o analista corrigiu a mensagem ao cliente "
+                          "antes de aprovar")
 DESTINO_SEM_MOTIVO = "sem destino sugerido: as rejeições não trazem motivo"
 MINIMO_CANDIDATA = 3        # correções do mesmo padrão para virar candidata (memoria.md §1.4)
 
@@ -188,6 +200,10 @@ def conectar() -> sqlite3.Connection:
     con.execute(SQL_VETORES)
     con.execute(SQL_EPISODIOS)
     con.execute(SQL_FATOS)
+    # Banco criado antes do H2 (12/10/2026): a coluna do envio do pedido ao cliente não existia.
+    colunas = {c["name"] for c in con.execute("PRAGMA table_info(encaminhamentos)")}
+    if colunas and "enviado_em" not in colunas:
+        con.execute("ALTER TABLE encaminhamentos ADD COLUMN enviado_em TEXT")
     return con
 
 
@@ -472,6 +488,30 @@ def registrar_encaminhamento(con, id_ticket: str, destino: str, mensagem: str,
     return {"encaminhamento": cur.lastrowid, "destino": destino}
 
 
+def registrar_pedido_cliente(con, id_ticket: str, mensagem: str, enviado_em: str | None = None) -> dict:
+    """O ENVIO do pedido de informação ao cliente, depois da confirmação do analista (H2 do grafo).
+    É a única função do grafo que grava um `devolver_cliente`: o sistema simulado não tem canal de
+    mensagem, então enviar é gravar a linha com `enviado_em`; se um canal existir, ele entra aqui.
+    `enviado_em` é do relógio de verdade, como nas pendências, e não o AGORA fixo.
+    Idempotente pelo chamado (a regra é um pedido por chamado): se já há um, devolve o que existe,
+    com `ja_existia: true`, e não grava outro. O laço da Parte 1 não passa por aqui: lá o pedido
+    é só gravado, sem confirmação e sem `enviado_em`."""
+    existente = con.execute(
+        """SELECT id, enviado_em FROM encaminhamentos
+           WHERE ticket_externo = ? AND destino = 'devolver_cliente' ORDER BY id LIMIT 1""",
+        (id_ticket,)).fetchone()
+    if existente:
+        return {"encaminhamento": existente["id"], "destino": "devolver_cliente",
+                "enviado_em": existente["enviado_em"], "ja_existia": True}
+    enviado_em = enviado_em or datetime.now().astimezone().isoformat(timespec="seconds")
+    cur = con.execute(
+        """INSERT INTO encaminhamentos (ticket_externo, destino, mensagem, kb_id, criado_em, enviado_em)
+           VALUES (?, 'devolver_cliente', ?, NULL, ?, ?)""", (id_ticket, mensagem, AGORA, enviado_em))
+    con.commit()
+    return {"encaminhamento": cur.lastrowid, "destino": "devolver_cliente",
+            "enviado_em": enviado_em, "ja_existia": False}
+
+
 # ------------------------------------------------------------------ pendências
 
 def criar_pendencia(con, id_ticket: str, acao: dict, pedido_em: str, vence_em: str) -> int:
@@ -592,19 +632,24 @@ def precedentes(con, kb_id: str, cliente_id: str | None, categoria: str | None,
 
 def candidatas_a_regra(con, agora: datetime | None = None, minimo: int = MINIMO_CANDIDATA) -> list[dict]:
     """Os padrões de correção do analista que se repetiram: rejeições do mesmo guia pelo mesmo
-    motivo e aprovações com edição do mesmo guia, entre os episódios RECENTES. Só lê. É o
+    motivo e aprovações com edição do mesmo guia, entre os episódios RECENTES. As correções do
+    pedido ao cliente (H2) não têm guia: agrupam-se só pelo padrão, com `kb_id` None. Só lê. É o
     material para uma pessoa decidir se escreve uma regra; nenhuma regra nasce daqui."""
     agora = agora or datetime.now().astimezone()
     grupos: dict[tuple, list] = {}
-    for l in con.execute("""SELECT id, ticket_externo, kb_id, veredito, motivo_rejeicao, criado_em
-                              FROM episodios WHERE kb_id IS NOT NULL
+    for l in con.execute("""SELECT id, ticket_externo, kb_id, acao_proposta, veredito, motivo_rejeicao,
+                                   criado_em
+                              FROM episodios
+                              WHERE (kb_id IS NOT NULL OR acao_proposta = 'devolver_cliente')
                               AND veredito IN ('rejeitado', 'editado') ORDER BY id"""):
         if _idade_em_dias(l["criado_em"], agora) > EPISODIO_RECENTE_DIAS:
             continue
         padrao = "editado" if l["veredito"] == "editado" else (l["motivo_rejeicao"] or "sem_motivo")
-        grupos.setdefault((l["kb_id"], padrao), []).append(l)
+        grupos.setdefault((l["kb_id"] or "", padrao), []).append(l)
     destinos = {**MOTIVOS_REJEICAO, "editado": DESTINO_EDITADO, "sem_motivo": DESTINO_SEM_MOTIVO}
-    return [{"kb_id": kb_id, "padrao": padrao, "quantidade": len(linhas), "destino": destinos[padrao],
+    return [{"kb_id": kb_id or None, "acao": linhas[0]["acao_proposta"], "padrao": padrao,
+             "quantidade": len(linhas),
+             "destino": DESTINO_EDITADO_PEDIDO if (padrao == "editado" and not kb_id) else destinos[padrao],
              "episodios": [l["id"] for l in linhas],
              "chamados": sorted({l["ticket_externo"] for l in linhas})}
             for (kb_id, padrao), linhas in sorted(grupos.items()) if len(linhas) >= minimo]

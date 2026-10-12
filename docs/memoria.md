@@ -281,13 +281,23 @@ os padrões. **Nenhuma regra é escrita, e nada novo vai ao modelo.**
 
 | | O que é | Onde |
 |---|---|---|
-| Motivo da rejeição | `python src/main.py --rejeitar TKT-0007 --motivo caso_fora_do_guia`. Quatro valores: `guia_errado`, `caso_fora_do_guia`, `resumo_ruim`, `outro`. Opcional: sem ele a rejeição vale e o motivo fica vazio | `db.MOTIVOS_REJEICAO`; `grafo.retomar_grafo(motivo_rejeicao=...)`; coluna `motivo_rejeicao` de `episodios`; campo `motivo_rejeicao` em `confirmacoes`, no log |
+| Motivo da rejeição | `python src/main.py --rejeitar TKT-0007 --motivo caso_fora_do_guia`. Quatro valores para o chamado interno (H1): `guia_errado`, `caso_fora_do_guia`, `resumo_ruim`, `outro`. Opcional: sem ele a rejeição vale e o motivo fica vazio | `db.MOTIVOS_REJEICAO`; `grafo.retomar_grafo(motivo_rejeicao=...)`; coluna `motivo_rejeicao` de `episodios`; campo `motivo_rejeicao` em `confirmacoes`, no log |
+| Motivo da rejeição do pedido ao cliente (H2, 12/10/2026) | `python src/main.py --rejeitar TKT-0005 --motivo informacao_suficiente`. Três valores: `mensagem_ruim`, `informacao_suficiente`, `outro`. Cada ação aceita só os seus: motivo de uma na outra é recusado, e a ação continua à espera | `db.MOTIVOS_POR_ACAO` |
 | Tela do H1 | a linha `MEMÓRIA:` separa as rejeições do guia por motivo | `db.precedentes` (`rejeicoes_por_motivo`) |
-| Relatório de candidatas | `python src/main.py --candidatas`: os padrões (guia + motivo, e guia + aprovação com edição) com 3 ou mais correções nos últimos 90 dias, e onde uma pessoa deveria olhar | `db.candidatas_a_regra`, `db.MINIMO_CANDIDATA` |
+| Relatório de candidatas | `python src/main.py --candidatas`: os padrões (guia + motivo, e guia + aprovação com edição) com 3 ou mais correções nos últimos 90 dias, e onde uma pessoa deveria olhar. As correções do pedido ao cliente não têm guia: agrupam-se só pelo padrão e aparecem como "pedido ao cliente" | `db.candidatas_a_regra`, `db.MINIMO_CANDIDATA` |
 
 Onde olhar, por padrão: `caso_fora_do_guia` aponta o `nao_cobre` do guia; `guia_errado`, a triagem
-e a busca; `resumo_ruim` e aprovação com edição, o prompt do `redigir`; `outro` e rejeição sem
-motivo são listados sem destino.
+e a busca; `resumo_ruim`, `mensagem_ruim` e aprovação com edição, o prompt do `redigir`;
+`informacao_suficiente`, o prompt da triagem (o relato bastava, e o agente pediu informação);
+`outro` e rejeição sem motivo são listados sem destino.
+
+**O que o H2 não tem da memória.** A tela do pedido ao cliente não mostra precedentes nem fatos do
+cliente: a consulta de precedentes é por guia, e nesse ponto não há guia. O episódio é gravado
+como os outros (com `kb_id` vazio e o veredito do analista), sem o relato e sem a mensagem. Os
+motivos do H2 e o padrão sem guia estão provados por testes offline
+(`test_h2_o_motivo_da_rejeicao_e_o_da_acao_pendente`,
+`test_h2_candidata_a_regra_do_pedido_ao_cliente_nao_tem_guia`); com o modelo real só foi
+exercitada a recusa de um motivo do H1 (`logs/grafo-h2/`, `humano.md` §2.4).
 
 **O que não muda no agente.** O grafo é o mesmo (12 nós, as mesmas arestas), nenhum prompt mudou e
 não há chamada a mais ao modelo. O desfecho gravado pela rejeição é o de antes (`fila_humana`, motivo

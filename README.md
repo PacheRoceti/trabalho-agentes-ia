@@ -53,6 +53,7 @@ python src/main.py --pendencias             # as ações que aguardam o analista
 python src/main.py --aprovar TKT-0003       # o analista aprova: o chamado interno é aberto e a execução conclui
 python src/main.py --aprovar TKT-0003 --resumo "texto corrigido"   # aprova EDITANDO: abre o chamado com o resumo do analista
 python src/main.py --rejeitar TKT-0003      # o analista rejeita: o chamado interno não é aberto, e o chamado vai para a fila humana
+python src/main.py --aprovar TKT-0005 --mensagem "texto corrigido" # pedido ao cliente: aprova EDITANDO a mensagem (sem informação interna)
 python src/main.py --todos --auto-aprovar   # os 8 casos, cada um a partir do banco zerado, com verificador
 python src/main.py --reset                  # recria o banco simulado
 python src/main.py TKT-0001 --laco          # o mesmo chamado pelo laço da Parte 1, e não pelo grafo; logs em logs/
@@ -71,6 +72,8 @@ python conferir_grafo.py                    # imprime os nós, as arestas e os c
 
 Uma sequência real (pausar, listar, uma edição recusada, aprovar editando e aprovar de novo sem duplicar) está em `logs/grafo-caso-6/saida-terminal.txt`; a aprovação simples, em `logs/grafo-pausa/saida-terminal.txt`.
 
+**O pedido de informação ao cliente também espera o analista** (desde 12/10/2026, só no grafo). A mensagem chega ao cliente e não tem volta, então o `devolver_cliente` pausa do mesmo jeito, com o mesmo prazo. A tela mostra o relato do cliente e a mensagem redigida. As respostas são `--aprovar TKT-0000`, `--aprovar TKT-0000 --mensagem "texto corrigido"` (a mensagem do analista passa pela mesma regra: nenhuma informação interna) e `--rejeitar TKT-0000`, com `--motivo mensagem_ruim`, `informacao_suficiente` ou `outro`, se quiser. Rejeitado ou vencido, o chamado vai para a fila humana e o único pedido permitido do chamado não é gasto. **Limite:** o sistema simulado não tem canal de mensagem; "enviar" é gravar o pedido com a hora do envio. Sequência real em `logs/grafo-h2/saida-terminal.txt`, e o que ela achou em [`docs/humano.md`](docs/humano.md) §2.4.
+
 Os chamados disponíveis são `TKT-0001` a `TKT-0007` e o inexistente `TKT-0999` (ver [`dados/README.md`](dados/README.md)).
 
 **O que o sistema faz.** Lê o texto do chamado e o histórico do cliente no sistema de tickets, decide se o assunto é técnico, comercial ou de informação insuficiente, consulta a base de conhecimento e dá **um desfecho** ao chamado. Quando o desfecho é abrir um chamado interno (ação irreversível), ele para, grava a ação pendente e espera a confirmação do analista de suporte, que tem **20 minutos** para aprovar ou rejeitar (`--aprovar` / `--rejeitar`). Se o analista rejeita, ou não responde no prazo, o chamado interno não é aberto: o chamado vai para a fila humana com a ação que o agente propôs. Quando o prazo vence e o chamado interno seria P1, o gestor de suporte também é avisado (tabela `avisos_gestor`).
@@ -82,8 +85,8 @@ Os chamados disponíveis são `TKT-0001` a `TKT-0007` e o inexistente `TKT-0999`
 | `abrir_chamado_interno` | chamado aberto para o time responsável, com resumo e prioridade definida pelo sistema | `python -c "import sqlite3; c=sqlite3.connect('dados/tickets.db'); print(*c.execute('select * from chamados_internos'), sep='\n')"` |
 | `anotacao_interna` | correção sugerida para o analista validar e executar | tabela `encaminhamentos` |
 | `fila_comercial` | assunto comercial, fora do escopo do suporte | tabela `encaminhamentos` |
-| `devolver_cliente` | faltam informações; a mensagem é o pedido ao cliente (a única mensagem que o agente envia a ele, no máximo uma por chamado) | tabela `encaminhamentos` |
-| `fila_humana` | o sistema não teve confiança para agir sozinho (ou o id não existe), ou o analista rejeitou a abertura do chamado, ou não a confirmou em 20 minutos | tabela `encaminhamentos` |
+| `devolver_cliente` | faltam informações; a mensagem é o pedido ao cliente (a única mensagem que o agente envia a ele, no máximo uma por chamado). No grafo, só depois da confirmação do analista | tabela `encaminhamentos` (coluna `enviado_em`) |
+| `fila_humana` | o sistema não teve confiança para agir sozinho (ou o id não existe), ou o analista rejeitou a ação irreversível (abrir chamado ou enviar o pedido ao cliente), ou não a confirmou em 20 minutos | tabela `encaminhamentos` |
 
 Como interpretar o término (`TERMINO:` na saída):
 
