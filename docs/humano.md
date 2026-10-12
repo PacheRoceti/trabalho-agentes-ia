@@ -251,11 +251,28 @@ cliente ("O servidor do plano Hospedagem Start não está apresentando o funcion
 problema ocorre desde quando foi relatado.") repete a queixa e não pergunta nada. Não é um acaso
 desta execução: as três rodadas de 10/10/2026 gravaram textos do mesmo tipo para o `TKT-0005`
 (`logs/grafo/`, `logs/grafo-rodada-2/`, `logs/grafo-rodada-3/`), e as três afirmam que o
-problema ocorre "desde a última verificação", o que o cliente não disse. São 4 execuções em 4.
+problema ocorre "desde a última verificação", o que o cliente não disse. São 4 execuções em 4; a
+conferência de todos os logs do grafo, feita depois, achou o mesmo em 15 de 15.
 Nenhuma barreira em código pega isso: o nó `validar` confere tamanho e informação interna, e o
 verificador confere o desfecho gravado, não o texto. Até 12/10/2026 essa mensagem era gravada
-direto; hoje a única barreira é o analista, no H2. O `redigir-v1.md` **não foi alterado**: uma
-versão nova do prompt é uma mudança de comportamento a decidir e medir (§7).
+direto; hoje a única barreira é o analista, no H2.
+
+**Tratado no mesmo dia, com o `redigir-v2.md`** (`prompts.md` §2.1): uma regra do prompt foi
+reescrita, e em três rodadas dos 8 casos a mensagem do `TKT-0005` passou a ser "Precisamos de
+mais informações para ajudar. Qual serviço ou servidor está com problema? Qual erro ou
+comportamento aparece? Desde quando isso ocorre?" (`logs/grafo-redigir-v2-1/` a `-3/`). A tela e
+os logs desta seção são anteriores e mostram a mensagem do v1.
+
+**E decidido em seguida: o pedido ao cliente é texto padrão, do código** (`prompts.md` §2.2). O
+v2 produziu a mesma mensagem nas três execuções, o que mostrou que não havia decisão do modelo
+ali. O nó `redigir` passou a devolver a constante `PEDIDO_AO_CLIENTE` (`src/grafo.py`), com cinco
+perguntas tiradas do que os guias da base usam: o serviço, o domínio ou o nome do banco, a
+mensagem ou o código de erro, a data e a hora, e o que mudou antes. O H2 não mudou: o analista vê
+o relato e o texto, aprova, rejeita ou aprova trocando a mensagem. A pausa refeita com o texto
+padrão está em `logs/grafo-pedido-padrao-h2/` (12/10/2026): pausa às 14:21:06 com 4 passos, 1
+chamada ao modelo e 621 tokens; aprovação por outro processo às 14:21:08, com a mesma chamada e
+os mesmos tokens; a segunda aprovação não encontrou nada pendente; no banco, um `devolver_cliente`
+com `enviado_em`, uma pendência `aprovada` e nenhum chamado interno.
 
 Limites: quem respondeu foi quem fazia a demonstração, 5 segundos depois da pausa, e não um
 analista; a rejeição e o prazo vencido do H2 estão nos testes offline
@@ -289,8 +306,9 @@ A tabela `pendencias` continua sendo a fila do analista nos dois caminhos: é el
 `--pendencias` lista e que aplica o prazo. A pendência guarda de qual caminho é a pausa, e
 `--aprovar` / `--rejeitar` chamam a retomada certa. Uma pausa e uma retomada em dois processos
 foram executadas com o modelo real em `logs/grafo-pausa/` (10/10/2026, commit `083d132`): pausa às 23:51:58, aprovação por outro processo às 23:52:02, e uma segunda aprovação que não encontrou nada pendente (`grafo.md` §6.1). Os testes de
-`tests/test_grafo.py` cobrem aprovar, aprovar duas vezes, rejeitar e prazo vencido; a rejeição e
-o prazo vencido não foram executados com o modelo real.
+`tests/test_grafo.py` cobrem aprovar, aprovar duas vezes, rejeitar e prazo vencido. Com o modelo
+real, a rejeição do H1 foi executada em 11/10/2026 (`logs/grafo-memoria-1/`,
+`logs/grafo-procedural/`); o prazo vencido, não.
 
 ## 4. O que acontece se ninguém responder, ou se a pessoa rejeitar (§8.4)
 
@@ -414,13 +432,14 @@ não um analista.
 
 ## 7. O que falta para este item
 
-- Exercitar a rejeição e o prazo vencido do H1 no grafo com o modelo real, e com log (a aprovação
-  já está em `logs/grafo-pausa/`).
+- Exercitar o prazo vencido do H1 no grafo com o modelo real, e com log. A aprovação está em
+  `logs/grafo-pausa/`, e a rejeição em `logs/grafo-memoria-1/` (sem motivo) e
+  `logs/grafo-procedural/` (com motivo), de 11/10/2026.
 - Implementar o H3: a pausa em `aguardando_cliente` e a retomada com a resposta, com o prazo de
   3 dias úteis contado do `enviado_em` do pedido (§2.4).
 - Exercitar a rejeição e o prazo vencido do H2 com o modelo real, e com log.
-- Decidir o que fazer com a mensagem que o `redigir-v1.md` produz para o cliente: em 4 execuções
-  de 4 ela não pergunta nada (§2.4). O caminho seria um `redigir-v2.md`, medido antes e depois.
+- Rever o texto padrão do pedido (`PEDIDO_AO_CLIENTE`) quando a base ganhar guia de um serviço
+  novo: nada avisa que a lista ficou velha (`prompts.md` §2.2).
 - Separar a aprovação do envio, se um canal de mensagem (um MCP simulado, por exemplo) for
   ligado a `db.registrar_pedido_cliente`: aí a falha de entrega passa a existir e precisa de
   regra no `case.md`.

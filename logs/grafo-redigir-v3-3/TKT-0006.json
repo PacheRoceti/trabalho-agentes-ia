@@ -1,0 +1,222 @@
+{
+  "execucao_id": "TKT-0006-c21115a2",
+  "id_ticket": "TKT-0006",
+  "executado_em": "2026-10-12T14:28:45-03:00",
+  "commit": "9d5c211 + alterações locais",
+  "entrada": "Meu site está dando erro 502 de vez em quando, mais ou menos desde o deploy de ontem. Às vezes funciona normal.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + ressalva-v3.md + redigir-v3.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1524,
+  "tokens_saida": 284,
+  "custo_usd": 0.000271,
+  "scores_kb": {
+    "KB-104": 0.24,
+    "KB-106": 0.49,
+    "KB-110": 0.49
+  },
+  "saida": {
+    "id_ticket": "TKT-0006",
+    "executado_em": "2026-10-12T14:28:45-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O chamado **TKT-0006** do cliente **Epsilon Studio (plano VPS Pro)** relata erro **502 intermitente** após deploy, mas o log anexado está ausente. Foi encontrado o procedimento **KB-104** ('Site fora do ar com erro 5xx após deploy', *score 0.24*), que não cobre o caso relatado (erro **ocorrendo às vezes**, não constante). A **RESSALVA** do procedimento confirma que não é seguro agir sozinho, pois o problema não se enquadra na causa descrita (falha constante do processo ou configuração inválida do nginx). O escopo do plano não inclui a aplicação do cliente, mas o erro 502 pode estar relacionado ao servidor ou rede. **Ação necessária:** avaliação manual para descartar falhas de rede, firewall ou configuração do servidor, sem intervenção na aplicação.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "busca_sem_correspondencia",
+      "kb_id": "KB-106",
+      "score": 0.49,
+      "registros": [
+        "TKT-0006"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o melhor procedimento encontrado (KB-106, score 0.49) ficou abaixo do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0006"
+      },
+      "resultado": {
+        "id": "TKT-0006",
+        "aberto_em": "2026-09-21 11:02",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Epsilon Studio",
+        "plano": "VPS Pro",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "site",
+          "erro",
+          "502"
+        ],
+        "justificativa": "O cliente relata um erro específico (502) em seu site, indicando um problema técnico no serviço de hospedagem."
+      },
+      "erro": null,
+      "ms": 1523
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "site",
+          "erro",
+          "502"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.24,
+            "cosseno": 0.843,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial",
+            "ressalva": "este procedimento NÃO cobre o caso relatado ('as vezes'): o score foi reduzido"
+          },
+          {
+            "kb_id": "KB-106",
+            "titulo": "Falha de resolução DNS do domínio",
+            "score": 0.49,
+            "cosseno": 0.796,
+            "causa": "Nameserver do domínio fora do ar ou zona DNS com registro inválido.",
+            "solucao": "Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-110",
+            "titulo": "Site em laço de redirecionamentos",
+            "score": 0.49,
+            "cosseno": 0.796,
+            "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+            "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 836
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "score_abaixo_do_limiar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "O chamado **TKT-0006** do cliente **Epsilon Studio (plano VPS Pro)** relata erro **502 intermitente** após deploy, mas o log anexado está ausente. Foi encontrado o procedimento **KB-104** ('Site fora do ar com erro 5xx após deploy', *score 0.24*), que não cobre o caso relatado (erro **ocorrendo às vezes**, não constante). A **RESSALVA** do procedimento confirma que não é seguro agir sozinho, pois o problema não se enquadra na causa descrita (falha constante do processo ou configuração inválida do nginx). O escopo do plano não inclui a aplicação do cliente, mas o erro 502 pode estar relacionado ao servidor ou rede. **Ação necessária:** avaliação manual para descartar falhas de rede, firewall ou configuração do servidor, sem intervenção na aplicação."
+      },
+      "erro": null,
+      "ms": 2501
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0006",
+        "destino": "fila_humana",
+        "mensagem": "O chamado **TKT-0006** do cliente **Epsilon Studio (plano VPS Pro)** relata erro **502 intermitente** após deploy, mas o log anexado está ausente. Foi encontrado o procedimento **KB-104** ('Site fora do ar com erro 5xx após deploy', *score 0.24*), que não cobre o caso relatado (erro **ocorrendo às vezes**, não constante). A **RESSALVA** do procedimento confirma que não é seguro agir sozinho, pois o problema não se enquadra na causa descrita (falha constante do processo ou configuração inválida do nginx). O escopo do plano não inclui a aplicação do cliente, mas o erro 502 pode estar relacionado ao servidor ou rede. **Ação necessária:** avaliação manual para descartar falhas de rede, firewall ou configuração do servidor, sem intervenção na aplicação."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 16
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "score_abaixo_do_limiar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1768,
+  "episodio": {
+    "execucao_id": "TKT-0006-c21115a2",
+    "ticket_externo": "TKT-0006",
+    "cliente_id": "CLI-05",
+    "classe": "tecnico",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "fila_humana",
+    "desfecho": "fila_humana",
+    "motivo": "score_abaixo_do_limiar",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0006: classe tecnico; sem guia; proposto fila_humana; gravado fila_humana; término respondeu",
+    "criado_em": "2026-10-12T14:28:50-03:00",
+    "id": 1,
+    "chave": "197e899d6f2164f5",
+    "ja_existia": false
+  },
+  "segundos_gastos": 4.878
+}

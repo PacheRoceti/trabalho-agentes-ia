@@ -1,0 +1,130 @@
+{
+  "execucao_id": "TKT-0005-05f89173",
+  "id_ticket": "TKT-0005",
+  "executado_em": "2026-10-12T14:21:04-03:00",
+  "commit": "9d5c211 + alterações locais",
+  "entrada": "Meu servidor não está funcionando direito.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + ressalva-v3.md + redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "aguardando_humano",
+  "motivo": "aguardando a confirmação do analista até 2026-10-12T14:41:06-03:00 (prazo de 20 minutos)",
+  "resposta": null,
+  "desfecho": null,
+  "pendencia": {
+    "ferramenta": "devolver_cliente",
+    "id_ticket": "TKT-0005",
+    "relato": "Meu servidor não está funcionando direito.",
+    "mensagem": "Para darmos andamento ao seu chamado, precisamos de mais informações:\n1. Qual serviço está com problema (site, e-mail, banco de dados, FTP/SFTP, acesso SSH, backup ou tarefa agendada)?\n2. Qual é o domínio ou o endereço afetado? Se for banco de dados, qual é o nome do banco?\n3. Qual mensagem ou código de erro aparece (por exemplo: 403, 502, \"permissão negada\")? Copie o texto como ele é exibido.\n4. Em que data e hora o problema começou? Ele acontece sempre ou só às vezes?\n5. Alguma coisa mudou pouco antes (publicação de nova versão, migração, restauração de backup, troca de senha)?",
+    "plano": "Hospedagem Start",
+    "pedido_em": "2026-10-12T14:21:06-03:00",
+    "vence_em": "2026-10-12T14:41:06-03:00"
+  },
+  "confirmacoes": [],
+  "n_chamadas_modelo": 1,
+  "lembretes": 0,
+  "tokens_entrada": 558,
+  "tokens_saida": 63,
+  "custo_usd": 9.3e-05,
+  "scores_kb": {},
+  "saida": {
+    "id_ticket": "TKT-0005",
+    "executado_em": "2026-10-12T14:21:04-03:00",
+    "termino": "aguardando_humano",
+    "resultado": {
+      "acao": null,
+      "texto": null,
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "registro_do_chamado",
+      "kb_id": null,
+      "score": null,
+      "registros": [
+        "TKT-0005"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "decidir",
+        "redigir"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "a execução terminou sem desfecho (aguardando_humano: aguardando a confirmação do analista até 2026-10-12T14:41:06-03:00 (prazo de 20 minutos))"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0005"
+      },
+      "resultado": {
+        "id": "TKT-0005",
+        "aberto_em": "2026-09-21 10:31",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Delta Restaurantes",
+        "plano": "Hospedagem Start",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "insuficiente",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [],
+        "justificativa": "O texto não especifica qual serviço ou componente está afetado nem detalha o sintoma observado."
+      },
+      "erro": null,
+      "ms": 1160
+    },
+    {
+      "indice": 2,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "devolver_cliente",
+        "kb_id": null,
+        "motivo": "informacao_insuficiente"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 3,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "devolver_cliente",
+        "texto_padrao": true
+      },
+      "resultado": {
+        "texto": "Para darmos andamento ao seu chamado, precisamos de mais informações:\n1. Qual serviço está com problema (site, e-mail, banco de dados, FTP/SFTP, acesso SSH, backup ou tarefa agendada)?\n2. Qual é o domínio ou o endereço afetado? Se for banco de dados, qual é o nome do banco?\n3. Qual mensagem ou código de erro aparece (por exemplo: 403, 502, \"permissão negada\")? Copie o texto como ele é exibido.\n4. Em que data e hora o problema começou? Ele acontece sempre ou só às vezes?\n5. Alguma coisa mudou pouco antes (publicação de nova versão, migração, restauração de backup, troca de senha)?"
+      },
+      "erro": null,
+      "ms": 0
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "insuficiente",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "devolver_cliente",
+    "kb_id": null,
+    "motivo": "informacao_insuficiente"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 0,
+  "episodio": null,
+  "segundos_gastos": 1.205
+}

@@ -1,0 +1,224 @@
+{
+  "execucao_id": "TKT-0001-b58866a5",
+  "id_ticket": "TKT-0001",
+  "executado_em": "2026-10-12T14:19:24-03:00",
+  "commit": "9d5c211 + alterações locais",
+  "entrada": "O certificado SSL do meu site venceu ontem e a renovação automática não rodou. O navegador mostra aviso de site não seguro para os meus clientes.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + ressalva-v3.md + redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "anotacao_interna",
+    "kb_id": "KB-101-A",
+    "encaminhamento": 1,
+    "destino": "anotacao_interna"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1649,
+  "tokens_saida": 181,
+  "custo_usd": 0.000275,
+  "scores_kb": {
+    "KB-101-A": 0.66,
+    "KB-110": 0.53,
+    "KB-104": 0.48
+  },
+  "saida": {
+    "id_ticket": "TKT-0001",
+    "executado_em": "2026-10-12T14:19:24-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "anotacao_interna",
+      "texto": "Verificar se o desafio HTTP-01 está sendo executado corretamente (porta 80 liberada e DNS do domínio apontando para o servidor correto). Caso confirmado, rodar o comando `certbot renew --dry-run` para testar a renovação. Se o timer do certbot estiver parado, reativá-lo conforme procedimento.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "procedimento_da_base",
+      "kb_id": "KB-101-A",
+      "score": 0.66,
+      "registros": [
+        "TKT-0001"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": true,
+      "motivo": "procedimento KB-101-A com score 0.66, igual ou acima do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0001"
+      },
+      "resultado": {
+        "id": "TKT-0001",
+        "aberto_em": "2026-09-21 08:12",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Acme Contabilidade",
+        "plano": "Hospedagem Business",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "certificado ssl",
+          "renovação automática",
+          "navegador",
+          "site não seguro"
+        ],
+        "justificativa": "o cliente relata falha no certificado SSL e na renovação automática, sintomas claros de problema técnico no serviço de hospedagem"
+      },
+      "erro": null,
+      "ms": 1833
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "certificado ssl",
+          "renovação automática",
+          "navegador",
+          "site não seguro"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-101-A",
+            "titulo": "Certificado SSL não renovou automaticamente",
+            "score": 0.66,
+            "cosseno": 0.867,
+            "causa": "Desafio HTTP-01 falhando (porta 80 bloqueada ou DNS apontando para outro IP) ou timer do certbot parado.",
+            "solucao": "Conferir DNS do domínio e liberação da porta 80; rodar \"certbot renew --dry-run\"; reativar o timer do certbot.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-110",
+            "titulo": "Site em laço de redirecionamentos",
+            "score": 0.53,
+            "cosseno": 0.814,
+            "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+            "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.48,
+            "cosseno": 0.795,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 985
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "anotacao_interna",
+        "kb_id": "KB-101-A",
+        "motivo": "procedimento_anotar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "anotacao_interna"
+      },
+      "resultado": {
+        "texto": "Verificar se o desafio HTTP-01 está sendo executado corretamente (porta 80 liberada e DNS do domínio apontando para o servidor correto). Caso confirmado, rodar o comando `certbot renew --dry-run` para testar a renovação. Se o timer do certbot estiver parado, reativá-lo conforme procedimento."
+      },
+      "erro": null,
+      "ms": 1765
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0001",
+        "destino": "anotacao_interna",
+        "mensagem": "Verificar se o desafio HTTP-01 está sendo executado corretamente (porta 80 liberada e DNS do domínio apontando para o servidor correto). Caso confirmado, rodar o comando `certbot renew --dry-run` para testar a renovação. Se o timer do certbot estiver parado, reativá-lo conforme procedimento.",
+        "kb_id": "KB-101-A"
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "anotacao_interna"
+      },
+      "erro": null,
+      "ms": 16
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "anotacao_interna",
+    "kb_id": "KB-101-A",
+    "motivo": "procedimento_anotar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1779,
+  "episodio": {
+    "execucao_id": "TKT-0001-b58866a5",
+    "ticket_externo": "TKT-0001",
+    "cliente_id": "CLI-01",
+    "classe": "tecnico",
+    "categoria": "ssl_certificado",
+    "kb_id": "KB-101-A",
+    "score": 0.66,
+    "acao_proposta": "anotacao_interna",
+    "desfecho": "anotacao_interna",
+    "motivo": "procedimento_anotar",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0001: classe tecnico; guia KB-101-A (score 0.66); proposto anotacao_interna; gravado anotacao_interna; término respondeu",
+    "criado_em": "2026-10-12T14:19:28-03:00",
+    "id": 1,
+    "chave": "d55b51717f5568a2",
+    "ja_existia": false
+  },
+  "segundos_gastos": 4.602
+}

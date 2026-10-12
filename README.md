@@ -6,7 +6,9 @@
 
 > Excesso de trabalho manual no processo de ingresso dos chamados e falta de padronização das informações dos chamados internos.
 
-Contexto, usuários, ganhos e riscos: [`docs/case.md`](docs/case.md) · Escolha do modelo: [`docs/modelos.md`](docs/modelos.md) · Arquitetura: [`docs/arquitetura-v2.md`](docs/arquitetura-v2.md) · Fontes: [`docs/fontes.md`](docs/fontes.md)
+Contexto, usuários, ganhos e riscos: [`docs/case.md`](docs/case.md) · Entrada e saída: [`docs/io.md`](docs/io.md) · Prompts: [`docs/prompts.md`](docs/prompts.md) · Arquitetura: [`docs/arquitetura.md`](docs/arquitetura.md) · Grafo e estado: [`docs/grafo.md`](docs/grafo.md) · RAG: [`docs/rag.md`](docs/rag.md) · Memória: [`docs/memoria.md`](docs/memoria.md) · Pontos de parada: [`docs/humano.md`](docs/humano.md) · Escolha do modelo: [`docs/modelos.md`](docs/modelos.md) · Fontes: [`docs/fontes.md`](docs/fontes.md)
+
+Histórico da Parte 1 (o laço sem framework): [`docs/arquitetura-v2.md`](docs/arquitetura-v2.md).
 
 ---
 
@@ -62,7 +64,18 @@ python conferir_grafo.py                    # imprime os nós, as arestas e os c
 
 **Dois caminhos.** O padrão é o grafo em LangGraph (`src/grafo.py`): o modelo classifica e redige, e o código decide o desfecho. Os logs dele vão para `logs/grafo/`. Com `--laco`, o chamado passa pelo laço da Parte 1 (`src/agente.py`), que grava em `logs/`; `--prompt ARQUIVO` escolhe um prompt do laço e já implica `--laco`. A entrada, a saída validada, o verificador e os comandos `--pendencias`, `--aprovar` e `--rejeitar` são os mesmos nos dois.
 
-**O que foi medido no grafo:** 8 de 8 casos no verificador em três execuções (10/10/2026; `logs/grafo/`, `logs/grafo-rodada-2/`, `logs/grafo-rodada-3/`), cada uma com 15 chamadas ao modelo e cerca de 12,6 mil tokens nos 8 casos. O laço, na rodada 3 do `agente-v5.md`, deu 7 de 8, com 31 chamadas e 69.889 tokens ([`docs/grafo.md`](docs/grafo.md) §6). **O exemplo abaixo e os de `docs/io.md` são do laço**, de quando ele era o caminho padrão: para repeti-los hoje, acrescente `--laco` ao comando. Os mesmos chamados pelo grafo estão em `logs/grafo/`.
+**O que foi medido no grafo:** 8 de 8 casos no verificador em três execuções (10/10/2026; `logs/grafo/`, `logs/grafo-rodada-2/`, `logs/grafo-rodada-3/`), cada uma com 15 chamadas ao modelo e cerca de 12,6 mil tokens nos 8 casos. O laço, na rodada 3 do `agente-v5.md`, deu 7 de 8, com 31 chamadas e 69.889 tokens ([`docs/grafo.md`](docs/grafo.md) §6). Essas três rodadas são anteriores à busca vetorial e ao nó da ressalva. Com os dois, a rodada de 11/10/2026 deu 8 de 8, com 17 chamadas e 14.440 tokens (`logs/grafo-fatos/`). Com o código e os prompts de 12/10/2026 (o pedido ao cliente esperando o analista, em texto padrão, e o `redigir-v3.md`), três rodadas deram 8 de 8, com 16 chamadas e cerca de 13,2 mil tokens cada (`logs/grafo-redigir-v3-1/` a `-3/`; [`docs/grafo.md`](docs/grafo.md) §6.5). **O exemplo abaixo e os de `docs/io.md` são do laço**, de quando ele era o caminho padrão: para repeti-los hoje, acrescente `--laco` ao comando.
+
+**Os seis casos do enunciado (Parte 2, §9), e onde está o log de cada um.** Os casos 1 a 4 são da rodada `logs/grafo-redigir-v3-1/` (grafo, 12/10/2026, `ministral-8b-latest`, commit `9d5c211 + alterações locais`, os prompts em uso).
+
+| # | O caso | Chamado | Log | O que aconteceu |
+|---|---|---|---|---|
+| 1 | simples | `TKT-0001` | `logs/grafo-redigir-v3-1/TKT-0001.json` | `anotacao_interna` com o guia KB-101-A, score 0,66 |
+| 2 | divergência | `TKT-0002` | `logs/grafo-redigir-v3-1/TKT-0002.json` | a triagem marcou que o log anexado aponta outro serviço; `fila_humana`, motivo `divergencia_relato_log` |
+| 3 | registro inexistente | `TKT-0999` | `logs/grafo-redigir-v3-1/TKT-0999.json` (grafo) e `logs/TKT-0999.json` (laço) | no grafo o id inexistente é uma rota do código: `fila_humana`, motivo `id_inexistente`, e o modelo só redige. O erro de ferramenta que **o modelo** contorna está no log do laço: a ferramenta devolve o erro e ele registra a fila humana, depois de 1 lembrete |
+| 4 | não deve disparar a ação principal | `TKT-0004` | `logs/grafo-redigir-v3-1/TKT-0004.json` | `fila_comercial`, sem busca e sem chamado interno |
+| 5 | pergunta fora do corpus | não há | **não há log de ponta a ponta** | a pergunta fora do corpus ("Como instalo o WordPress no meu site?") foi medida só na busca: o melhor guia fica abaixo do limiar (`docs/rag.md` §4.1; `logs/rag-medicao/saida.txt`, linha da P10). Falta passá-la pelo grafo, com log. A recusa que tem log é a do `TKT-0006` (`logs/grafo-redigir-v3-1/TKT-0006.json`): guia com score abaixo de 0,5, `fila_humana` |
+| 6 | a ação que para e espera | `TKT-0007` | `logs/grafo-caso-6/` | pausa, uma edição recusada, aprovação com edição e a segunda aprovação sem duplicar (`saida-terminal.txt`). O mesmo para o pedido ao cliente, com o `TKT-0005`, em `logs/grafo-h2/` (aprovação com edição) e `logs/grafo-pedido-padrao-h2/` (o texto padrão do pedido, em uso) |
 
 **Quando o grafo para e espera alguém.** Abrir chamado interno é irreversível. Sem `--auto-aprovar`, a execução para antes de gravar, mostra a ação exata (id, categoria, resumo, time, procedimento, prioridade prevista, hora do pedido e do prazo) e a consequência de aprová-la, e termina em `aguardando_humano`. O analista tem 20 minutos para responder, de outro terminal; `--pendencias` lista o que espera. São três respostas:
 
@@ -72,7 +85,7 @@ python conferir_grafo.py                    # imprime os nós, as arestas e os c
 
 Uma sequência real (pausar, listar, uma edição recusada, aprovar editando e aprovar de novo sem duplicar) está em `logs/grafo-caso-6/saida-terminal.txt`; a aprovação simples, em `logs/grafo-pausa/saida-terminal.txt`.
 
-**O pedido de informação ao cliente também espera o analista** (desde 12/10/2026, só no grafo). A mensagem chega ao cliente e não tem volta, então o `devolver_cliente` pausa do mesmo jeito, com o mesmo prazo. A tela mostra o relato do cliente e a mensagem redigida. As respostas são `--aprovar TKT-0000`, `--aprovar TKT-0000 --mensagem "texto corrigido"` (a mensagem do analista passa pela mesma regra: nenhuma informação interna) e `--rejeitar TKT-0000`, com `--motivo mensagem_ruim`, `informacao_suficiente` ou `outro`, se quiser. Rejeitado ou vencido, o chamado vai para a fila humana e o único pedido permitido do chamado não é gasto. **Limite:** o sistema simulado não tem canal de mensagem; "enviar" é gravar o pedido com a hora do envio. Sequência real em `logs/grafo-h2/saida-terminal.txt`, e o que ela achou em [`docs/humano.md`](docs/humano.md) §2.4.
+**O pedido de informação ao cliente também espera o analista** (desde 12/10/2026, só no grafo). A mensagem chega ao cliente e não tem volta, então o `devolver_cliente` pausa do mesmo jeito, com o mesmo prazo. A tela mostra o relato do cliente e a mensagem, que é um texto padrão com cinco perguntas (serviço, domínio ou banco, erro, data e hora, o que mudou), e não texto do modelo ([`docs/prompts.md`](docs/prompts.md) §2.2). As respostas são `--aprovar TKT-0000`, `--aprovar TKT-0000 --mensagem "texto corrigido"` (a mensagem do analista passa pela mesma regra: nenhuma informação interna) e `--rejeitar TKT-0000`, com `--motivo mensagem_ruim`, `informacao_suficiente` ou `outro`, se quiser. Rejeitado ou vencido, o chamado vai para a fila humana e o único pedido permitido do chamado não é gasto. **Limite:** o sistema simulado não tem canal de mensagem; "enviar" é gravar o pedido com a hora do envio. Sequência real em `logs/grafo-h2/saida-terminal.txt`, e o que ela achou em [`docs/humano.md`](docs/humano.md) §2.4.
 
 Os chamados disponíveis são `TKT-0001` a `TKT-0007` e o inexistente `TKT-0999` (ver [`dados/README.md`](dados/README.md)).
 
@@ -93,9 +106,9 @@ Como interpretar o término (`TERMINO:` na saída):
 | Término | Significa |
 |---|---|
 | `respondeu` | o agente registrou um desfecho e concluiu |
-| `aguardando_humano` | a abertura do chamado espera o analista: nada foi gravado ainda. A ação fica na tabela `pendencias`, com o prazo de 20 minutos; `--aprovar` conclui a execução (término `respondeu`). Com `--rejeitar`, ou vencido o prazo, o chamado vai para a fila humana com as considerações do agente (término `respondeu`, desfecho `fila_humana`); no prazo vencido de um chamado que seria P1, o gestor também é avisado. O prazo é aplicado no começo do próximo comando do `main.py`: não há processo em segundo plano |
-| `orcamento_esgotado` | passou de 8 passos, 30 mil tokens, US$ 0,05 ou 90 s; o motivo diz qual teto |
-| `erro_fatal` | não há como continuar (API fora, chave inválida, modelo encerrou sem desfecho) |
+| `aguardando_humano` | a ação irreversível (abrir chamado interno ou, no grafo, enviar o pedido ao cliente) espera o analista: nada foi gravado ainda. A ação fica na tabela `pendencias`, com o prazo de 20 minutos; `--aprovar` conclui a execução (término `respondeu`). Com `--rejeitar`, ou vencido o prazo, o chamado vai para a fila humana com as considerações do agente (término `respondeu`, desfecho `fila_humana`); no prazo vencido de um chamado que seria P1, o gestor também é avisado. O prazo é aplicado no começo do próximo comando do `main.py`: não há processo em segundo plano |
+| `orcamento_esgotado` | passou de 30 mil tokens, US$ 0,05, 90 s ou do limite de passos (20 superpassos no grafo; 8 passos no laço); o motivo diz qual teto |
+| `erro_fatal` | não há como continuar: API fora ou chave inválida; no grafo, resposta do modelo fora do contrato 2 vezes ou texto redigido reprovado 2 vezes; no laço, modelo que encerra sem desfecho depois de 2 lembretes |
 
 **Exemplo completo, com entrada e saída reais.** É o caminho feliz do [`docs/io.md`](docs/io.md) §3.1:
 execução de `2026-10-10T15:45:26-03:00`, com `ministral-8b-latest` e o prompt `agente-v5.md`, commit
@@ -181,23 +194,33 @@ Saída (o objeto validado, campo `saida` do log):
 
 Como ler: o agente consultou o registro do chamado (passo 0), buscou na base (passo 1) e encontrou o procedimento KB-101 com score 0,62, acima do limiar de 0,5. Como o procedimento é "anotar", ele registrou uma anotação com a correção sugerida para o analista (passo 2) e **não abriu chamado interno**: por isso `chamado_interno`, `time_destino` e `prioridade` estão nulos. `suficiencia.suficiente: true` quer dizer que o sistema teve base para agir sozinho, e `fonte` diz qual. O custo é o simulado a preço de lista; no plano gratuito o gasto real é zero.
 
-**O que ele não faz.** Não executa correções, não encerra chamados, não altera prioridade (só o gestor reclassifica) e só fala diretamente com o cliente para pedir a informação que falta (`devolver_cliente`, no máximo um pedido por chamado). Na Parte 1 o pedido fica gravado em `encaminhamentos` e a execução termina; o envio ao cliente (que, por ser irreversível, exige a confirmação do analista) e a retomada da mesma conversa com a resposta entram na Parte 2. A base de conhecimento é uma busca por palavras-chave (Parte 1): ela não entende sinônimos, e é a razão de alguns chamados ficarem na `fila_humana` mesmo com procedimento existente.
+**O que ele não faz.** Não executa correções, não encerra chamados, não altera prioridade (só o gestor reclassifica) e só fala diretamente com o cliente para pedir a informação que falta (`devolver_cliente`, no máximo um pedido por chamado). No grafo o pedido espera a confirmação do analista e é registrado como enviado; **não há canal de mensagem, e a espera pela resposta do cliente não foi implementada**: a execução termina depois do envio. No laço (`--laco`) o pedido é gravado sem confirmação.
+
+**A base de conhecimento.** No grafo a busca é vetorial (`mistral-embed`), sobre 15 guias vigentes; um nó em que o modelo lê as exceções de cada guia cobre parte do que o vetor não enxerga ([`docs/rag.md`](docs/rag.md) §4). Limite assumido: nenhum limiar separa bem as perguntas sem resposta na base, e 5 de 31 delas ainda levam a uma ação. No laço a busca é por palavras-chave, que não entende sinônimos.
+
+**O que ele lembra.** O grafo grava um registro por execução concluída e mostra ao analista, na tela da confirmação, o que já foi decidido sobre o mesmo guia; o analista pode registrar fatos do ambiente de um cliente (`--fato`). A memória só informa: nenhuma decisão do sistema a lê ([`docs/memoria.md`](docs/memoria.md)).
 
 **Quando ele não sabe.** Não chuta: o score da base abaixo de 0,5, um id inexistente ou um relato que contradiz o log anexado terminam em `fila_humana`, com uma mensagem que diz o que foi encontrado e por que um humano deve olhar.
 
 ## Estrutura
 
 ```
-src/         agente.py (laço, estado, orçamento) · ferramentas.py · db.py (SQLite) · verificar.py
-             saida.py (contrato de saída) · grafo.py (o grafo em LangGraph, Parte 2)
-             main.py · comparar_modelos.py (item 3.3) · ver_log.py
+src/         grafo.py (o grafo em LangGraph: o caminho padrão) · vetorial.py (a busca vetorial do grafo)
+             agente.py (o laço da Parte 1, estado, orçamento) · ferramentas.py · db.py (SQLite; a única
+             camada que toca o banco, e onde ficam a memória e a busca por palavra) · saida.py (contrato de saída)
+             verificar.py · main.py · medir_rag.py (as medições de docs/rag.md) · comparar_modelos.py
+             (item 3.3 da Parte 1) · ver_log.py · testar_api.py
 conferir_grafo.py   imprime o grafo compilado, para conferir com o desenho (docs/arquitetura.md §9)
-src/prompts/ agente-v5.md e lembrete-v1.md (os prompts em uso, carregados em tempo de execução por agente.py)
+src/prompts/ no grafo, em uso: triagem-v1.md · ressalva-v3.md · redigir-v3.md (carregados por grafo.py)
+             ressalva-v1.md, redigir-v1.md e redigir-v2.md (anteriores) · ressalva-v2.md (medido e não adotado)
+             no laço, em uso: agente-v5.md e lembrete-v1.md (carregados por agente.py)
              agente-v1.md a agente-v4.md (histórico) · agente-v5-sem-frase.md (variante do teste da regra da frase,
              docs/prompts.md §3) · agente-v4-com-frase.md e agente-v4-sem-frase.md (testes anteriores, §3.6)
-             triagem-v1.md e redigir-v1.md (os dois prompts do grafo)
 dados/       seed.sql · gabarito.json · README.md (casos difíceis nomeados)
-tests/       testes offline (sem chave): test_offline.py (o laço) e test_grafo.py (o grafo)
-docs/        case.md · modelos.md · modelos-tabela-3.3.md · arquitetura-v2.md · base-de-conhecimento-v2.md · memoria.md · fontes.md
-logs/        trajetória de cada execução demonstrada (JSON)
+tests/       testes offline (sem chave): test_grafo.py (o grafo) · test_offline.py (o laço) · test_vetorial.py (a busca vetorial)
+docs/        case.md · io.md · prompts.md · arquitetura.md · grafo.md · rag.md · memoria.md · humano.md
+             modelos.md · modelos-tabela-3.3.md · base-de-conhecimento-v2.md · fontes.md
+             arquitetura-v2.md (histórico da Parte 1)
+logs/        trajetória de cada execução demonstrada (JSON); logs/grafo*/ são do grafo, logs/TKT-*.json e
+             logs/rodada-*/ do laço, logs/rag-medicao/ das medições da busca
 ```

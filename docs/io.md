@@ -4,6 +4,12 @@
 > (Pydantic), e o log passou a gravar data, hora e commit de cada execução (10/10/2026). O contrato
 > de entrada (§1) **também**: o programa recebe o texto do chamado, digitado, junto do id. Os cinco
 > exemplos (§3) são **execuções reais de 10/10/2026**, do commit `861a948`, copiadas de `logs/`.
+>
+> **12/10/2026: os exemplos são do laço da Parte 1, e não do grafo, que é o caminho padrão.**
+> O contrato de saída é o mesmo nos dois, mas o conteúdo mudou: no grafo a busca é vetorial, o
+> guia de SSL vigente é o `KB-101-A` e o pedido ao cliente espera o analista. Refazer os cinco
+> pelo grafo está pendente (§5); os mesmos chamados pelo grafo, com o código e os prompts de
+> 12/10/2026, estão em `logs/grafo-redigir-v3-1/`.
 
 ## 1. A entrada
 
@@ -16,7 +22,7 @@ time.
 | **texto do chamado** | o cliente, ao abrir o chamado externo | o cliente |
 | id do chamado (`TKT-0000`) | sistema de chamados | ninguém; vira o `thread_id` da conversa |
 | id do cliente | sistema de chamados | ninguém |
-| resposta do cliente ao pedido de informação | o cliente, no mesmo chamado | o cliente; retoma a mesma conversa |
+| resposta do cliente ao pedido de informação | o cliente, no mesmo chamado | o cliente. **Não implementado:** a espera pela resposta (H3) não existe; hoje a resposta entraria como o texto de uma execução nova do mesmo chamado |
 
 O que não é entrada:
 
@@ -310,9 +316,20 @@ do que falta (serviço ou servidor afetado, erro ou comportamento, desde quando)
 sem informação interna. `fonte.ferramentas` mostra que o agente não buscou na base: classificou
 antes, e um relato sem serviço nem sintoma não vai à busca. Nenhum chamado interno foi aberto.
 
-Limite: nesta versão o pedido fica gravado e a execução termina. A confirmação do analista antes
-do envio, a pausa em "aguardando cliente" e a retomada da mesma conversa com a resposta ainda não
-estão implementadas (`docs/case.md` §2.4).
+Limite: este exemplo é do laço, em que o pedido fica gravado e a execução termina. **No grafo,
+desde 12/10/2026, o pedido espera a confirmação do analista** (H2): sem `--auto-aprovar` a
+execução termina em `aguardando_humano`, com `resultado.acao` nulo, e o pedido só é gravado
+depois da aprovação (`humano.md` §2.4; execução real em `logs/grafo-h2/`). A pausa em "aguardando
+cliente" e a retomada da mesma conversa com a resposta não estão implementadas (`case.md` §2.4).
+
+**A mensagem do grafo, antes e depois de 12/10/2026.** Aqui o texto lista o que falta (serviço,
+erro, desde quando). No grafo, a mensagem que o `redigir-v1.md` escrevia para o mesmo chamado
+repetia a queixa e não perguntava nada, em 15 execuções de 15, e o caso passava: nem o contrato
+de saída nem o verificador leem o conteúdo do texto. Desde 12/10/2026 o pedido é **texto padrão
+do código**, e não do modelo: `resultado.texto` abre com "Para darmos andamento ao seu chamado,
+precisamos de mais informações:" e faz cinco perguntas (o serviço; o domínio ou o nome do banco;
+a mensagem ou o código de erro; a data e a hora; o que mudou antes). Está em
+`logs/grafo-redigir-v3-1/TKT-0005.json`, e a razão em `prompts.md` §2.1 e §2.2.
 
 ### 3.5 Entrada ambígua: `TKT-0002`
 
@@ -378,10 +395,14 @@ agente chegou a abrir o chamado indevido (o log dessa execução foi sobrescrito
 | Situação | O que o sistema faz | Exemplo real |
 |---|---|---|
 | **fora do escopo** | redireciona à fila comercial, sem consultar a base e sem abrir chamado | `TKT-0004`, §3.3 |
-| **incompleta** | pede ao cliente o serviço afetado, o sintoma e desde quando (`devolver_cliente`), no máximo uma vez | `TKT-0005`, §3.4 |
+| **incompleta** | pede ao cliente o serviço afetado, o sintoma e desde quando (`devolver_cliente`), no máximo uma vez; no grafo, depois da confirmação do analista. No grafo o pedido é um texto padrão com cinco perguntas, desde 12/10/2026 (§3.4) | `TKT-0005`, §3.4; `logs/grafo-redigir-v3-1/TKT-0005.json` |
 | **ambígua** | não age sozinho: envia à fila humana declarando as duas leituras | `TKT-0002`, §3.5 |
 
 ## 5. O que falta para este item
 
-- Nada pendente no contrato de entrada e de saída. O que falta está fora deste item: a confirmação
-  do analista, o envio do pedido ao cliente e a retomada da conversa (§3.4).
+- O contrato de entrada e o de saída estão implementados e valem nos dois caminhos.
+- **Refazer os cinco exemplos pelo grafo.** Os do §3 são do laço, com a busca por palavra e o id
+  antigo do guia de SSL. Os mesmos chamados pelo grafo, com o código e os prompts atuais, estão
+  em `logs/grafo-redigir-v3-1/` (12/10/2026), e não foram copiados para cá.
+- A confirmação do analista antes do envio do pedido existe desde 12/10/2026 (H2). Faltam a
+  espera pela resposta do cliente e a retomada da conversa (H3).

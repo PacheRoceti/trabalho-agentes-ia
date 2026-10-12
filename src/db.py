@@ -10,6 +10,7 @@ SQLite porque não exige servidor: o projeto precisa rodar do zero em <5 min.
 Na Parte 2 esta camada vira servidor MCP; trocar SQLite por outro banco
 (MySQL, Postgres) é mexer só neste arquivo.
 """
+import hashlib
 import json
 import re
 import sqlite3
@@ -124,8 +125,14 @@ CREATE TABLE IF NOT EXISTS episodios (
     motivo_rejeicao TEXT,                      -- o que o analista disse ao rejeitar (MOTIVOS_REJEICAO) ou NULL
     termino        TEXT NOT NULL,
     resumo         TEXT NOT NULL,              -- montado pelo código, nunca texto do modelo
-    criado_em      TEXT NOT NULL               -- ISO 8601 com fuso
+    criado_em      TEXT NOT NULL,              -- ISO 8601 com fuso
+    chave          TEXT                        -- idempotência da escrita (chave_do_episodio); NULL = sem execução de origem
 )"""
+
+# O que identifica um episódio: a execução e o que ela decidiu. A hora da gravação fica de fora,
+# porque uma gravação repetida teria outra hora e a mesma chave não seria reconhecida.
+CAMPOS_DA_CHAVE_DO_EPISODIO = ("execucao_id", "ticket_externo", "kb_id", "acao_proposta", "desfecho",
+                               "veredito", "motivo_rejeicao", "termino")
 
 # Decaimento (docs/memoria.md §2.2): até 90 dias o episódio é recente; entre 90 e 365 ele ainda
 # aparece, marcado como antigo, e não entra na contagem do aviso; depois de 365 é removido.
@@ -204,6 +211,9 @@ def conectar() -> sqlite3.Connection:
     colunas = {c["name"] for c in con.execute("PRAGMA table_info(encaminhamentos)")}
     if colunas and "enviado_em" not in colunas:
         con.execute("ALTER TABLE encaminhamentos ADD COLUMN enviado_em TEXT")
+    # Banco criado antes da chave de idempotência do episódio (12/10/2026).
+    if "chave" not in {c["name"] for c in con.execute("PRAGMA table_info(episodios)")}:
+        con.execute("ALTER TABLE episodios ADD COLUMN chave TEXT")
     return con
 
 
@@ -572,16 +582,35 @@ def _idade_em_dias(criado_em: str, agora: datetime) -> float:
     return (agora - datetime.fromisoformat(criado_em)).total_seconds() / 86400
 
 
-def registrar_episodio(con, episodio: dict) -> int:
-    """Grava o registro de uma execução concluída. Quem chama é o código, com campos do estado."""
+def chave_do_episodio(episodio: dict) -> str | None:
+    """A chave de idempotência do episódio, derivada do conteúdo: o mesmo registro da mesma
+    execução dá a mesma chave. Sem `execucao_id` não há chave (None): é o episódio que não veio
+    de uma execução, e ele é sempre gravado."""
+    if not episodio.get("execucao_id"):
+        return None
+    conteudo = json.dumps([episodio.get(c) for c in CAMPOS_DA_CHAVE_DO_EPISODIO], ensure_ascii=False)
+    return hashlib.sha256(conteudo.encode("utf-8")).hexdigest()[:16]
+
+
+def registrar_episodio(con, episodio: dict) -> dict:
+    """Grava o registro de uma execução concluída. Quem chama é o código, com campos do estado.
+    Idempotente pela chave do conteúdo: gravado de novo, o mesmo episódio não cria outra linha, e
+    o retorno diz isso (`ja_existia`). Executar de novo o mesmo chamado é outra execução, com
+    outra chave: são dois episódios."""
+    chave = chave_do_episodio(episodio)
+    if chave:
+        existente = con.execute("SELECT id FROM episodios WHERE chave = ? ORDER BY id LIMIT 1",
+                                (chave,)).fetchone()
+        if existente:
+            return {"id": existente["id"], "chave": chave, "ja_existia": True}
     campos = ("ticket_externo", "cliente_id", "classe", "categoria", "kb_id", "score",
               "acao_proposta", "desfecho", "motivo", "veredito", "motivo_rejeicao", "termino",
               "resumo", "criado_em")
     cur = con.execute(
-        f"INSERT INTO episodios ({', '.join(campos)}) VALUES ({', '.join('?' * len(campos))})",
-        tuple(episodio.get(c) for c in campos))
+        f"INSERT INTO episodios ({', '.join(campos)}, chave) VALUES ({', '.join('?' * (len(campos) + 1))})",
+        tuple(episodio.get(c) for c in campos) + (chave,))
     con.commit()
-    return cur.lastrowid
+    return {"id": cur.lastrowid, "chave": chave, "ja_existia": False}
 
 
 def esquecer_episodios(con, agora: datetime | None = None) -> int:
@@ -660,7 +689,9 @@ def candidatas_a_regra(con, agora: datetime | None = None, minimo: int = MINIMO_
 def registrar_fato(con, cliente_id: str, chave: str, valor: str, por: str,
                    quando: str | None = None) -> dict:
     """Grava um fato confirmado sobre o cliente. O valor anterior da mesma chave deixa de valer
-    (contradição: vale o mais novo), e fica na tabela com a data em que foi substituído."""
+    (contradição: vale o mais novo), e fica na tabela com a data em que foi substituído.
+    Idempotente pelo conteúdo (cliente, chave, valor): confirmar de novo o valor que já vale não
+    cria linha nem muda a data da confirmação, e o retorno traz `ja_existia`."""
     if con.execute("SELECT 1 FROM clientes WHERE id = ?", (cliente_id,)).fetchone() is None:
         raise FatoRecusado(f"cliente {cliente_id} não existe")
     if chave not in FATOS_ACEITOS or valor not in FATOS_ACEITOS[chave]:
@@ -669,14 +700,14 @@ def registrar_fato(con, cliente_id: str, chave: str, valor: str, por: str,
     quando = quando or datetime.now().astimezone().isoformat(timespec="seconds")
     atual = fatos_do_cliente(con, cliente_id).get(chave)
     if atual and atual["valor"] == valor:
-        return {**atual, "mudou": False}
+        return {**atual, "ja_existia": True}
     con.execute("""UPDATE fatos_cliente SET substituido_em = ?
                    WHERE cliente_id = ? AND chave = ? AND substituido_em IS NULL""",
                 (quando, cliente_id, chave))
     con.execute("""INSERT INTO fatos_cliente (cliente_id, chave, valor, confirmado_por, confirmado_em)
                    VALUES (?, ?, ?, ?, ?)""", (cliente_id, chave, valor, por, quando))
     con.commit()
-    return {**fatos_do_cliente(con, cliente_id)[chave], "mudou": True,
+    return {**fatos_do_cliente(con, cliente_id)[chave], "ja_existia": False,
             "substituiu": atual["valor"] if atual else None}
 
 

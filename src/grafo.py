@@ -5,10 +5,13 @@ Este arquivo é o caminho padrão do main.py. O laço da Parte 1 continua em age
 
 O que muda em relação ao laço (docs/grafo.md):
 
-    MODELO  é chamado em dois nós, e em nenhum deles escolhe ferramenta:
-              triagem   classifica o assunto, diz se o log aponta outro serviço e escolhe os
-                        termos de busca (saída estruturada, validada)
-              redigir   escreve o resumo ou a mensagem de um desfecho JÁ decidido
+    MODELO  é chamado em três nós, e em nenhum deles escolhe ferramenta (o `redigir` não o chama
+            no pedido ao cliente, que tem texto padrão: PEDIDO_AO_CLIENTE):
+              triagem            classifica o assunto, diz se o log aponta outro serviço e escolhe
+                                 os termos de busca (saída estruturada, validada)
+              conferir_ressalva  só quando o 1º guia declara situações que não cobre: diz se o
+                                 relato cai numa delas (o código só pode BAIXAR o score)
+              redigir            escreve o resumo ou a mensagem de um desfecho JÁ decidido
     CÓDIGO  decide a rota e o desfecho (nó `decidir`: classe + contagem de pedidos + score da
             busca), valida o texto, pede a confirmação humana, grava e registra o término.
 
@@ -25,6 +28,7 @@ import operator
 import os
 import sqlite3
 import time
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -50,7 +54,7 @@ from saida import montar_saida
 
 RAIZ = Path(__file__).resolve().parent.parent
 PROMPT_TRIAGEM = PROMPTS / "triagem-v1.md"
-PROMPT_REDIGIR = PROMPTS / "redigir-v1.md"
+PROMPT_REDIGIR = PROMPTS / "redigir-v3.md"
 PROMPT_RESSALVA = PROMPTS / "ressalva-v3.md"
 
 MAX_TENTATIVAS_TRIAGEM = 2     # saída fora do contrato volta ao modelo uma vez
@@ -74,6 +78,29 @@ CAMPO_EDITAVEL = {
     "abrir_chamado_interno": ("resumo", "resumo_original", "resumo_aprovado"),
     "devolver_cliente": ("mensagem", "mensagem_original", "mensagem_aprovada"),
 }
+
+# O PEDIDO DE INFORMAÇÃO AO CLIENTE (desfecho devolver_cliente) é texto padrão, e não do modelo
+# (decisão de 12/10/2026, docs/prompts.md §2.2). O que falta num relato sem serviço nem sintoma é
+# sempre a mesma coisa, então não há o que o modelo decidir; e ele errou esse texto em 15
+# execuções de 15 com o redigir-v1.md. As perguntas vêm do que os guias da base usam para
+# separar um caso do outro (dados/seed.sql, kb_artigos):
+#   1  o serviço            cada guia é de um serviço: site, e-mail, banco, FTP/SFTP, SSH, backup, cron
+#   2  domínio e banco      KB-101-A, 106, 110, 111, 112 (domínio); KB-107 (banco de dados)
+#   3  mensagem ou código   KB-104 (5xx), KB-112 (403), KB-102 ("permissão negada"), KB-107, KB-113
+#   4  data, hora, sempre?  a reincidência conta datas; KB-104 só cobre a falha CONSTANTE
+#   5  o que mudou antes    as causas de KB-102, 104, 107 e 114: publicação, migração, restauração, senha
+# O texto passa pelo nó `validar` como qualquer outro (nenhum termo interno), e o analista pode
+# trocá-lo ao aprovar (--mensagem).
+PEDIDO_AO_CLIENTE = (
+    "Para darmos andamento ao seu chamado, precisamos de mais informações:\n"
+    "1. Qual serviço está com problema (site, e-mail, banco de dados, FTP/SFTP, acesso SSH, "
+    "backup ou tarefa agendada)?\n"
+    "2. Qual é o domínio ou o endereço afetado? Se for banco de dados, qual é o nome do banco?\n"
+    "3. Qual mensagem ou código de erro aparece (por exemplo: 403, 502, \"permissão negada\")? "
+    "Copie o texto como ele é exibido.\n"
+    "4. Em que data e hora o problema começou? Ele acontece sempre ou só às vezes?\n"
+    "5. Alguma coisa mudou pouco antes (publicação de nova versão, migração, restauração de "
+    "backup, troca de senha)?")
 
 
 # ================================================================ SAÍDAS DO MODELO
@@ -350,7 +377,7 @@ def conferir_ressalva(state, ctx):
     (db.REDUTOR), e só se a frase citada for uma das do guia: o modelo pode BAIXAR o score, nunca
     subir, e não inventa uma exceção."""
     # ETAPA "conferir_ressalva" — técnica: zero-shot, classificação binária com saída em JSON
-    # validada por schema (cabeçalho de src/prompts/ressalva-v1.md). temperature=0.
+    # validada por schema (cabeçalho de src/prompts/ressalva-v3.md). temperature=0.
     melhor, frases = state["candidatos"][0], state["ressalvas_do_melhor"]
     sistema = _ler_prompt(PROMPT_RESSALVA)
     usuario = (f"{_registro_para_o_modelo(state)}\n\nProcedimento: {melhor['kb_id']} - {melhor['titulo']}\n"
@@ -435,13 +462,18 @@ def decidir(state, ctx):
 
 
 def redigir(state, ctx):
-    """MODELO. Redige o resumo ou a mensagem do desfecho que o código já decidiu."""
+    """MODELO. Redige o resumo ou a mensagem do desfecho que o código já decidiu. No pedido de
+    informação ao cliente o modelo NÃO é chamado: o texto é o padrão (PEDIDO_AO_CLIENTE)."""
+    proposto, candidatos = state["desfecho_proposto"], state.get("candidatos") or []
+    if proposto["acao"] == "devolver_cliente":
+        return {"texto_redigido": PEDIDO_AO_CLIENTE, "tentativas_redacao": 1,
+                "passos": [_passo(state, "redigir", {"desfecho": proposto["acao"], "texto_padrao": True},
+                                  {"texto": PEDIDO_AO_CLIENTE})]}
     # ETAPA "redigir" — técnica: zero-shot, geração com saída em JSON de um campo (cabeçalho de
-    # src/prompts/redigir-v1.md). temperature=0: o texto vai para um registro, não é conversa.
+    # src/prompts/redigir-v3.md). temperature=0: o texto vai para um registro, não é conversa.
     motivo = _teto(state, ctx)
     if motivo:
         return {"termino": Termino.ORCAMENTO.value, "motivo": motivo}
-    proposto, candidatos = state["desfecho_proposto"], state.get("candidatos") or []
     usuario = (f"DESFECHO: {proposto['acao']}\nMOTIVO: {proposto['motivo']}\n\n"
                f"{_registro_para_o_modelo(state)}")
     if state.get("termos"):
@@ -786,7 +818,8 @@ def _episodio(v: dict, e: Estado, con) -> dict:
               + (f"; analista: {veredito}" if veredito else "")
               + (f" ({conf['motivo_rejeicao']})" if conf and conf.get("motivo_rejeicao") else "")
               + f"; término {e.termino.value}")
-    return {"ticket_externo": v["id_ticket"], "cliente_id": ticket.get("_cliente_id"),
+    return {"execucao_id": v["execucao_id"],      # não é coluna: entra na chave de idempotência
+            "ticket_externo": v["id_ticket"], "cliente_id": ticket.get("_cliente_id"),
             "classe": v.get("classe"), "categoria": artigo["categoria"] if artigo else None,
             "kb_id": kb_id, "score": score, "acao_proposta": proposto.get("acao"),
             "desfecho": desfecho.get("acao"), "motivo": motivo, "veredito": veredito,
@@ -795,7 +828,9 @@ def _episodio(v: dict, e: Estado, con) -> dict:
 
 
 def _concluir(id_ticket: str, log_dir: Path | None, con, estourou: bool = False) -> Estado:
-    """Lê o que ficou no checkpoint depois de uma invocação e devolve o `Estado`, com o log."""
+    """Lê o que ficou no checkpoint depois de uma invocação e devolve o `Estado`, com o log.
+    Execução concluída: o checkpoint é apagado aqui, depois do log. Ele guarda o texto do cliente
+    e o log anexado por inteiro, e só serve para retomar (docs/memoria.md §1.4)."""
     foto = GRAFO.get_state(_config(id_ticket))
     v = foto.values
     if estourou:
@@ -811,7 +846,7 @@ def _concluir(id_ticket: str, log_dir: Path | None, con, estourou: bool = False)
     episodio = None
     if MEMORIA and (estourou or not foto.next):   # execução pausada ainda não é um episódio
         episodio = _episodio(v, e, con)
-        episodio["id"] = db.registrar_episodio(con, episodio)
+        episodio.update(db.registrar_episodio(con, episodio))     # id, chave, ja_existia
     if log_dir is not None:
         log_dir.mkdir(parents=True, exist_ok=True)
         registro = e.para_dict()
@@ -823,6 +858,8 @@ def _concluir(id_ticket: str, log_dir: Path | None, con, estourou: bool = False)
                         segundos_gastos=round(v.get("segundos_gastos", 0.0), 3))
         (log_dir / f"{id_ticket}.json").write_text(
             json.dumps(registro, ensure_ascii=False, indent=2), encoding="utf-8")
+    if estourou or not foto.next:          # só a execução pausada precisa do checkpoint
+        CHECKPOINTER.delete_thread(id_ticket)
     return e
 
 
@@ -839,7 +876,9 @@ def rodar_grafo(id_ticket: str, *, client, modelo: str, con, temperatura: float 
                    orcamento=orcamento or Orcamento(), confirmador=confirmador, verbose=verbose,
                    log_dir=log_dir)
     inicial = {"id_ticket": id_ticket, "modelo": modelo, "temperatura": temperatura,
-               "execucao_id": f"{id_ticket}-{int(time.time()) % 100000}",
+               # Único por execução: entra na chave de idempotência do episódio (db.chave_do_episodio).
+               # O relógio em segundos, como no laço, repetiria em duas execuções seguidas.
+               "execucao_id": f"{id_ticket}-{uuid.uuid4().hex[:8]}",
                "executado_em": _agora(), "commit": _commit(), "texto_recebido": texto,
                "prazo_confirmacao_min": prazo_confirmacao_min}
     try:

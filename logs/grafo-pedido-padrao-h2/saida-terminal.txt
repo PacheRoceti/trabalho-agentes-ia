@@ -1,0 +1,143 @@
+$ python src/main.py TKT-0005 --reset --rodada grafo-pedido-padrao-h2
+Banco simulado recriado a partir de dados/seed.sql
+Texto do chamado TKT-0005 (Enter em branco usa o texto registrado):
+> 
+==============================================================================
+TKT-0005  (caso: informacao_insuficiente)  modelo: ministral-8b-latest  prompt: triagem-v1.md + ressalva-v3.md + redigir-v2.md (grafo)
+
+  nó consultar         consultar_ticket {"id_ticket": "TKT-0005"} -> ok
+  nó triagem           triagem {} -> ok
+  nó decidir           decidir {} -> ok
+  nó redigir           redigir {"desfecho": "devolver_cliente", "texto_padrao": true} -> ok
+  ENTRADA: Meu servidor não está funcionando direito.
+
+  TERMINO: aguardando_humano | desfecho: nenhum | passos: 4 | chamadas ao modelo: 1 | lembretes: 0 | tokens: 621 | custo: US$ 0.00009
+  motivo: aguardando a confirmação do analista até 2026-10-12T14:41:06-03:00 (prazo de 20 minutos)
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0005",
+      "executado_em": "2026-10-12T14:21:04-03:00",
+      "termino": "aguardando_humano",
+      "resultado": {
+        "acao": null,
+        "texto": null,
+        "chamado_interno": null,
+        "time_destino": null,
+        "prioridade": null
+      },
+      "fonte": {
+        "tipo": "registro_do_chamado",
+        "kb_id": null,
+        "score": null,
+        "registros": [
+          "TKT-0005"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "triagem",
+          "decidir",
+          "redigir"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": false,
+        "motivo": "a execução terminou sem desfecho (aguardando_humano: aguardando a confirmação do analista até 2026-10-12T14:41:06-03:00 (prazo de 20 minutos))"
+      }
+    }
+
+  >> AÇÃO IRREVERSÍVEL aguardando o analista de suporte:
+     ferramenta: devolver_cliente
+     id_ticket: TKT-0005
+     relato: Meu servidor não está funcionando direito.
+     mensagem: Para darmos andamento ao seu chamado, precisamos de mais informações:
+1. Qual serviço está com problema (site, e-mail, banco de dados, FTP/SFTP, acesso SSH, backup ou tarefa agendada)?
+2. Qual é o domínio ou o endereço afetado? Se for banco de dados, qual é o nome do banco?
+3. Qual mensagem ou código de erro aparece (por exemplo: 403, 502, "permissão negada")? Copie o texto como ele é exibido.
+4. Em que data e hora o problema começou? Ele acontece sempre ou só às vezes?
+5. Alguma coisa mudou pouco antes (publicação de nova versão, migração, restauração de backup, troca de senha)?
+     plano: Hospedagem Start
+     pedido_em: 2026-10-12T14:21:06-03:00
+     vence_em: 2026-10-12T14:41:06-03:00
+     faltam: 20 min
+     se aprovada: o pedido é registrado como enviado ao cliente e não tem volta (o sistema simulado não tem canal de mensagem). É o único pedido de informação permitido neste chamado
+     rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta
+     responder: python src/main.py --aprovar TKT-0005   |   --rejeitar TKT-0005
+     aprovar corrigindo a mensagem: python src/main.py --aprovar TKT-0005 --mensagem "texto corrigido"
+     rejeitar dizendo por quê: python src/main.py --rejeitar TKT-0005 --motivo mensagem_ruim | informacao_suficiente | outro
+
+$ python src/main.py --pendencias --rodada grafo-pedido-padrao-h2
+
+1 ação(ões) aguardando o analista de suporte
+
+  >> AÇÃO IRREVERSÍVEL aguardando o analista de suporte:
+     ferramenta: devolver_cliente
+     id_ticket: TKT-0005
+     relato: Meu servidor não está funcionando direito.
+     mensagem: Para darmos andamento ao seu chamado, precisamos de mais informações:
+1. Qual serviço está com problema (site, e-mail, banco de dados, FTP/SFTP, acesso SSH, backup ou tarefa agendada)?
+2. Qual é o domínio ou o endereço afetado? Se for banco de dados, qual é o nome do banco?
+3. Qual mensagem ou código de erro aparece (por exemplo: 403, 502, "permissão negada")? Copie o texto como ele é exibido.
+4. Em que data e hora o problema começou? Ele acontece sempre ou só às vezes?
+5. Alguma coisa mudou pouco antes (publicação de nova versão, migração, restauração de backup, troca de senha)?
+     plano: Hospedagem Start
+     pedido_em: 2026-10-12T14:21:06-03:00
+     vence_em: 2026-10-12T14:41:06-03:00
+     faltam: 20 min
+     se aprovada: o pedido é registrado como enviado ao cliente e não tem volta (o sistema simulado não tem canal de mensagem). É o único pedido de informação permitido neste chamado
+     rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta
+     responder: python src/main.py --aprovar TKT-0005   |   --rejeitar TKT-0005
+     aprovar corrigindo a mensagem: python src/main.py --aprovar TKT-0005 --mensagem "texto corrigido"
+     rejeitar dizendo por quê: python src/main.py --rejeitar TKT-0005 --motivo mensagem_ruim | informacao_suficiente | outro
+
+$ python src/main.py --aprovar TKT-0005 --rodada grafo-pedido-padrao-h2
+  nó confirmar         confirmar {"acao": "devolver_cliente"} -> ok
+  nó gravar            registrar_encaminhamento {"id_ticket": "TKT-0005", "destino": "devolver_cliente", "mensagem": "Para darmos andament -> ok
+
+==============================================================================
+TKT-0005  APROVADO pelo analista
+
+  ENTRADA: Meu servidor não está funcionando direito.
+
+  TERMINO: respondeu | desfecho: devolver_cliente | passos: 6 | chamadas ao modelo: 1 | lembretes: 0 | tokens: 621 | custo: US$ 0.00009
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0005",
+      "executado_em": "2026-10-12T14:21:04-03:00",
+      "termino": "respondeu",
+      "resultado": {
+        "acao": "devolver_cliente",
+        "texto": "Para darmos andamento ao seu chamado, precisamos de mais informações:\n1. Qual serviço está com problema (site, e-mail, banco de dados, FTP/SFTP, acesso SSH, backup ou tarefa agendada)?\n2. Qual é o domínio ou o endereço afetado? Se for banco de dados, qual é o nome do banco?\n3. Qual mensagem ou código de erro aparece (por exemplo: 403, 502, \"permissão negada\")? Copie o texto como ele é exibido.\n4. Em que data e hora o problema começou? Ele acontece sempre ou só às vezes?\n5. Alguma coisa mudou pouco antes (publicação de nova versão, migração, restauração de backup, troca de senha)?",
+        "chamado_interno": null,
+        "time_destino": null,
+        "prioridade": null
+      },
+      "fonte": {
+        "tipo": "registro_do_chamado",
+        "kb_id": null,
+        "score": null,
+        "registros": [
+          "TKT-0005"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "triagem",
+          "decidir",
+          "redigir",
+          "confirmar",
+          "registrar_encaminhamento"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": false,
+        "motivo": "o texto do chamado não informa o serviço afetado nem o sintoma; o pedido de informação ao cliente foi registrado"
+      }
+    }
+
+$ python src/main.py --aprovar TKT-0005 --rodada grafo-pedido-padrao-h2   (de novo)
+
+Não há confirmação pendente para TKT-0005.
+
+$ conferência no banco
+encaminhamentos: [('devolver_cliente', '2026-10-12T14:21:08-03:00', 'Para darmos andamento ao seu chamado, precisamos de mais informações:\n')]
+pendencias: [('aprovada', 'analista de suporte (terminal)')]
+chamados_internos: 0

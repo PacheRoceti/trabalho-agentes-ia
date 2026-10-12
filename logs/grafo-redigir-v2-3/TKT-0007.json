@@ -1,0 +1,305 @@
+{
+  "execucao_id": "TKT-0007-9f1008e7",
+  "id_ticket": "TKT-0007",
+  "executado_em": "2026-10-12T13:54:37-03:00",
+  "commit": "9d5c211 + alterações locais",
+  "entrada": "Meu site parou de salvar arquivos: todo upload falha com a mensagem de permissão negada. Preciso de ajuda para voltar a publicar.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + ressalva-v3.md + redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-102",
+    "chamado_interno": "INC-0002",
+    "time_destino": "Infraestrutura",
+    "prioridade": "P2",
+    "reincidencias_confirmadas_no_sistema": 0,
+    "ja_existia": false
+  },
+  "pendencia": null,
+  "confirmacoes": [
+    {
+      "pendencia": {
+        "ferramenta": "abrir_chamado_interno",
+        "id_ticket": "TKT-0007",
+        "categoria": "permissao_arquivos",
+        "resumo": "Resumo do problema para escalar ao time interno: o cliente Eta Engenharia (plano VPS Pro, chamado TKT-0007) relata que o site está falhando em salvar arquivos, com mensagem de 'permissão negada' em uploads. Não há log anexado nem histórico de chamados internos anteriores. O procedimento KB-102 (score 0.72) sugere que a causa pode ser permissões incorretas em arquivos/pastas, comum após restauração ou migração. O cliente afirma que o problema ocorre desde o início do relato, mas não há confirmação de ocorrências anteriores no sistema. O escopo do plano cobre apenas o servidor virtual gerenciado (SO, rede, certificados, firewall e backups), não incluindo a aplicação ou configurações internas do cliente.",
+        "time_destino": "Infraestrutura",
+        "kb_id": "KB-102",
+        "prioridade_prevista": "P2",
+        "guia_publicado_em": "2026-10-06",
+        "guia_nao_cobre": [
+          "ssh"
+        ],
+        "plano": "VPS Pro",
+        "escopo_do_plano": "Servidor virtual gerenciado pela empresa. O suporte cobre o sistema operacional, a rede, os certificados, o firewall e os backups da VPS. A aplicação instalada pelo cliente dentro da VPS está fora do escopo do suporte. Atendimento por chamado, em horário comercial.",
+        "precedentes": {
+          "guia": {
+            "kb_id": "KB-102",
+            "janela_dias": 90,
+            "decisoes": 0,
+            "aprovados": 0,
+            "editados": 0,
+            "rejeitados": 0,
+            "decisoes_antigas": 0,
+            "rejeicoes_por_motivo": {}
+          },
+          "cliente": []
+        },
+        "fatos_cliente": {},
+        "pedido_em": "2026-10-12T13:54:41-03:00",
+        "vence_em": "2026-10-12T14:14:41-03:00"
+      },
+      "aprovado": true,
+      "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+      "status": "aprovada",
+      "resolvido_em": "2026-10-12T13:54:41-03:00",
+      "editado": false
+    }
+  ],
+  "n_chamadas_modelo": 3,
+  "lembretes": 0,
+  "tokens_entrada": 2233,
+  "tokens_saida": 329,
+  "custo_usd": 0.000384,
+  "scores_kb": {
+    "KB-102": 0.72,
+    "KB-114": 0.5,
+    "KB-104": 0.47
+  },
+  "saida": {
+    "id_ticket": "TKT-0007",
+    "executado_em": "2026-10-12T13:54:37-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "abrir_chamado_interno",
+      "texto": "Resumo do problema para escalar ao time interno: o cliente Eta Engenharia (plano VPS Pro, chamado TKT-0007) relata que o site está falhando em salvar arquivos, com mensagem de 'permissão negada' em uploads. Não há log anexado nem histórico de chamados internos anteriores. O procedimento KB-102 (score 0.72) sugere que a causa pode ser permissões incorretas em arquivos/pastas, comum após restauração ou migração. O cliente afirma que o problema ocorre desde o início do relato, mas não há confirmação de ocorrências anteriores no sistema. O escopo do plano cobre apenas o servidor virtual gerenciado (SO, rede, certificados, firewall e backups), não incluindo a aplicação ou configurações internas do cliente.",
+      "chamado_interno": "INC-0002",
+      "time_destino": "Infraestrutura",
+      "prioridade": "P2"
+    },
+    "fonte": {
+      "tipo": "procedimento_da_base",
+      "kb_id": "KB-102",
+      "score": 0.72,
+      "registros": [
+        "TKT-0007"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "conferir_ressalva",
+        "decidir",
+        "redigir",
+        "confirmar",
+        "abrir_chamado_interno"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": true,
+      "motivo": "procedimento KB-102 com score 0.72, igual ou acima do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0007"
+      },
+      "resultado": {
+        "id": "TKT-0007",
+        "aberto_em": "2026-09-21 11:30",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Eta Engenharia",
+        "plano": "VPS Pro",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "site",
+          "parou",
+          "salvar",
+          "arquivos",
+          "permissão"
+        ],
+        "justificativa": "O cliente relata um problema técnico específico de permissão em upload de arquivos para o site, sem divergência com logs ou histórico."
+      },
+      "erro": null,
+      "ms": 836
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "site",
+          "parou",
+          "salvar",
+          "arquivos",
+          "permissão"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-102",
+            "titulo": "Permissão negada ao gravar arquivos",
+            "score": 0.72,
+            "cosseno": 0.892,
+            "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+            "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-114",
+            "titulo": "Login por FTP ou SFTP falhando",
+            "score": 0.5,
+            "cosseno": 0.8,
+            "causa": "Senha do usuário de FTP expirada ou alterada, ou IP do cliente barrado depois de tentativas de login sem sucesso.",
+            "solucao": "Redefinir a senha do usuário de FTP, conferir o registro de autenticação e liberar o IP do cliente se ele estiver barrado.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.47,
+            "cosseno": 0.791,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1285
+    },
+    {
+      "indice": 3,
+      "ferramenta": "conferir_ressalva",
+      "argumentos": {
+        "kb_id": "KB-102",
+        "situacoes": [
+          "ssh"
+        ]
+      },
+      "resultado": {
+        "cai_na_ressalva": false,
+        "frase": "",
+        "motivo": "O relato menciona falha em uploads pelo site, sem referência a acesso por SSH ou terminal, não correspondendo a nenhuma ressalva da lista.",
+        "score_antes": 0.72,
+        "score_depois": 0.72
+      },
+      "erro": null,
+      "ms": 653
+    },
+    {
+      "indice": 4,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "abrir_chamado_interno",
+        "kb_id": "KB-102",
+        "motivo": "procedimento_escalar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 5,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "abrir_chamado_interno"
+      },
+      "resultado": {
+        "texto": "Resumo do problema para escalar ao time interno: o cliente Eta Engenharia (plano VPS Pro, chamado TKT-0007) relata que o site está falhando em salvar arquivos, com mensagem de 'permissão negada' em uploads. Não há log anexado nem histórico de chamados internos anteriores. O procedimento KB-102 (score 0.72) sugere que a causa pode ser permissões incorretas em arquivos/pastas, comum após restauração ou migração. O cliente afirma que o problema ocorre desde o início do relato, mas não há confirmação de ocorrências anteriores no sistema. O escopo do plano cobre apenas o servidor virtual gerenciado (SO, rede, certificados, firewall e backups), não incluindo a aplicação ou configurações internas do cliente."
+      },
+      "erro": null,
+      "ms": 1468
+    },
+    {
+      "indice": 6,
+      "ferramenta": "confirmar",
+      "argumentos": {
+        "kb_id": "KB-102"
+      },
+      "resultado": {
+        "status": "aprovada",
+        "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+        "editado": false
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 7,
+      "ferramenta": "abrir_chamado_interno",
+      "argumentos": {
+        "id_ticket": "TKT-0007",
+        "resumo": "Resumo do problema para escalar ao time interno: o cliente Eta Engenharia (plano VPS Pro, chamado TKT-0007) relata que o site está falhando em salvar arquivos, com mensagem de 'permissão negada' em uploads. Não há log anexado nem histórico de chamados internos anteriores. O procedimento KB-102 (score 0.72) sugere que a causa pode ser permissões incorretas em arquivos/pastas, comum após restauração ou migração. O cliente afirma que o problema ocorre desde o início do relato, mas não há confirmação de ocorrências anteriores no sistema. O escopo do plano cobre apenas o servidor virtual gerenciado (SO, rede, certificados, firewall e backups), não incluindo a aplicação ou configurações internas do cliente.",
+        "kb_id": "KB-102"
+      },
+      "resultado": {
+        "chamado_interno": "INC-0002",
+        "time_destino": "Infraestrutura",
+        "prioridade": "P2",
+        "reincidencias_confirmadas_no_sistema": 0,
+        "ja_existia": false
+      },
+      "erro": null,
+      "ms": 17
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-102",
+    "motivo": "procedimento_escalar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1771,
+  "episodio": {
+    "execucao_id": "TKT-0007-9f1008e7",
+    "ticket_externo": "TKT-0007",
+    "cliente_id": "CLI-07",
+    "classe": "tecnico",
+    "categoria": "permissao_arquivos",
+    "kb_id": "KB-102",
+    "score": 0.72,
+    "acao_proposta": "abrir_chamado_interno",
+    "desfecho": "abrir_chamado_interno",
+    "motivo": "procedimento_escalar",
+    "veredito": "aprovado",
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0007: classe tecnico; guia KB-102 (score 0.72); proposto abrir_chamado_interno; gravado abrir_chamado_interno; analista: aprovado; término respondeu",
+    "criado_em": "2026-10-12T13:54:41-03:00",
+    "id": 1,
+    "chave": "c64bfc95fe6aad5e",
+    "ja_existia": false
+  },
+  "segundos_gastos": 4.262
+}

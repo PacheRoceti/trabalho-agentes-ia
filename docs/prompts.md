@@ -1,10 +1,12 @@
 # Plano de prompt engineering (Parte 2, item 2)
 
-> **Estado deste documento.** Descreve os prompts que existem hoje. O grafo, que é o caminho
-> padrão, chama o modelo em **dois** nós (`triagem` e `redigir`), cada um com o seu prompt. O
-> laço da Parte 1 (`--laco`) tem um ponto de chamada e dois textos (o prompt de sistema e o
-> lembrete). As etapas de resposta do RAG e de extração para a memória ainda não existem e não
-> têm linha aqui. O teste da regra da frase está no §3 e foi feito no prompt do laço.
+> **Estado deste documento.** Descreve os prompts que existem hoje (12/10/2026). O grafo, que é
+> o caminho padrão, chama o modelo em **três** nós (`triagem`, `conferir_ressalva` e `redigir`),
+> cada um com o seu prompt. O laço da Parte 1 (`--laco`) tem um ponto de chamada e dois textos (o
+> prompt de sistema e o lembrete). **Não há etapa de resposta do RAG nem de extração para a
+> memória**, e por isso elas não têm linha aqui: o guia recuperado vai ao `redigir`, que já tem a
+> sua; o episódio é escrito pelo código e o fato do cliente por uma pessoa, sem modelo
+> (`memoria.md` §1.4). O teste da regra da frase está no §3 e foi feito no prompt do laço.
 
 ## 1. As etapas em que o modelo é chamado
 
@@ -12,12 +14,12 @@
 |---|---|---|---|---|---|
 | **Triagem do chamado** (prompt de sistema do laço) | `src/prompts/agente-v5.md` | zero-shot com procedimento numerado e tool calling | Sem few-shot, para não usar como exemplo os mesmos casos que servem de teste (`dados/gabarito.json`). Procedimento numerado porque a triagem tem ordem fixa: consultar, classificar, buscar, escolher o desfecho, registrar | Ver §1.1 | 8 casos rotulados em `dados/gabarito.json`, conferidos por `src/verificar.py` contra o que foi gravado no banco. Critério: ≥ 6 de 8 e nenhum chamado interno aberto indevidamente. Resultado medido da v4: 6 de 8 e 5 de 8 em duas execuções iguais, com um chamado indevido em uma delas (§3.2); a v4 revisada deu 6 de 8 sem chamado indevido (`logs/rodada-2-prompt-v4`). A v5 deu 7, 6 e 7 de 8 em três rodadas, com um chamado indevido na terceira (`TKT-0002`), e 7 e 7 de 8 no teste do §3 |
 | **Lembrete de desfecho** (mensagem de usuário, enviada pelo laço só quando o modelo encerra sem registrar desfecho) | `src/prompts/lembrete-v1.md` | instrução direta (zero-shot), sem exemplos | O modelo narrava a ação ("registrei", "encaminhei") sem chamar a ferramenta. A regra no prompt de sistema não bastou nas rodadas 1 e 2 | Uma chamada de ferramenta de escrita (`abrir_chamado_interno` ou `registrar_encaminhamento`). Texto sem chamada conta como falha; depois de 2 lembretes sem efeito, a execução termina como `erro_fatal` | O campo `lembretes` do log conta quantos foram enviados. Nas duas execuções da v4, foi enviado 1 lembrete no `TKT-0002` e 1 no `TKT-0999`, e os dois casos terminaram com o desfecho certo |
-| **Triagem, no grafo** (nó `triagem`) | `src/prompts/triagem-v1.md` | zero-shot, classificação com saída estruturada (JSON), sem ferramentas | A classe é a decisão que só o modelo toma (texto livre). Saída estruturada porque ela vira a rota do grafo: no laço a classe ficava só nas mensagens. Sem few-shot pela mesma razão da linha acima | JSON validado pela classe `Triagem` (`src/grafo.py`): `classe` ∈ {`tecnico`, `comercial`, `insuficiente`, `fora_da_alcada`}; `log_aponta_outro_servico` booleano; `termos_busca` com 2 a 5 itens só na classe técnica; `justificativa` em uma frase. Proibido: escolher o desfecho. Saída fora do contrato volta ao modelo uma vez; na segunda, `erro_fatal` | Os mesmos 8 casos e o mesmo verificador. Três execuções medidas, 8 de 8 nas três (`logs/grafo/`, `logs/grafo-rodada-2/`, `logs/grafo-rodada-3/`, 10/10/2026; `grafo.md` §6), com a mesma classe para cada caso nas três. A classe de cada caso está no passo `triagem` do log. 39 testes offline provam o que é do código, não a classificação |
-| **Ressalva, no grafo** (nó `conferir_ressalva`) | `src/prompts/ressalva-v3.md` (o v1 mais a regra dos fatos do cliente, `memoria.md` §4.3) | zero-shot, classificação binária com saída estruturada (JSON), sem ferramentas | O embedding não separa o relato que cai numa exceção do guia ("o erro 502 vai e vem") do relato que o guia cobre; o que o vetor não lê, o modelo lê. O código só baixa o score, e só com uma frase da lista do guia | JSON validado pela classe `Ressalva`: `cai_na_ressalva` booleano, `frase` (uma da lista do guia, copiada igual) e `motivo`. Proibido: criar uma exceção que o guia não declara (conferido em código) e subir o score. Saída fora do contrato volta ao modelo uma vez; na segunda, `erro_fatal` | Perguntas de exceção e controles × 3 repetições, em `src/medir_rag.py ressalva [prompt]`; os 8 casos pelo grafo (`logs/grafo-ressalva/`). Resultado em `rag.md` §4.2, que também compara o `ressalva-v2.md`: melhora o nó isolado no KB-102, não melhora o sistema inteiro e barrou um controle, e por isso **não foi adotado**. 6 testes offline provam o que é do código |
-| **Redação, no grafo** (nó `redigir`) | `src/prompts/redigir-v1.md` | zero-shot, geração de texto com saída estruturada (JSON), sem ferramentas | O desfecho chega decidido pelo código; ao modelo resta escrever o resumo ou a mensagem. Separar a redação impede que ele troque a ação ao redigir | JSON validado pela classe `Redacao`: um campo, `texto`. Proibido: informação interna no pedido ao cliente (conferido pelo nó `validar`), causa, solução ou prazo que não vieram no que ele recebeu. Reprovado, volta uma vez com o erro; na segunda, `erro_fatal` | O nó `validar` confere tamanho mínimo e termos internos a cada execução. Nas três execuções medidas, nenhuma redação foi reprovada (24 execuções, 24 redações). **O conteúdo do texto não tem verificador** |
+| **Triagem, no grafo** (nó `triagem`) | `src/prompts/triagem-v1.md` | zero-shot, classificação com saída estruturada (JSON), sem ferramentas | A classe é a decisão que só o modelo toma (texto livre). Saída estruturada porque ela vira a rota do grafo: no laço a classe ficava só nas mensagens. Sem few-shot pela mesma razão da linha acima | JSON validado pela classe `Triagem` (`src/grafo.py`): `classe` ∈ {`tecnico`, `comercial`, `insuficiente`, `fora_da_alcada`}; `log_aponta_outro_servico` booleano; `termos_busca` com 2 a 5 itens só na classe técnica; `justificativa` em uma frase. Proibido: escolher o desfecho. Saída fora do contrato volta ao modelo uma vez; na segunda, `erro_fatal` | Os mesmos 8 casos e o mesmo verificador. Três execuções medidas, 8 de 8 nas três (`logs/grafo/`, `logs/grafo-rodada-2/`, `logs/grafo-rodada-3/`, 10/10/2026; `grafo.md` §6), com a mesma classe para cada caso nas três. A classe de cada caso está no passo `triagem` do log. 75 testes offline (`tests/test_grafo.py`) provam o que é do código, não a classificação |
+| **Ressalva, no grafo** (nó `conferir_ressalva`) | `src/prompts/ressalva-v3.md` (o v1 mais a regra dos fatos do cliente, `memoria.md` §4.3) | zero-shot, classificação binária com saída estruturada (JSON), sem ferramentas | O embedding não separa o relato que cai numa exceção do guia ("o erro 502 vai e vem") do relato que o guia cobre; o que o vetor não lê, o modelo lê. O código só baixa o score, e só com uma frase da lista do guia | JSON validado pela classe `Ressalva`: `cai_na_ressalva` booleano, `frase` (uma da lista do guia, copiada igual) e `motivo`. Proibido: criar uma exceção que o guia não declara (conferido em código) e subir o score. Saída fora do contrato volta ao modelo uma vez; na segunda, `erro_fatal` | Perguntas de exceção e controles × 3 repetições, em `src/medir_rag.py ressalva [prompt]`; os 8 casos pelo grafo (`logs/grafo-ressalva/`). Resultado em `rag.md` §4.2, que também compara o `ressalva-v2.md`: melhora o nó isolado no KB-102, não melhora o sistema inteiro e barrou um controle, e por isso **não foi adotado**. Testes offline (`tests/test_grafo.py`) provam o que é do código: o modelo só baixa o score, e só com uma frase do guia |
+| **Redação, no grafo** (nó `redigir`). **Não roda no pedido ao cliente**, que é texto padrão do código desde 12/10/2026 (§2.2) | `src/prompts/redigir-v3.md` (o v2 sem a regra do pedido ao cliente, que ficou sem uso; §2.1 a §2.3) | zero-shot, geração de texto com saída estruturada (JSON), sem ferramentas | O desfecho chega decidido pelo código; ao modelo resta escrever o resumo ou a mensagem. Separar a redação impede que ele troque a ação ao redigir | JSON validado pela classe `Redacao`: um campo, `texto`. Proibido: informação interna no pedido ao cliente (conferido pelo nó `validar`), causa, solução ou prazo que não vieram no que ele recebeu. Reprovado, volta uma vez com o erro; na segunda, `erro_fatal` | O nó `validar` confere tamanho mínimo e termos internos a cada execução. Com o v3, três execuções dos 8 casos: 8 de 8 no verificador e nenhuma redação reprovada, em 21 (`logs/grafo-redigir-v3-1/` a `-3/`, 12/10/2026). **O conteúdo do texto não tem verificador.** Foi isso que escondeu o defeito do v1: a mensagem ao cliente do `TKT-0005` não perguntava nada, e o caso passava (§2.1) |
 
-As duas primeiras linhas pertencem ao laço (`--laco`), e as duas últimas ao grafo, que é o caminho
-padrão.
+As duas primeiras linhas pertencem ao laço (`--laco`), e as três últimas ao grafo, que é o
+caminho padrão.
 
 **A entrada da triagem.** A mensagem de usuário é montada pelo código (`_entrada`, em
 `src/agente.py`): o id do chamado, o id do cliente e, abaixo, o texto que o cliente escreveu. Um id
@@ -68,9 +70,19 @@ antes de enviar o texto ao modelo.
 | `agente-v5-sem-frase.md` | variante do teste do §3; não é usada pelo sistema | 7 de 8 e 8 de 8 (§3.2) |
 | `agente-v4-sem-frase.md` | variante dos testes anteriores, na v4 (§3.6); não é usada pelo sistema | 4 de 8 e 5 de 8, sem log; 6 de 8 e 6 de 8 na repetição |
 | `agente-v4-com-frase.md` | o par da variante na repetição do teste na v4 (§3.6): texto da v4 anterior à revisão, do commit `b16fd9b`; não é usada pelo sistema | 6 de 8 e 6 de 8 |
-| `lembrete-v1.md` | **em uso** | ver a linha do lembrete no §1 |
+| `lembrete-v1.md` | **em uso** (laço) | ver a linha do lembrete no §1 |
+| `triagem-v1.md` | **em uso** (grafo) | 8 de 8 nas três rodadas de 10/10/2026 e na de 11/10/2026 (`logs/grafo-fatos/`) |
+| `ressalva-v1.md` | histórico: foi o prompt do nó até 11/10/2026 | exceções 24 de 39, controles 42 de 42 (`rag.md` §4.2). Com um fato do cliente, barra todos os controles (`memoria.md` §4.3) |
+| `ressalva-v2.md` | medido e **não adotado** | melhora o nó isolado no KB-102, não melhora o sistema inteiro e barrou um controle (`rag.md` §4.2) |
+| `ressalva-v3.md` | **em uso** (grafo) | sem fatos, igual ao v1; com o fato `acesso=ssh`, exceções 21 de 21 e controles 18 de 21 (`memoria.md` §4.3) |
+| `redigir-v1.md` | histórico: foi o prompt do nó até 12/10/2026 | nenhuma redação reprovada pelo nó `validar`; a mensagem ao cliente não pergunta nada em 15 execuções de 15 (§2.1) |
+| `redigir-v2.md` | histórico: foi o prompt do nó por algumas horas de 12/10/2026 | 8 de 8 em três rodadas; a mensagem ao cliente faz as três perguntas nas três (§2.1). Foi a medição dele que levou o pedido a virar texto padrão (§2.2) |
+| `redigir-v3.md` | **em uso** (grafo), para quatro dos cinco desfechos | 8 de 8 em três rodadas, com 119 tokens de entrada a menos por redação (§2.3) |
 
-Todos os resultados são de `ministral-8b-latest` com `temperature=0`.
+Todos os resultados são de `ministral-8b-latest` com `temperature=0`. Os prompts do laço são
+carregados por `src/agente.py` (`PROMPT_ARQUIVO`, `LEMBRETE_ARQUIVO`) e os do grafo por
+`src/grafo.py` (`PROMPT_TRIAGEM`, `PROMPT_RESSALVA`, `PROMPT_REDIGIR`), com a mesma função
+(`_ler_prompt`).
 
 **O que mudou da v3 para a v4.** A entrada deixou de ser só o id e passou a ser o conteúdo do
 chamado. Duas frases mudaram: a abertura ("Você recebe o conteúdo de um chamado ... acompanhado do
@@ -151,6 +163,160 @@ ARQUIVO` usa um arquivo de `src/prompts/` e grava em `logs/NOME/`, sem sobrescre
 
 **O que cada regra impede.** A lista está no cabeçalho de cada arquivo, regra por regra, e não é
 repetida aqui para não ter duas fontes.
+
+### 2.1 Do `redigir-v1.md` ao `redigir-v2.md` (12/10/2026)
+
+**O defeito.** Com o v1, a mensagem que o grafo redige para o cliente no `TKT-0005` ("Meu
+servidor não está funcionando direito.") não pede nada. Em todas as 15 execuções do grafo com log
+(as 14 de `logs/grafo*/TKT-0005.json` de 10 a 12/10/2026 e a de `logs/grafo-redigir-v1/`), o
+texto repete a queixa, e em 9 delas afirma desde quando o problema ocorre, o que o cliente não
+disse:
+
+> O servidor do plano Hospedagem Start não está apresentando o funcionamento esperado. O problema
+> ocorre desde quando foi relatado.
+
+Nada em código pega isso: o nó `validar` confere tamanho e termos internos, e o verificador
+confere o desfecho gravado.
+
+**A mudança.** Uma regra, a do desfecho `devolver_cliente`. O resto do prompt é o do v1, sem
+alteração (conferido linha a linha).
+
+| | Texto da regra |
+|---|---|
+| v1 | o texto é ENVIADO AO CLIENTE. Escreva só a lista do que falta: o serviço ou servidor afetado, o erro ou comportamento observado e desde quando ocorre. |
+| v2 | o texto é ENVIADO AO CLIENTE e é um PEDIDO: não descreva o problema nem complete o que falta, pergunte. Escreva uma frase dizendo que o suporte precisa de mais informações e três perguntas, cada uma com "?": qual serviço ou servidor está com problema, qual erro ou comportamento aparece e desde quando ocorre. |
+
+A frase seguinte da regra (não citar procedimentos, times, filas nem prometer prazo) ficou igual.
+A primeira redação do v2 tinha 539 caracteres a mais que a regra antiga, com exemplos de serviço
+e a instrução em duas partes; foi encurtada para 159 antes de ser medida, para gastar menos.
+
+**A medição.** `python src/main.py --todos --auto-aprovar --rodada NOME`, em 12/10/2026, com
+`ministral-8b-latest`, `temperature=0`, commit `9d5c211 + alterações locais`. Uma rodada com o v1
+e três com o v2, com o mesmo código:
+
+| | `redigir-v1.md` (`logs/grafo-redigir-v1/`) | `redigir-v2.md` (`logs/grafo-redigir-v2-1/` a `-3/`) |
+|---|---|---|
+| Verificador | 8 de 8 | 8 de 8, 8 de 8 e 8 de 8 |
+| Redações reprovadas pelo nó `validar` | 0 de 8 | 0 de 24 |
+| Mensagem do `TKT-0005` | "O servidor do plano Hospedagem Start não está apresentando o funcionamento esperado." | "Precisamos de mais informações para ajudar. Qual serviço ou servidor está com problema? Qual erro ou comportamento aparece? Desde quando isso ocorre?" (a mesma nas três) |
+| Chamadas ao modelo, na rodada | 17 | 17, 17 e 17 |
+| Tokens de entrada, na rodada | 13.003 | 13.303, 13.300 e 13.302 |
+| Tokens, na rodada (entrada + saída) | 14.483 | 14.722, 14.721 e 14.718 |
+| Custo a preço de lista, na rodada | US$ 0,00217 | US$ 0,00221 |
+
+**O custo, medido:** de 36 a 38 tokens de entrada a mais por execução, em cada um dos 8 casos,
+porque o nó `redigir` roda em toda execução. São cerca de 300 tokens por rodada, 1,6% a mais.
+
+**O que mais mudou: nada que se possa atribuir ao prompt.** Os 8 desfechos, os guias, os scores e
+as prioridades são os mesmos nas quatro rodadas, porque o desfecho é do código. Os textos dos
+outros sete casos variam de uma execução para outra com o mesmo prompt, e por isso a diferença
+entre o v1 e o v2 neles não é legível: o resumo do `TKT-0007`, por exemplo, teve 599, 616 e 710
+caracteres nas três rodadas do v2, e 483 na do v1.
+
+**Dois defeitos de conteúdo que a leitura achou, e que o v2 não trata** (aparecem com os dois
+prompts):
+
+- no `TKT-0003`, o resumo do chamado interno diz que o score 0,55 "não atinge o limiar", em 3 das
+  4 rodadas (uma do v1 e duas do v2). O score passa do limiar, e é por isso que o chamado é
+  aberto;
+- no `TKT-0001`, a anotação cita um domínio ("acmecontabilidade.com.br (ou similar)") que não
+  está no chamado nem no banco, em 2 das 4 rodadas (uma do v1 e uma do v2).
+
+**Limites.**
+
+- **Um chamado de informação insuficiente, três execuções.** O `TKT-0005` é o único caso
+  `devolver_cliente` do gabarito. As três mensagens saíram idênticas; isso mostra que o resultado
+  se repete neste relato, e não que a regra funciona para outro.
+- **A comparação é de uma rodada do v1 contra três do v2.** O v1 tem mais 14 execuções do
+  `TKT-0005` em logs anteriores, de outros commits, todas com o mesmo defeito.
+- **A avaliação é por leitura.** Não há verificador de conteúdo: se a mensagem voltar a não
+  perguntar, nada no código acusa.
+- **A pausa do H2 não foi refeita com o v2.** As rodadas usaram `--auto-aprovar`; a tela do
+  analista com a mensagem nova não foi capturada (a de `logs/grafo-h2/` é a do v1).
+
+### 2.2 O pedido ao cliente saiu do modelo (12/10/2026)
+
+**A decisão.** No desfecho `devolver_cliente`, o nó `redigir` não chama o modelo: devolve um texto
+padrão, a constante `PEDIDO_AO_CLIENTE` de `src/grafo.py`. O analista continua confirmando o
+envio (H2) e pode trocar o texto ao aprovar (`--mensagem`).
+
+**Por que, e o que o `redigir-v2.md` mostrou.** O v2 consertou a mensagem com uma regra que dita
+a forma dela: uma frase e três perguntas, sempre as mesmas. O resultado foi o mesmo texto, letra
+por letra, nas três execuções (§2.1). Foi isso que evidenciou a decisão:
+
+- **não havia o que o modelo decidir.** O que falta num relato sem serviço nem sintoma é sempre a
+  mesma coisa. Quando a regra ficou boa o bastante para funcionar, ela já era o texto;
+- **o v1 errou em 15 execuções de 15**, e nada em código via o erro: o conteúdo não tem
+  verificador. Um texto que o código garante dispensa o verificador que não existe;
+- **o v2 pedia pouco.** As três perguntas (serviço, erro, desde quando) vieram da regra do
+  prompt, e não da base. O texto padrão pergunta o que os guias usam para separar um caso do
+  outro;
+- **custa menos.** A execução do `TKT-0005` passou de 2 chamadas e 1.483 tokens para 1 chamada e
+  621 a 624 tokens.
+
+**O texto**, e de onde vem cada pergunta (`dados/seed.sql`, tabela `kb_artigos`):
+
+| Pergunta | Por que está no texto |
+|---|---|
+| 1. Qual serviço está com problema (site, e-mail, banco de dados, FTP/SFTP, acesso SSH, backup ou tarefa agendada)? | cada guia é de um serviço; é a primeira coisa que a triagem e a busca precisam |
+| 2. Qual é o domínio ou o endereço afetado? Se for banco de dados, qual é o nome do banco? | o domínio decide os guias de SSL, DNS, redirecionamento, e-mail e firewall de aplicação (KB-101-A, 106, 110, 111, 112); o banco, o KB-107 |
+| 3. Qual mensagem ou código de erro aparece (por exemplo: 403, 502, "permissão negada")? Copie o texto como ele é exibido. | o código separa o KB-104 (5xx) do KB-112 (403); a mensagem, o KB-102, o KB-107 e o KB-113 |
+| 4. Em que data e hora o problema começou? Ele acontece sempre ou só às vezes? | a reincidência conta datas; o KB-104 só cobre a falha constante, e a intermitente é exceção declarada |
+| 5. Alguma coisa mudou pouco antes (publicação de nova versão, migração, restauração de backup, troca de senha)? | são as causas dos KB-102, 104, 107 e 114 |
+
+A mensagem abre com "Para darmos andamento ao seu chamado, precisamos de mais informações:".
+
+**A medição.** Três execuções dos 8 casos (`logs/grafo-pedido-padrao-1/` a `-3/`, 12/10/2026,
+`ministral-8b-latest`, commit `9d5c211 + alterações locais`): 8 de 8 nas três, 16 chamadas ao
+modelo (eram 17) e 13.855 a 13.912 tokens por rodada (eram 14.718 a 14.722). Uma pausa real do
+H2, com o texto padrão na tela do analista, a aprovação por outro processo e a segunda aprovação
+sem duplicar, está em `logs/grafo-pedido-padrao-h2/saida-terminal.txt`. Testes offline:
+`test_o_pedido_ao_cliente_e_o_texto_padrao_e_nao_chama_o_modelo_para_redigir` e
+`test_o_texto_padrao_do_pedido_pergunta_e_nao_cita_informacao_interna`.
+
+**O que se perde, e os limites.**
+
+- **A mensagem não se adapta ao relato.** O cliente que já disse o serviço e não disse o sintoma
+  recebe as cinco perguntas. O que corrige isso é o analista, ao aprovar com `--mensagem`.
+- **O texto envelhece com a base.** A lista de serviços e os exemplos de erro foram tirados dos
+  15 guias de hoje. Guia novo, de outro serviço, pede revisão da constante, e nada avisa.
+- **Nenhum cliente respondeu a essas perguntas.** Se elas bastam para a segunda triagem só se
+  mede com a resposta do cliente, que o sistema não recebe (o H3 não existe).
+- **A regra do `devolver_cliente` no `redigir-v2.md` ficou sem uso**, e continuava indo ao modelo
+  nas outras quatro redações. Saiu no `redigir-v3.md` (§2.3).
+- **O laço da Parte 1 não mudou:** lá o pedido continua sendo escrito pelo modelo.
+
+### 2.3 O `redigir-v3.md`: a regra sem uso sai do prompt (12/10/2026)
+
+**A mudança.** O v3 é o v2 sem a regra do `devolver_cliente` (466 caracteres). Nada mais mudou no
+texto. O prompt passa a redigir quatro desfechos, e nenhum deles chega ao cliente.
+
+**A medição.** Três execuções dos 8 casos com cada prompt, com o mesmo código (o pedido ao
+cliente já em texto padrão), em 12/10/2026, `ministral-8b-latest`, `temperature=0`, commit
+`9d5c211 + alterações locais`:
+
+| | `redigir-v2.md` (`logs/grafo-pedido-padrao-1/` a `-3/`) | `redigir-v3.md` (`logs/grafo-redigir-v3-1/` a `-3/`) |
+|---|---|---|
+| Verificador | 8 de 8 nas três | 8 de 8 nas três |
+| Redações reprovadas pelo nó `validar` | 0 de 21 | 0 de 21 |
+| Chamadas ao modelo, na rodada | 16 | 16 |
+| Tokens de entrada, na rodada | 12.472 a 12.475 | 11.634 a 11.644 |
+| Tokens, na rodada (entrada + saída) | 13.855 a 13.912 | 13.122 a 13.191 |
+| Custo a preço de lista, na rodada | US$ 0,00208 | US$ 0,00198 |
+
+**O ganho, medido:** 119 tokens de entrada a menos em cada execução que passa pela redação, que
+são 7 dos 8 casos (o `TKT-0005` não redige mais, e ficou igual, com 558 de entrada). Na rodada,
+cerca de 830 tokens de entrada a menos, 6,7%.
+
+**O que mais mudou: nada que se possa atribuir ao prompt.** Desfechos, guias, scores e
+prioridades são os mesmos. Os textos variam entre execuções, como antes. Os dois defeitos de
+conteúdo do §2.1 foram procurados nas três rodadas do v3: o score que "não atinge o limiar" não
+apareceu em nenhuma (com o v2, em 2 de 3), e o domínio inventado apareceu em 1 de 3. Três
+execuções não bastam para dizer que tirar a regra melhorou o primeiro, e o v3 não tem regra para
+nenhum dos dois.
+
+**Limites.** São os mesmos 8 casos e a avaliação dos textos é por leitura. Da série de três
+versões do mesmo dia, a única mudança de conteúdo foi a do v2; o v3 só tira texto.
 
 ## 3. A regra da frase
 
@@ -308,7 +474,9 @@ deste teste. Ficam aqui como histórico; as conclusões acima são as do teste n
   fora dos 8 casos (as três execuções medidas são dos mesmos).
 - Fazer a regra da frase também em um prompt do grafo, que é o caminho padrão (o §3 testou o do
   laço).
-- Acrescentar uma linha no §1 para as etapas que ainda não existem (resposta do RAG, extração
-  para a memória), quando existirem.
-- Atualizar os documentos que ainda citam o `agente-v3.md` como o prompt em uso (`docs/case.md`
-  §2.11, `docs/arquitetura-v2.md` §4, `docs/memoria.md` §1.1 e §1.2).
+- Tratar os dois defeitos de conteúdo que a leitura das rodadas achou no `redigir` (§2.1): o
+  resumo que diz que um score acima do limiar "não atinge o limiar", e o domínio inventado na
+  anotação. Não foram tratados no v2, que mudou uma regra só.
+- Medir o `redigir-v2.md` em outro relato de informação insuficiente: o gabarito tem um (§2.1).
+- Acrescentar uma linha no §1 se uma etapa de modelo nova nascer (hoje não há resposta do RAG nem
+  extração para a memória).

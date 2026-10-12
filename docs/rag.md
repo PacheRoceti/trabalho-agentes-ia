@@ -12,9 +12,10 @@
 
 ## 1. As formas de recuperar (§4.1)
 
-**A pergunta direta: o RAG é vetorial ou é banco de dados?** Hoje é banco de dados e busca por
-palavra-chave; não há vetor. O desenho da Parte 2 é "os dois": consulta estruturada para o que é
-registro, busca vetorial para o que é assunto.
+**A pergunta direta: o RAG é vetorial ou é banco de dados?** Os dois, desde 11/10/2026: consulta
+estruturada para o que é registro e busca vetorial para o que é assunto. A busca por
+palavra-chave da Parte 1 continua no repositório: é a busca do laço (`--laco`) e o recuo do grafo
+quando a API de embedding falha.
 
 ### 1.1 A classificação
 
@@ -27,7 +28,7 @@ registro, 1 de termo e 1 de relação. Nenhuma de agregação.
 |---|---|---|---|
 | **consulta estruturada** | SQLite (`sqlite3`, biblioteca padrão), em `src/db.py`: `buscar_ticket`, `_reincidencia`, `buscar_artigo`, `contar_pedidos_cliente` | as 3 perguntas de registro (P3, P4, P5): histórico e reincidência do cliente, plano, time e prioridade de um procedimento | implementada |
 | **busca textual** (palavra-chave) | `buscar_kb`, em `src/db.py`: sobreposição de palavras entre os termos e a coluna `palavras_chave` de `kb_artigos`, com radical de 4 letras, lista de sinônimos e ressalvas | responde a pergunta de termo (P8) e entra na fusão da híbrida. Sozinha, respondia também as de **assunto**, que não são dela, e é a causa das falhas registradas em `modelos.md` §3.3-B | implementada; segue sendo a busca do laço da Parte 1 |
-| **busca vetorial** | `src/vetorial.py`: `mistral-embed`, **1024 dimensões**, lista de vetores em memória guardada na tabela `kb_vetores` do SQLite, sem banco vetorial (7 guias hoje; ~23 trechos previstos, `base-de-conhecimento-v2.md` §3). Só vetorial; a híbrida foi medida e descartada (§4.1) | as 5 perguntas de assunto (P1, P2, P6, P7, P10) | implementada em 11/10/2026 |
+| **busca vetorial** | `src/vetorial.py`: `mistral-embed`, **1024 dimensões**, lista de vetores em memória guardada na tabela `kb_vetores` do SQLite, sem banco vetorial (hoje 15 guias vigentes e 3 fichas de plano no índice; ~23 trechos previstos, `base-de-conhecimento-v2.md` §3). Só vetorial; a híbrida foi medida e descartada (§4.1) | as 5 perguntas de assunto (P1, P2, P6, P7, P10) | implementada em 11/10/2026 |
 
 **Formas que o case não usa.** Grafo: a única pergunta de relação (P9, "que guia substitui
 este?") é resolvida por uma coluna (`revogado_por`), e um `JOIN` basta. Agregação: nenhuma das

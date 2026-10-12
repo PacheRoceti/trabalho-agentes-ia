@@ -1,5 +1,14 @@
 # Memória do agente (Exercício 8 / §5 da Parte 2)
 
+> **Como ler este documento.** As seções "Decisão 1" e "Decisão 2" são o **desenho**, escrito
+> antes do código (Exercício 8), e em parte para o laço da Parte 1. Os §3 a §5 descrevem **o que
+> existe em código**, no grafo. Onde os dois divergem vale o código, e o §1.6 lista cada
+> divergência. O §1.7 responde à fronteira entre checkpoint, memória e RAG (§5.1 do enunciado).
+>
+> **Atualização de 12/10/2026.** A escrita de memória ganhou chave de idempotência, com
+> `ja_existia` no retorno (§1.4). O checkpoint do grafo passou a ser apagado quando a execução
+> conclui, como o §1.4 já dizia e o código não fazia. Entraram o §1.6 e o §1.7.
+>
 > **Atualização de 11/10/2026.** A **memória episódica** foi implementada no grafo, na forma
 > descrita no §3 (o que existe em código): registro por execução, leitura por consulta exata,
 > aviso na tela do H1 e decaimento. A **memória semântica** foi implementada como fatos do
@@ -14,13 +23,11 @@
 > do chamado, como o §1.5 previa. Ele guarda a execução pausada no H1; uma execução nova do mesmo
 > chamado apaga o checkpoint anterior (`grafo.md` §7).
 
-> Este documento não descreve código existente: o agente da Parte 1 **não tem
-> memória** — cada execução parte do zero, olha só o chamado que recebeu e
-> esquece tudo ao terminar. O que segue são as decisões de projeto que
-> precisam ser tomadas **antes** de construir a memória no par prático
-> (08-complementar), aplicadas ao domínio do case: um agente de triagem que
-> consulta chamados, base de conhecimento e histórico de um sistema de
-> hospedagem de servidores.
+> O laço da Parte 1 (`--laco`) **não tem memória**: cada execução parte do zero, olha só o
+> chamado que recebeu e esquece tudo ao terminar. As decisões abaixo foram tomadas **antes** de
+> construir a memória (par prático 08-complementar), aplicadas ao domínio do case: um agente de
+> triagem que consulta chamados, base de conhecimento e histórico de um sistema de hospedagem de
+> servidores.
 
 ## Decisão 1 — Como o agente lembra
 
@@ -93,19 +100,56 @@ A reincidência é o exemplo mais claro de por que a estrutura decorre do padrã
 
 **Quem escreve:**
 - **episódica**: o **código** extrai, ao fim de cada execução (qualquer término; a ação que o analista rejeita termina em `respondeu`, com desfecho `fila_humana` e motivo `acao_rejeitada`), os campos estruturados do `Estado` — nunca o texto livre que o modelo escreveu como resposta final, porque texto livre é exatamente o que a rodada 2 mostrou não ser confiável ("registrei" sem ter registrado);
-- **semântica**: o **código** também, por regra determinística (a mesma consulta SQL que já existe), nunca o modelo — um fato como "plano do cliente" tem peso de negócio demais para depender de o modelo tê-lo lido certo;
+- **semântica**: o **código** também, por regra determinística (a mesma consulta SQL que já existe), nunca o modelo — um fato como "plano do cliente" tem peso de negócio demais para depender de o modelo tê-lo lido certo. **Como ficou (§4):** o plano e a reincidência não foram guardados de novo, e o que a memória semântica guarda são fatos do ambiente do cliente, escritos **só por uma pessoa** (`main.py --fato`). O código não escreve fato nenhum;
 - **procedural**: só o **humano** (analista ou o grupo), em revisão, nunca automático — é a lição da rodada 2: prompt mexido sem supervisão piorou o resultado de 5 para 3 em 7. Uma regra procedural só entra no prompt depois de aparecer em pelo menos 3 correções do mesmo padrão, revisadas por uma pessoa.
 
 **Volume por execução:** 1 registro episódico (≈150 a 250 tokens); 0 ou 1 atualização semântica (só quando um fato realmente muda — o plano do cliente, por exemplo; não a cada execução); 0 escritas procedurais por execução (é processo em lote, periódico, não por chamado).
 
+**Volume por execução, no código de hoje:** 1 linha em `episodios` por execução concluída do
+grafo (14 campos estruturados e a chave; o maior é o `resumo`, uma frase montada pelo código, de
+96 a 152 caracteres nos 9 episódios de `logs/grafo-fatos/` e `logs/grafo-h2/`); 0 linhas em `fatos_cliente` (o fato só nasce de `main.py --fato`); 0
+escritas procedurais. A execução pausada não escreve nada até o analista responder.
+
+**A escrita de memória é idempotente (§5.3 do enunciado; 12/10/2026).** Cada escrita tem uma
+chave derivada do conteúdo, e o retorno diz se o registro já existia:
+
+| Escrita | Chave | O que a repetição faz | Retorno |
+|---|---|---|---|
+| episódio (`db.registrar_episodio`) | `db.chave_do_episodio`: os 16 primeiros caracteres do SHA-256 de `execucao_id`, chamado, guia, ação proposta, desfecho, veredito, motivo da rejeição e término. A hora da gravação fica de fora, porque a repetição teria outra hora | não cria linha: devolve o id da que existe | `{id, chave, ja_existia}`; os três vão ao campo `episodio` do log |
+| fato (`db.registrar_fato`) | o próprio conteúdo: cliente, chave e valor. O fato é chave-valor, então não precisa de hash | não cria linha e não muda quem confirmou nem quando | o fato que vale, com `ja_existia` |
+| motivo da rejeição | faz parte do episódio | a do episódio | a do episódio |
+
+Testes offline: `test_a_escrita_do_episodio_e_idempotente_pela_chave_do_conteudo`,
+`test_executar_de_novo_o_mesmo_chamado_e_outro_episodio` e
+`test_fato_tem_vocabulario_fechado_e_o_valor_novo_substitui_o_antigo`. Três limites:
+
+- **Executar de novo o mesmo chamado é outra execução**, com outro `execucao_id` e outra chave:
+  são dois episódios. A chave reconhece a gravação repetida, e não o chamado repetido. É o que
+  mantém a contagem do §5 como estava (três rejeições do mesmo chamado contam três).
+- **Hoje nenhum caminho do grafo grava o mesmo episódio duas vezes**: `_concluir()` roda uma vez
+  por invocação, e a segunda aprovação não chega a ele. A chave é a barreira para quando isso
+  mudar, e a repetição foi exercitada só por teste, chamando a função duas vezes. Com o modelo
+  real o que há é a gravação normal: os 32 logs de `logs/grafo-redigir-v1/` e
+  `logs/grafo-redigir-v2-1/` a `-3/` (12/10/2026) trazem a chave e `ja_existia: false`.
+- **Episódio sem `execucao_id` não tem chave** e é sempre gravado. É o caso dos episódios que os
+  testes semeiam à mão. Para a chave valer, o `execucao_id` do grafo deixou de sair do relógio em
+  segundos, que se repetia em duas execuções seguidas, e passou a ter um trecho aleatório.
+
 **O que o sistema não guarda:**
-- **dado sensível não verificado** — o `anexo_log` do cliente (que pode conter hostname, IP, e por acidente uma credencial colada) não é gravado verbatim em nenhuma memória de longo prazo; só o resumo estruturado (categoria, KB usado) sobrevive à execução. O checkpoint, que guarda o log por inteiro enquanto a execução está viva, é apagado quando ela termina. Pendência: hoje o `logs/TKT-xxxx.json` grava o resultado de `consultar_ticket` com o anexo inteiro; para esta regra valer, o campo `anexo_log` precisa ser redigido no log ao fim da execução;
+- **dado sensível não verificado** — o `anexo_log` do cliente (que pode conter hostname, IP, e por acidente uma credencial colada) não é gravado verbatim em nenhuma memória de longo prazo; só o resumo estruturado (categoria, KB usado) sobrevive à execução. O checkpoint, que guarda o log por inteiro enquanto a execução está viva, é apagado quando ela termina (no grafo, desde 12/10/2026: `_concluir()` apaga o thread da execução concluída, e só a pausada mantém o seu; teste `test_execucao_concluida_apaga_o_checkpoint_e_a_pausada_nao`). **Três pendências, declaradas:** (1) o `logs/TKT-xxxx.json` grava o resultado de `consultar_ticket` com o anexo inteiro, e para esta regra valer o campo `anexo_log` precisa ser redigido no log ao fim da execução; (2) a linha da tabela `pendencias` fica depois de resolvida, e a do H2 traz o relato do cliente no campo `relato`; (3) no laço da Parte 1, a pendência resolvida mantém na coluna `checkpoint` o `Estado` inteiro, com o chamado lido e as mensagens;
 - **conteúdo não verificado vindo de fora** — a afirmação do próprio cliente ("é a terceira vez", "prioridade máxima") nunca vira fato semântico. É exatamente a regra que o prompt já aplica ("afirmação a verificar", em `agente-v3.md`): só o que o **histórico do sistema** confirma pode virar memória de longo prazo; a alegação do cliente fica só no registro episódico daquela execução específica, nunca promovida a fato sobre o cliente;
 - **o que é derivável** — a reincidência, como já dito, nunca é armazenada como valor fixo: é recalculada por consulta, porque depende da janela de 30 dias. Guardar um valor que pode ficar desatualizado (e nenhum mecanismo de decaimento cobrindo justamente ele) seria dívida sem necessidade.
 
 ### 1.5 A conversa com o cliente (§5.5)
 
 O agente só conversa com o cliente em um caso: quando falta informação para classificar o chamado, ele envia **um** pedido, depois da confirmação do analista, e espera a resposta (regra em `docs/case.md` §2.1). As quatro decisões da conversa, nesse cenário:
+
+> **Como ficou (12/10/2026).** O pedido espera o analista (H2) e é registrado como enviado. **A
+> espera pela resposta do cliente (H3) não foi implementada**: a execução termina depois do
+> envio, e uma resposta do cliente seria uma execução nova do mesmo chamado, sem o checkpoint da
+> anterior. A conversa de hoje tem uma mensagem do cliente só. As quatro respostas abaixo valem
+> para o `thread_id` e para o lugar do checkpoint, que existem; a parte da resposta do cliente é
+> desenho.
 
 **O que identifica uma conversa.** `thread_id` = id do chamado externo (`TKT-xxxx`). Cada chamado é uma conversa: a mesma pessoa com dois chamados abertos ao mesmo tempo tem duas conversas independentes, e a resposta de um não contamina a triagem do outro. A resposta do cliente chega pelo próprio chamado, então ela já carrega o id que a leva de volta à conversa certa.
 
@@ -114,6 +158,103 @@ O agente só conversa com o cliente em um caso: quando falta informação para c
 **O que acontece quando a janela enche.** Na prática, não enche: a conversa tem no máximo duas mensagens do cliente (o chamado original e uma resposta), porque o agente faz um único pedido. A retomada não reaproveita a trajetória antiga inteira: ela recomeça a triagem com o texto original + a resposta e mantém do checkpoint só o que é decisão (o pedido já feito, o orçamento já gasto). Se mesmo assim o contexto estourar, vale a ordem de descarte do §1.2 — e o texto do cliente nunca é descartado.
 
 **O que passa da conversa para a memória de longo prazo.** Só o fato de que houve pedido e se ele resolveu, no registro episódico da execução (ex.: "TKT-0005: pediu serviço e sintoma; cliente respondeu; abriu chamado P1"). O texto da resposta do cliente fica no chamado e no checkpoint, que é apagado quando a conversa termina; ele não vira memória semântica pela mesma regra do §1.4: afirmação do cliente não é fato verificado.
+
+### 1.6 O desenho acima e o código de hoje
+
+| Assunto | No desenho (§1.1 a §1.5) | No código (12/10/2026) |
+|---|---|---|
+| O que vai ao checkpoint | o `Estado` do laço, com `historico` e `passos` | o `EstadoGrafo` inteiro, gravado pelo `SqliteSaver` a cada superpasso. Não há lista de mensagens (`arquitetura.md` §4) |
+| Quando o checkpoint some | ao fim da execução; sobrevive em `aguardando_humano` e `aguardando_cliente` | ao fim da execução; sobrevive em `aguardando_humano`. O término `aguardando_cliente` não existe (o H3 não foi implementado) |
+| Campo `pedido_cliente` | guarda o pedido enviado e a resposta | não existe. O pedido enviado é uma linha em `encaminhamentos`, com `enviado_em`, e a contagem é feita no banco |
+| Episódica | índice por similaridade, lido no passo de busca | tabela `episodios`, lida por **consulta exata** (guia; cliente e categoria), só para a tela do H1 (§3) |
+| Semântica | plano e reincidência por cliente, escritos pelo código | fatos do ambiente do cliente, escritos por uma pessoa (§4). Plano e reincidência continuam vindo do sistema de tickets |
+| Procedural | regra no prompt, depois de 3 correções revisadas | nenhuma regra. Existem o motivo da rejeição e o relatório `--candidatas` (§5) |
+| Ordem de descarte (§1.2) | memória, depois trechos, depois passos antigos | **nenhum código corta a janela.** Ver abaixo |
+| Remoção a pedido do titular (§2.3) | cinco estruturas, com varredura | não implementada (§3 e §4, limites) |
+
+**A janela, no grafo.** O §1.2 foi medido no laço, que reenvia a trajetória a cada volta. O grafo
+não tem trajetória na janela: cada nó de modelo monta a própria mensagem com o que precisa
+(`_registro_para_o_modelo`, em `src/grafo.py`). Na rodada `logs/grafo-fatos/` (11/10/2026, 8
+execuções) foram 14.440 tokens em 17 chamadas, 849 por chamada na média, entrada e saída somadas;
+a execução mais cara gastou 2.520 tokens, em 3 chamadas. O que entra em cada chamada:
+
+| Fonte | `triagem` | `conferir_ressalva` | `redigir` |
+|---|---|---|---|
+| prompt do nó | sim | sim | sim |
+| texto do cliente, log anexado e histórico de chamados | sim | sim | sim |
+| o primeiro guia recuperado | não | título, causa e as situações que não cobre | título, causa, solução e a ressalva |
+| fatos confirmados do cliente (memória semântica) | não | sim | não |
+| escopo do plano | não | não | sim, na rota técnica |
+| episódios (memória episódica) | não | não | não: vão só à tela do analista |
+
+**A ordem de descarte que vale para essa janela** é a do §1.2 aplicada ao que o grafo envia:
+primeiro o escopo do plano e os fatos do cliente (contexto, e o sistema funcionou sem eles);
+depois o histórico de chamados; por último o começo do log anexado, mantendo o fim, que é o mais
+recente. Nunca saem o prompt do nó, o texto do cliente e, na conferência da ressalva, as
+situações que o guia não cobre. **Essa ordem não está implementada, e nada a exercitou:** na
+mesma rodada, a execução com as chamadas maiores (`TKT-0002`) teve 1.045 tokens por chamada na
+média; o log guarda o total da execução, e não o de cada chamada. O que existe é o teto de 30 mil
+tokens por execução, conferido antes de cada chamada. Um log anexado muito grande iria inteiro
+numa chamada.
+
+### 1.7 Checkpoint, memória e RAG: a fronteira, no case (§5.1)
+
+As três guardam informação no mesmo arquivo de dados ou ao lado dele, e servem a coisas
+diferentes:
+
+| | Checkpoint | Memória | RAG |
+|---|---|---|---|
+| O que é, aqui | o `EstadoGrafo` de uma triagem, em `dados/checkpoints.db` | as tabelas `episodios` e `fatos_cliente`, em `dados/tickets.db` | os 16 guias de `kb_artigos` e as 3 fichas de plano, com o índice `kb_vetores` |
+| Escopo | uma execução de um chamado (`thread_id` = `TKT-0000`) | todas as execuções: episódios de qualquer chamado, fatos por cliente | nenhuma: o corpus existe antes das execuções e não depende delas |
+| Para quê | **retomar** a execução que parou no H1 ou no H2, sem refazer triagem, busca e redação | **lembrar** o que o analista já decidiu sobre um guia e o que ele confirmou sobre o ambiente de um cliente | **consultar** o procedimento que diz o que fazer com o problema relatado |
+| Forma | o estado inteiro: o texto do cliente, o log anexado, os candidatos, o texto redigido, a pendência | fragmento escolhido: 14 campos estruturados por episódio, sem texto do cliente; uma linha por fato, de vocabulário fechado | documento escrito por terceiros (os times de suporte), com causa, solução e o que não cobre |
+| Leitura | uma vez, na retomada, pelo `thread_id` | por **chave exata**, no ponto de uso: os precedentes do guia e do cliente na tela do H1; os fatos do cliente na conferência da ressalva | por **relevância** (o cosseno do relato com cada guia), uma vez por execução técnica, no nó `buscar` |
+| Quem escreve | o LangGraph, a cada superpasso | o código (o episódio) e o analista (o fato e o motivo da rejeição). Nunca o modelo | ninguém em tempo de execução: o corpus vem curado do seed, e o índice é derivado dele |
+| Quando some | quando a execução conclui | o episódio, depois de 365 dias; o fato não some, é substituído | quando o guia é revogado: sai da busca e fica na tabela |
+
+**Onde este case difere da tabela do enunciado.** Lá a memória é lida por relevância, a cada
+volta. Aqui ela é lida por chave, e só em dois pontos. A razão é o que ela guarda: a pergunta que
+o analista faz na tela do H1 é "o que já foi decidido sobre **este** guia?" e "o que **este**
+cliente teve nesta categoria?", e as duas têm chave. A leitura por similaridade do §1.3 ficou no
+desenho.
+
+**O que precisa estar no checkpoint para a retomada não repetir efeito.**
+
+- `pendencia` e `pendencia_id`: a ação como o analista a viu, com `pedido_em` e `vence_em`. A
+  linha em `pendencias` é o único efeito anterior à pausa, e quem a grava é o nó
+  `pedir_confirmacao`. O checkpoint registra que esse nó terminou, e a retomada recomeça do nó
+  seguinte, `confirmar`, que não faz nada antes do `interrupt`. Sem o checkpoint, a retomada
+  criaria outra pendência, com outro prazo.
+- `desfecho_proposto`, `texto_redigido`, `ticket` e `candidatos`: o que o nó `gravar` usa. Com
+  eles a retomada não chama o modelo: os tokens da execução retomada são os mesmos da pausada
+  (`logs/grafo-pausa/`, `logs/grafo-h2/`).
+- os acumulados (`passos`, tokens, custo, `segundos_gastos`): para os tetos continuarem contando
+  de onde pararam.
+- depois da retomada, a escrita tem a sua própria barreira: abrir chamado é idempotente pela
+  chave `ticket:kb_id`, o pedido ao cliente pelo chamado, e `resolver_pendencia` só fecha a
+  pendência que ainda aguarda.
+
+**O que a recuperação seletiva traz que guardar tudo não traria.** Guardar o checkpoint de todas
+as execuções daria, por chamado, o estado inteiro: o texto do cliente, o log, os candidatos. Para
+responder "quantas vezes o analista rejeitou o KB-102 nos últimos 90 dias, e por quê?" seria
+preciso abrir os estados um a um, porque nada liga um ao outro, e o sistema passaria a guardar
+texto de cliente e log anexado para sempre, que é o que o §1.4 proíbe. O episódio traz essa
+resposta em uma consulta, na hora em que o analista decide: a linha `MEMÓRIA:` da tela do H1
+(`humano.md` §2.1).
+
+No corpus a seleção é por relevância de verdade: de 16 guias, a busca traz até 3 para o relato
+(`rag.md` §4), e o `redigir` recebe só o primeiro.
+
+**O que ela deixa para trás.**
+
+- **Tudo o que não virou campo.** O episódio não tem o texto do cliente, o log nem o texto
+  redigido. Uma pergunta que ninguém previu ao escolher os campos ("os chamados rejeitados
+  citavam SSH?") não tem resposta na memória; teria no log, enquanto ele existir.
+- **O precedente parecido que não é idêntico.** A leitura é por chave: uma rejeição do KB-114 não
+  aparece quando a proposta é o KB-102, embora os dois guias declarem a mesma exceção ("ssh",
+  §4.1). É o preço de não ter feito a leitura por similaridade.
+- **No corpus, o que o vetor não enxerga.** A busca por relevância não lê as exceções de um guia
+  (`rag.md` §4.2), e nenhum limiar separa as perguntas sem resposta das que têm (`rag.md` §4.3).
 
 ## Decisão 2 — Como o agente esquece
 
@@ -163,7 +304,7 @@ episódio não entra no `redigir` nem em regra de decisão alguma, e não há le
 | Pergunta | Resposta, no código |
 |---|---|
 | Onde fica | tabela `episodios` em `dados/tickets.db` (`db.SQL_EPISODIOS`); nasce em `db.py`, como `pendencias`, e não no seed |
-| Quem escreve | o **código**, em `grafo._concluir`, uma linha por execução **concluída** (a pausada no H1 só vira episódio quando o analista responde ou o prazo vence) |
+| Quem escreve | o **código**, em `grafo._concluir`, uma linha por execução **concluída** (a pausada no H1 ou no H2 só vira episódio quando o analista responde ou o prazo vence). A escrita é idempotente pela chave do conteúdo (`db.chave_do_episodio`, §1.4) |
 | O que guarda | id do chamado, `cliente_id`, classe da triagem, categoria e id do guia proposto, score, ação proposta, desfecho gravado, motivo, veredito do analista (`aprovado`, `editado`, `rejeitado`, `vencido` ou vazio quando não houve H1), término, data real e um resumo montado pelo código |
 | O que não guarda | o texto do cliente, o log anexado, o nome do cliente e o texto que o modelo redigiu (teste `test_o_episodio_nao_guarda_o_texto_do_cliente_nem_o_que_o_modelo_redigiu`) |
 | Como é lida | `db.precedentes`, por consulta exata: as decisões do analista sobre o guia proposto e os 3 últimos episódios do mesmo cliente na mesma categoria |
@@ -191,7 +332,7 @@ decidiu 1 vez(es) sobre o guia KB-102: 1 rejeitada(s)" e o episódio anterior do
 **Limites assumidos.**
 - A contagem não distingue por que o analista rejeitou: uma rejeição por resumo ruim pesa igual a uma por guia errado.
 - Rodar de novo o mesmo chamado conta como precedente dele mesmo (é o caso da demonstração).
-- A remoção a pedido do titular (§2.3) **não está implementada** para a tabela `episodios`; os logs e o checkpoint também continuam como estavam.
+- A remoção a pedido do titular (§2.3) **não está implementada** para a tabela `episodios` nem para os logs. O checkpoint da execução concluída é apagado desde 12/10/2026 (§1.4), o que não é remoção a pedido: é o ciclo de vida dele.
 - O laço da Parte 1 (`--laco`) não lê nem grava episódios.
 - O log da execução ganhou o campo `episodio` (o registro gravado), e os logs anteriores a esta data não o têm.
 
@@ -217,7 +358,7 @@ O vocabulário é fechado (`db.FATOS_ACEITOS`): três chaves, dois valores cada.
 | Pergunta | Resposta, no código |
 |---|---|
 | Onde fica | tabela `fatos_cliente` em `dados/tickets.db` (`db.SQL_FATOS`), criada em `db.py` |
-| Quem escreve | só uma pessoa: `python src/main.py --fato CLI-07 acesso=ssh`. O modelo não escreve, e a alegação do cliente não vira fato. Chave ou valor fora do vocabulário, ou cliente inexistente, é recusado |
+| Quem escreve | só uma pessoa: `python src/main.py --fato CLI-07 acesso=ssh`. O modelo não escreve, e a alegação do cliente não vira fato. Chave ou valor fora do vocabulário, ou cliente inexistente, é recusado. Confirmar de novo o valor que já vale não cria linha, e o retorno traz `ja_existia` (§1.4) |
 | Como é lida | por chave exata (`db.fatos_do_cliente`), sem busca |
 | Onde aparece | (1) na pendência do H1, campo `fatos_cliente`, e em linhas `FATO CONFIRMADO` da tela; (2) na entrada do nó `conferir_ressalva`, numa seção "Fatos confirmados sobre o ambiente do cliente". Não vai ao `redigir` |
 | O que muda no desfecho | o fato não decide nada. Quem pode baixar o score continua sendo a resposta do nó, com a mesma garantia de antes: só baixa, e só com uma situação da lista do guia |
@@ -327,6 +468,6 @@ cliente ou chamado (§2.3). Isso muda o que vai ao modelo e exige nova medição
 
 ## O que o agente não guarda, e o que perde quando perde
 
-O agente **não guarda**: o conteúdo bruto dos anexos de log depois que a execução termina (com a redação do `anexo_log` nos arquivos de log, pendência do §1.4); qualquer afirmação do cliente não confirmada pelo histórico do sistema; e qualquer fato recalculável, como a reincidência.
+O agente **não guarda**: o conteúdo bruto dos anexos de log depois que a execução termina (com as três pendências do §1.4: o `anexo_log` nos arquivos de log, o relato na pendência resolvida do H2 e o `Estado` na pendência resolvida do laço); qualquer afirmação do cliente não confirmada pelo histórico do sistema; e qualquer fato recalculável, como a reincidência.
 
 **O que ele perde, por não guardar isso:** perde a capacidade de, meses depois, reconstruir *por que* um chamado antigo foi tratado de um jeito específico a partir do log bruto original — só o resumo estruturado sobrevive, então um detalhe do log original que não entrou no resumo da época está perdido para sempre, mesmo que o chamado continue relevante. É uma perda aceita conscientemente: o custo de manter dado potencialmente sensível "só por garantia" pesa mais do que essa perda pontual de detalhe, e é o mesmo princípio já aplicado no resto do case — na dúvida, o sistema erra para o lado que preserva menos, não mais.

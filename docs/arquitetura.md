@@ -1,17 +1,23 @@
 # Arquitetura do agente (Parte 2, item 3)
 
-> **O que este documento descreve.** O sistema **como ele está hoje** (10/10/2026, commit
-> `083d132`): o **grafo em LangGraph** de `src/grafo.py`, que é o caminho padrão do `main.py`,
-> com os prompts `triagem-v1.md` e `redigir-v1.md`, a entrada em texto digitado e a saída
+> **O que este documento descreve.** O sistema **como ele está hoje** (12/10/2026): o **grafo em
+> LangGraph** de `src/grafo.py`, que é o caminho padrão do `main.py`, com os prompts
+> `triagem-v1.md`, `ressalva-v3.md` e `redigir-v3.md`, a entrada em texto digitado e a saída
 > validada (`src/saida.py`). Os §1 a §7 respondem ao item 3 do enunciado sobre esse grafo; o §8
 > defende o nível de autonomia; o §9 traz o grafo nó a nó e a conferência contra o código.
 >
 > O laço da Parte 1 (`src/agente.py`, prompt `agente-v5.md`) continua no repositório e roda com
 > `--laco`. A descrição dele, que ocupava os §1 a §7 deste documento até 10/10/2026, foi para o
-> [`arquitetura-v2.md`](arquitetura-v2.md) §7, sem alteração. O índice vetorial e a memória **ainda não existem no código**;
-> onde o enunciado pede um deles, o documento diz o que há no lugar. O grafo está detalhado em
-> [`grafo.md`](grafo.md), a recuperação em [`rag.md`](rag.md) e os pontos de parada em
-> [`humano.md`](humano.md).
+> [`arquitetura-v2.md`](arquitetura-v2.md) §7, sem alteração. O índice vetorial
+> (`src/vetorial.py`) e a memória entre execuções (tabelas `episodios` e `fatos_cliente`) existem
+> desde 11/10/2026 e estão no diagrama do §1. O grafo está detalhado em [`grafo.md`](grafo.md), a
+> recuperação em [`rag.md`](rag.md), a memória em [`memoria.md`](memoria.md) e os pontos de parada
+> em [`humano.md`](humano.md).
+>
+> **As medições citadas nos §3, §5 e §8 são de 10/10/2026**, anteriores à busca vetorial, ao nó
+> `conferir_ressalva`, ao H2 e ao `redigir-v3.md`. As rodadas dos 8 casos com o código e os
+> prompts em uso são `logs/grafo-redigir-v3-1/` a `-3/` (12/10/2026): 8 de 8 nas três, 16
+> chamadas ao modelo e cerca de 13,2 mil tokens cada (`grafo.md` §6.5).
 >
 > O histórico da decisão (v1 no papel → v2 construída) continua em
 > [`arquitetura-v2.md`](arquitetura-v2.md).
@@ -56,6 +62,8 @@ GRAFO   src/grafo.py · objeto GRAFO, compilado uma vez · thread_id = id do cha
       ├─ não ──────────────────────────────────────────────────────────► [decidir]
       ▼ sim
   [conferir_ressalva]  [M] UMA chamada · ressalva-v3.md · temperature=0 · JSON validado
+      │                [C] antes: lê os fatos confirmados do cliente (MEMÓRIA, fatos_cliente)
+      │                    e os põe na entrada do modelo                              leitura
       │                ◆D6 o relato cai numa das situações que o guia NÃO cobre? (sim ou não)
       │                [C] só BAIXA o score (× 0,4), e só com uma frase da lista do guia
       │                [C] antes da chamada: os mesmos tetos ───────────────────────► ●T2
@@ -72,9 +80,11 @@ GRAFO   src/grafo.py · objeto GRAFO, compilado uma vez · thread_id = id do cha
       │                    técnico, score ≥ 0,5, guia "escalar" ..... abrir_chamado_interno
       │                    técnico, score ≥ 0,5, guia "anotar" ...... anotacao_interna
       ▼
-  [redigir]            [M] UMA chamada · redigir-v1.md · temperature=0 · JSON {texto}
+  [redigir]            [M] UMA chamada · redigir-v3.md · temperature=0 · JSON {texto}
       │                ◆D5 o texto: resumo do chamado ou mensagem do encaminhamento.
       │                    O desfecho chega decidido; o modelo não o troca
+      │                [C] no pedido ao cliente (devolver_cliente) o modelo NÃO é chamado:
+      │                    o texto é o padrão do código, com cinco perguntas
       │                [C] antes da chamada: os mesmos tetos ──────────────────────► ●T2
       │                [C] API fora ───────────────────────────────────────────────► ●T3
       ▼
@@ -86,7 +96,9 @@ GRAFO   src/grafo.py · objeto GRAFO, compilado uma vez · thread_id = id do cha
       ├─ sim, desfecho reversível ─────────────────────────────────────► [gravar]
       ▼ sim, abrir_chamado_interno ou devolver_cliente: IRREVERSÍVEL
   [pedir_confirmacao]  [C] monta a ação como o analista vai vê-la, marca pedido_em e
-      │                    vence_em (20 min) e grava a linha em `pendencias`
+      │                    vence_em (20 min) e grava a linha em `pendencias`.
+      │                    No H1 a tela leva os precedentes (MEMÓRIA, episodios) e os
+      │                    fatos do cliente (fatos_cliente)                           leitura
       ▼
   [confirmar]          [H1] [H2] interrupt: o ANALISTA DE SUPORTE aprova ou rejeita.
       │                     H1 = abrir chamado interno; H2 = enviar o pedido ao cliente.
@@ -115,12 +127,19 @@ GRAFO   src/grafo.py · objeto GRAFO, compilado uma vez · thread_id = id do cha
 FORA DOS NÓS
   LIMITE_SUPERPASSOS = 20 (o recursion_limit, declarado no código); estourado ─────► ●T2
   O caminho mais longo tem 14 superpassos; o mais curto, 7.
+  Depois do grafo, _concluir() [C] grava o log da execução e, se ela concluiu, o episódio
+  (MEMÓRIA, episodios; uma linha, com chave de idempotência) e apaga o checkpoint.     escrita
 
 
 DADOS   dados/tickets.db (SQLite), acessado só por src/db.py
 
   tickets ............. lido por [consultar]
-  kb_artigos .......... o corpus; kb_vetores: o índice vetorial (um vetor por guia, em memória)
+  kb_artigos .......... o corpus: 16 guias, 15 vigentes e 1 revogado, que não entra na busca
+  planos_fichas ....... as 3 fichas de plano; contexto de [redigir] e da tela do [H1]
+  kb_vetores .......... o ÍNDICE VETORIAL: um vetor (mistral-embed, 1024 dimensões) por guia
+                        e por ficha de plano, com o hash do texto. Lido por [buscar], que
+                        calcula o cosseno em memória; refeito só para o texto que mudou.
+                        Criada em src/db.py, e não no seed
   chamados_internos ... escrito por [gravar]; relido para contar a reincidência
   encaminhamentos ..... escrito por [gravar]; relido por [decidir] (um pedido por chamado)
   pendencias .......... a fila do analista: a ação irreversível à espera e o prazo;
@@ -129,11 +148,22 @@ DADOS   dados/tickets.db (SQLite), acessado só por src/db.py
                         criada em src/db.py, e não no seed
 
 CHECKPOINT   dados/checkpoints.db (SqliteSaver do LangGraph), endereçado pelo thread_id
-  Guarda o estado do grafo a cada superpasso. É o que deixa a execução pausada no [H1]
-  continuar em outro processo. Uma execução nova do mesmo chamado apaga o anterior.
+  Guarda o estado do grafo a cada superpasso. É o que deixa a execução pausada no [H1] ou
+  no [H2] continuar em outro processo. É apagado quando a execução conclui; uma execução
+  nova do mesmo chamado apaga também o de uma pausa anterior.
 
-MEMÓRIA   nenhuma entre execuções: cada execução parte do zero
-  O que atravessa execuções é registro do banco (as duas releituras acima).
+MEMÓRIA   entre execuções, em dados/tickets.db; só o grafo lê e grava (docs/memoria.md)
+  episodios ........... EPISÓDICA. Um registro por execução concluída, escrito pelo código
+                        em _concluir(): campos estruturados, nunca o texto do cliente.
+                        Lida por consulta exata (não por similaridade) em [pedir_confirmacao].
+                        Só avisa o analista: nenhuma regra de decisão a lê
+  fatos_cliente ....... SEMÂNTICA. Fatos do ambiente do cliente, de vocabulário fechado,
+                        escritos só por uma pessoa (main.py --fato). Lidos por chave em
+                        [conferir_ressalva] e em [pedir_confirmacao]
+  procedural .......... NÃO HÁ regra aprendida no prompt. Existe o motivo da rejeição,
+                        gravado no episódio, e o relatório main.py --candidatas, que só lê
+  As tabelas nascem em src/db.py. --todos e --reset as zeram junto com o banco.
+  O que também atravessa execuções é registro do banco (as duas releituras de DADOS).
   logs/…/TKT-0000.json guarda a trajetória; o sistema grava e nunca lê.
 
 
@@ -206,21 +236,31 @@ chama de "volta" é aqui um **superpasso** do LangGraph: a execução de um nó.
 **O que faz o superpasso seguinte existir** é a aresta, e só ela. O modelo não pede o próximo
 passo: ele devolve um JSON, o nó o grava no estado, e uma função de código lê o campo.
 
-**Os dois lugares em que algo se repete**, os dois com teto em código:
+**Os três lugares em que algo se repete**, os três com teto em código:
 
 - `validar → redigir`: o texto reprovado volta ao modelo **uma** vez, com o erro
   (`MAX_REDACOES = 2`). Na segunda reprovação a execução termina em ●T3;
 - dentro do nó `triagem`: um JSON fora do contrato é devolvido ao modelo **uma** vez
-  (`MAX_TENTATIVAS_TRIAGEM = 2`). Não é aresta: é uma repetição dentro do nó.
+  (`MAX_TENTATIVAS_TRIAGEM = 2`). Não é aresta: é uma repetição dentro do nó;
+- dentro do nó `conferir_ressalva`: o mesmo, e também quando a frase citada não é uma das do
+  guia (`MAX_TENTATIVAS_RESSALVA = 2`).
 
-Com isso o pior caso são 4 chamadas ao modelo por execução (2 de triagem e 2 de redação), contra
-11 no laço da Parte 1.
+Com isso o pior caso são 6 chamadas ao modelo por execução (2 de triagem, 2 de ressalva e 2 de
+redação), contra 11 no laço da Parte 1.
 
 **O caminho real.** Em três execuções dos 8 casos (`logs/grafo/`, `logs/grafo-rodada-2/` e
 `logs/grafo-rodada-3/`, de 10/10/2026), todas as 24 execuções fizeram 2 chamadas ao modelo,
 menos o `TKT-0999`, que faz 1: o id inexistente não passa pela triagem. Nenhuma redação foi
 reprovada e nenhuma triagem veio fora do contrato. Cada rodada somou 15 chamadas ao modelo, de
 12.623 a 12.687 tokens e US$ 0,0019 a preço de lista (§8).
+
+Essas três rodadas são anteriores ao nó `conferir_ressalva`. Na rodada com ele
+(`logs/grafo-fatos/`, 11/10/2026, uma execução dos 8 casos, 8 de 8 no verificador), o `TKT-0003` e
+o `TKT-0007` fizeram 3 chamadas, porque o KB-102 declara uma situação que não cobre; os outros
+ficaram como antes. A rodada somou 17 chamadas ao modelo, 14.440 tokens e US$ 0,0022. As três
+rodadas de 12/10/2026, já com o H2 e o `redigir-v2.md`, repetem as 17 chamadas, com 14.718 a
+14.722 tokens (`logs/grafo-redigir-v2-1/` a `-3/`). Com o pedido ao cliente em texto padrão,
+o `TKT-0005` passou a fazer 1 chamada, e a rodada 16 (`logs/grafo-pedido-padrao-1/` a `-3/`).
 
 ## 4. O estado
 
@@ -231,7 +271,7 @@ dele. **Não há lista de mensagens no estado.**
 |---|---|---|---|---|---|
 | `id_ticket`, `texto_recebido` | texto | `rodar_grafo()`, na entrada do grafo | todos; o log | a linha de comando: o id e o texto digitado | nenhum |
 | `modelo`, `temperatura`, `prazo_confirmacao_min` | texto, número | `rodar_grafo()` | os nós de modelo; `pedir_confirmacao` | o `.env` e os argumentos do `main.py` | nenhum |
-| `execucao_id`, `executado_em`, `commit` | texto | `rodar_grafo()` | o log e a saída | o relógio e o `git` | nenhum |
+| `execucao_id`, `executado_em`, `commit` | texto | `rodar_grafo()` | o log e a saída; o `execucao_id` entra na chave do episódio | um identificador aleatório, o relógio e o `git` | nenhum |
 | `texto` | `str` | `entrada` | `triagem`, `buscar`, `redigir` | o texto digitado, ou o registrado para o id | nenhum |
 | `ticket` | `dict` ou `None` | `consultar` | a aresta de `consultar`, `triagem`, `decidir`, `redigir`, `gravar` | a tabela `tickets` | nenhum |
 | `classe` | `str` | `triagem` | a aresta de `triagem`, `decidir` | o modelo (◆D1) | nenhum |
@@ -243,9 +283,9 @@ dele. **Não há lista de mensagens no estado.**
 | `texto_redigido` | `str` ou `None` | `redigir` | `validar`, `pedir_confirmacao`, `gravar` | o modelo (◆D5) | nenhum |
 | `erro_validacao` | `dict` ou `None` | `validar` | a aresta de `validar`, `redigir`, `finalizar` | regra em código | nenhum |
 | `pendencia`, `pendencia_id` | `dict`, inteiro | `pedir_confirmacao` | `confirmar`, `gravar` | o estado e a tabela `pendencias` | nenhum |
-| `confirmacao` | `dict` (status, quem, quando; na aprovação com edição, também `resumo_original` e `resumo_aprovado`) | `confirmar` | `gravar`, o log | o analista (ou o relógio, no prazo vencido) | nenhum |
+| `confirmacao` | `dict` (status, quem, quando; na aprovação com edição, também o texto original e o aprovado: `resumo_*` no H1, `mensagem_*` no H2; na rejeição com motivo, `motivo_rejeicao`) | `confirmar` | `gravar`, o log | o analista (ou o relógio, no prazo vencido) | nenhum |
 | `desfecho` | `dict` | `gravar` | `finalizar` | o retorno da escrita no banco | nenhum |
-| `termino`, `motivo` | `str` | `triagem` ou `redigir` (teto, erro) e `finalizar` | as arestas; quem chama o grafo | regra em código | nenhum |
+| `termino`, `motivo` | `str` | `triagem`, `conferir_ressalva` ou `redigir` (teto, erro) e `finalizar` | as arestas; quem chama o grafo | regra em código | nenhum |
 | `saida` | `dict` | `finalizar` | quem chama o grafo | `montar_saida` (`src/saida.py`) | nenhum |
 | `passos` | `list[dict]` | os nós que registram um passo | o log e a saída | cada nó | `operator.add` (concatena) |
 | `tentativas_redacao` | `int` | `redigir` | a aresta de `validar` | contagem | `operator.add` (soma) |
@@ -255,8 +295,10 @@ dele. **Não há lista de mensagens no estado.**
 
 A coluna do reducer confere com a saída de `conferir_grafo.py` (§9.2).
 
-**Campos com mais de um escritor.** `termino` e `motivo` são escritos por `triagem`, `redigir` e
-`finalizar`, e não têm reducer. Não é corrida: os nós rodam um por vez, e quando um nó de modelo
+**Campos com mais de um escritor.** `termino` e `motivo` são escritos por `triagem`,
+`conferir_ressalva`, `redigir` e `finalizar`, e não têm reducer. `candidatos` é escrito por
+`buscar` e, em seguida, por `conferir_ressalva`, que devolve a lista inteira com o score do
+primeiro reduzido. Não é corrida: os nós rodam um por vez, e quando um nó de modelo
 escreve o término a aresta seguinte leva direto a `finalizar`. Os campos escritos por dois nós
 que precisam do total (tokens, custo, chamadas, tempo, passos) têm reducer.
 
@@ -284,6 +326,7 @@ O que limita uma execução, e quem confere:
 | tempo | 90 s | o tempo gasto **dentro dos nós**, somado em `segundos_gastos` | `_teto()` |
 | redações | 2 por execução (`MAX_REDACOES`) | passagens pelo nó `redigir` | a aresta de `validar` |
 | tentativas de triagem | 2 (`MAX_TENTATIVAS_TRIAGEM`) | respostas fora do contrato | o nó `triagem` |
+| tentativas de ressalva | 2 (`MAX_TENTATIVAS_RESSALVA`) | respostas fora do contrato, ou com uma frase que não é do guia | o nó `conferir_ressalva` |
 | tentativas de transporte | 5 por chamada ao modelo | limite de requisições ou conexão | `_chamar()` |
 
 Tokens, custo e tempo são os da classe `Orcamento` do laço (`src/agente.py`), com os mesmos
@@ -316,7 +359,7 @@ do laço:
 |---|---|---|
 | ●T1 `respondeu` | `gravar` escreveu um desfecho e `finalizar` o registrou. Inclui a execução retomada: o analista aprovou, ou ele rejeitou ou o prazo venceu e o código gravou a `fila_humana` | o desfecho; no prazo vencido de um chamado que seria P1, também uma linha em `avisos_gestor` |
 | ●T2 `orcamento_esgotado` | um teto de tokens, custo ou tempo estourou antes de uma chamada ao modelo, ou o limite de superpassos foi atingido; o motivo diz qual (`tokens: 1200/1000`, `superpassos: limite de 20 atingido`) | nada: os tetos são conferidos antes de `gravar` |
-| ●T3 `erro_fatal` | (1) API indisponível depois de 5 tentativas; (2) a API recusou a chamada; (3) a triagem veio fora do contrato 2 vezes; (4) o texto redigido foi reprovado 2 vezes; (5) a saída não coube no schema | nada nos casos (1) a (4). No (5) o desfecho já foi gravado: `finalizar` vem depois de `gravar` |
+| ●T3 `erro_fatal` | (1) API indisponível depois de 5 tentativas; (2) a API recusou a chamada; (3) a triagem ou a conferência da ressalva veio fora do contrato 2 vezes; (4) o texto redigido foi reprovado 2 vezes; (5) a saída não coube no schema | nada nos casos (1) a (4). No (5) o desfecho já foi gravado: `finalizar` vem depois de `gravar` |
 | ●T4 `aguardando_humano` | o grafo está parado no `interrupt` do nó `confirmar`, dentro do prazo. Não passa por `finalizar`: é o que `rodar_grafo()` devolve enquanto a execução espera | nada em `chamados_internos` nem em `encaminhamentos`. A ação e o prazo ficam na tabela `pendencias`, e o estado no checkpoint |
 
 O ●T4 não é um fim: é o único término que a mesma execução troca depois, por ●T1, quando o
@@ -415,8 +458,9 @@ resumos; a mesma aprovação enviada de novo não encontrou nada pendente. No ba
 interno, uma pendência `aprovada`, nenhum encaminhamento (`humano.md` §5).
 
 Dois limites dessas demonstrações: quem respondeu foi quem rodou os comandos, segundos depois, e
-não um analista; e a rejeição e o prazo vencido, no grafo, estão cobertos só por testes offline
-(`tests/test_grafo.py`).
+não um analista; e o prazo vencido, no grafo, está coberto só por testes offline
+(`tests/test_grafo.py`). A rejeição do H1 foi exercitada com o modelo real em 11/10/2026
+(`logs/grafo-memoria-1/` e `logs/grafo-procedural/`); a do H2, não.
 
 Limites do que foi implementado:
 
@@ -572,10 +616,10 @@ Limites desta medição:
 
 O grafo existe desde 10/10/2026: `StateGraph` em [`src/grafo.py`](../src/grafo.py), compilado uma
 vez (objeto `GRAFO`), com `langgraph==1.2.14` e `langgraph-checkpoint-sqlite==3.1.1` fixados no
-`requirements.txt`. É o caminho padrão do `main.py`; o laço dos §1 a §7 roda com `--laco`, para
+`requirements.txt`. É o caminho padrão do `main.py`; o laço da Parte 1 roda com `--laco`, para
 os dois serem comparados nos mesmos casos. Foi medido três vezes com o modelo real, 8 de 8 no
 verificador nas três (§8; `grafo.md` §6), e a pausa do [H1] foi demonstrada entre processos
-(§7). O que é do código está provado por 39 testes offline (`tests/test_grafo.py`).
+(§7). O que é do código está provado por 75 testes offline (`tests/test_grafo.py`).
 
 O §1 mostra o sistema inteiro (entrada, dados, checkpoint, términos). Esta seção mostra o mesmo
 grafo nó a nó, com a chave de cada aresta condicional, para ser conferido contra o código.
@@ -606,9 +650,18 @@ START
   ├─ "sem_busca"  comercial, insuficiente, fora_da_alcada ──► [decidir]
   └─ "tecnico"
         ▼
-[buscar]             código   busca os procedimentos com os termos da triagem; devolve o score
+[buscar]             código   busca os procedimentos pelo vetor do relato (cosseno); devolve o score
   │
-  ▼
+  ◇ _rota_buscar                                 decide: código
+  ├─ "decidir"    o 1º guia não passa de 0,5, já caiu numa ressalva literal, ou não declara ressalvas ──► [decidir]
+  └─ "conferir"
+        ▼
+[conferir_ressalva]  MODELO   JSON validado: cai_na_ressalva, frase, motivo. O código só BAIXA o score (x 0,4)
+  │
+  ◇ _rota_conferir                               decide: código
+  ├─ "encerrar"   teto, API fora ou JSON inválido 2 vezes ──► [finalizar]
+  └─ "decidir"
+        ▼
 [decidir]            código   escolhe o desfecho (regras de rota + portão de confiança):
   │                             id inexistente ........................... fila_humana
   │                             comercial ................................ fila_comercial
@@ -662,8 +715,9 @@ Os nós, as arestas condicionais com quem decide cada uma e os términos estão 
 
 ### 9.2 A conferência contra o código (§6.4)
 
-Saída de `python conferir_grafo.py`, de 11/10/2026 (com o nó `conferir_ressalva`). O script está na raiz e importa o objeto
-`GRAFO` de `src/grafo.py`, o mesmo que o `main.py` executa.
+Saída de `python conferir_grafo.py`, de 11/10/2026 (com o nó `conferir_ressalva`), conferida de
+novo em 12/10/2026 sem diferença. O script está na raiz e importa o objeto `GRAFO` de
+`src/grafo.py`, o mesmo que o `main.py` executa.
 
 ```
 langgraph 1.2.14
@@ -802,7 +856,9 @@ graph TD;
 
 O desenho foi corrigido depois de escrever o código. A proposta anterior não tinha os nós
 `decidir` e `pedir_confirmacao`, e tinha o nó `aguardar_cliente`, que não foi implementado
-(`grafo.md` §1).
+(`grafo.md` §1). **O desenho do §9.1 ficou sem o nó `conferir_ressalva` de 11/10 a 12/10/2026**,
+enquanto a saída acima já o listava: a divergência foi achada ao conferir os dois, e quem estava
+errado era o desenho.
 
 ### 9.3 Onde está o resto
 

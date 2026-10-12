@@ -1,6 +1,8 @@
 <!--
 prompt:            redigir (nó `redigir` do grafo, src/grafo.py)
-versão:            v1, de 10/10/2026
+versão:            v1, de 10/10/2026. SUBSTITUÍDO pelo redigir-v2.md em 12/10/2026: a mensagem ao
+                   cliente (desfecho "devolver_cliente") não perguntava nada, em 15 execuções de
+                   15 (docs/prompts.md §2.1). O texto abaixo não foi alterado.
 carimbo:           prompt × modelo × parâmetros × resultado
                    redigir-v1 × ministral-8b-latest × temperature=0  -> TRÊS execuções dos 8 casos
                    (logs/grafo/, logs/grafo-rodada-2/, logs/grafo-rodada-3/, 10/10/2026;

@@ -75,8 +75,8 @@ ROTEIROS = {
                  texto("Permissão negada ao gravar arquivos; todo upload do site falha. Procedimento KB-102.")],
     "TKT-0999": [texto("Id TKT-0999 não existe no sistema de tickets.")],
     "TKT-0004": [triagem("comercial"), texto("Pedido de upgrade de plano: assunto comercial.")],
-    "TKT-0005": [triagem("insuficiente"),
-                 texto("Informe o serviço afetado, o erro observado e desde quando ocorre.")],
+    # o pedido ao cliente é texto padrão: o modelo só é chamado na triagem
+    "TKT-0005": [triagem("insuficiente")],
     # o KB-104 não cobre falha intermitente (ressalva): o score vem reduzido e o código decide
     "TKT-0006": [triagem("tecnico", termos=("502", "erro", "deploy", "intermitente")),
                  texto("KB-104 cobre falha constante; o relato é intermitente (score abaixo do limiar).")],
@@ -195,7 +195,8 @@ class TestGrafo(unittest.TestCase):
 
     def test_um_pedido_de_informacao_por_chamado(self):
         self.rodar("TKT-0005")
-        e = self.rodar("TKT-0005")                                     # outra execução, mesmo chamado
+        e = self.rodar("TKT-0005", [triagem("insuficiente"),           # outra execução, mesmo chamado
+                                    texto("O chamado já recebeu um pedido de informação; falta o serviço.")])
         self.assertEqual(e.desfecho["acao"], "fila_humana")
         self.assertEqual(db.contar_pedidos_cliente(self.con, "TKT-0005"), 1)
 
@@ -217,21 +218,37 @@ class TestGrafo(unittest.TestCase):
         self.assertEqual(db.contar(self.con, "encaminhamentos", "TKT-0004"), 0)
         self.assertFalse(e.saida.suficiencia.suficiente)
 
-    def test_pedido_ao_cliente_com_informacao_interna_e_reescrito(self):
-        e = self.rodar("TKT-0005", [triagem("insuficiente"),
-                                    texto("Consultamos o KB-102 e a fila humana vai priorizar seu caso."),
-                                    texto("Informe o serviço afetado, o erro observado e desde quando ocorre.")])
-        self.assertEqual(e.desfecho["acao"], "devolver_cliente")
+    def test_texto_reprovado_pelo_validar_e_reescrito(self):
+        e = self.rodar("TKT-0004", [triagem("comercial"), texto("Upgrade."),
+                                    texto("Pedido de upgrade de plano: assunto comercial.")])
+        self.assertEqual(e.desfecho["acao"], "fila_comercial")
         self.assertEqual(self.nos(e).count("redigir"), 2)
-        self.assertIn("informação interna", e.passos[4].erro["erro"])   # o passo do nó validar
-        msg = self.con.execute("SELECT mensagem FROM encaminhamentos WHERE ticket_externo = 'TKT-0005'").fetchone()[0]
-        self.assertNotIn("KB-102", msg)
+        self.assertIn("curto demais", e.passos[4].erro["erro"])         # o passo do nó validar
+        self.assertIn("ERRO DA TENTATIVA ANTERIOR", self.modelo.pedidos[2]["messages"][1]["content"])
 
     def test_texto_recusado_duas_vezes_termina_em_erro_fatal_sem_gravar(self):
-        e = self.rodar("TKT-0005", [triagem("insuficiente"), texto("Veja o KB-102, prioridade P1.")])
+        e = self.rodar("TKT-0004", [triagem("comercial"), texto("Upgrade.")])
         self.assertEqual(e.termino, Termino.ERRO_FATAL)
         self.assertIn("recusado em 2 tentativas", e.motivo)
-        self.assertEqual(db.contar(self.con, "encaminhamentos", "TKT-0005"), 0)
+        self.assertEqual(db.contar(self.con, "encaminhamentos", "TKT-0004"), 0)
+
+    # ---- o pedido ao cliente é texto padrão, e não do modelo (docs/prompts.md §2.2)
+
+    def test_o_pedido_ao_cliente_e_o_texto_padrao_e_nao_chama_o_modelo_para_redigir(self):
+        e = self.rodar("TKT-0005")
+        self.assertEqual(e.desfecho["acao"], "devolver_cliente")
+        self.assertEqual((e.n_chamadas_modelo, len(self.modelo.pedidos)), (1, 1))     # só a triagem
+        self.assertEqual(e.saida.resultado.texto, grafo_mod.PEDIDO_AO_CLIENTE)
+        self.assertEqual([l["mensagem"] for l in self.pedidos()], [grafo_mod.PEDIDO_AO_CLIENTE])
+        redigir = next(p for p in e.passos if p.ferramenta == "redigir")
+        self.assertTrue(redigir.argumentos["texto_padrao"])
+        self.assertNotIn("validar", self.nos(e))                        # o texto padrão passa no avaliador
+
+    def test_o_texto_padrao_do_pedido_pergunta_e_nao_cita_informacao_interna(self):
+        self.assertIsNone(grafo_mod._erro_do_texto(self.con, "devolver_cliente", grafo_mod.PEDIDO_AO_CLIENTE))
+        self.assertEqual(grafo_mod.PEDIDO_AO_CLIENTE.count("?"), 7)
+        for pedido in ("serviço", "domínio", "nome do banco", "código de erro", "data e hora"):
+            self.assertIn(pedido, grafo_mod.PEDIDO_AO_CLIENTE)
 
     # ---- a ressalva lida pelo modelo (docs/rag.md §4.2): o nó `conferir_ressalva`
 
@@ -473,7 +490,7 @@ class TestGrafo(unittest.TestCase):
         acao = p["acao"]
         self.assertEqual((acao["ferramenta"], p["checkpoint"]["motor"]), ("devolver_cliente", "grafo"))
         self.assertEqual(acao["relato"], db.buscar_ticket(self.con, "TKT-0005")["texto"])
-        self.assertEqual(acao["mensagem"], json.loads(ROTEIROS["TKT-0005"][1])["texto"])
+        self.assertEqual(acao["mensagem"], grafo_mod.PEDIDO_AO_CLIENTE)
         for ausente in ("kb_id", "prioridade_prevista", "precedentes"):   # não há guia nem prioridade
             self.assertNotIn(ausente, acao)
         self.assertEqual(self.episodios(), [])
@@ -487,7 +504,7 @@ class TestGrafo(unittest.TestCase):
         self.assertEqual(self.nos(e), ["consultar_ticket", "triagem", "decidir", "redigir", "confirmar",
                                        "registrar_encaminhamento"])
         self.assertEqual(e.confirmacoes[-1]["status"], "aprovada")
-        self.assertEqual(e.n_chamadas_modelo, 2)                       # triagem e redação: a retomada não chama o modelo
+        self.assertEqual(e.n_chamadas_modelo, 1)                       # só a triagem: o pedido é texto padrão, e a retomada não chama o modelo
         (linha,) = self.pedidos()
         self.assertEqual(linha["enviado_em"], e.desfecho["enviado_em"])
         self.assertIsNotNone(linha["enviado_em"])
@@ -646,6 +663,39 @@ class TestGrafo(unittest.TestCase):
         self.assertEqual(ep["cliente_id"], db.buscar_ticket(self.con, "TKT-0007")["_cliente_id"])
         self.assertEqual(ep["categoria"], db.buscar_artigo(self.con, "KB-102")["categoria"])
 
+    def test_a_escrita_do_episodio_e_idempotente_pela_chave_do_conteudo(self):
+        self.rodar("TKT-0001")
+        (gravado,) = self.episodios()
+        ep = {**gravado, "execucao_id": "TKT-0001-abc"}
+        primeiro = db.registrar_episodio(self.con, ep)
+        repetido = db.registrar_episodio(self.con, {**ep, "criado_em": "2026-10-12T10:00:00-03:00",
+                                                    "resumo": "gravado de novo"})
+        self.assertEqual((primeiro["ja_existia"], repetido["ja_existia"]), (False, True))
+        self.assertEqual((repetido["id"], repetido["chave"]), (primeiro["id"], primeiro["chave"]))
+        self.assertEqual(len(self.episodios()), 2)                     # o da execução e o gravado à mão
+        # conteúdo diferente = chave diferente: outro desfecho, ou outra execução do mesmo chamado
+        self.assertFalse(db.registrar_episodio(self.con, {**ep, "desfecho": "fila_humana"})["ja_existia"])
+        self.assertFalse(db.registrar_episodio(self.con, {**ep, "execucao_id": "TKT-0001-def"})["ja_existia"])
+        self.assertIsNotNone(gravado["chave"])                         # o grafo grava com chave
+        self.assertIsNone(db.chave_do_episodio({k: v for k, v in ep.items() if k != "execucao_id"}))
+
+    def test_executar_de_novo_o_mesmo_chamado_e_outro_episodio(self):
+        self.rodar("TKT-0001")
+        self.rodar("TKT-0001")
+        um, dois = self.episodios()
+        self.assertNotEqual(um["chave"], dois["chave"])
+
+    def test_execucao_concluida_apaga_o_checkpoint_e_a_pausada_nao(self):
+        thread = {"configurable": {"thread_id": "TKT-0007"}}
+        self.rodar("TKT-0001")
+        self.assertEqual(GRAFO.get_state({"configurable": {"thread_id": "TKT-0001"}}).values, {})
+        self.rodar("TKT-0007", confirmador=None)
+        self.assertEqual(GRAFO.get_state(thread).values["texto"],        # pausada: o texto do cliente está lá
+                         db.buscar_ticket(self.con, "TKT-0007")["texto"])
+        self.retomar("TKT-0007", "aprovar")
+        self.assertEqual(GRAFO.get_state(thread).values, {})
+        self.assertIsNone(self.retomar("TKT-0007", "aprovar"))          # a segunda aprovação não encontra pausa
+
     def test_o_episodio_nao_guarda_o_texto_do_cliente_nem_o_que_o_modelo_redigiu(self):
         e = self.rodar("TKT-0003")
         (ep,) = self.episodios()
@@ -716,8 +766,12 @@ class TestGrafo(unittest.TestCase):
             with self.assertRaises(db.FatoRecusado):
                 db.registrar_fato(self.con, cliente, chave, valor, por="teste")
         self.assertEqual(db.fatos_do_cliente(self.con, "CLI-07"), {})
-        self.assertTrue(db.registrar_fato(self.con, "CLI-07", "acesso", "painel", por="teste")["mudou"])
-        self.assertFalse(db.registrar_fato(self.con, "CLI-07", "acesso", "painel", por="teste")["mudou"])
+        primeiro = db.registrar_fato(self.con, "CLI-07", "acesso", "painel", por="teste")
+        repetido = db.registrar_fato(self.con, "CLI-07", "acesso", "painel", por="outra pessoa")
+        self.assertEqual((primeiro["ja_existia"], repetido["ja_existia"]), (False, True))
+        self.assertEqual((repetido["confirmado_por"], repetido["confirmado_em"]),      # a repetição não regrava
+                         ("teste", primeiro["confirmado_em"]))
+        self.assertEqual(self.con.execute("SELECT COUNT(*) FROM fatos_cliente").fetchone()[0], 1)
         novo = db.registrar_fato(self.con, "CLI-07", "acesso", "ssh", por="teste")
         self.assertEqual((novo["valor"], novo["substituiu"]), ("ssh", "painel"))
         self.assertEqual({c: f["valor"] for c, f in db.fatos_do_cliente(self.con, "CLI-07").items()},

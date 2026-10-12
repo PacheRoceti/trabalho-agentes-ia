@@ -36,7 +36,7 @@
                                                     grava em logs/NOME/ (não sobrescreve os logs
                                                     versionados). --prompt escolhe outro arquivo de
                                                     src/prompts/ para o LAÇO, e por isso já implica
-                                                    --laco: o grafo usa triagem-v1.md, ressalva-v3.md e redigir-v1.md
+                                                    --laco: o grafo usa triagem-v1.md, ressalva-v3.md e redigir-v3.md
 """
 import argparse
 import json
@@ -160,7 +160,7 @@ def executar(id_ticket: str, client, modelo: str, precos, confirmador, con,
              prazo_confirmacao_min: float = PRAZO_CONFIRMACAO_MIN,
              grafo: bool = True) -> bool | None:
     caso = GABARITO.get(id_ticket, {}).get("caso", "sem gabarito")
-    prompt = "triagem-v1.md + ressalva-v3.md + redigir-v1.md (grafo)" if grafo else prompt_arquivo.name
+    prompt = "triagem-v1.md + ressalva-v3.md + redigir-v3.md (grafo)" if grafo else prompt_arquivo.name
     print(f"\n{'=' * 78}\n{id_ticket}  (caso: {caso})  modelo: {modelo}  prompt: {prompt}\n")
     desligadas = [nome for nome, ligada in (("o filtro de guias revogados", db.FILTRAR_REVOGADOS),
                                             ("o desempate por data", db.DESEMPATAR_POR_DATA))
@@ -217,7 +217,7 @@ def main():
                          "do redigido pelo modelo (só no grafo)")
     ap.add_argument("--mensagem", metavar="TEXTO",
                     help="com --aprovar, quando a ação pendente é o pedido de informação ao cliente: "
-                         "aprova EDITANDO, enviando esta mensagem no lugar da redigida pelo modelo. "
+                         "aprova EDITANDO, enviando esta mensagem no lugar do texto padrão do pedido. "
                          "Passa pela mesma regra: nada de informação interna (só no grafo)")
     ap.add_argument("--prazo-confirmacao", type=float, default=PRAZO_CONFIRMACAO_MIN, metavar="MIN",
                     help=f"prazo do analista para esta execução, em minutos (padrão: {PRAZO_CONFIRMACAO_MIN})")
@@ -259,7 +259,7 @@ def main():
             con.close()
             sys.exit(f"Fato recusado: {r}")
         print(f"{cliente}: {chave} = {valor} ({fato['texto']})"
-              + ("" if fato["mudou"] else "  [já era o valor confirmado]")
+              + ("  [já era o valor confirmado]" if fato["ja_existia"] else "")
               + (f"  [substituiu: {fato['substituiu']}]" if fato.get("substituiu") else ""))
         con.close()
         if not (args.ticket or args.todos or args.pendencias or args.aprovar or args.rejeitar):
@@ -330,7 +330,7 @@ def main():
     confirmador = confirmador_auto if args.auto_aprovar else None
     if args.grafo and (args.laco or args.prompt):
         sys.exit("--grafo não combina com --laco nem com --prompt: --prompt vale só para o laço "
-                 "(o grafo usa triagem-v1.md, ressalva-v3.md e redigir-v1.md).")
+                 "(o grafo usa triagem-v1.md, ressalva-v3.md e redigir-v3.md).")
     # O grafo é o caminho padrão. --prompt escolhe um prompt do laço, e por isso implica --laco.
     usar_grafo = not (args.laco or args.prompt)
     # O grafo nunca grava em logs/: é lá que estão os logs do laço citados no README e no io.md.
@@ -374,7 +374,7 @@ def main():
                     veredito += " (o texto enviado é igual ao proposto: sem edição)"
                 print(f"\n{'=' * 78}\n{resposta}  {veredito} pelo analista\n")
                 if ultima.get("editado") and "mensagem_aprovada" in ultima:
-                    print(f"  MENSAGEM DO MODELO:   {ultima['mensagem_original']}")
+                    print(f"  MENSAGEM PADRÃO:      {ultima['mensagem_original']}")
                     print(f"  MENSAGEM DO ANALISTA: {ultima['mensagem_aprovada']}\n")
                 elif ultima.get("editado"):
                     print(f"  RESUMO DO MODELO:   {ultima['resumo_original']}")

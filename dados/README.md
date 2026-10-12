@@ -30,8 +30,9 @@ Dois arquivos são **gerados** e ignorados pelo git:
   sistema simulado não tem canal de mensagem, então a linha é o envio. Um banco criado antes de
   12/10/2026 ganha a coluna na primeira conexão (`db.conectar`).
 - `checkpoints.db` — o checkpoint do grafo (LangGraph, `SqliteSaver`), endereçado pelo id do
-  chamado. Guarda a execução pausada à espera do analista. `--reset` **não** o apaga; uma
-  execução nova do mesmo chamado substitui o checkpoint anterior.
+  chamado. Guarda a execução pausada à espera do analista. Desde 12/10/2026 o checkpoint da
+  execução concluída é apagado ao fim dela: o arquivo só tem as pausas. `--reset` **não** o
+  apaga; uma execução nova do mesmo chamado substitui o checkpoint de uma pausa anterior.
 
 ## Os casos difíceis, nomeados (item 2.8)
 
