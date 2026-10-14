@@ -82,7 +82,7 @@ processo exatamente (só a leitura do caso, ou o processo de decisão
 inteiro?); nenhuma métrica de taxa de erro ou qualidade da síntese; nem
 custo ou tempo de implementação do projeto.
 
-Preços de lista consultados em 21/09/2026 (agregadores; confirmar na página oficial da Mistral):
+Preços de lista consultados em 21/09/2026 (agregadores) e depois verificados a partir do perfil do grupo na Mistral, que vale sobre eles (`modelos.md`, Fontes desta análise):
 
 - Mistral, página oficial de preços: https://mistral.ai/pricing/
 - Ministral 3 (3B, 8B, 14B) — AI Pricing Guru, base de 02/09/2026: https://www.aipricing.guru/mistral-ai-pricing/

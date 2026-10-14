@@ -325,8 +325,11 @@ regra de que, na dúvida, o destino é a fila humana e não uma ação automáti
 #### O outro lado da conta
 
 - **Quanto custa rodar:** **medido** com `ministral-8b-latest` em 8 chamados simulados: cerca de
-  **6.900 tokens e US$ 0,0010 por chamado** (preço de lista, simulado; o gasto real é zero no
-  plano gratuito, ver `docs/modelos.md`). A 433 chamados/mês, **≈ US$ 0,43 por mês**. Frente a ~65 h
+  **6.900 tokens e US$ 0,0014 por chamado** (preço de lista de US$ 0,20 por milhão de tokens,
+  verificado a partir do perfil do grupo na Mistral em 13/10/2026; o log traz US$ 0,0010, calculado a US$ 0,15; simulado:
+  o gasto real é zero no plano gratuito, ver `docs/modelos.md`). A 433 chamados/mês, **≈ US$ 0,60
+  por mês**. A medição é do laço da Parte 1; o grafo gastou cerca de 1.900 tokens por chamado na
+  rodada de 40 casos (`grafo.md` §6.6), ≈ US$ 0,0004, mais o embedding (`rag.md` §4.3). Frente a ~65 h
   de analista, o custo do modelo é irrelevante: o que pesa é o custo do erro.
 - **Quanto custa construir:**
   3 Integrantes no grupo. 
@@ -364,9 +367,19 @@ O custo do erro é **assimétrico**: abrir chamado interno indevidamente (o time
    falhas são as mesmas nas três rodadas (`TKT-0105`, `TKT-0106`, `TKT-0111` e `TKT-0132`) e em
    todas o chamado foi para a fila humana. Limites: os rótulos são do próprio grupo, a aprovação
    foi automática, e três rodadas iguais dos mesmos 40 casos não são 120 casos.
-2. **Em ambas:** **0 chamados internos abertos indevidamente** nos casos em que o gabarito manda não abrir (`TKT-0001`, `TKT-0002`, `TKT-0004`, `TKT-0005`, `TKT-0006`, `TKT-0999`). Nas três rodadas dos 40 casos (12/10/2026), nenhum dos 29 casos em que o gabarito manda não abrir teve chamado interno aberto. No `TKT-0005`, isso vale para a primeira volta: nenhum chamado é aberto antes da resposta do cliente ao pedido de informação.
+   **Situação em 14/10/2026:** o gabarito tem **44 casos**. Entraram em 13/10/2026 o `TKT-0133` a
+   o `TKT-0136`, com log anexado e uma afirmação do cliente que o histórico não confirma,
+   escritos para o teste da regra da frase no prompt da triagem (`prompts.md` §3.7) e rotulados
+   antes de qualquer execução. **Medido em 13 e 14/10/2026:** o grafo deu **40 de 44** em três
+   rodadas (`logs/regra-da-frase/triagem-v1-1/` a `-3/`; `grafo.md` §6.8): os 36 de antes e os
+   quatro novos. Por tipo: 2 de 3 chamados incompletos devolvidos ao cliente, 4 de 4
+   redirecionados à fila comercial, 10 de 11 anotações internas e 11 de 13 chamados internos
+   abertos com o guia certo. As quatro falhas são as mesmas de 12/10/2026. A meta continua
+   escrita sobre 40 casos (≥ 30 de 40); na mesma proporção, seriam ≥ 33 de 44. Limites: os
+   mesmos, e os quatro casos novos foram escritos por quem conhecia a frase em teste.
+2. **Em ambas:** **0 chamados internos abertos indevidamente** nos casos em que o gabarito manda não abrir (`TKT-0001`, `TKT-0002`, `TKT-0004`, `TKT-0005`, `TKT-0006`, `TKT-0999`). Nas três rodadas dos 40 casos (12/10/2026), nenhum dos 29 casos em que o gabarito manda não abrir teve chamado interno aberto. Nas três rodadas dos 44 casos (13 e 14/10/2026), nenhum dos 31. No `TKT-0005`, isso vale para a primeira volta: nenhum chamado é aberto antes da resposta do cliente ao pedido de informação.
 
-**Resultado medido na Parte 1** (rodada 4, `ministral-8b-latest`, `logs/`): **6 de 8** e **0 chamados abertos indevidamente**: os dois critérios foram atingidos. Falharam `TKT-0003` (o modelo vai à fila humana por causa da afirmação "terceira vez") e `TKT-0007` (a busca por palavra não casou "encheu" com "cheio"). Na comparação de modelos, o `ministral-14b-latest` abriu um chamado indevido no `TKT-0006` (com aprovação automática) e não atingiu o critério 2. Detalhes em `docs/modelos.md` §3.3. Limite do critério: os dois casos que falharam são os únicos de escalonamento, então os critérios foram atingidos sem nenhuma abertura correta de chamado interno; o resultado mostra que o agente não age quando não deve, mas ainda não que escala quando deve.
+**Resultado medido na Parte 1** (rodada 4, `ministral-8b-latest`, `logs/rodada-4-prompt-v3/saida-demonstracao.txt`): **6 de 8** e **0 chamados abertos indevidamente**: os dois critérios foram atingidos. Falharam `TKT-0003` (o modelo vai à fila humana por causa da afirmação "terceira vez") e `TKT-0007` (a busca por palavra não casou "encheu" com "cheio"). Na comparação de modelos, o `ministral-14b-latest` abriu um chamado indevido no `TKT-0006` (com aprovação automática) e não atingiu o critério 2. Detalhes em `docs/modelos.md` §3.3. Limite do critério: os dois casos que falharam são os únicos de escalonamento, então os critérios foram atingidos sem nenhuma abertura correta de chamado interno; o resultado mostra que o agente não age quando não deve, mas ainda não que escala quando deve.
 
 ### 2.8 Dados
 
@@ -378,6 +391,7 @@ Todos os dados são **simulados** (`dados/seed.sql`, SQLite), sem informação r
 - **Escalonamento com reincidência:** `TKT-0003` — o cliente diz "terceira vez", o histórico mostra 1.
 - **Escalonamento simples:** `TKT-0007` — permissão negada ao gravar arquivos, sem a afirmação de reincidência; adicionado depois de a comparação de modelos mostrar que os três modelos falhavam no `TKT-0003`, para exercitar a abertura de chamado. Nenhum caso existente foi alterado.
 - Extras: `TKT-0001` (simples, anotação de correção), `TKT-0005` (informação insuficiente), `TKT-0006` (correspondência parcial na base).
+- **Afirmação que o histórico não confirma, com log anexado** (13/10/2026): `TKT-0133` a `TKT-0136` — o cliente diz "terceira vez" e o histórico mostra uma ocorrência ou nenhuma. Em três o log confirma o relato, e a afirmação não pode ser lida como divergência; no `TKT-0136` o log aponta outro serviço, e a divergência continua valendo. Os 32 casos de 12/10/2026 e estes quatro estão descritos em `dados/README.md`.
 
 ### 2.9 Dado Sensível
 
@@ -386,9 +400,9 @@ Nenhum dado sensível: todas as informações são sobre serviços e/ou funciona
 ### 2.10 Espaço Para o Que Ainda Vem
 
 - [x] **RAG** (Parte 2) — o índice contém os procedimentos técnicos (com time e prioridade de cada caso) e o catálogo de planos, conforme `docs/base-de-conhecimento-v2.md`. A política de SLA e alçada e as fichas dos times ficam **fora** do índice: a política é aplicada em código, e as fichas servem só de lista de referência para validar o time de cada procedimento. Hoje a base é a tabela `kb_artigos` (6 artigos, busca por palavra-chave); na Parte 2 vira índice vetorial, e o limiar de confiança (0,5, ajustado à mão) passa a ser calibrado com perguntas sem resposta na base. Motivo medido: três das quatro falhas distintas da Parte 1 nasceram da busca por palavra (`docs/modelos.md` §3.3-B). **Situação em 12/10/2026:** feito. A base tem 16 guias (15 vigentes e 1 revogado, posto de propósito) e 3 fichas de plano, e a busca do grafo é vetorial (`rag.md` §4). O limiar 0,5 **não** foi recalibrado: nenhum limiar separa as perguntas sem resposta das que têm (`rag.md` §4.3), e o grupo assumiu o risco.
-- [x] **MCP** (Parte 3) — `src/db.py`, a camada que fala com o sistema de tickets (ler ticket e base, gravar chamado e encaminhamento). É a integração natural para virar servidor MCP: o agente deixa de importar o módulo e passa a chamar o serviço. **Situação em 12/10/2026:** fica para a Parte 3. O enunciado da Parte 1 previa o MCP na Parte 2, e a visão geral do trabalho o moveu para a Parte 3, ao lado do multiagente ("MCP saiu desta entrega"); a Parte 2 não o pede. Hoje `src/db.py` continua sendo importado pelo grafo e pelo laço, e não há servidor MCP no repositório.
+- [] **MCP** (Parte 3) — `src/db.py`, a camada que fala com o sistema de tickets (ler ticket e base, gravar chamado e encaminhamento). É a integração natural para virar servidor MCP: o agente deixa de importar o módulo e passa a chamar o serviço. **Situação em 12/10/2026:** fica para a Parte 3. O enunciado da Parte 1 previa o MCP na Parte 2, e a visão geral do trabalho o moveu para a Parte 3, ao lado do multiagente ("MCP saiu desta entrega"); a Parte 2 não o pede. Hoje `src/db.py` continua sendo importado pelo grafo e pelo laço, e não há servidor MCP no repositório.
 - [x] **LangChain / LangGraph** (Parte 2) — a orquestração do laço (`rodar` e `_executar` em `src/agente.py`, cerca de 100 linhas). Cada passo do workflow vira um nó do grafo. A comparação pedida (o que o framework dá e o que tira) tem base concreta: as cerca de 100 linhas à mão. **Situação em 12/10/2026:** feito, em `src/grafo.py`. O que o framework não deu custou 166 linhas de código, contadas em `grafo.md` §4.
-- [ ] **Multiagente** (Parte 3) — **[decisão do grupo]**. Candidata: um agente de triagem e outro de parecer (RAG), se o parecer crescer a ponto de precisar de contexto próprio. Se não crescer, escrever aqui que não se justifica e por quê.
+- [] **Multiagente** (Parte 3) — candidata: um agente de triagem e outro de parecer (RAG), se o parecer crescer a ponto de precisar de contexto próprio. **Situação em 14/10/2026:** fica para a Parte 3, que é onde a visão geral do trabalho põe o multiagente, ao lado do MCP; a Parte 2 não o pede. Hoje o sistema tem um agente só: o grafo de `src/grafo.py`, com o modelo chamado nos nós `triagem`, `conferir_ressalva` e `redigir`. A decisão (dois agentes ou um, e por quê) será tomada e defendida na Parte 3, contra a alternativa de um agente só.
 
 ### 2.11 O maior Risco
 

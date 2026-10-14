@@ -2,6 +2,16 @@
 
 > **Status.** Todos os números deste documento foram **medidos** em execuções reais (logs em
 > `logs/`).
+>
+> **Preço corrigido em 13/10/2026.** Os preços deste documento foram verificados a partir do
+> perfil do grupo na Mistral: `ministral-3b-latest` a US$ 0,10, `ministral-8b-latest` a
+> **US$ 0,20**, `ministral-14b-latest` a US$ 0,20 e `mistral-embed` a **US$ 0,05**, por milhão de
+> tokens. Até 12/10/2026 o projeto usava US$ 0,15 para o 8B (agregadores; a página pública de
+> preços da Mistral também lista US$ 0,15 para o Ministral 3 8B). Vale o perfil do grupo. **Todo custo em
+> dólar gravado nos logs (`custo_usd`) e copiado deles para os outros documentos foi calculado a
+> US$ 0,15**: os logs não são editados, e o valor ao preço corrigido é o do log multiplicado por
+> 4/3. Supomos entrada e saída ao mesmo preço, como no resto da família. O §3.2 e o `case.md`
+> §2.5 trazem a conta refeita; os tokens, que são a medição, não mudam.
 
 ## Restrição que define a escolha: o plano gratuito da nossa conta
 
@@ -41,15 +51,15 @@ Os três candidatos são da mesma família (Ministral), em três tamanhos. Isso 
 | | **ministral-3b-latest** | **ministral-8b-latest** | **ministral-14b-latest** |
 |---|---|---|---|
 | Papel na comparação | O menor: o piso | O da base do trabalho: já rodamos 3 rodadas | O maior liberado: o teto |
-| Preço de lista (US$/M tokens, entrada / saída) | 0,10 / 0,10 | 0,15 / 0,15 | 0,20 / 0,20 |
+| Preço de lista (US$/M tokens, entrada / saída) | 0,10 / 0,10 | **0,20 / 0,20** (perfil do grupo na Mistral, 13/10/2026; era 0,15 / 0,15) | 0,20 / 0,20 |
 | Onde roda | API pública Mistral (empresa europeia; conferir região no contrato) | idem | idem |
 | Troca de código | só `LLM_MODELO` | só `LLM_MODELO` | só `LLM_MODELO` |
 | Risco conhecido | Pode falhar até nos casos simples | Falhou no `TKT-0003` (ver 3.3-A) | Custo ~2x o 3B, ainda irrelevante |
 
-**Ressalva sobre os preços.** Vêm de agregadores (dados de 02/09/2026 e 18/09/2026), não da página
-oficial, e o preço só serve para **calcular o custo simulado**: o gasto real é zero. **Conferir
-na página oficial da Mistral antes de entregar** e confirmar a qual versão o alias `-latest`
-aponta hoje. Fontes no fim do documento.
+**Ressalva sobre os preços.** Os três foram verificados a partir do perfil do grupo na Mistral;
+o do 8B foi corrigido ali em 13/10/2026 (os agregadores davam US$ 0,15). O preço só serve para
+**calcular o custo simulado**: o gasto real é zero. Falta confirmar a qual versão o alias
+`-latest` aponta hoje. Fontes no fim do documento.
 
 ## 3.2 A conta
 
@@ -59,20 +69,21 @@ custo por execução = tokens de entrada × preço de entrada + tokens de saída
 ```
 
 **Medido, não estimado.** Rodada 3 (`ministral-8b-latest`, 7 casos): 46.583 tokens, ≈ 6.660 por
-chamado. Rodada 4 (8 casos, demonstração oficial, `logs/`): 55.131 tokens, **≈ 6.890 por chamado
-e ≈ US$ 0,0010 por chamado** (4 chamadas ao modelo em média). A estimativa que fiz antes de rodar
+chamado. Rodada 4 (8 casos, demonstração oficial, `logs/rodada-4-prompt-v3/`): 55.131 tokens, **≈ 6.890 por chamado
+e ≈ US$ 0,0014 por chamado** ao preço corrigido (US$ 0,0010 no log, a US$ 0,15; 4 chamadas ao modelo em média). A estimativa que fiz antes de rodar
 era ~6.500 tokens: acertou a ordem de grandeza. Na comparação (§3.3-B, 5 casos) cada modelo teve a
 sua média:
 
 | Modelo | Tokens por chamado (medido) | Custo por chamado | 100 execuções | 433 chamados/mês | 500 execuções no semestre |
 |---|---|---|---|---|---|
 | ministral-3b-latest | 9.062 | US$ 0,00091 | US$ 0,09 | US$ 0,39 | US$ 0,45 |
-| ministral-8b-latest | 7.294 | US$ 0,00109 | US$ 0,11 | US$ 0,47 | US$ 0,55 |
+| ministral-8b-latest | 7.294 | US$ 0,00146 (no log, a US$ 0,15: 0,00109) | US$ 0,15 | US$ 0,63 | US$ 0,73 |
 | ministral-14b-latest | 6.999 | US$ 0,00140 | US$ 0,14 | US$ 0,61 | US$ 0,70 |
 
 O 3B é o mais barato por token, mas **gasta 24% mais tokens** que o 8B (mais chamadas, buscas
-repetidas), e a vantagem de preço quase some. Os 5 casos da comparação são os mais difíceis, então
-as médias são mais altas que as da demonstração de 8 casos.
+repetidas). Com o 8B a US$ 0,20, o 3B volta a ser o mais barato por chamado (US$ 0,00091 contra
+US$ 0,00146). Os 5 casos da comparação
+são os mais difíceis, então as médias são mais altas que as da demonstração de 8 casos.
 
 Para R$: multiplicar pela cotação do dia R$ 5,11 dia 21/09/2026. Os 500 do semestre são
 desenvolvimento, testes e comparações do grupo (chute declarado, não medição).
@@ -126,7 +137,7 @@ evidência de erro do verificador**, não para fazer o caso passar, e está anot
   mandar à fila humana por causa da divergência "terceira vez" × histórico. Nem o prompt nem o
   lembrete mudam isso, porque o modelo registra corretamente: erra o **julgamento**. É erro para
   o lado seguro (nenhum chamado aberto indevidamente).
-- **Custo do experimento:** cerca de US$ 0,0010 por chamado (simulado; real: zero).
+- **Custo do experimento:** cerca de US$ 0,0010 por chamado no log, a US$ 0,15; US$ 0,0014 ao preço corrigido (simulado; real: zero).
 
 **Limite honesto.** A v2 e a v3 foram escritas **depois** de ver as falhas nestes mesmos 7 casos:
 o resultado de 6 de 7 é otimista e não prova que o prompt generaliza. A Parte 2 separa um conjunto
@@ -177,7 +188,9 @@ compensa o custo e o 3B perde julgamento**, não que o 8B seja "o melhor" em ter
 
 ### 3.3-C Demonstração oficial (rodada 4, 8 casos, `ministral-8b-latest`)
 
-**6 de 8 casos** conferidos pelo verificador (`logs/saida-demonstracao.txt`). Os oito
+**6 de 8 casos** conferidos pelo verificador (`logs/rodada-4-prompt-v3/saida-demonstracao.txt`; até
+14/10/2026 o arquivo ficava em `logs/saida-demonstracao.txt`, ao lado de logs que não eram desta
+rodada, e foi movido sem alteração com `git mv`). Os oito
 `logs/TKT-*.json` desta rodada foram sobrescritos em 10/10/2026 por execuções do `agente-v5.md`
 (`README.md`, "Os oito logs de `logs/`"); os da rodada 4 estão no histórico do git, no commit
 `d60a2bd`.
@@ -189,9 +202,10 @@ alterado ou removido. Nenhum chamado interno foi aberto indevidamente pelo 8B.
 ## 3.4 A decisão
 
 **Decisão: `ministral-8b-latest`.** Foi o que mais acertou na comparação (4 de 5), tem mais
-evidência (4 rodadas, 6 de 8 na demonstração), custa ≈ US$ 0,001 por chamado (simulado; real zero
-no plano gratuito) e **nenhum chamado interno foi aberto indevidamente por ele**. O 14B custa 28%
-mais, é mais lento (7,5 s contra 5,0 s), não acertou mais casos e abriu um chamado indevido; o 3B
+evidência (4 rodadas, 6 de 8 na demonstração), custa ≈ US$ 0,0015 por chamado (simulado, ao preço de 13/10/2026; real zero
+no plano gratuito) e **nenhum chamado interno foi aberto indevidamente por ele**. O 14B custava 28%
+mais na conta original; com o 8B e o 14B ao mesmo preço (US$ 0,20, verificado no perfil do grupo
+na Mistral), essa diferença de custo deixa de ser argumento. Ele é mais lento (7,5 s contra 5,0 s), não acertou mais casos e abriu um chamado indevido; o 3B
 perde julgamento (falhou o caso simples).
 
 **Condições em que mudaríamos de ideia:**
@@ -215,7 +229,10 @@ perde julgamento (falhou o caso simples).
 
 ## Fontes desta análise
 
-Preços de lista consultados em 21/09/2026 (agregadores; confirmar na página oficial da Mistral):
+Preços de lista consultados primeiro em 21/09/2026 em agregadores (links abaixo) e depois
+verificados a partir do perfil do grupo na Mistral, que vale sobre eles: US$ 0,10 (3B), US$ 0,20
+(8B, corrigido em 13/10/2026), US$ 0,20 (14B) e US$ 0,05 (`mistral-embed`) por milhão de tokens.
+O perfil não tem link público.
 
 - Mistral, página oficial de preços: https://mistral.ai/pricing/
 - Ministral 3 (3B, 8B, 14B) — AI Pricing Guru, base de 02/09/2026: https://www.aipricing.guru/mistral-ai-pricing/

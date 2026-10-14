@@ -13,8 +13,8 @@ real ou pessoal entra no repositório nem no contexto do modelo.
   `data_publicacao` são fictícias.
 - `perguntas-rag.json` — o conjunto de perguntas do RAG (as dez do enunciado e as escritas para calibrar a busca vetorial), com o guia que responde a cada uma. Usado por `src/medir_rag.py`.
 - `gabarito.json` — a resposta que um analista humano daria para cada chamado.
-  É o verificador (item 2.6): 40 casos rotulados à mão, os 8 da Parte 1 e os 32 da ampliação de
-  12/10/2026 (abaixo).
+  É o verificador (item 2.6): 44 casos rotulados à mão, os 8 da Parte 1, os 32 da ampliação de
+  12/10/2026 e os 4 de 13/10/2026 (abaixo).
 
 Dois arquivos são **gerados** e ignorados pelo git:
 
@@ -89,7 +89,37 @@ da Parte 1 e 28 de 32 nos novos. Falharam, nas três, `TKT-0105`, `TKT-0106`, `T
 `TKT-0132`, todos indo para a fila humana; a causa de cada um está em `docs/grafo.md` §6.6. Os
 rótulos não foram mudados depois da medição.
 
-**Limite honesto:** todo "8 de 8" dos documentos é dos 8 casos da Parte 1, de rodadas anteriores
+## Os quatro casos de 13/10/2026: `TKT-0133` a `TKT-0136`
+
+O gabarito vai de 40 para 44. Os quatro têm **log anexado e uma afirmação do cliente que o
+histórico não confirma** ("é a terceira vez"), a combinação que nenhum dos 40 tinha. Foram
+escritos para o teste da regra da frase no prompt da triagem (`docs/prompts.md` §3.7), que
+retirou a frase que fala exatamente disso. Entraram **depois** da primeira passagem do teste, nos
+40 casos, que não tinha como ver a frase fazer falta, e foram rotulados **antes** de qualquer
+execução deles.
+
+| Chamado | O relato e o log | Histórico do cliente | Desfecho esperado |
+|---|---|---|---|
+| `TKT-0133` | "terceira vez neste mês" que o upload falha com permissão negada; o log **confirma** | uma ocorrência (`INC-0001`), dentro da janela | `abrir_chamado_interno` (KB-102, Infraestrutura, **P1** pela reincidência que o sistema confirma) |
+| `TKT-0134` | "terceira vez em duas semanas" que o domínio não resolve; o log **confirma** (falha de DNS) | nenhuma | `abrir_chamado_interno` (KB-106, Infraestrutura, P1) |
+| `TKT-0135` | "segunda vez nesta semana" que o backup diário falha; o log **confirma** | nenhuma | `anotacao_interna` (KB-105) |
+| `TKT-0136` | "terceira vez só neste mês" que o site sai do ar; o log mostra **outro serviço** (falha de DNS, com o site abrindo pelo IP) | nenhuma | `fila_humana`, com os dois lados na mensagem |
+
+Nos três primeiros, a afirmação do cliente não é divergência entre relato e log, e mandar o
+chamado à fila humana é errar. No `TKT-0136` a divergência existe e o "terceira vez" não a
+desfaz. Total dos 44: 13 abrem chamado interno, 11 anotam, 13 vão à fila humana, 4 à comercial e
+3 voltam ao cliente. O seed não ganhou cliente nem chamado interno antigo: os casos usam os
+clientes `CLI-01` a `CLI-04`.
+
+**Medição (13 e 14/10/2026):** três rodadas dos 44 casos pelo grafo, com os prompts em uso, deram
+**40 de 44** (`logs/regra-da-frase/triagem-v1-1/` a `-3/`): os 36 de antes e os quatro novos. As
+quatro falhas são as mesmas das rodadas de 12/10/2026. Com o prompt da triagem sem a frase em
+teste (`triagem-v2.md`), o `TKT-0134` foi à fila humana em duas de três rodadas; por isso a
+frase ficou (`docs/prompts.md` §3.7; `docs/grafo.md` §6.8). Os rótulos não foram mudados depois
+da medição.
+
+**Limite honesto:** os números "36 de 40" dos documentos são de rodadas anteriores a estes quatro
+casos. Todo "8 de 8" dos documentos é dos 8 casos da Parte 1, de rodadas anteriores
 à ampliação. Os rótulos são de quem escreveu os casos, sem revisão de um
 analista de fora do grupo, e três são discutíveis (`TKT-0124`, `TKT-0130` e `TKT-0132`, com a razão
 na `_nota`). A segunda volta dos casos 17 e 18 da aula 11 (a resposta do cliente ao pedido de

@@ -35,6 +35,13 @@
 --   TKT-0128 a 0130  fila comercial
 --   TKT-0131, 0132   informação insuficiente: volta ao cliente
 --
+-- OS QUATRO CASOS DE 13/10/2026 (TKT-0133 a TKT-0136): o gabarito vai de 40 para 44. Todos têm LOG
+-- ANEXADO e uma afirmação do cliente que o histórico não confirma ("é a terceira vez"), a
+-- combinação que não existia e que a frase testada do prompt da triagem menciona
+-- (docs/prompts.md §3.7). Em três o log confirma o relato (0133, 0134, 0135); no 0136 o log
+-- aponta outro serviço. Escritos depois da primeira passagem do teste (nos 40 casos) e rotulados
+-- ANTES de qualquer execução deles.
+--
 -- Os clientes CLI-08 a CLI-10 e os chamados antigos TKT-0088 a TKT-0090 existem para dar a esses
 -- casos um histórico que o CLI-02 não tem.
 -- =====================================================================
@@ -285,7 +292,29 @@ INSERT INTO tickets_externos VALUES
   -- diz o serviço, mas não o sintoma (envio? recebimento? login?)
   ('TKT-0132', 'CLI-09',
    'Problema no e-mail, vejam aí por favor.',
-   '2026-09-21 11:50', 'novo', NULL);
+   '2026-09-21 11:50', 'novo', NULL),
+
+  -- AFIRMAÇÃO DO CLIENTE QUE O HISTÓRICO NÃO CONFIRMA, COM LOG ANEXADO (13/10/2026)
+  -- o log CONFIRMA o relato; o cliente diz "terceira vez" e o histórico mostra uma (INC-0001)
+  ('TKT-0133', 'CLI-02',
+   'É a terceira vez neste mês que o sistema não grava os anexos dos pedidos: todo upload falha com permissão negada.',
+   '2026-09-21 11:52', 'novo',
+   '2026-09-21 11:44 envio de anexo pelo sistema (pedido 4471) -> move_uploaded_file(/home/beta/public_html/anexos/pedido-4471.pdf): failed to open stream: Permission denied. 2026-09-21 11:46 novo envio pelo sistema -> mesmo erro: Permission denied.'),
+  -- o log CONFIRMA o relato; o cliente diz "terceira vez" e o histórico não mostra nenhuma
+  ('TKT-0134', 'CLI-03',
+   'Pela terceira vez em duas semanas o domínio da escola parou de resolver: o site e a área do aluno não abrem em nenhuma rede.',
+   '2026-09-21 11:54', 'novo',
+   '2026-09-21 11:30 nslookup www.gama-cursos.example -> falha de resolução DNS: SERVFAIL. 2026-09-21 11:31 nslookup -type=ns gama-cursos.example -> nameserver ns1.gama-cursos.example não responde (timeout).'),
+  -- o mesmo, num guia "anotar"
+  ('TKT-0135', 'CLI-01',
+   'É a segunda vez nesta semana que o backup diário falha: recebi de novo o e-mail de alerta hoje cedo.',
+   '2026-09-21 11:56', 'novo',
+   '2026-09-21 02:00 painel de backups, execução diária da conta -> status: FALHOU. 2026-09-21 02:01 e-mail de alerta de falha de backup enviado.'),
+  -- o log aponta OUTRO serviço (DNS) E o cliente diz "terceira vez": a divergência continua valendo
+  ('TKT-0136', 'CLI-04',
+   'É a terceira vez só neste mês que o site do restaurante sai do ar: nenhuma página abre para os clientes.',
+   '2026-09-21 11:58', 'novo',
+   '2026-09-21 11:40 nslookup www.delta-restaurantes.example -> falha de resolução DNS: SERVFAIL. 2026-09-21 11:42 acesso ao site direto pelo IP do servidor (http://203.0.113.71) -> a página inicial abre normalmente.');
 
 -- ------------------------------------------------ base de conhecimento (v0)
 -- Substituída por RAG (busca vetorial) na Parte 2.

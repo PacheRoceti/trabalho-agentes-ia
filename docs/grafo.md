@@ -421,6 +421,10 @@ técnico do grafo tem mais nós do que o laço tinha passos, então o número 8 
 
 ## 6. O que foi medido
 
+> **Sobre a coluna de custo.** Os valores em dólar deste documento são os do campo `custo_usd` dos
+> logs, calculados a US$ 0,15 por milhão de tokens. Em 13/10/2026 o preço do `ministral-8b-latest`
+> foi corrigido para US$ 0,20 (`modelos.md`): ao preço corrigido, cada valor é o do log vezes 4/3.
+
 Três execuções dos 8 casos, todas em 10/10/2026, com `ministral-8b-latest`, `temperature=0`,
 `--auto-aprovar` e os prompts `triagem-v1.md` e `redigir-v1.md`:
 
@@ -472,6 +476,20 @@ O que os logs mostram:
   aquele nó precisa.
 - **`TKT-0999`.** Uma chamada só, a da redação: o id inexistente é decidido por código, e o
   lembrete do laço deixou de ser necessário.
+- **O caso 3 do enunciado (§9), "erro de ferramenta que o modelo contorna", é contornado por
+  código** (registrado em 13/10/2026). `consultar_ticket` devolve o erro, a aresta
+  `consultar → decidir [nao_existe]` escolhe a fila humana, e o modelo só redige. A razão é a do
+  §1.2: a condição é verificável (o registro existe ou não), e o degrau mais barato que a resolve
+  é a regra em código (enunciado §6.3). O que isso poupa, medido: no laço da Parte 1, onde o
+  modelo recebia o erro e decidia, o `TKT-0999` custou **4 chamadas ao modelo, 1 lembrete e de
+  8.280 a 8.320 tokens** em seis execuções com o `agente-v5.md` (`logs/TKT-0999.json`,
+  `logs/rodada-1-prompt-v5/` a `-3/`, `logs/regra-da-frase/v5-a/` e `v5-b/`); no grafo, **1
+  chamada e 770 ou 771 tokens** nas três rodadas de 40 casos (`logs/grafo-40-1/` a `-3/`). O laço
+  não é mais o caminho do sistema: continua no repositório como histórico da Parte 1 (`--laco`),
+  e as evidências dos seis casos são as do grafo. **Limite:** no grafo não existe log de um erro
+  de ferramenta contornado pelo modelo. Os dois retornos de erro ao modelo que o grafo tem (a
+  saída fora do contrato e o texto reprovado pelo `validar`) não ocorreram com o modelo real em
+  nenhuma rodada.
 - **A triagem mandou frases como termos de busca** em dois casos ("certificado ssl", "webmail fora
   ar"), apesar de o prompt pedir palavras soltas. A busca quebra as frases, e os scores ficaram
   do lado certo do limiar.
@@ -682,6 +700,52 @@ Limites:
 - **Quem rejeitou foi quem rodou os comandos**, 2 segundos depois da pausa, e não um analista.
 - **A rejeição do H2 foi feita com um motivo só** (`informacao_suficiente`), e o motivo vai ao
   episódio, e não ao texto do encaminhamento.
+
+### 6.8 As rodadas dos 44 casos (13 e 14/10/2026)
+
+Em 13/10/2026 o gabarito ganhou quatro casos (`TKT-0133` a `TKT-0136`: log anexado e uma
+afirmação do cliente que o histórico não confirma; `dados/README.md`), escritos para o teste da
+regra da frase no prompt da triagem (`prompts.md` §3.7) e rotulados antes de rodar. Três rodadas
+dos 44 casos com os prompts em uso, que não mudaram (`ministral-8b-latest`, commit
+`6116341 + alterações locais`, aprovação automática; a primeira às 23:52 de 13/10, as outras
+duas entre 00:29 e 00:40 de 14/10):
+
+| Pasta | Verificador | Chamadas | Tokens | Custo no log |
+|---|---|---|---|---|
+| `logs/regra-da-frase/triagem-v1-1/` | **40 de 44** | 98 | 84.605 | US$ 0,0127 |
+| `logs/regra-da-frase/triagem-v1-2/` | **40 de 44** | 98 | 84.523 | US$ 0,0127 |
+| `logs/regra-da-frase/triagem-v1-3/` | **40 de 44** | 98 | 84.287 | US$ 0,0126 |
+
+O custo é o do campo `custo_usd`, que nestas execuções saiu a US$ 0,15 por milhão de tokens (ver
+a nota do começo do §6).
+
+- **Os 40 casos antigos repetem o §6.6**: 36 de 40, com as mesmas quatro falhas (`TKT-0105`,
+  `TKT-0106`, `TKT-0111` e `TKT-0132`), todas na fila humana. As causas não mudaram.
+- **Os quatro casos novos passaram nas três rodadas**: chamado interno P1 no `TKT-0133` (KB-102,
+  score 0,61) e no `TKT-0134` (KB-106, 0,55), anotação no `TKT-0135` (KB-105, 0,70) e fila humana
+  por divergência no `TKT-0136`.
+- **O `TKT-0136` depende da marca da triagem.** O melhor guia veio com score 0,51 (KB-106, o do
+  log): sem a divergência marcada, o grafo proporia um chamado P1 a partir do log. Foi marcada
+  nas três rodadas.
+- **A marca de divergência variou em dois casos antigos**: o `TKT-0123` foi marcado em uma de
+  três rodadas e o `TKT-0124` em duas de três. O desfecho foi o certo nas três, porque sem a
+  marca o chamado vai à fila humana pelo score (0,48 e 0,47): o desfecho certo, pela razão
+  errada (`prompts.md` §3.7).
+- A regra aprendida do `redigir` foi conferida com `python conferir_regras.py` nas três pastas:
+  42 redações do modelo em cada uma, nenhuma com domínio que o nó não recebeu.
+
+As outras três rodadas dessa passagem do teste (`logs/regra-da-frase/triagem-v2-1/` a `-3/`)
+são do `triagem-v2.md`, o prompt sem a frase, que **não é o prompt em uso**: deram 39, 40 e 39 de
+44.
+
+**As pastas `logs/grafo-triagem-v2-1/` a `-3/`** são de antes, da noite de 13/10/2026 (23:28 a
+23:36): três rodadas dos 40 casos com o `triagem-v2.md`, do intervalo em que a primeira passagem
+do teste tinha concluído que a frase saía e o grafo carregava esse prompt. Deram 36 de 40 nas
+três, com os desfechos do §6.6. Ficam como registro: a conclusão foi desfeita pelos casos novos
+(`prompts.md` §3.7).
+
+Limites: os do §6.6. Os quatro casos novos foram escritos por quem conhecia a frase em teste, e
+três rodadas dos mesmos 44 casos não são 132 casos.
 
 ## 7. Limites do que foi implementado
 

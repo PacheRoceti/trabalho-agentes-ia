@@ -449,7 +449,9 @@ Os outros três (`TKT-0004`, `TKT-0005`, `TKT-0999`) não buscam. Pontos:
 - **Tokens de embedding por execução (campo `tokens_embedding` do log):** de 1.761 a 1.779 nas cinco
   que buscam, e 0 nas três que não buscam. Os números incluem a indexação dos 19 trechos: o
   `--todos` recria o banco, e o índice, a cada caso. Num banco já indexado a execução só embeda o relato.
-  O custo em dólares não foi calculado (o preço do `mistral-embed` não foi verificado).
+  A US$ 0,05 por milhão de tokens (verificado no perfil do grupo na Mistral, 13/10/2026), são cerca de US$ 0,00009 por
+  execução que busca. Na rodada de 40 casos (`logs/grafo-40-1/`), 54.835 tokens de embedding em
+  31 buscas: cerca de US$ 0,0027, também com a indexação repetida a cada caso.
 
 **O corpus de 7 guias, para comparação** (medido antes dos KB-107 a KB-115, preservado em
 `*-corpus7.*` e em `logs/grafo-rag/` e `logs/grafo-ressalva/`): calibração com folga de +0,036 (acertos
@@ -459,7 +461,7 @@ mudança que o corpus de 16 trouxe foi a calibração: a folga virou negativa.
 
 Limites desta medição: uma execução do `medir_rag.py`; conjunto de perguntas escrito por nós, com
 31 sem resposta, e a triagem foi medida com uma execução por pergunta; a calibração e o teste usam o mesmo corpus; três rodadas dos mesmos 8 casos
-(estáveis, mas não são perguntas novas); preço do embedding não verificado.
+(estáveis, mas não são perguntas novas).
 
 ## 5. Onde a recuperação entra no laço (§4.4)
 
@@ -587,8 +589,9 @@ busca com outros termos quando a primeira vem fraca.
   como está.
 - Margem do portão: o segundo guia de um chamado chega a 0,50 e 0,53 (§4.3).
 - Calibração e teste usam o mesmo corpus de 16 guias, e o conjunto de 55 perguntas foi escrito pelo mesmo grupo.
-- Preço do `mistral-embed` não verificado: os tokens de embedding estão no log (`tokens_embedding`), mas
-  não entram no orçamento nem em dólares.
+- O gasto de embedding fica fora da conta do código: os tokens estão no log (`tokens_embedding`), mas
+  não entram no orçamento nem no `custo_usd`. O preço (US$ 0,05 por milhão de tokens) foi conferido no
+  perfil do grupo na Mistral em 13/10/2026, e o custo do §4.3 é conta feita à mão sobre os tokens do log.
 - As fichas de plano servem de contexto à redação e à tela do analista. Nenhuma regra de decisão usa o
   plano do cliente, e a coluna `planos` de `kb_artigos` não foi criada.
 - Repetir a medição das versões (§2.1): foi uma execução de cada combinação, com a busca por palavra e o
