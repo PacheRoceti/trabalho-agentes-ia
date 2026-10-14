@@ -1,0 +1,317 @@
+{
+  "execucao_id": "TKT-0109-11fbf140",
+  "id_ticket": "TKT-0109",
+  "executado_em": "2026-10-14T00:34:03-03:00",
+  "commit": "6116341 + alterações locais",
+  "entrada": "A VPS está com a CPU no máximo desde a manhã, sem parar, e o sistema de rastreamento ficou lento para todos os motoristas.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v2.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-115",
+    "chamado_interno": "INC-0005",
+    "time_destino": "Infraestrutura",
+    "prioridade": "P2",
+    "reincidencias_confirmadas_no_sistema": 0,
+    "ja_existia": false
+  },
+  "pendencia": null,
+  "confirmacoes": [
+    {
+      "pendencia": {
+        "ferramenta": "abrir_chamado_interno",
+        "id_ticket": "TKT-0109",
+        "categoria": "servidor_saturado",
+        "resumo": "O cliente Beta Logística (plano VPS Pro) relata alta constante de CPU na VPS desde a manhã, com impacto no sistema de rastreamento (lentidão para todos os motoristas). Não há log anexado. O histórico confirma 1 ocorrência anterior (INC-0001), mas não há relação com o caso atual. O procedimento KB-115 (score 0.62) sugere consumo excessivo de CPU por processo da aplicação, fora do escopo de suporte. **Ação necessária:** Verificar consumo de CPU via `top` ou `htop` e registrar o caso na Infraestrutura para avaliação de dimensionamento.",
+        "time_destino": "Infraestrutura",
+        "kb_id": "KB-115",
+        "prioridade_prevista": "P2",
+        "guia_publicado_em": "2026-09-02",
+        "guia_nao_cobre": [
+          "intermitente",
+          "as vezes",
+          "de vez em quando"
+        ],
+        "plano": "VPS Pro",
+        "escopo_do_plano": "Servidor virtual gerenciado pela empresa. O suporte cobre o sistema operacional, a rede, os certificados, o firewall e os backups da VPS. A aplicação instalada pelo cliente dentro da VPS está fora do escopo do suporte. Atendimento por chamado, em horário comercial.",
+        "precedentes": {
+          "guia": {
+            "kb_id": "KB-115",
+            "janela_dias": 90,
+            "decisoes": 0,
+            "aprovados": 0,
+            "editados": 0,
+            "rejeitados": 0,
+            "decisoes_antigas": 0,
+            "rejeicoes_por_motivo": {}
+          },
+          "cliente": []
+        },
+        "fatos_cliente": {},
+        "pedido_em": "2026-10-14T00:34:08-03:00",
+        "vence_em": "2026-10-14T00:54:08-03:00"
+      },
+      "aprovado": true,
+      "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+      "status": "aprovada",
+      "resolvido_em": "2026-10-14T00:34:08-03:00",
+      "editado": false
+    }
+  ],
+  "n_chamadas_modelo": 3,
+  "lembretes": 0,
+  "tokens_entrada": 2214,
+  "tokens_saida": 301,
+  "custo_usd": 0.000377,
+  "scores_kb": {
+    "KB-115": 0.62,
+    "KB-113": 0.49,
+    "KB-104": 0.46
+  },
+  "saida": {
+    "id_ticket": "TKT-0109",
+    "executado_em": "2026-10-14T00:34:03-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "abrir_chamado_interno",
+      "texto": "O cliente Beta Logística (plano VPS Pro) relata alta constante de CPU na VPS desde a manhã, com impacto no sistema de rastreamento (lentidão para todos os motoristas). Não há log anexado. O histórico confirma 1 ocorrência anterior (INC-0001), mas não há relação com o caso atual. O procedimento KB-115 (score 0.62) sugere consumo excessivo de CPU por processo da aplicação, fora do escopo de suporte. **Ação necessária:** Verificar consumo de CPU via `top` ou `htop` e registrar o caso na Infraestrutura para avaliação de dimensionamento.",
+      "chamado_interno": "INC-0005",
+      "time_destino": "Infraestrutura",
+      "prioridade": "P2"
+    },
+    "fonte": {
+      "tipo": "procedimento_da_base",
+      "kb_id": "KB-115",
+      "score": 0.62,
+      "registros": [
+        "TKT-0109",
+        "INC-0001"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "conferir_ressalva",
+        "decidir",
+        "redigir",
+        "confirmar",
+        "abrir_chamado_interno"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": true,
+      "motivo": "procedimento KB-115 com score 0.62, igual ou acima do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0109"
+      },
+      "resultado": {
+        "id": "TKT-0109",
+        "aberto_em": "2026-09-21 10:40",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Beta Logística",
+        "plano": "VPS Pro",
+        "historico_cliente": [
+          {
+            "chamado_interno": "INC-0001",
+            "categoria": "permissao_arquivos",
+            "criado_em": "2026-09-01 15:00",
+            "status": "resolvido"
+          }
+        ]
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "cpu",
+          "maximo",
+          "sistema",
+          "rastreamento",
+          "lento"
+        ],
+        "justificativa": "O cliente relata alta utilização de CPU e lentidão em um sistema de rastreamento, indicando problema técnico no VPS."
+      },
+      "erro": null,
+      "ms": 1127
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "cpu",
+          "maximo",
+          "sistema",
+          "rastreamento",
+          "lento"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-115",
+            "titulo": "Servidor com CPU ou memória saturada",
+            "score": 0.62,
+            "cosseno": 0.848,
+            "causa": "Processo da aplicação consumindo CPU ou memória do servidor além da capacidade, em geral depois de um pico de acessos ou de um laço no código.",
+            "solucao": "Identificar o processo de maior consumo, reiniciar o serviço afetado e registrar a lentidão para a Infraestrutura avaliar o dimensionamento.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-113",
+            "titulo": "Aplicação PHP esgotando a memória",
+            "score": 0.49,
+            "cosseno": 0.798,
+            "causa": "Limite de memória do PHP da conta menor que o necessário para o script, ou script com consumo anormal.",
+            "solucao": "Conferir no registro de erros a mensagem de memória esgotada, ajustar o limite de memória da conta dentro do teto do plano e identificar o script de maior consumo.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.46,
+            "cosseno": 0.785,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1062
+    },
+    {
+      "indice": 3,
+      "ferramenta": "conferir_ressalva",
+      "argumentos": {
+        "kb_id": "KB-115",
+        "situacoes": [
+          "intermitente",
+          "as vezes",
+          "de vez em quando"
+        ]
+      },
+      "resultado": {
+        "cai_na_ressalva": false,
+        "frase": "",
+        "motivo": "O relato descreve um problema contínuo de saturação de CPU, sem menção a periodicidade ou intermitência, que são as situações listadas como ressalvas.",
+        "score_antes": 0.62,
+        "score_depois": 0.62
+      },
+      "erro": null,
+      "ms": 895
+    },
+    {
+      "indice": 4,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "abrir_chamado_interno",
+        "kb_id": "KB-115",
+        "motivo": "procedimento_escalar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 5,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "abrir_chamado_interno"
+      },
+      "resultado": {
+        "texto": "O cliente Beta Logística (plano VPS Pro) relata alta constante de CPU na VPS desde a manhã, com impacto no sistema de rastreamento (lentidão para todos os motoristas). Não há log anexado. O histórico confirma 1 ocorrência anterior (INC-0001), mas não há relação com o caso atual. O procedimento KB-115 (score 0.62) sugere consumo excessivo de CPU por processo da aplicação, fora do escopo de suporte. **Ação necessária:** Verificar consumo de CPU via `top` ou `htop` e registrar o caso na Infraestrutura para avaliação de dimensionamento."
+      },
+      "erro": null,
+      "ms": 1740
+    },
+    {
+      "indice": 6,
+      "ferramenta": "confirmar",
+      "argumentos": {
+        "kb_id": "KB-115"
+      },
+      "resultado": {
+        "status": "aprovada",
+        "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+        "editado": false
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 7,
+      "ferramenta": "abrir_chamado_interno",
+      "argumentos": {
+        "id_ticket": "TKT-0109",
+        "resumo": "O cliente Beta Logística (plano VPS Pro) relata alta constante de CPU na VPS desde a manhã, com impacto no sistema de rastreamento (lentidão para todos os motoristas). Não há log anexado. O histórico confirma 1 ocorrência anterior (INC-0001), mas não há relação com o caso atual. O procedimento KB-115 (score 0.62) sugere consumo excessivo de CPU por processo da aplicação, fora do escopo de suporte. **Ação necessária:** Verificar consumo de CPU via `top` ou `htop` e registrar o caso na Infraestrutura para avaliação de dimensionamento.",
+        "kb_id": "KB-115"
+      },
+      "resultado": {
+        "chamado_interno": "INC-0005",
+        "time_destino": "Infraestrutura",
+        "prioridade": "P2",
+        "reincidencias_confirmadas_no_sistema": 0,
+        "ja_existia": false
+      },
+      "erro": null,
+      "ms": 18
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-115",
+    "motivo": "procedimento_escalar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1773,
+  "episodio": {
+    "execucao_id": "TKT-0109-11fbf140",
+    "ticket_externo": "TKT-0109",
+    "cliente_id": "CLI-02",
+    "classe": "tecnico",
+    "categoria": "servidor_saturado",
+    "kb_id": "KB-115",
+    "score": 0.62,
+    "acao_proposta": "abrir_chamado_interno",
+    "desfecho": "abrir_chamado_interno",
+    "motivo": "procedimento_escalar",
+    "veredito": "aprovado",
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0109: classe tecnico; guia KB-115 (score 0.62); proposto abrir_chamado_interno; gravado abrir_chamado_interno; analista: aprovado; término respondeu",
+    "criado_em": "2026-10-14T00:34:08-03:00",
+    "id": 1,
+    "chave": "840e4f0c0b03e526",
+    "ja_existia": false
+  },
+  "segundos_gastos": 4.845
+}

@@ -1,0 +1,222 @@
+{
+  "execucao_id": "TKT-0006-6fdcb779",
+  "id_ticket": "TKT-0006",
+  "executado_em": "2026-10-14T00:36:26-03:00",
+  "commit": "6116341 + alterações locais",
+  "entrada": "Meu site está dando erro 502 de vez em quando, mais ou menos desde o deploy de ontem. Às vezes funciona normal.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1579,
+  "tokens_saida": 239,
+  "custo_usd": 0.000273,
+  "scores_kb": {
+    "KB-104": 0.24,
+    "KB-106": 0.49,
+    "KB-110": 0.49
+  },
+  "saida": {
+    "id_ticket": "TKT-0006",
+    "executado_em": "2026-10-14T00:36:26-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O cliente relata que o site do **Epsilon Studio** (plano VPS Pro) apresenta erro 502 **intermitentemente** desde o deploy de ontem, com funcionamento ocasional. Não há log anexado para análise técnica. O procedimento **KB-104** ('Site fora do ar com erro 5xx após deploy', score 0.24) foi encontrado, mas **não cobre o caso relatado** (falha não constante) e possui ressalva explícita. O escopo do plano não inclui a aplicação ou configuração do cliente. **Ação necessária:** avaliar se o problema está fora do escopo ou se há evidências adicionais para justificar intervenção.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "busca_sem_correspondencia",
+      "kb_id": "KB-106",
+      "score": 0.49,
+      "registros": [
+        "TKT-0006"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o melhor procedimento encontrado (KB-106, score 0.49) ficou abaixo do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0006"
+      },
+      "resultado": {
+        "id": "TKT-0006",
+        "aberto_em": "2026-09-21 11:02",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Epsilon Studio",
+        "plano": "VPS Pro",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "site",
+          "erro",
+          "502"
+        ],
+        "justificativa": "O cliente relata um erro 502 no site, sintoma típico de problemas de servidor ou configuração de aplicação."
+      },
+      "erro": null,
+      "ms": 1140
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "site",
+          "erro",
+          "502"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.24,
+            "cosseno": 0.843,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial",
+            "ressalva": "este procedimento NÃO cobre o caso relatado ('as vezes'): o score foi reduzido"
+          },
+          {
+            "kb_id": "KB-106",
+            "titulo": "Falha de resolução DNS do domínio",
+            "score": 0.49,
+            "cosseno": 0.796,
+            "causa": "Nameserver do domínio fora do ar ou zona DNS com registro inválido.",
+            "solucao": "Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-110",
+            "titulo": "Site em laço de redirecionamentos",
+            "score": 0.49,
+            "cosseno": 0.796,
+            "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+            "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 915
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "score_abaixo_do_limiar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "O cliente relata que o site do **Epsilon Studio** (plano VPS Pro) apresenta erro 502 **intermitentemente** desde o deploy de ontem, com funcionamento ocasional. Não há log anexado para análise técnica. O procedimento **KB-104** ('Site fora do ar com erro 5xx após deploy', score 0.24) foi encontrado, mas **não cobre o caso relatado** (falha não constante) e possui ressalva explícita. O escopo do plano não inclui a aplicação ou configuração do cliente. **Ação necessária:** avaliar se o problema está fora do escopo ou se há evidências adicionais para justificar intervenção."
+      },
+      "erro": null,
+      "ms": 1643
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0006",
+        "destino": "fila_humana",
+        "mensagem": "O cliente relata que o site do **Epsilon Studio** (plano VPS Pro) apresenta erro 502 **intermitentemente** desde o deploy de ontem, com funcionamento ocasional. Não há log anexado para análise técnica. O procedimento **KB-104** ('Site fora do ar com erro 5xx após deploy', score 0.24) foi encontrado, mas **não cobre o caso relatado** (falha não constante) e possui ressalva explícita. O escopo do plano não inclui a aplicação ou configuração do cliente. **Ação necessária:** avaliar se o problema está fora do escopo ou se há evidências adicionais para justificar intervenção."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 14
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "score_abaixo_do_limiar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1768,
+  "episodio": {
+    "execucao_id": "TKT-0006-6fdcb779",
+    "ticket_externo": "TKT-0006",
+    "cliente_id": "CLI-05",
+    "classe": "tecnico",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "fila_humana",
+    "desfecho": "fila_humana",
+    "motivo": "score_abaixo_do_limiar",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0006: classe tecnico; sem guia; proposto fila_humana; gravado fila_humana; término respondeu",
+    "criado_em": "2026-10-14T00:36:30-03:00",
+    "id": 1,
+    "chave": "5383a558063a8673",
+    "ja_existia": false
+  },
+  "segundos_gastos": 3.715
+}

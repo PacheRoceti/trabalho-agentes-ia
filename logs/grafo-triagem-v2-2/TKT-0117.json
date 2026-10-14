@@ -1,0 +1,252 @@
+{
+  "execucao_id": "TKT-0117-3b08a697",
+  "id_ticket": "TKT-0117",
+  "executado_em": "2026-10-13T23:32:55-03:00",
+  "commit": "6116341 + alterações locais",
+  "entrada": "Ao gerar o boletim em PDF, o site mostra a mensagem do PHP de limite de memória esgotado e a página fica em branco.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v2.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "anotacao_interna",
+    "kb_id": "KB-113",
+    "encaminhamento": 1,
+    "destino": "anotacao_interna"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 3,
+  "lembretes": 0,
+  "tokens_entrada": 2209,
+  "tokens_saida": 323,
+  "custo_usd": 0.00038,
+  "scores_kb": {
+    "KB-113": 0.7,
+    "KB-102": 0.46,
+    "KB-115": 0.46
+  },
+  "saida": {
+    "id_ticket": "TKT-0117",
+    "executado_em": "2026-10-13T23:32:55-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "anotacao_interna",
+      "texto": "Procedimento **KB-113** encontrado para o erro de limite de memória do PHP ao gerar o boletim em PDF. **Ação sugerida:** Verificar o registro de erros do site (o domínio do cliente) para confirmar a mensagem exata de esgotamento de memória e ajustar o limite de memória da conta dentro do teto do plano (Hospedagem Start). **Nota:** O procedimento não cobre a identificação ou correção do script de maior consumo, que é responsabilidade do cliente. **Score do procedimento:** 0.7 (acima do limiar 0.5), mas não é seguro agir sozinho sem confirmação do erro no log.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "procedimento_da_base",
+      "kb_id": "KB-113",
+      "score": 0.7,
+      "registros": [
+        "TKT-0117",
+        "INC-0004"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "conferir_ressalva",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": true,
+      "motivo": "procedimento KB-113 com score 0.7, igual ou acima do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0117"
+      },
+      "resultado": {
+        "id": "TKT-0117",
+        "aberto_em": "2026-09-21 10:08",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Kappa Educação",
+        "plano": "Hospedagem Start",
+        "historico_cliente": [
+          {
+            "chamado_interno": "INC-0004",
+            "categoria": "dns_dominio",
+            "criado_em": "2026-09-05 09:20",
+            "status": "resolvido"
+          }
+        ]
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "gerar boletim pdf",
+          "mensagem php",
+          "limite memoria esgotado"
+        ],
+        "justificativa": "O cliente relata um erro técnico específico relacionado ao limite de memória do PHP ao gerar um arquivo PDF, indicando um problema no servidor ou configuração do plano."
+      },
+      "erro": null,
+      "ms": 1004
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "gerar boletim pdf",
+          "mensagem php",
+          "limite memoria esgotado"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-113",
+            "titulo": "Aplicação PHP esgotando a memória",
+            "score": 0.7,
+            "cosseno": 0.882,
+            "causa": "Limite de memória do PHP da conta menor que o necessário para o script, ou script com consumo anormal.",
+            "solucao": "Conferir no registro de erros a mensagem de memória esgotada, ajustar o limite de memória da conta dentro do teto do plano e identificar o script de maior consumo.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-102",
+            "titulo": "Permissão negada ao gravar arquivos",
+            "score": 0.46,
+            "cosseno": 0.787,
+            "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+            "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-115",
+            "titulo": "Servidor com CPU ou memória saturada",
+            "score": 0.46,
+            "cosseno": 0.786,
+            "causa": "Processo da aplicação consumindo CPU ou memória do servidor além da capacidade, em geral depois de um pico de acessos ou de um laço no código.",
+            "solucao": "Identificar o processo de maior consumo, reiniciar o serviço afetado e registrar a lentidão para a Infraestrutura avaliar o dimensionamento.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1403
+    },
+    {
+      "indice": 3,
+      "ferramenta": "conferir_ressalva",
+      "argumentos": {
+        "kb_id": "KB-113",
+        "situacoes": [
+          "instalacao",
+          "instalar",
+          "atualizar versao"
+        ]
+      },
+      "resultado": {
+        "cai_na_ressalva": false,
+        "frase": "",
+        "motivo": "O relato do cliente descreve um problema de limite de memória do PHP, que é a causa do procedimento, mas não menciona nenhuma das situações de ressalva listadas ('instalacao', 'instalar', 'atualizar versao').",
+        "score_antes": 0.7,
+        "score_depois": 0.7
+      },
+      "erro": null,
+      "ms": 1479
+    },
+    {
+      "indice": 4,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "anotacao_interna",
+        "kb_id": "KB-113",
+        "motivo": "procedimento_anotar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 5,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "anotacao_interna"
+      },
+      "resultado": {
+        "texto": "Procedimento **KB-113** encontrado para o erro de limite de memória do PHP ao gerar o boletim em PDF. **Ação sugerida:** Verificar o registro de erros do site (o domínio do cliente) para confirmar a mensagem exata de esgotamento de memória e ajustar o limite de memória da conta dentro do teto do plano (Hospedagem Start). **Nota:** O procedimento não cobre a identificação ou correção do script de maior consumo, que é responsabilidade do cliente. **Score do procedimento:** 0.7 (acima do limiar 0.5), mas não é seguro agir sozinho sem confirmação do erro no log."
+      },
+      "erro": null,
+      "ms": 2637
+    },
+    {
+      "indice": 6,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0117",
+        "destino": "anotacao_interna",
+        "mensagem": "Procedimento **KB-113** encontrado para o erro de limite de memória do PHP ao gerar o boletim em PDF. **Ação sugerida:** Verificar o registro de erros do site (o domínio do cliente) para confirmar a mensagem exata de esgotamento de memória e ajustar o limite de memória da conta dentro do teto do plano (Hospedagem Start). **Nota:** O procedimento não cobre a identificação ou correção do script de maior consumo, que é responsabilidade do cliente. **Score do procedimento:** 0.7 (acima do limiar 0.5), mas não é seguro agir sozinho sem confirmação do erro no log.",
+        "kb_id": "KB-113"
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "anotacao_interna"
+      },
+      "erro": null,
+      "ms": 16
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "anotacao_interna",
+    "kb_id": "KB-113",
+    "motivo": "procedimento_anotar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1773,
+  "episodio": {
+    "execucao_id": "TKT-0117-3b08a697",
+    "ticket_externo": "TKT-0117",
+    "cliente_id": "CLI-10",
+    "classe": "tecnico",
+    "categoria": "php_limites",
+    "kb_id": "KB-113",
+    "score": 0.7,
+    "acao_proposta": "anotacao_interna",
+    "desfecho": "anotacao_interna",
+    "motivo": "procedimento_anotar",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0117: classe tecnico; guia KB-113 (score 0.7); proposto anotacao_interna; gravado anotacao_interna; término respondeu",
+    "criado_em": "2026-10-13T23:33:02-03:00",
+    "id": 1,
+    "chave": "aac14f53aaf6bce4",
+    "ja_existia": false
+  },
+  "segundos_gastos": 6.543
+}

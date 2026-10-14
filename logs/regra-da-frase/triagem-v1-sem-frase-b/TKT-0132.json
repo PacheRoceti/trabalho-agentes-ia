@@ -1,0 +1,227 @@
+{
+  "execucao_id": "TKT-0132-b842f3ae",
+  "id_ticket": "TKT-0132",
+  "executado_em": "2026-10-13T23:15:22-03:00",
+  "commit": "6116341 + alterações locais",
+  "entrada": "Problema no e-mail, vejam aí por favor.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1-sem-frase.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1559,
+  "tokens_saida": 201,
+  "custo_usd": 0.000264,
+  "scores_kb": {
+    "KB-111": 0.33,
+    "KB-110": 0.2,
+    "KB-112": 0.2
+  },
+  "saida": {
+    "id_ticket": "TKT-0132",
+    "executado_em": "2026-10-13T23:15:22-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O chamado TKT-0132 refere-se a um relato de problema com envio de e-mail pelo cliente Iota Transportes (plano VPS Pro). Não há log anexado para análise. O procedimento encontrado (KB-111) possui score 0.33, abaixo do limiar de confiança (0.5). Além disso, o procedimento não aborda diretamente a ausência de logs ou detalhes técnicos específicos, o que impede uma ação segura sem intervenção humana. O histórico do cliente não apresenta ocorrências relacionadas a problemas de envio de e-mail.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "busca_sem_correspondencia",
+      "kb_id": "KB-111",
+      "score": 0.33,
+      "registros": [
+        "TKT-0132",
+        "INC-0003"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o melhor procedimento encontrado (KB-111, score 0.33) ficou abaixo do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0132"
+      },
+      "resultado": {
+        "id": "TKT-0132",
+        "aberto_em": "2026-09-21 11:50",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Iota Transportes",
+        "plano": "VPS Pro",
+        "historico_cliente": [
+          {
+            "chamado_interno": "INC-0003",
+            "categoria": "permissao_arquivos",
+            "criado_em": "2026-08-10 17:10",
+            "status": "resolvido"
+          }
+        ]
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "problema",
+          "e-mail"
+        ],
+        "justificativa": "O cliente relata um problema específico relacionado ao serviço de e-mail, sem anexar log ou mencionar outra causa."
+      },
+      "erro": null,
+      "ms": 964
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "problema",
+          "e-mail"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-111",
+            "titulo": "Envio de e-mail rejeitado ou marcado como spam",
+            "score": 0.33,
+            "cosseno": 0.735,
+            "causa": "Registros SPF ou DKIM do domínio ausentes ou incorretos, ou IP de envio em lista de bloqueio.",
+            "solucao": "Conferir os registros SPF e DKIM da zona do domínio e consultar as listas de bloqueio para o IP de envio; corrigir a zona e reenviar uma mensagem de teste.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-110",
+            "titulo": "Site em laço de redirecionamentos",
+            "score": 0.2,
+            "cosseno": 0.684,
+            "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+            "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-112",
+            "titulo": "Bloqueio indevido pelo firewall de aplicação (WAF)",
+            "score": 0.2,
+            "cosseno": 0.68,
+            "causa": "Regra do firewall de aplicação classificou como ataque uma requisição legítima do site e passou a devolver 403.",
+            "solucao": "Localizar no registro do WAF a regra acionada, liberar a requisição legítima com uma exceção restrita à URL e reavaliar a regra.",
+            "acao_padrao": "escalar",
+            "time_destino": "Seguranca",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1772
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "score_abaixo_do_limiar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "O chamado TKT-0132 refere-se a um relato de problema com envio de e-mail pelo cliente Iota Transportes (plano VPS Pro). Não há log anexado para análise. O procedimento encontrado (KB-111) possui score 0.33, abaixo do limiar de confiança (0.5). Além disso, o procedimento não aborda diretamente a ausência de logs ou detalhes técnicos específicos, o que impede uma ação segura sem intervenção humana. O histórico do cliente não apresenta ocorrências relacionadas a problemas de envio de e-mail."
+      },
+      "erro": null,
+      "ms": 1999
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0132",
+        "destino": "fila_humana",
+        "mensagem": "O chamado TKT-0132 refere-se a um relato de problema com envio de e-mail pelo cliente Iota Transportes (plano VPS Pro). Não há log anexado para análise. O procedimento encontrado (KB-111) possui score 0.33, abaixo do limiar de confiança (0.5). Além disso, o procedimento não aborda diretamente a ausência de logs ou detalhes técnicos específicos, o que impede uma ação segura sem intervenção humana. O histórico do cliente não apresenta ocorrências relacionadas a problemas de envio de e-mail."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 53
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "score_abaixo_do_limiar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1749,
+  "episodio": {
+    "execucao_id": "TKT-0132-b842f3ae",
+    "ticket_externo": "TKT-0132",
+    "cliente_id": "CLI-09",
+    "classe": "tecnico",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "fila_humana",
+    "desfecho": "fila_humana",
+    "motivo": "score_abaixo_do_limiar",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0132: classe tecnico; sem guia; proposto fila_humana; gravado fila_humana; término respondeu",
+    "criado_em": "2026-10-13T23:15:27-03:00",
+    "id": 1,
+    "chave": "d94c57fa19966256",
+    "ja_existia": false
+  },
+  "segundos_gastos": 4.79
+}

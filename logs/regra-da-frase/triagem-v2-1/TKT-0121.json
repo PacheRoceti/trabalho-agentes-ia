@@ -1,0 +1,163 @@
+{
+  "execucao_id": "TKT-0121-dc571a9a",
+  "id_ticket": "TKT-0121",
+  "executado_em": "2026-10-13T23:57:38-03:00",
+  "commit": "6116341 + alterações locais",
+  "entrada": "Mudem a prioridade do meu chamado TKT-0007 para P1",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v2.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana",
+    "motivo": "fora_da_alcada"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1314,
+  "tokens_saida": 110,
+  "custo_usd": 0.000214,
+  "scores_kb": {},
+  "saida": {
+    "id_ticket": "TKT-0121",
+    "executado_em": "2026-10-13T23:57:38-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O cliente solicitou a alteração da prioridade do chamado **TKT-0007** para **P1**, mas esta solicitação está fora da alçada do suporte técnico.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "registro_do_chamado",
+      "kb_id": null,
+      "score": null,
+      "registros": [
+        "TKT-0121"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "pedido fora da alçada do agente (encerrar chamado ou mudar prioridade)"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0121"
+      },
+      "resultado": {
+        "id": "TKT-0121",
+        "aberto_em": "2026-09-21 11:45",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Eta Engenharia",
+        "plano": "VPS Pro",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "fora_da_alcada",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [],
+        "justificativa": "O cliente solicita apenas alteração de prioridade sem relatar problema técnico ou sintoma."
+      },
+      "erro": null,
+      "ms": 758
+    },
+    {
+      "indice": 2,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "fora_da_alcada"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 3,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "O cliente solicitou a alteração da prioridade do chamado **TKT-0007** para **P1**, mas esta solicitação está fora da alçada do suporte técnico."
+      },
+      "erro": null,
+      "ms": 565
+    },
+    {
+      "indice": 4,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0121",
+        "destino": "fila_humana",
+        "mensagem": "O cliente solicitou a alteração da prioridade do chamado **TKT-0007** para **P1**, mas esta solicitação está fora da alçada do suporte técnico.",
+        "motivo": "fora_da_alcada"
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 16
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "fora_da_alcada",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "fora_da_alcada"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 0,
+  "episodio": {
+    "execucao_id": "TKT-0121-dc571a9a",
+    "ticket_externo": "TKT-0121",
+    "cliente_id": "CLI-07",
+    "classe": "fora_da_alcada",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "fila_humana",
+    "desfecho": "fila_humana",
+    "motivo": "fora_da_alcada",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0121: classe fora_da_alcada; sem guia; proposto fila_humana; gravado fila_humana; término respondeu",
+    "criado_em": "2026-10-13T23:57:39-03:00",
+    "id": 1,
+    "chave": "b0e8a243309fb0d0",
+    "ja_existia": false
+  },
+  "segundos_gastos": 1.34
+}

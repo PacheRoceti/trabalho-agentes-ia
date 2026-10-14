@@ -1,0 +1,243 @@
+{
+  "execucao_id": "TKT-0105-6623834b",
+  "id_ticket": "TKT-0105",
+  "executado_em": "2026-10-13T23:34:46-03:00",
+  "commit": "6116341 + alterações locais",
+  "entrada": "Desde ontem os clientes recebem erro 403 quando enviam o formulário de reserva do site. O formulário é o mesmo de sempre; parece que o firewall de aplicação passou a bloquear um envio legítimo.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v2.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 3,
+  "lembretes": 0,
+  "tokens_entrada": 2221,
+  "tokens_saida": 343,
+  "custo_usd": 0.000385,
+  "scores_kb": {
+    "KB-112": 0.3,
+    "KB-104": 0.55,
+    "KB-111": 0.53
+  },
+  "saida": {
+    "id_ticket": "TKT-0105",
+    "executado_em": "2026-10-13T23:34:46-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O cliente relata que, desde ontem, os clientes recebem erro **403** ao enviar o formulário de reserva do site (o domínio do cliente). Afirma que o formulário é o mesmo de sempre e suspeita que o firewall de aplicação (WAF) passou a bloquear requisições legítimas, classificando-as como ataque. Não há log anexado para análise técnica. O histórico não registra ocorrências anteriores. O procedimento encontrado (KB-112) aborda bloqueio por regra do WAF, mas possui **score 0.3** (abaixo do limiar 0.5) e **RESSALVA**: não cobre o caso relatado, pois não trata de regra classificando requisição como 'ataque'. O plano do cliente (Hospedagem Start) não cobre desenvolvimento ou depuração de código.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "registro_do_chamado",
+      "kb_id": "KB-104",
+      "score": 0.55,
+      "registros": [
+        "TKT-0105"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "conferir_ressalva",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "havia procedimento com score igual ou acima do limiar (KB-104, 0.55), mas o agente não agiu sozinho; o motivo está no texto registrado no resultado"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0105"
+      },
+      "resultado": {
+        "id": "TKT-0105",
+        "aberto_em": "2026-09-21 10:12",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Delta Restaurantes",
+        "plano": "Hospedagem Start",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "erro 403",
+          "formulário reserva",
+          "firewall aplicação"
+        ],
+        "justificativa": "O cliente relata erro 403 em formulário de reserva, indicando problema técnico no servidor ou configuração de segurança."
+      },
+      "erro": null,
+      "ms": 1322
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "erro 403",
+          "formulário reserva",
+          "firewall aplicação"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-112",
+            "titulo": "Bloqueio indevido pelo firewall de aplicação (WAF)",
+            "score": 0.75,
+            "cosseno": 0.903,
+            "causa": "Regra do firewall de aplicação classificou como ataque uma requisição legítima do site e passou a devolver 403.",
+            "solucao": "Localizar no registro do WAF a regra acionada, liberar a requisição legítima com uma exceção restrita à URL e reavaliar a regra.",
+            "acao_padrao": "escalar",
+            "time_destino": "Seguranca",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.55,
+            "cosseno": 0.822,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-111",
+            "titulo": "Envio de e-mail rejeitado ou marcado como spam",
+            "score": 0.53,
+            "cosseno": 0.815,
+            "causa": "Registros SPF ou DKIM do domínio ausentes ou incorretos, ou IP de envio em lista de bloqueio.",
+            "solucao": "Conferir os registros SPF e DKIM da zona do domínio e consultar as listas de bloqueio para o IP de envio; corrigir a zona e reenviar uma mensagem de teste.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 834
+    },
+    {
+      "indice": 3,
+      "ferramenta": "conferir_ressalva",
+      "argumentos": {
+        "kb_id": "KB-112",
+        "situacoes": [
+          "ataque",
+          "ddos",
+          "invasao"
+        ]
+      },
+      "resultado": {
+        "cai_na_ressalva": true,
+        "frase": "ataque",
+        "motivo": "O cliente menciona que o firewall de aplicação passou a bloquear uma requisição legítima como se fosse um ataque, o que está descrito como uma ressalva do procedimento.",
+        "score_antes": 0.75,
+        "score_depois": 0.3
+      },
+      "erro": null,
+      "ms": 932
+    },
+    {
+      "indice": 4,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "score_abaixo_do_limiar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 5,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "O cliente relata que, desde ontem, os clientes recebem erro **403** ao enviar o formulário de reserva do site (o domínio do cliente). Afirma que o formulário é o mesmo de sempre e suspeita que o firewall de aplicação (WAF) passou a bloquear requisições legítimas, classificando-as como ataque. Não há log anexado para análise técnica. O histórico não registra ocorrências anteriores. O procedimento encontrado (KB-112) aborda bloqueio por regra do WAF, mas possui **score 0.3** (abaixo do limiar 0.5) e **RESSALVA**: não cobre o caso relatado, pois não trata de regra classificando requisição como 'ataque'. O plano do cliente (Hospedagem Start) não cobre desenvolvimento ou depuração de código."
+      },
+      "erro": null,
+      "ms": 2128
+    },
+    {
+      "indice": 6,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0105",
+        "destino": "fila_humana",
+        "mensagem": "O cliente relata que, desde ontem, os clientes recebem erro **403** ao enviar o formulário de reserva do site (o domínio do cliente). Afirma que o formulário é o mesmo de sempre e suspeita que o firewall de aplicação (WAF) passou a bloquear requisições legítimas, classificando-as como ataque. Não há log anexado para análise técnica. O histórico não registra ocorrências anteriores. O procedimento encontrado (KB-112) aborda bloqueio por regra do WAF, mas possui **score 0.3** (abaixo do limiar 0.5) e **RESSALVA**: não cobre o caso relatado, pois não trata de regra classificando requisição como 'ataque'. O plano do cliente (Hospedagem Start) não cobre desenvolvimento ou depuração de código."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 16
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "score_abaixo_do_limiar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1796,
+  "episodio": {
+    "execucao_id": "TKT-0105-6623834b",
+    "ticket_externo": "TKT-0105",
+    "cliente_id": "CLI-04",
+    "classe": "tecnico",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "fila_humana",
+    "desfecho": "fila_humana",
+    "motivo": "score_abaixo_do_limiar",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0105: classe tecnico; sem guia; proposto fila_humana; gravado fila_humana; término respondeu",
+    "criado_em": "2026-10-13T23:34:51-03:00",
+    "id": 1,
+    "chave": "a0ba29fa3ee2d94a",
+    "ja_existia": false
+  },
+  "segundos_gastos": 5.235
+}

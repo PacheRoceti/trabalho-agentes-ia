@@ -1,0 +1,232 @@
+{
+  "execucao_id": "TKT-0126-43f34e4e",
+  "id_ticket": "TKT-0126",
+  "executado_em": "2026-10-14T00:39:22-03:00",
+  "commit": "6116341 + alterações locais",
+  "entrada": "Nosso site está sob ataque: são milhares de acessos por segundo vindos de fora do país, e todo mundo recebe erro 403.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1670,
+  "tokens_saida": 271,
+  "custo_usd": 0.000291,
+  "scores_kb": {
+    "KB-112": 0.26,
+    "KB-104": 0.53,
+    "KB-110": 0.51
+  },
+  "saida": {
+    "id_ticket": "TKT-0126",
+    "executado_em": "2026-10-14T00:39:22-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O cliente relata que o site está sob ataque, com milhares de acessos por segundo vindos de fora do país, resultando em erro 403 para todos os usuários. Não há log anexado para análise. O histórico confirma um chamado anterior resolvido (INC-0002) relacionado ao WAF, mas não há detalhes adicionais sobre o problema atual. O procedimento encontrado (KB-112) possui score 0.26, abaixo do limiar de 0.5, e contém ressalva: **não cobre o caso relatado ('ataque')**. O procedimento sugere verificar e liberar uma regra do WAF, mas não é seguro agir sozinho sem confirmação de que o problema é um bloqueio indevido e não um ataque real.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "registro_do_chamado",
+      "kb_id": "KB-104",
+      "score": 0.53,
+      "registros": [
+        "TKT-0126",
+        "INC-0002"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "havia procedimento com score igual ou acima do limiar (KB-104, 0.53), mas o agente não agiu sozinho; o motivo está no texto registrado no resultado"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0126"
+      },
+      "resultado": {
+        "id": "TKT-0126",
+        "aberto_em": "2026-09-21 11:05",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Teta Farmácias",
+        "plano": "Hospedagem Business",
+        "historico_cliente": [
+          {
+            "chamado_interno": "INC-0002",
+            "categoria": "waf_bloqueio",
+            "criado_em": "2026-09-10 10:40",
+            "status": "resolvido"
+          }
+        ]
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "site",
+          "ataque",
+          "acessos",
+          "erro 403"
+        ],
+        "justificativa": "O cliente relata um problema técnico no site, com sintomas claros de ataque e bloqueio de acesso (erro 403) devido a alta carga externa."
+      },
+      "erro": null,
+      "ms": 2932
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "site",
+          "ataque",
+          "acessos",
+          "erro 403"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-112",
+            "titulo": "Bloqueio indevido pelo firewall de aplicação (WAF)",
+            "score": 0.26,
+            "cosseno": 0.867,
+            "causa": "Regra do firewall de aplicação classificou como ataque uma requisição legítima do site e passou a devolver 403.",
+            "solucao": "Localizar no registro do WAF a regra acionada, liberar a requisição legítima com uma exceção restrita à URL e reavaliar a regra.",
+            "acao_padrao": "escalar",
+            "time_destino": "Seguranca",
+            "busca": "vetorial",
+            "ressalva": "este procedimento NÃO cobre o caso relatado ('ataque'): o score foi reduzido"
+          },
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.53,
+            "cosseno": 0.812,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-110",
+            "titulo": "Site em laço de redirecionamentos",
+            "score": 0.51,
+            "cosseno": 0.807,
+            "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+            "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 837
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "score_abaixo_do_limiar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "O cliente relata que o site está sob ataque, com milhares de acessos por segundo vindos de fora do país, resultando em erro 403 para todos os usuários. Não há log anexado para análise. O histórico confirma um chamado anterior resolvido (INC-0002) relacionado ao WAF, mas não há detalhes adicionais sobre o problema atual. O procedimento encontrado (KB-112) possui score 0.26, abaixo do limiar de 0.5, e contém ressalva: **não cobre o caso relatado ('ataque')**. O procedimento sugere verificar e liberar uma regra do WAF, mas não é seguro agir sozinho sem confirmação de que o problema é um bloqueio indevido e não um ataque real."
+      },
+      "erro": null,
+      "ms": 2826
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0126",
+        "destino": "fila_humana",
+        "mensagem": "O cliente relata que o site está sob ataque, com milhares de acessos por segundo vindos de fora do país, resultando em erro 403 para todos os usuários. Não há log anexado para análise. O histórico confirma um chamado anterior resolvido (INC-0002) relacionado ao WAF, mas não há detalhes adicionais sobre o problema atual. O procedimento encontrado (KB-112) possui score 0.26, abaixo do limiar de 0.5, e contém ressalva: **não cobre o caso relatado ('ataque')**. O procedimento sugere verificar e liberar uma regra do WAF, mas não é seguro agir sozinho sem confirmação de que o problema é um bloqueio indevido e não um ataque real."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 16
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "score_abaixo_do_limiar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1773,
+  "episodio": {
+    "execucao_id": "TKT-0126-43f34e4e",
+    "ticket_externo": "TKT-0126",
+    "cliente_id": "CLI-08",
+    "classe": "tecnico",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "fila_humana",
+    "desfecho": "fila_humana",
+    "motivo": "score_abaixo_do_limiar",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0126: classe tecnico; sem guia; proposto fila_humana; gravado fila_humana; término respondeu",
+    "criado_em": "2026-10-14T00:39:28-03:00",
+    "id": 1,
+    "chave": "32f53ff457e7c53b",
+    "ja_existia": false
+  },
+  "segundos_gastos": 6.613
+}

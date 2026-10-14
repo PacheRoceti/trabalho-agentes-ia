@@ -1,0 +1,307 @@
+{
+  "execucao_id": "TKT-0101-9dfca880",
+  "id_ticket": "TKT-0101",
+  "executado_em": "2026-10-14T00:40:54-03:00",
+  "commit": "6116341 + alterações locais",
+  "entrada": "Meu site está fora do ar desde o deploy das 9h, todas as páginas dão erro 502",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v2.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-104",
+    "chamado_interno": "INC-0005",
+    "time_destino": "Infraestrutura",
+    "prioridade": "P1",
+    "reincidencias_confirmadas_no_sistema": 0,
+    "ja_existia": false
+  },
+  "pendencia": null,
+  "confirmacoes": [
+    {
+      "pendencia": {
+        "ferramenta": "abrir_chamado_interno",
+        "id_ticket": "TKT-0101",
+        "categoria": "site_fora_do_ar",
+        "resumo": "O domínio do cliente apresenta erro 502 após deploy realizado às 9h, conforme relato do cliente. O histórico não confirma ocorrências anteriores. O procedimento **KB-104** (score 0.61) sugere reiniciar o processo da aplicação e validar configuração do *nginx*, mas **não cobre o caso**, pois o cliente é responsável pela aplicação e pelo deploy. **Escopo**: VPS Pro (sistema operacional, rede, certificados, firewall e backups). **Ação**: Verificar logs do *nginx* e do sistema para identificar se o processo da aplicação está parado ou se há configuração inválida. Caso confirmado, reiniciar o processo da aplicação. **Não reverter o deploy** sem acordo com o cliente.",
+        "time_destino": "Infraestrutura",
+        "kb_id": "KB-104",
+        "prioridade_prevista": "P1",
+        "guia_publicado_em": "2026-05-20",
+        "guia_nao_cobre": [
+          "intermitente",
+          "as vezes",
+          "de vez em quando",
+          "oscila"
+        ],
+        "plano": "VPS Pro",
+        "escopo_do_plano": "Servidor virtual gerenciado pela empresa. O suporte cobre o sistema operacional, a rede, os certificados, o firewall e os backups da VPS. A aplicação instalada pelo cliente dentro da VPS está fora do escopo do suporte. Atendimento por chamado, em horário comercial.",
+        "precedentes": {
+          "guia": {
+            "kb_id": "KB-104",
+            "janela_dias": 90,
+            "decisoes": 0,
+            "aprovados": 0,
+            "editados": 0,
+            "rejeitados": 0,
+            "decisoes_antigas": 0,
+            "rejeicoes_por_motivo": {}
+          },
+          "cliente": []
+        },
+        "fatos_cliente": {},
+        "pedido_em": "2026-10-14T00:41:00-03:00",
+        "vence_em": "2026-10-14T01:01:00-03:00"
+      },
+      "aprovado": true,
+      "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+      "status": "aprovada",
+      "resolvido_em": "2026-10-14T00:41:00-03:00",
+      "editado": false
+    }
+  ],
+  "n_chamadas_modelo": 3,
+  "lembretes": 0,
+  "tokens_entrada": 2108,
+  "tokens_saida": 313,
+  "custo_usd": 0.000363,
+  "scores_kb": {
+    "KB-104": 0.61,
+    "KB-106": 0.48,
+    "KB-110": 0.48
+  },
+  "saida": {
+    "id_ticket": "TKT-0101",
+    "executado_em": "2026-10-14T00:40:54-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "abrir_chamado_interno",
+      "texto": "O domínio do cliente apresenta erro 502 após deploy realizado às 9h, conforme relato do cliente. O histórico não confirma ocorrências anteriores. O procedimento **KB-104** (score 0.61) sugere reiniciar o processo da aplicação e validar configuração do *nginx*, mas **não cobre o caso**, pois o cliente é responsável pela aplicação e pelo deploy. **Escopo**: VPS Pro (sistema operacional, rede, certificados, firewall e backups). **Ação**: Verificar logs do *nginx* e do sistema para identificar se o processo da aplicação está parado ou se há configuração inválida. Caso confirmado, reiniciar o processo da aplicação. **Não reverter o deploy** sem acordo com o cliente.",
+      "chamado_interno": "INC-0005",
+      "time_destino": "Infraestrutura",
+      "prioridade": "P1"
+    },
+    "fonte": {
+      "tipo": "procedimento_da_base",
+      "kb_id": "KB-104",
+      "score": 0.61,
+      "registros": [
+        "TKT-0101"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "conferir_ressalva",
+        "decidir",
+        "redigir",
+        "confirmar",
+        "abrir_chamado_interno"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": true,
+      "motivo": "procedimento KB-104 com score 0.61, igual ou acima do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0101"
+      },
+      "resultado": {
+        "id": "TKT-0101",
+        "aberto_em": "2026-09-21 09:20",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Epsilon Studio",
+        "plano": "VPS Pro",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "site fora do ar",
+          "erro 502",
+          "deploy"
+        ],
+        "justificativa": "O cliente relata um problema técnico específico com o site, indicando erro 502 após um deploy, sem log anexado para análise adicional."
+      },
+      "erro": null,
+      "ms": 974
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "site fora do ar",
+          "erro 502",
+          "deploy"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.61,
+            "cosseno": 0.847,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-106",
+            "titulo": "Falha de resolução DNS do domínio",
+            "score": 0.48,
+            "cosseno": 0.795,
+            "causa": "Nameserver do domínio fora do ar ou zona DNS com registro inválido.",
+            "solucao": "Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-110",
+            "titulo": "Site em laço de redirecionamentos",
+            "score": 0.48,
+            "cosseno": 0.793,
+            "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+            "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1656
+    },
+    {
+      "indice": 3,
+      "ferramenta": "conferir_ressalva",
+      "argumentos": {
+        "kb_id": "KB-104",
+        "situacoes": [
+          "intermitente",
+          "as vezes",
+          "de vez em quando",
+          "oscila"
+        ]
+      },
+      "resultado": {
+        "cai_na_ressalva": false,
+        "frase": "",
+        "motivo": "O relato descreve um erro constante (desde o deploy) e não menciona nenhuma das situações listadas como ressalva.",
+        "score_antes": 0.61,
+        "score_depois": 0.61
+      },
+      "erro": null,
+      "ms": 1317
+    },
+    {
+      "indice": 4,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "abrir_chamado_interno",
+        "kb_id": "KB-104",
+        "motivo": "procedimento_escalar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 5,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "abrir_chamado_interno"
+      },
+      "resultado": {
+        "texto": "O domínio do cliente apresenta erro 502 após deploy realizado às 9h, conforme relato do cliente. O histórico não confirma ocorrências anteriores. O procedimento **KB-104** (score 0.61) sugere reiniciar o processo da aplicação e validar configuração do *nginx*, mas **não cobre o caso**, pois o cliente é responsável pela aplicação e pelo deploy. **Escopo**: VPS Pro (sistema operacional, rede, certificados, firewall e backups). **Ação**: Verificar logs do *nginx* e do sistema para identificar se o processo da aplicação está parado ou se há configuração inválida. Caso confirmado, reiniciar o processo da aplicação. **Não reverter o deploy** sem acordo com o cliente."
+      },
+      "erro": null,
+      "ms": 2495
+    },
+    {
+      "indice": 6,
+      "ferramenta": "confirmar",
+      "argumentos": {
+        "kb_id": "KB-104"
+      },
+      "resultado": {
+        "status": "aprovada",
+        "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+        "editado": false
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 7,
+      "ferramenta": "abrir_chamado_interno",
+      "argumentos": {
+        "id_ticket": "TKT-0101",
+        "resumo": "O domínio do cliente apresenta erro 502 após deploy realizado às 9h, conforme relato do cliente. O histórico não confirma ocorrências anteriores. O procedimento **KB-104** (score 0.61) sugere reiniciar o processo da aplicação e validar configuração do *nginx*, mas **não cobre o caso**, pois o cliente é responsável pela aplicação e pelo deploy. **Escopo**: VPS Pro (sistema operacional, rede, certificados, firewall e backups). **Ação**: Verificar logs do *nginx* e do sistema para identificar se o processo da aplicação está parado ou se há configuração inválida. Caso confirmado, reiniciar o processo da aplicação. **Não reverter o deploy** sem acordo com o cliente.",
+        "kb_id": "KB-104"
+      },
+      "resultado": {
+        "chamado_interno": "INC-0005",
+        "time_destino": "Infraestrutura",
+        "prioridade": "P1",
+        "reincidencias_confirmadas_no_sistema": 0,
+        "ja_existia": false
+      },
+      "erro": null,
+      "ms": 14
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-104",
+    "motivo": "procedimento_escalar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1763,
+  "episodio": {
+    "execucao_id": "TKT-0101-9dfca880",
+    "ticket_externo": "TKT-0101",
+    "cliente_id": "CLI-05",
+    "classe": "tecnico",
+    "categoria": "site_fora_do_ar",
+    "kb_id": "KB-104",
+    "score": 0.61,
+    "acao_proposta": "abrir_chamado_interno",
+    "desfecho": "abrir_chamado_interno",
+    "motivo": "procedimento_escalar",
+    "veredito": "aprovado",
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0101: classe tecnico; guia KB-104 (score 0.61); proposto abrir_chamado_interno; gravado abrir_chamado_interno; analista: aprovado; término respondeu",
+    "criado_em": "2026-10-14T00:41:00-03:00",
+    "id": 1,
+    "chave": "2f2f8702260d7899",
+    "ja_existia": false
+  },
+  "segundos_gastos": 6.459
+}

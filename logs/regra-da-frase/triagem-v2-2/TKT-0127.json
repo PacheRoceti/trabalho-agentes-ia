@@ -1,0 +1,229 @@
+{
+  "execucao_id": "TKT-0127-d427c366",
+  "id_ticket": "TKT-0127",
+  "executado_em": "2026-10-14T00:35:19-03:00",
+  "commit": "6116341 + alterações locais",
+  "entrada": "Apagamos por engano a pasta de notas fiscais do sistema. Podem restaurar o backup de sexta-feira?",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v2.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1556,
+  "tokens_saida": 256,
+  "custo_usd": 0.000272,
+  "scores_kb": {
+    "KB-105": 0.47,
+    "KB-102": 0.42,
+    "KB-104": 0.37
+  },
+  "saida": {
+    "id_ticket": "TKT-0127",
+    "executado_em": "2026-10-14T00:35:19-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O cliente relatou a exclusão acidental da pasta de notas fiscais no servidor VPS e solicitou restauração a partir do backup de sexta-feira. Não há log anexado para análise técnica. O procedimento encontrado (KB-105) possui score 0.47, abaixo do limiar de confiança (0.5), e trata de falha no backup diário, sem relação direta com restauração de arquivos excluídos. Além disso, o procedimento não cobre o caso relatado, pois não aborda restauração manual de arquivos específicos. O histórico do cliente (INC-0001) não está relacionado ao problema atual. Recomenda-se avaliação manual para verificar se o backup solicitado existe e se é viável a recuperação, considerando o escopo do plano VPS Pro.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "busca_sem_correspondencia",
+      "kb_id": "KB-105",
+      "score": 0.47,
+      "registros": [
+        "TKT-0127",
+        "INC-0001"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o melhor procedimento encontrado (KB-105, score 0.47) ficou abaixo do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0127"
+      },
+      "resultado": {
+        "id": "TKT-0127",
+        "aberto_em": "2026-09-21 11:10",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Beta Logística",
+        "plano": "VPS Pro",
+        "historico_cliente": [
+          {
+            "chamado_interno": "INC-0001",
+            "categoria": "permissao_arquivos",
+            "criado_em": "2026-09-01 15:00",
+            "status": "resolvido"
+          }
+        ]
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "restaurar",
+          "backup",
+          "pasta"
+        ],
+        "justificativa": "O cliente relata perda de dados e solicita restauração de backup, indicando problema técnico relacionado a arquivos ou servidor."
+      },
+      "erro": null,
+      "ms": 838
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "restaurar",
+          "backup",
+          "pasta"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-105",
+            "titulo": "Backup diário falhou",
+            "score": 0.47,
+            "cosseno": 0.791,
+            "causa": "Cota de armazenamento de backup excedida ou janela de backup sobreposta a outra tarefa.",
+            "solucao": "Conferir a cota do storage de backup e o agendamento; reexecutar o job manualmente.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-102",
+            "titulo": "Permissão negada ao gravar arquivos",
+            "score": 0.42,
+            "cosseno": 0.768,
+            "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+            "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.37,
+            "cosseno": 0.752,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 902
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "score_abaixo_do_limiar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "O cliente relatou a exclusão acidental da pasta de notas fiscais no servidor VPS e solicitou restauração a partir do backup de sexta-feira. Não há log anexado para análise técnica. O procedimento encontrado (KB-105) possui score 0.47, abaixo do limiar de confiança (0.5), e trata de falha no backup diário, sem relação direta com restauração de arquivos excluídos. Além disso, o procedimento não cobre o caso relatado, pois não aborda restauração manual de arquivos específicos. O histórico do cliente (INC-0001) não está relacionado ao problema atual. Recomenda-se avaliação manual para verificar se o backup solicitado existe e se é viável a recuperação, considerando o escopo do plano VPS Pro."
+      },
+      "erro": null,
+      "ms": 1855
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0127",
+        "destino": "fila_humana",
+        "mensagem": "O cliente relatou a exclusão acidental da pasta de notas fiscais no servidor VPS e solicitou restauração a partir do backup de sexta-feira. Não há log anexado para análise técnica. O procedimento encontrado (KB-105) possui score 0.47, abaixo do limiar de confiança (0.5), e trata de falha no backup diário, sem relação direta com restauração de arquivos excluídos. Além disso, o procedimento não cobre o caso relatado, pois não aborda restauração manual de arquivos específicos. O histórico do cliente (INC-0001) não está relacionado ao problema atual. Recomenda-se avaliação manual para verificar se o backup solicitado existe e se é viável a recuperação, considerando o escopo do plano VPS Pro."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 16
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "score_abaixo_do_limiar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1766,
+  "episodio": {
+    "execucao_id": "TKT-0127-d427c366",
+    "ticket_externo": "TKT-0127",
+    "cliente_id": "CLI-02",
+    "classe": "tecnico",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "fila_humana",
+    "desfecho": "fila_humana",
+    "motivo": "score_abaixo_do_limiar",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0127: classe tecnico; sem guia; proposto fila_humana; gravado fila_humana; término respondeu",
+    "criado_em": "2026-10-14T00:35:22-03:00",
+    "id": 1,
+    "chave": "fd332b3f3de460b3",
+    "ja_existia": false
+  },
+  "segundos_gastos": 3.612
+}

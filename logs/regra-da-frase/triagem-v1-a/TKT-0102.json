@@ -1,0 +1,277 @@
+{
+  "execucao_id": "TKT-0102-d7e73686",
+  "id_ticket": "TKT-0102",
+  "executado_em": "2026-10-13T23:04:56-03:00",
+  "commit": "6116341 + alterações locais",
+  "entrada": "Meu domínio parou de abrir, o nameserver ns1 não responde desde a madrugada",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-106",
+    "chamado_interno": "INC-0005",
+    "time_destino": "Infraestrutura",
+    "prioridade": "P1",
+    "reincidencias_confirmadas_no_sistema": 0,
+    "ja_existia": false
+  },
+  "pendencia": null,
+  "confirmacoes": [
+    {
+      "pendencia": {
+        "ferramenta": "abrir_chamado_interno",
+        "id_ticket": "TKT-0102",
+        "categoria": "dns_dominio",
+        "resumo": "O domínio do cliente (Gama Cursos Online) apresenta falha de resolução DNS, com o nameserver **ns1** não respondendo desde a madrugada. O histórico não registra ocorrências anteriores. O cliente afirma que o domínio parou de abrir, mas não há log anexado para análise detalhada. **Procedimento escalado: KB-106 (score 0.57, abaixo do limiar de segurança).** Requer verificação manual do nameserver e dos registros DNS para restabelecer o serviço.",
+        "time_destino": "Infraestrutura",
+        "kb_id": "KB-106",
+        "prioridade_prevista": "P1",
+        "guia_publicado_em": "2026-03-18",
+        "guia_nao_cobre": [],
+        "plano": "Hospedagem Start",
+        "escopo_do_plano": "Hospedagem compartilhada de entrada. O suporte cobre o ambiente do servidor: a conta, os certificados, o DNS, o e-mail e os arquivos do site. Não cobre desenvolvimento, correção ou depuração do código do site do cliente. Atendimento por chamado, em horário comercial.",
+        "precedentes": {
+          "guia": {
+            "kb_id": "KB-106",
+            "janela_dias": 90,
+            "decisoes": 0,
+            "aprovados": 0,
+            "editados": 0,
+            "rejeitados": 0,
+            "decisoes_antigas": 0,
+            "rejeicoes_por_motivo": {}
+          },
+          "cliente": []
+        },
+        "fatos_cliente": {},
+        "pedido_em": "2026-10-13T23:05:00-03:00",
+        "vence_em": "2026-10-13T23:25:00-03:00"
+      },
+      "aprovado": true,
+      "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+      "status": "aprovada",
+      "resolvido_em": "2026-10-13T23:05:00-03:00",
+      "editado": false
+    }
+  ],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1517,
+  "tokens_saida": 199,
+  "custo_usd": 0.000257,
+  "scores_kb": {
+    "KB-106": 0.57,
+    "KB-101-A": 0.44,
+    "KB-110": 0.41
+  },
+  "saida": {
+    "id_ticket": "TKT-0102",
+    "executado_em": "2026-10-13T23:04:56-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "abrir_chamado_interno",
+      "texto": "O domínio do cliente (Gama Cursos Online) apresenta falha de resolução DNS, com o nameserver **ns1** não respondendo desde a madrugada. O histórico não registra ocorrências anteriores. O cliente afirma que o domínio parou de abrir, mas não há log anexado para análise detalhada. **Procedimento escalado: KB-106 (score 0.57, abaixo do limiar de segurança).** Requer verificação manual do nameserver e dos registros DNS para restabelecer o serviço.",
+      "chamado_interno": "INC-0005",
+      "time_destino": "Infraestrutura",
+      "prioridade": "P1"
+    },
+    "fonte": {
+      "tipo": "procedimento_da_base",
+      "kb_id": "KB-106",
+      "score": 0.57,
+      "registros": [
+        "TKT-0102"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "confirmar",
+        "abrir_chamado_interno"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": true,
+      "motivo": "procedimento KB-106 com score 0.57, igual ou acima do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0102"
+      },
+      "resultado": {
+        "id": "TKT-0102",
+        "aberto_em": "2026-09-21 07:10",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Gama Cursos Online",
+        "plano": "Hospedagem Start",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "domínio parou",
+          "nameserver não responde"
+        ],
+        "justificativa": "O cliente relata um problema técnico específico com o domínio e nameserver, sem log anexado para verificar divergências."
+      },
+      "erro": null,
+      "ms": 816
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "domínio parou",
+          "nameserver não responde"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-106",
+            "titulo": "Falha de resolução DNS do domínio",
+            "score": 0.57,
+            "cosseno": 0.831,
+            "causa": "Nameserver do domínio fora do ar ou zona DNS com registro inválido.",
+            "solucao": "Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-101-A",
+            "titulo": "Certificado SSL não renovou automaticamente",
+            "score": 0.44,
+            "cosseno": 0.777,
+            "causa": "Desafio HTTP-01 falhando (porta 80 bloqueada ou DNS apontando para outro IP) ou timer do certbot parado.",
+            "solucao": "Conferir DNS do domínio e liberação da porta 80; rodar \"certbot renew --dry-run\"; reativar o timer do certbot.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-110",
+            "titulo": "Site em laço de redirecionamentos",
+            "score": 0.41,
+            "cosseno": 0.768,
+            "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+            "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1226
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "abrir_chamado_interno",
+        "kb_id": "KB-106",
+        "motivo": "procedimento_escalar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "abrir_chamado_interno"
+      },
+      "resultado": {
+        "texto": "O domínio do cliente (Gama Cursos Online) apresenta falha de resolução DNS, com o nameserver **ns1** não respondendo desde a madrugada. O histórico não registra ocorrências anteriores. O cliente afirma que o domínio parou de abrir, mas não há log anexado para análise detalhada. **Procedimento escalado: KB-106 (score 0.57, abaixo do limiar de segurança).** Requer verificação manual do nameserver e dos registros DNS para restabelecer o serviço."
+      },
+      "erro": null,
+      "ms": 1597
+    },
+    {
+      "indice": 5,
+      "ferramenta": "confirmar",
+      "argumentos": {
+        "kb_id": "KB-106"
+      },
+      "resultado": {
+        "status": "aprovada",
+        "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+        "editado": false
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 6,
+      "ferramenta": "abrir_chamado_interno",
+      "argumentos": {
+        "id_ticket": "TKT-0102",
+        "resumo": "O domínio do cliente (Gama Cursos Online) apresenta falha de resolução DNS, com o nameserver **ns1** não respondendo desde a madrugada. O histórico não registra ocorrências anteriores. O cliente afirma que o domínio parou de abrir, mas não há log anexado para análise detalhada. **Procedimento escalado: KB-106 (score 0.57, abaixo do limiar de segurança).** Requer verificação manual do nameserver e dos registros DNS para restabelecer o serviço.",
+        "kb_id": "KB-106"
+      },
+      "resultado": {
+        "chamado_interno": "INC-0005",
+        "time_destino": "Infraestrutura",
+        "prioridade": "P1",
+        "reincidencias_confirmadas_no_sistema": 0,
+        "ja_existia": false
+      },
+      "erro": null,
+      "ms": 21
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-106",
+    "motivo": "procedimento_escalar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1758,
+  "episodio": {
+    "execucao_id": "TKT-0102-d7e73686",
+    "ticket_externo": "TKT-0102",
+    "cliente_id": "CLI-03",
+    "classe": "tecnico",
+    "categoria": "dns_dominio",
+    "kb_id": "KB-106",
+    "score": 0.57,
+    "acao_proposta": "abrir_chamado_interno",
+    "desfecho": "abrir_chamado_interno",
+    "motivo": "procedimento_escalar",
+    "veredito": "aprovado",
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0102: classe tecnico; guia KB-106 (score 0.57); proposto abrir_chamado_interno; gravado abrir_chamado_interno; analista: aprovado; término respondeu",
+    "criado_em": "2026-10-13T23:05:00-03:00",
+    "id": 1,
+    "chave": "6cd34a13980a79db",
+    "ja_existia": false
+  },
+  "segundos_gastos": 3.664
+}

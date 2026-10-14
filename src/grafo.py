@@ -180,7 +180,7 @@ class Contexto:
     """O que os nós usam e NÃO vai para o checkpoint: conexões e configuração da chamada."""
     client: object
     con: object
-    preco_usd_por_mtok: tuple[float, float] = (0.15, 0.15)
+    preco_usd_por_mtok: tuple[float, float] = (0.20, 0.20)
     orcamento: Orcamento = field(default_factory=Orcamento)
     confirmador: object = None
     verbose: bool = True
@@ -864,7 +864,7 @@ def _concluir(id_ticket: str, log_dir: Path | None, con, estourou: bool = False)
 
 
 def rodar_grafo(id_ticket: str, *, client, modelo: str, con, temperatura: float | None = 0.0,
-                preco_usd_por_mtok: tuple[float, float] = (0.15, 0.15),
+                preco_usd_por_mtok: tuple[float, float] = (0.20, 0.20),
                 orcamento: Orcamento | None = None, confirmador=None,
                 log_dir: Path | None = None, verbose: bool = True, texto: str | None = None,
                 prazo_confirmacao_min: float = PRAZO_CONFIRMACAO_MIN) -> Estado:

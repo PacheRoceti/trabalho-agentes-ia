@@ -262,7 +262,7 @@ def _entrada(con, id_ticket: str, texto: str | None = None) -> tuple[str, str | 
 
 
 def rodar(id_ticket: str, *, client, modelo: str, con, temperatura: float | None = 0.0,
-          preco_usd_por_mtok: tuple[float, float] = (0.15, 0.15),
+          preco_usd_por_mtok: tuple[float, float] = (0.20, 0.20),
           orcamento: Orcamento | None = None, confirmador=None,
           log_dir: Path | None = None, verbose: bool = True,
           prompt_arquivo: Path = PROMPT_ARQUIVO, texto: str | None = None,

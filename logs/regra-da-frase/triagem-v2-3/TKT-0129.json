@@ -1,0 +1,161 @@
+{
+  "execucao_id": "TKT-0129-443cc1e3",
+  "id_ticket": "TKT-0129",
+  "executado_em": "2026-10-14T00:43:22-03:00",
+  "commit": "6116341 + alterações locais",
+  "entrada": "Quero cancelar a hospedagem no fim deste mês. Como faço e existe multa?",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v2.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_comercial",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_comercial"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1312,
+  "tokens_saida": 110,
+  "custo_usd": 0.000213,
+  "scores_kb": {},
+  "saida": {
+    "id_ticket": "TKT-0129",
+    "executado_em": "2026-10-14T00:43:22-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_comercial",
+      "texto": "O cliente **Delta Restaurantes** (plano Hospedagem Start) solicitou orientações para **cancelar a hospedagem no fim deste mês**, além de questionar sobre a existência de multa.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "registro_do_chamado",
+      "kb_id": null,
+      "score": null,
+      "registros": [
+        "TKT-0129"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": true,
+      "motivo": "assunto comercial: a classificação dispensa a base de procedimentos"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0129"
+      },
+      "resultado": {
+        "id": "TKT-0129",
+        "aberto_em": "2026-09-21 11:20",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Delta Restaurantes",
+        "plano": "Hospedagem Start",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "comercial",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [],
+        "justificativa": "O cliente solicita apenas cancelamento de plano, sem relatar problema técnico ou sintoma."
+      },
+      "erro": null,
+      "ms": 2139
+    },
+    {
+      "indice": 2,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_comercial",
+        "kb_id": null,
+        "motivo": "assunto_comercial"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 3,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_comercial"
+      },
+      "resultado": {
+        "texto": "O cliente **Delta Restaurantes** (plano Hospedagem Start) solicitou orientações para **cancelar a hospedagem no fim deste mês**, além de questionar sobre a existência de multa."
+      },
+      "erro": null,
+      "ms": 1159
+    },
+    {
+      "indice": 4,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0129",
+        "destino": "fila_comercial",
+        "mensagem": "O cliente **Delta Restaurantes** (plano Hospedagem Start) solicitou orientações para **cancelar a hospedagem no fim deste mês**, além de questionar sobre a existência de multa."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_comercial"
+      },
+      "erro": null,
+      "ms": 16
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "comercial",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "fila_comercial",
+    "kb_id": null,
+    "motivo": "assunto_comercial"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 0,
+  "episodio": {
+    "execucao_id": "TKT-0129-443cc1e3",
+    "ticket_externo": "TKT-0129",
+    "cliente_id": "CLI-04",
+    "classe": "comercial",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "fila_comercial",
+    "desfecho": "fila_comercial",
+    "motivo": "assunto_comercial",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0129: classe comercial; sem guia; proposto fila_comercial; gravado fila_comercial; término respondeu",
+    "criado_em": "2026-10-14T00:43:25-03:00",
+    "id": 1,
+    "chave": "499ce1faba8676cf",
+    "ja_existia": false
+  },
+  "segundos_gastos": 3.315
+}

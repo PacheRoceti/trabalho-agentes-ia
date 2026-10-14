@@ -1,0 +1,219 @@
+{
+  "execucao_id": "TKT-0124-3578ba5a",
+  "id_ticket": "TKT-0124",
+  "executado_em": "2026-10-13T23:36:10-03:00",
+  "commit": "6116341 + alterações locais",
+  "entrada": "Nosso site saiu do ar hoje: os clientes dizem que a página não abre.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v2.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1689,
+  "tokens_saida": 270,
+  "custo_usd": 0.000294,
+  "scores_kb": {
+    "KB-104": 0.47,
+    "KB-106": 0.44,
+    "KB-110": 0.42
+  },
+  "saida": {
+    "id_ticket": "TKT-0124",
+    "executado_em": "2026-10-13T23:36:10-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "No chamado **TKT-0124**, o cliente **Acme Contabilidade** relata que o site **não abre** e os clientes não conseguem acessar a página. No entanto, o log anexado mostra que o problema é um **certificado SSL expirado** (`curl: (60) SSL certificate problem: certificate has expired`), mas o acesso é recuperado ao ignorar a validação (`HTTP/1.1 200 OK`). Há divergência entre o relato do cliente (site fora do ar) e o log (erro de certificação resolvido com bypass). O procedimento encontrado (**KB-104**) não se aplica, pois trata de falhas CONSTANTES no processo da aplicação ou configuração do nginx, e o score (0.47) está abaixo do limiar (0.5).",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "busca_sem_correspondencia",
+      "kb_id": "KB-104",
+      "score": 0.47,
+      "registros": [
+        "TKT-0124"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o melhor procedimento encontrado (KB-104, score 0.47) ficou abaixo do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0124"
+      },
+      "resultado": {
+        "id": "TKT-0124",
+        "aberto_em": "2026-09-21 09:36",
+        "status": "novo",
+        "anexo_log": "2026-09-21 09:31 curl -I https://www.acme-contabilidade.example -> curl: (60) SSL certificate problem: certificate has expired. 2026-09-21 09:32 curl -kI https://www.acme-contabilidade.example (ignorando a validação do certificado) -> HTTP/1.1 200 OK.",
+        "cliente": "Acme Contabilidade",
+        "plano": "Hospedagem Business",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": true,
+        "termos_busca": [
+          "site saiu do ar",
+          "certificado expirado"
+        ],
+        "justificativa": "o cliente relata indisponibilidade do site, mas o log aponta falha específica em certificado SSL expirado, diferente do relato inicial"
+      },
+      "erro": null,
+      "ms": 1124
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "site saiu do ar",
+          "certificado expirado"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.47,
+            "cosseno": 0.789,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-106",
+            "titulo": "Falha de resolução DNS do domínio",
+            "score": 0.44,
+            "cosseno": 0.777,
+            "causa": "Nameserver do domínio fora do ar ou zona DNS com registro inválido.",
+            "solucao": "Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-110",
+            "titulo": "Site em laço de redirecionamentos",
+            "score": 0.42,
+            "cosseno": 0.771,
+            "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+            "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1534
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "divergencia_relato_log"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "No chamado **TKT-0124**, o cliente **Acme Contabilidade** relata que o site **não abre** e os clientes não conseguem acessar a página. No entanto, o log anexado mostra que o problema é um **certificado SSL expirado** (`curl: (60) SSL certificate problem: certificate has expired`), mas o acesso é recuperado ao ignorar a validação (`HTTP/1.1 200 OK`). Há divergência entre o relato do cliente (site fora do ar) e o log (erro de certificação resolvido com bypass). O procedimento encontrado (**KB-104**) não se aplica, pois trata de falhas CONSTANTES no processo da aplicação ou configuração do nginx, e o score (0.47) está abaixo do limiar (0.5)."
+      },
+      "erro": null,
+      "ms": 3242
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0124",
+        "destino": "fila_humana",
+        "mensagem": "No chamado **TKT-0124**, o cliente **Acme Contabilidade** relata que o site **não abre** e os clientes não conseguem acessar a página. No entanto, o log anexado mostra que o problema é um **certificado SSL expirado** (`curl: (60) SSL certificate problem: certificate has expired`), mas o acesso é recuperado ao ignorar a validação (`HTTP/1.1 200 OK`). Há divergência entre o relato do cliente (site fora do ar) e o log (erro de certificação resolvido com bypass). O procedimento encontrado (**KB-104**) não se aplica, pois trata de falhas CONSTANTES no processo da aplicação ou configuração do nginx, e o score (0.47) está abaixo do limiar (0.5)."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 16
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": true,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "divergencia_relato_log"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1758,
+  "episodio": {
+    "execucao_id": "TKT-0124-3578ba5a",
+    "ticket_externo": "TKT-0124",
+    "cliente_id": "CLI-01",
+    "classe": "tecnico",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "fila_humana",
+    "desfecho": "fila_humana",
+    "motivo": "divergencia_relato_log",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0124: classe tecnico; sem guia; proposto fila_humana; gravado fila_humana; término respondeu",
+    "criado_em": "2026-10-13T23:36:16-03:00",
+    "id": 1,
+    "chave": "8ea8a6b316bb9776",
+    "ja_existia": false
+  },
+  "segundos_gastos": 5.919
+}

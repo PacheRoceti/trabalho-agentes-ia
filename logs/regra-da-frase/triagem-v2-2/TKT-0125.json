@@ -1,0 +1,222 @@
+{
+  "execucao_id": "TKT-0125-101f2789",
+  "id_ticket": "TKT-0125",
+  "executado_em": "2026-10-14T00:35:09-03:00",
+  "commit": "6116341 + alterações locais",
+  "entrada": "Desde ontem os e-mails que os clientes mandam para nós não chegam na caixa de entrada. Para enviar, funciona normalmente.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v2.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1576,
+  "tokens_saida": 272,
+  "custo_usd": 0.000277,
+  "scores_kb": {
+    "KB-111": 0.24,
+    "KB-104": 0.46,
+    "KB-114": 0.45
+  },
+  "saida": {
+    "id_ticket": "TKT-0125",
+    "executado_em": "2026-10-14T00:35:09-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O cliente relata que os e-mails **para o domínio do cliente** não estão chegando na caixa de entrada, mas o envio funciona normalmente. O procedimento encontrado (KB-111) aborda casos de e-mails **rejeitados ou marcados como spam**, com score de **0.24** (abaixo do limiar de **0.5**). A ressalva do procedimento esclarece que **não cobre o caso relatado** ('não chega'), pois não há registro de logs ou anexos para análise. O escopo do plano **Hospedagem Business** inclui configuração de domínio e e-mail, mas a causa pode estar fora do controle da hospedagem (ex.: SPF/DKIM incorretos ou lista de bloqueio). **Não é seguro agir sozinho** sem confirmação técnica.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "busca_sem_correspondencia",
+      "kb_id": "KB-104",
+      "score": 0.46,
+      "registros": [
+        "TKT-0125"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o melhor procedimento encontrado (KB-104, score 0.46) ficou abaixo do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0125"
+      },
+      "resultado": {
+        "id": "TKT-0125",
+        "aberto_em": "2026-09-21 10:58",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Zeta Imóveis",
+        "plano": "Hospedagem Business",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "emails",
+          "nao chegam",
+          "caixa entrada"
+        ],
+        "justificativa": "O cliente relata que e-mails não estão sendo recebidos em sua caixa de entrada, indicando problema técnico com serviço de e-mail."
+      },
+      "erro": null,
+      "ms": 1089
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "emails",
+          "nao chegam",
+          "caixa entrada"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-111",
+            "titulo": "Envio de e-mail rejeitado ou marcado como spam",
+            "score": 0.24,
+            "cosseno": 0.846,
+            "causa": "Registros SPF ou DKIM do domínio ausentes ou incorretos, ou IP de envio em lista de bloqueio.",
+            "solucao": "Conferir os registros SPF e DKIM da zona do domínio e consultar as listas de bloqueio para o IP de envio; corrigir a zona e reenviar uma mensagem de teste.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial",
+            "ressalva": "este procedimento NÃO cobre o caso relatado ('nao chega'): o score foi reduzido"
+          },
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.46,
+            "cosseno": 0.784,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-114",
+            "titulo": "Login por FTP ou SFTP falhando",
+            "score": 0.45,
+            "cosseno": 0.783,
+            "causa": "Senha do usuário de FTP expirada ou alterada, ou IP do cliente barrado depois de tentativas de login sem sucesso.",
+            "solucao": "Redefinir a senha do usuário de FTP, conferir o registro de autenticação e liberar o IP do cliente se ele estiver barrado.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1634
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "score_abaixo_do_limiar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "O cliente relata que os e-mails **para o domínio do cliente** não estão chegando na caixa de entrada, mas o envio funciona normalmente. O procedimento encontrado (KB-111) aborda casos de e-mails **rejeitados ou marcados como spam**, com score de **0.24** (abaixo do limiar de **0.5**). A ressalva do procedimento esclarece que **não cobre o caso relatado** ('não chega'), pois não há registro de logs ou anexos para análise. O escopo do plano **Hospedagem Business** inclui configuração de domínio e e-mail, mas a causa pode estar fora do controle da hospedagem (ex.: SPF/DKIM incorretos ou lista de bloqueio). **Não é seguro agir sozinho** sem confirmação técnica."
+      },
+      "erro": null,
+      "ms": 2139
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0125",
+        "destino": "fila_humana",
+        "mensagem": "O cliente relata que os e-mails **para o domínio do cliente** não estão chegando na caixa de entrada, mas o envio funciona normalmente. O procedimento encontrado (KB-111) aborda casos de e-mails **rejeitados ou marcados como spam**, com score de **0.24** (abaixo do limiar de **0.5**). A ressalva do procedimento esclarece que **não cobre o caso relatado** ('não chega'), pois não há registro de logs ou anexos para análise. O escopo do plano **Hospedagem Business** inclui configuração de domínio e e-mail, mas a causa pode estar fora do controle da hospedagem (ex.: SPF/DKIM incorretos ou lista de bloqueio). **Não é seguro agir sozinho** sem confirmação técnica."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 16
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "score_abaixo_do_limiar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1771,
+  "episodio": {
+    "execucao_id": "TKT-0125-101f2789",
+    "ticket_externo": "TKT-0125",
+    "cliente_id": "CLI-06",
+    "classe": "tecnico",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "fila_humana",
+    "desfecho": "fila_humana",
+    "motivo": "score_abaixo_do_limiar",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0125: classe tecnico; sem guia; proposto fila_humana; gravado fila_humana; término respondeu",
+    "criado_em": "2026-10-14T00:35:14-03:00",
+    "id": 1,
+    "chave": "3443b80a405f43c2",
+    "ja_existia": false
+  },
+  "segundos_gastos": 4.88
+}

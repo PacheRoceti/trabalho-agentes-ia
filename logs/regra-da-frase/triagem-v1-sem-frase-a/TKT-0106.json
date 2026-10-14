@@ -1,0 +1,255 @@
+{
+  "execucao_id": "TKT-0106-85b4cd8a",
+  "id_ticket": "TKT-0106",
+  "executado_em": "2026-10-13T23:07:44-03:00",
+  "commit": "6116341 + alterações locais",
+  "entrada": "O firewall de aplicação está devolvendo erro 403 na página de busca de produtos do nosso site. É acesso normal de cliente, e ninguém consegue pesquisar os remédios.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1-sem-frase.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 3,
+  "lembretes": 0,
+  "tokens_entrada": 2284,
+  "tokens_saida": 345,
+  "custo_usd": 0.000394,
+  "scores_kb": {
+    "KB-112": 0.31,
+    "KB-104": 0.5,
+    "KB-102": 0.49
+  },
+  "saida": {
+    "id_ticket": "TKT-0106",
+    "executado_em": "2026-10-13T23:07:44-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O cliente relata que o firewall de aplicação está devolvendo erro **403** na página de busca de produtos do site (o domínio do cliente), impedindo o acesso normal de clientes. Não há log anexado para análise técnica. O histórico confirma um chamado anterior resolvido (INC-0002) com bloqueio pelo WAF, mas não há detalhes sobre a causa ou solução aplicada. O procedimento encontrado (KB-112) possui **score 0.31** (abaixo do limiar 0.5) e contém uma **ressalva**: não cobre o caso relatado, pois não trata de regra classificando requisição como 'ataque'. Requer análise humana para avaliar se o problema está relacionado a uma regra específica do WAF ou se há outra causa não documentada.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "registro_do_chamado",
+      "kb_id": "KB-104",
+      "score": 0.5,
+      "registros": [
+        "TKT-0106",
+        "INC-0002"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "conferir_ressalva",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "havia procedimento com score igual ou acima do limiar (KB-104, 0.5), mas o agente não agiu sozinho; o motivo está no texto registrado no resultado"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0106"
+      },
+      "resultado": {
+        "id": "TKT-0106",
+        "aberto_em": "2026-09-21 10:20",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Teta Farmácias",
+        "plano": "Hospedagem Business",
+        "historico_cliente": [
+          {
+            "chamado_interno": "INC-0002",
+            "categoria": "waf_bloqueio",
+            "criado_em": "2026-09-10 10:40",
+            "status": "resolvido"
+          }
+        ]
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "firewall",
+          "erro",
+          "página",
+          "busca",
+          "produtos"
+        ],
+        "justificativa": "O cliente relata erro 403 em página específica do site, associado ao firewall de aplicação, sem log para análise."
+      },
+      "erro": null,
+      "ms": 1140
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "firewall",
+          "erro",
+          "página",
+          "busca",
+          "produtos"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-112",
+            "titulo": "Bloqueio indevido pelo firewall de aplicação (WAF)",
+            "score": 0.77,
+            "cosseno": 0.91,
+            "causa": "Regra do firewall de aplicação classificou como ataque uma requisição legítima do site e passou a devolver 403.",
+            "solucao": "Localizar no registro do WAF a regra acionada, liberar a requisição legítima com uma exceção restrita à URL e reavaliar a regra.",
+            "acao_padrao": "escalar",
+            "time_destino": "Seguranca",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.5,
+            "cosseno": 0.801,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-102",
+            "titulo": "Permissão negada ao gravar arquivos",
+            "score": 0.49,
+            "cosseno": 0.799,
+            "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+            "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1310
+    },
+    {
+      "indice": 3,
+      "ferramenta": "conferir_ressalva",
+      "argumentos": {
+        "kb_id": "KB-112",
+        "situacoes": [
+          "ataque",
+          "ddos",
+          "invasao"
+        ]
+      },
+      "resultado": {
+        "cai_na_ressalva": true,
+        "frase": "ataque",
+        "motivo": "O relato menciona que o firewall de aplicação está devolvendo erro 403 na página de busca de produtos, classificando uma requisição legítima como ataque, o que está descrito na ressalva 'ataque'.",
+        "score_antes": 0.77,
+        "score_depois": 0.31
+      },
+      "erro": null,
+      "ms": 1101
+    },
+    {
+      "indice": 4,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "score_abaixo_do_limiar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 5,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "O cliente relata que o firewall de aplicação está devolvendo erro **403** na página de busca de produtos do site (o domínio do cliente), impedindo o acesso normal de clientes. Não há log anexado para análise técnica. O histórico confirma um chamado anterior resolvido (INC-0002) com bloqueio pelo WAF, mas não há detalhes sobre a causa ou solução aplicada. O procedimento encontrado (KB-112) possui **score 0.31** (abaixo do limiar 0.5) e contém uma **ressalva**: não cobre o caso relatado, pois não trata de regra classificando requisição como 'ataque'. Requer análise humana para avaliar se o problema está relacionado a uma regra específica do WAF ou se há outra causa não documentada."
+      },
+      "erro": null,
+      "ms": 1913
+    },
+    {
+      "indice": 6,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0106",
+        "destino": "fila_humana",
+        "mensagem": "O cliente relata que o firewall de aplicação está devolvendo erro **403** na página de busca de produtos do site (o domínio do cliente), impedindo o acesso normal de clientes. Não há log anexado para análise técnica. O histórico confirma um chamado anterior resolvido (INC-0002) com bloqueio pelo WAF, mas não há detalhes sobre a causa ou solução aplicada. O procedimento encontrado (KB-112) possui **score 0.31** (abaixo do limiar 0.5) e contém uma **ressalva**: não cobre o caso relatado, pois não trata de regra classificando requisição como 'ataque'. Requer análise humana para avaliar se o problema está relacionado a uma regra específica do WAF ou se há outra causa não documentada."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 17
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "score_abaixo_do_limiar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1790,
+  "episodio": {
+    "execucao_id": "TKT-0106-85b4cd8a",
+    "ticket_externo": "TKT-0106",
+    "cliente_id": "CLI-08",
+    "classe": "tecnico",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "fila_humana",
+    "desfecho": "fila_humana",
+    "motivo": "score_abaixo_do_limiar",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0106: classe tecnico; sem guia; proposto fila_humana; gravado fila_humana; término respondeu",
+    "criado_em": "2026-10-13T23:07:49-03:00",
+    "id": 1,
+    "chave": "c298f896c2a14fec",
+    "ja_existia": false
+  },
+  "segundos_gastos": 5.485
+}

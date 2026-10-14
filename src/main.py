@@ -27,7 +27,7 @@
   avisos_gestor). O prazo é aplicado no começo de qualquer comando que use o agente: não há
   processo em segundo plano.
 
-    python src/main.py --todos --auto-aprovar       os 8 casos, do banco zerado, com verificador
+    python src/main.py --todos --auto-aprovar       os casos do gabarito, do banco zerado, com verificador
                                                     (grava também logs/saida-demonstracao.txt)
     python src/main.py --reset                      recria o banco de dados simulado
     python src/main.py TKT-0001 --laco              roda pelo laço da Parte 1, e não pelo grafo;
@@ -38,6 +38,9 @@
                                                     src/prompts/ para o LAÇO, e por isso já implica
                                                     --laco: o grafo usa triagem-v1.md, ressalva-v3.md e redigir-v3.md,
                                                     e as regras aprendidas de regras-redigir-v2.md
+    python src/main.py --todos --auto-aprovar --rodada NOME --prompt-triagem ARQUIVO
+                                                    EXPERIMENTO: o nó `triagem` do GRAFO usa outro
+                                                    arquivo de src/prompts/ (docs/prompts.md §3.7)
 """
 import argparse
 import json
@@ -232,6 +235,10 @@ def main():
                     help="roda pelo grafo em LangGraph (src/grafo.py). Já é o padrão; logs em logs/grafo/")
     ap.add_argument("--rodada", help="grava os logs em logs/<nome>/ em vez de logs/")
     ap.add_argument("--prompt", help="arquivo de src/prompts/ a usar (padrão: o prompt em uso)")
+    ap.add_argument("--prompt-triagem", metavar="ARQUIVO",
+                    help="EXPERIMENTO: o nó `triagem` do grafo usa este arquivo de src/prompts/ em "
+                         "vez do triagem-v1.md (o teste da regra da frase, docs/prompts.md §3.7). "
+                         "Exige --rodada")
     ap.add_argument("--sem-filtro-revogados", action="store_true",
                     help="EXPERIMENTO: deixa os guias revogados entrarem na busca, para medir o que "
                          "acontece sem a curadoria (docs/rag.md §2.1). Exige --rodada")
@@ -314,6 +321,16 @@ def main():
             sys.exit("--busca vale só para o grafo: o laço da Parte 1 sempre busca por palavra.")
         import grafo as modulo_grafo
         modulo_grafo.BUSCA = "palavra"
+    if args.prompt_triagem:
+        if not args.rodada:
+            sys.exit("--prompt-triagem é experimento: use --rodada NOME, para não sobrescrever os "
+                     "logs citados na documentação.")
+        if args.laco or args.prompt:
+            sys.exit("--prompt-triagem vale só para o grafo: o prompt do laço é o de --prompt.")
+        import grafo as modulo_grafo
+        if not (PROMPTS / args.prompt_triagem).exists():
+            sys.exit(f"Prompt não encontrado: {PROMPTS / args.prompt_triagem}")
+        modulo_grafo.PROMPT_TRIAGEM = PROMPTS / args.prompt_triagem   # o nome vai ao campo `prompt` do log
     if args.sem_memoria:
         if args.laco or args.prompt:
             sys.exit("--sem-memoria vale só para o grafo: o laço da Parte 1 não tem memória.")
@@ -329,8 +346,8 @@ def main():
     client = criar_cliente()
     modelo = os.environ["LLM_MODELO"]
     # .env em branco vale como ausente; padrão = ministral-8b-latest (US$ por milhão de tokens)
-    precos = (float(os.environ.get("PRECO_ENTRADA_USD") or "0.15"),
-              float(os.environ.get("PRECO_SAIDA_USD") or "0.15"))
+    precos = (float(os.environ.get("PRECO_ENTRADA_USD") or "0.20"),
+              float(os.environ.get("PRECO_SAIDA_USD") or "0.20"))
     # Sem --auto-aprovar não há confirmador: a ação irreversível fica pendente, com prazo.
     confirmador = confirmador_auto if args.auto_aprovar else None
     if args.grafo and (args.laco or args.prompt):

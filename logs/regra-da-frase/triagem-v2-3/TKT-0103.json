@@ -1,0 +1,301 @@
+{
+  "execucao_id": "TKT-0103-9ca7b131",
+  "id_ticket": "TKT-0103",
+  "executado_em": "2026-10-14T00:41:06-03:00",
+  "commit": "6116341 + alterações locais",
+  "entrada": "Os uploads dão permissão negada, podem corrigir agora as permissões da pasta uploads?",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v2.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-102",
+    "chamado_interno": "INC-0005",
+    "time_destino": "Infraestrutura",
+    "prioridade": "P2",
+    "reincidencias_confirmadas_no_sistema": 0,
+    "ja_existia": false
+  },
+  "pendencia": null,
+  "confirmacoes": [
+    {
+      "pendencia": {
+        "ferramenta": "abrir_chamado_interno",
+        "id_ticket": "TKT-0103",
+        "categoria": "permissao_arquivos",
+        "resumo": "Problema de permissão negada em uploads para o domínio do cliente (Acme Contabilidade, plano Business). O cliente relata que não consegue realizar uploads, mas não há log anexado para análise detalhada. O histórico não confirma ocorrências anteriores. O procedimento **KB-102** sugere que a causa pode ser arquivos/pastas com dono ou permissões incorretas, comum após restauração, migração ou publicação por outro usuário. **Ação necessária:** Verificar e corrigir permissões/dono dos arquivos/pastas da pasta *uploads* via `chown/chmod`, exigindo acesso administrativo ao servidor. **Nota:** O plano Business cobre a correção de permissões no ambiente do servidor.",
+        "time_destino": "Infraestrutura",
+        "kb_id": "KB-102",
+        "prioridade_prevista": "P2",
+        "guia_publicado_em": "2026-10-06",
+        "guia_nao_cobre": [
+          "ssh"
+        ],
+        "plano": "Hospedagem Business",
+        "escopo_do_plano": "Hospedagem compartilhada com mais contas de e-mail e mais espaço em disco que o Start. O suporte cobre o ambiente do servidor e acompanha a configuração de domínio e de e-mail da empresa. Não cobre o código do site do cliente. Atendimento por chamado e por telefone, em horário comercial.",
+        "precedentes": {
+          "guia": {
+            "kb_id": "KB-102",
+            "janela_dias": 90,
+            "decisoes": 0,
+            "aprovados": 0,
+            "editados": 0,
+            "rejeitados": 0,
+            "decisoes_antigas": 0,
+            "rejeicoes_por_motivo": {}
+          },
+          "cliente": []
+        },
+        "fatos_cliente": {},
+        "pedido_em": "2026-10-14T00:41:11-03:00",
+        "vence_em": "2026-10-14T01:01:11-03:00"
+      },
+      "aprovado": true,
+      "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+      "status": "aprovada",
+      "resolvido_em": "2026-10-14T00:41:11-03:00",
+      "editado": false
+    }
+  ],
+  "n_chamadas_modelo": 3,
+  "lembretes": 0,
+  "tokens_entrada": 2114,
+  "tokens_saida": 308,
+  "custo_usd": 0.000363,
+  "scores_kb": {
+    "KB-102": 0.71,
+    "KB-114": 0.47,
+    "KB-112": 0.47
+  },
+  "saida": {
+    "id_ticket": "TKT-0103",
+    "executado_em": "2026-10-14T00:41:06-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "abrir_chamado_interno",
+      "texto": "Problema de permissão negada em uploads para o domínio do cliente (Acme Contabilidade, plano Business). O cliente relata que não consegue realizar uploads, mas não há log anexado para análise detalhada. O histórico não confirma ocorrências anteriores. O procedimento **KB-102** sugere que a causa pode ser arquivos/pastas com dono ou permissões incorretas, comum após restauração, migração ou publicação por outro usuário. **Ação necessária:** Verificar e corrigir permissões/dono dos arquivos/pastas da pasta *uploads* via `chown/chmod`, exigindo acesso administrativo ao servidor. **Nota:** O plano Business cobre a correção de permissões no ambiente do servidor.",
+      "chamado_interno": "INC-0005",
+      "time_destino": "Infraestrutura",
+      "prioridade": "P2"
+    },
+    "fonte": {
+      "tipo": "procedimento_da_base",
+      "kb_id": "KB-102",
+      "score": 0.71,
+      "registros": [
+        "TKT-0103"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "conferir_ressalva",
+        "decidir",
+        "redigir",
+        "confirmar",
+        "abrir_chamado_interno"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": true,
+      "motivo": "procedimento KB-102 com score 0.71, igual ou acima do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0103"
+      },
+      "resultado": {
+        "id": "TKT-0103",
+        "aberto_em": "2026-09-21 08:25",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Acme Contabilidade",
+        "plano": "Hospedagem Business",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "upload",
+          "permissão",
+          "negada"
+        ],
+        "justificativa": "O cliente relata problema específico de permissão em pasta de uploads, sem relação com outro serviço ou causa externa."
+      },
+      "erro": null,
+      "ms": 1001
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "upload",
+          "permissão",
+          "negada"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-102",
+            "titulo": "Permissão negada ao gravar arquivos",
+            "score": 0.71,
+            "cosseno": 0.885,
+            "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+            "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-114",
+            "titulo": "Login por FTP ou SFTP falhando",
+            "score": 0.47,
+            "cosseno": 0.791,
+            "causa": "Senha do usuário de FTP expirada ou alterada, ou IP do cliente barrado depois de tentativas de login sem sucesso.",
+            "solucao": "Redefinir a senha do usuário de FTP, conferir o registro de autenticação e liberar o IP do cliente se ele estiver barrado.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-112",
+            "titulo": "Bloqueio indevido pelo firewall de aplicação (WAF)",
+            "score": 0.47,
+            "cosseno": 0.789,
+            "causa": "Regra do firewall de aplicação classificou como ataque uma requisição legítima do site e passou a devolver 403.",
+            "solucao": "Localizar no registro do WAF a regra acionada, liberar a requisição legítima com uma exceção restrita à URL e reavaliar a regra.",
+            "acao_padrao": "escalar",
+            "time_destino": "Seguranca",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1240
+    },
+    {
+      "indice": 3,
+      "ferramenta": "conferir_ressalva",
+      "argumentos": {
+        "kb_id": "KB-102",
+        "situacoes": [
+          "ssh"
+        ]
+      },
+      "resultado": {
+        "cai_na_ressalva": false,
+        "frase": "",
+        "motivo": "O relato menciona apenas a necessidade de correção de permissões em uma pasta específica ('uploads') sem mencionar acesso via SSH ou qualquer situação que esteja listada nas ressalvas do procedimento.",
+        "score_antes": 0.71,
+        "score_depois": 0.71
+      },
+      "erro": null,
+      "ms": 1006
+    },
+    {
+      "indice": 4,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "abrir_chamado_interno",
+        "kb_id": "KB-102",
+        "motivo": "procedimento_escalar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 5,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "abrir_chamado_interno"
+      },
+      "resultado": {
+        "texto": "Problema de permissão negada em uploads para o domínio do cliente (Acme Contabilidade, plano Business). O cliente relata que não consegue realizar uploads, mas não há log anexado para análise detalhada. O histórico não confirma ocorrências anteriores. O procedimento **KB-102** sugere que a causa pode ser arquivos/pastas com dono ou permissões incorretas, comum após restauração, migração ou publicação por outro usuário. **Ação necessária:** Verificar e corrigir permissões/dono dos arquivos/pastas da pasta *uploads* via `chown/chmod`, exigindo acesso administrativo ao servidor. **Nota:** O plano Business cobre a correção de permissões no ambiente do servidor."
+      },
+      "erro": null,
+      "ms": 1674
+    },
+    {
+      "indice": 6,
+      "ferramenta": "confirmar",
+      "argumentos": {
+        "kb_id": "KB-102"
+      },
+      "resultado": {
+        "status": "aprovada",
+        "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+        "editado": false
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 7,
+      "ferramenta": "abrir_chamado_interno",
+      "argumentos": {
+        "id_ticket": "TKT-0103",
+        "resumo": "Problema de permissão negada em uploads para o domínio do cliente (Acme Contabilidade, plano Business). O cliente relata que não consegue realizar uploads, mas não há log anexado para análise detalhada. O histórico não confirma ocorrências anteriores. O procedimento **KB-102** sugere que a causa pode ser arquivos/pastas com dono ou permissões incorretas, comum após restauração, migração ou publicação por outro usuário. **Ação necessária:** Verificar e corrigir permissões/dono dos arquivos/pastas da pasta *uploads* via `chown/chmod`, exigindo acesso administrativo ao servidor. **Nota:** O plano Business cobre a correção de permissões no ambiente do servidor.",
+        "kb_id": "KB-102"
+      },
+      "resultado": {
+        "chamado_interno": "INC-0005",
+        "time_destino": "Infraestrutura",
+        "prioridade": "P2",
+        "reincidencias_confirmadas_no_sistema": 0,
+        "ja_existia": false
+      },
+      "erro": null,
+      "ms": 16
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-102",
+    "motivo": "procedimento_escalar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1761,
+  "episodio": {
+    "execucao_id": "TKT-0103-9ca7b131",
+    "ticket_externo": "TKT-0103",
+    "cliente_id": "CLI-01",
+    "classe": "tecnico",
+    "categoria": "permissao_arquivos",
+    "kb_id": "KB-102",
+    "score": 0.71,
+    "acao_proposta": "abrir_chamado_interno",
+    "desfecho": "abrir_chamado_interno",
+    "motivo": "procedimento_escalar",
+    "veredito": "aprovado",
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0103: classe tecnico; guia KB-102 (score 0.71); proposto abrir_chamado_interno; gravado abrir_chamado_interno; analista: aprovado; término respondeu",
+    "criado_em": "2026-10-14T00:41:11-03:00",
+    "id": 1,
+    "chave": "329fae13593ea05e",
+    "ja_existia": false
+  },
+  "segundos_gastos": 4.941
+}

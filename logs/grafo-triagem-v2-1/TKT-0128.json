@@ -1,0 +1,161 @@
+{
+  "execucao_id": "TKT-0128-b1441d2f",
+  "id_ticket": "TKT-0128",
+  "executado_em": "2026-10-13T23:30:53-03:00",
+  "commit": "6116341 + alterações locais",
+  "entrada": "Fui cobrado duas vezes na fatura deste mês. Preciso do estorno de uma das cobranças.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v2.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_comercial",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_comercial"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1324,
+  "tokens_saida": 110,
+  "custo_usd": 0.000215,
+  "scores_kb": {},
+  "saida": {
+    "id_ticket": "TKT-0128",
+    "executado_em": "2026-10-13T23:30:53-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_comercial",
+      "texto": "O cliente **Zeta Imóveis** (plano **Hospedagem Business**) solicita o **estorno de uma cobrança duplicada** referente à fatura atual.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "registro_do_chamado",
+      "kb_id": null,
+      "score": null,
+      "registros": [
+        "TKT-0128"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": true,
+      "motivo": "assunto comercial: a classificação dispensa a base de procedimentos"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0128"
+      },
+      "resultado": {
+        "id": "TKT-0128",
+        "aberto_em": "2026-09-21 11:15",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Zeta Imóveis",
+        "plano": "Hospedagem Business",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "comercial",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [],
+        "justificativa": "O cliente relata problema relacionado a cobrança e solicita estorno, sem mencionar qualquer falha técnica."
+      },
+      "erro": null,
+      "ms": 1043
+    },
+    {
+      "indice": 2,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_comercial",
+        "kb_id": null,
+        "motivo": "assunto_comercial"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 3,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_comercial"
+      },
+      "resultado": {
+        "texto": "O cliente **Zeta Imóveis** (plano **Hospedagem Business**) solicita o **estorno de uma cobrança duplicada** referente à fatura atual."
+      },
+      "erro": null,
+      "ms": 861
+    },
+    {
+      "indice": 4,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0128",
+        "destino": "fila_comercial",
+        "mensagem": "O cliente **Zeta Imóveis** (plano **Hospedagem Business**) solicita o **estorno de uma cobrança duplicada** referente à fatura atual."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_comercial"
+      },
+      "erro": null,
+      "ms": 16
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "comercial",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "fila_comercial",
+    "kb_id": null,
+    "motivo": "assunto_comercial"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 0,
+  "episodio": {
+    "execucao_id": "TKT-0128-b1441d2f",
+    "ticket_externo": "TKT-0128",
+    "cliente_id": "CLI-06",
+    "classe": "comercial",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "fila_comercial",
+    "desfecho": "fila_comercial",
+    "motivo": "assunto_comercial",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0128: classe comercial; sem guia; proposto fila_comercial; gravado fila_comercial; término respondeu",
+    "criado_em": "2026-10-13T23:30:55-03:00",
+    "id": 1,
+    "chave": "1d3a6fd117c4bcc8",
+    "ja_existia": false
+  },
+  "segundos_gastos": 1.923
+}

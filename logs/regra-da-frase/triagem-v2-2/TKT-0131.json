@@ -1,0 +1,206 @@
+{
+  "execucao_id": "TKT-0131-e9c7157a",
+  "id_ticket": "TKT-0131",
+  "executado_em": "2026-10-14T00:35:28-03:00",
+  "commit": "6116341 + alterações locais",
+  "entrada": "ajuda",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v2.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "devolver_cliente",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "devolver_cliente",
+    "enviado_em": "2026-10-14T00:35:29-03:00",
+    "ja_existia": false
+  },
+  "pendencia": null,
+  "confirmacoes": [
+    {
+      "pendencia": {
+        "ferramenta": "devolver_cliente",
+        "id_ticket": "TKT-0131",
+        "relato": "ajuda",
+        "mensagem": "Para darmos andamento ao seu chamado, precisamos de mais informações:\n1. Qual serviço está com problema (site, e-mail, banco de dados, FTP/SFTP, acesso SSH, backup ou tarefa agendada)?\n2. Qual é o domínio ou o endereço afetado? Se for banco de dados, qual é o nome do banco?\n3. Qual mensagem ou código de erro aparece (por exemplo: 403, 502, \"permissão negada\")? Copie o texto como ele é exibido.\n4. Em que data e hora o problema começou? Ele acontece sempre ou só às vezes?\n5. Alguma coisa mudou pouco antes (publicação de nova versão, migração, restauração de backup, troca de senha)?",
+        "plano": "Hospedagem Start",
+        "pedido_em": "2026-10-14T00:35:29-03:00",
+        "vence_em": "2026-10-14T00:55:29-03:00"
+      },
+      "aprovado": true,
+      "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+      "status": "aprovada",
+      "resolvido_em": "2026-10-14T00:35:29-03:00",
+      "editado": false
+    }
+  ],
+  "n_chamadas_modelo": 1,
+  "lembretes": 0,
+  "tokens_entrada": 553,
+  "tokens_saida": 59,
+  "custo_usd": 9.2e-05,
+  "scores_kb": {},
+  "saida": {
+    "id_ticket": "TKT-0131",
+    "executado_em": "2026-10-14T00:35:28-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "devolver_cliente",
+      "texto": "Para darmos andamento ao seu chamado, precisamos de mais informações:\n1. Qual serviço está com problema (site, e-mail, banco de dados, FTP/SFTP, acesso SSH, backup ou tarefa agendada)?\n2. Qual é o domínio ou o endereço afetado? Se for banco de dados, qual é o nome do banco?\n3. Qual mensagem ou código de erro aparece (por exemplo: 403, 502, \"permissão negada\")? Copie o texto como ele é exibido.\n4. Em que data e hora o problema começou? Ele acontece sempre ou só às vezes?\n5. Alguma coisa mudou pouco antes (publicação de nova versão, migração, restauração de backup, troca de senha)?",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "registro_do_chamado",
+      "kb_id": null,
+      "score": null,
+      "registros": [
+        "TKT-0131",
+        "INC-0004"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "decidir",
+        "redigir",
+        "confirmar",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o texto do chamado não informa o serviço afetado nem o sintoma; o pedido de informação ao cliente foi registrado"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0131"
+      },
+      "resultado": {
+        "id": "TKT-0131",
+        "aberto_em": "2026-09-21 11:35",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Kappa Educação",
+        "plano": "Hospedagem Start",
+        "historico_cliente": [
+          {
+            "chamado_interno": "INC-0004",
+            "categoria": "dns_dominio",
+            "criado_em": "2026-09-05 09:20",
+            "status": "resolvido"
+          }
+        ]
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "insuficiente",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [],
+        "justificativa": "O texto do cliente não descreve nenhum problema ou serviço afetado, apenas uma palavra genérica sem contexto."
+      },
+      "erro": null,
+      "ms": 973
+    },
+    {
+      "indice": 2,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "devolver_cliente",
+        "kb_id": null,
+        "motivo": "informacao_insuficiente"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 3,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "devolver_cliente",
+        "texto_padrao": true
+      },
+      "resultado": {
+        "texto": "Para darmos andamento ao seu chamado, precisamos de mais informações:\n1. Qual serviço está com problema (site, e-mail, banco de dados, FTP/SFTP, acesso SSH, backup ou tarefa agendada)?\n2. Qual é o domínio ou o endereço afetado? Se for banco de dados, qual é o nome do banco?\n3. Qual mensagem ou código de erro aparece (por exemplo: 403, 502, \"permissão negada\")? Copie o texto como ele é exibido.\n4. Em que data e hora o problema começou? Ele acontece sempre ou só às vezes?\n5. Alguma coisa mudou pouco antes (publicação de nova versão, migração, restauração de backup, troca de senha)?"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "confirmar",
+      "argumentos": {
+        "acao": "devolver_cliente"
+      },
+      "resultado": {
+        "status": "aprovada",
+        "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+        "editado": false
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0131",
+        "destino": "devolver_cliente",
+        "mensagem": "Para darmos andamento ao seu chamado, precisamos de mais informações:\n1. Qual serviço está com problema (site, e-mail, banco de dados, FTP/SFTP, acesso SSH, backup ou tarefa agendada)?\n2. Qual é o domínio ou o endereço afetado? Se for banco de dados, qual é o nome do banco?\n3. Qual mensagem ou código de erro aparece (por exemplo: 403, 502, \"permissão negada\")? Copie o texto como ele é exibido.\n4. Em que data e hora o problema começou? Ele acontece sempre ou só às vezes?\n5. Alguma coisa mudou pouco antes (publicação de nova versão, migração, restauração de backup, troca de senha)?"
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "devolver_cliente",
+        "enviado_em": "2026-10-14T00:35:29-03:00",
+        "ja_existia": false
+      },
+      "erro": null,
+      "ms": 22
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "insuficiente",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "devolver_cliente",
+    "kb_id": null,
+    "motivo": "informacao_insuficiente"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 0,
+  "episodio": {
+    "execucao_id": "TKT-0131-e9c7157a",
+    "ticket_externo": "TKT-0131",
+    "cliente_id": "CLI-10",
+    "classe": "insuficiente",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "devolver_cliente",
+    "desfecho": "devolver_cliente",
+    "motivo": "informacao_insuficiente",
+    "veredito": "aprovado",
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0131: classe insuficiente; sem guia; proposto devolver_cliente; gravado devolver_cliente; analista: aprovado; término respondeu",
+    "criado_em": "2026-10-14T00:35:29-03:00",
+    "id": 1,
+    "chave": "6affd326fe39be94",
+    "ja_existia": false
+  },
+  "segundos_gastos": 0.997
+}

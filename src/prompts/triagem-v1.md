@@ -34,6 +34,23 @@ O que cada regra impede:
                                    laço, o modelo viu o artigo com score alto e abriu um chamado
                                    indevido (TKT-0002, rodada 3 do agente-v5)
   termos em palavras soltas        a busca é por palavra; frases diluem o score
+  "terceira vez" não é divergência (linha acrescentada ao cabeçalho em 14/10/2026; o texto do
+                                   prompt não mudou) impede a triagem de marcar divergência num
+                                   chamado com log que CONFIRMA o relato, quando o cliente afirma
+                                   uma reincidência que o histórico não confirma. TESTE DA REGRA DA
+                                   FRASE, 13 e 14/10/2026, 44 casos, 3 execuções com a frase e 3 sem
+                                   (docs/prompts.md §3.7; logs/regra-da-frase/triagem-v1-1 a -3 e
+                                   triagem-v2-1 a -3): com a frase, 40 de 44 nas três; sem ela, 39,
+                                   40 e 39, porque o TKT-0134 foi marcado como divergência e mandado
+                                   à fila humana em duas de três. A frase VOLTOU. Preço medido: com
+                                   ela, a divergência de verdade do TKT-0123 e do TKT-0124 é marcada
+                                   em menos execuções (1 e 2 de 3; sem a frase, 3 de 3 nos dois).
+                                   Uma PRIMEIRA PASSAGEM, em 13/10/2026, nos 40 casos que o gabarito
+                                   tinha (logs/regra-da-frase/triagem-v1-a e -b, contra
+                                   triagem-v1-sem-frase-a e -b), deu 36 de 40 dos dois lados e
+                                   concluiu que a frase saía: nenhum daqueles casos tinha log
+                                   anexado e afirmação não confirmada. Os quatro casos novos
+                                   desfizeram a conclusão.
 
 LIMITE HONESTO: o schema garante uma classe VÁLIDA, não a classe CERTA. As três falhas de triagem
   medidas com o agente-v5 são desta mesma decisão. Este prompt foi escrito DEPOIS de ver essas

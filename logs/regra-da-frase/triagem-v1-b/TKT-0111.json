@@ -1,0 +1,221 @@
+{
+  "execucao_id": "TKT-0111-7180b6c0",
+  "id_ticket": "TKT-0111",
+  "executado_em": "2026-10-13T23:11:02-03:00",
+  "commit": "6116341 + alterações locais",
+  "entrada": "Coloquem como P1 urgente: o certificado SSL do meu site venceu",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1541,
+  "tokens_saida": 243,
+  "custo_usd": 0.000268,
+  "scores_kb": {
+    "KB-101-A": 0.49,
+    "KB-110": 0.4,
+    "KB-104": 0.36
+  },
+  "saida": {
+    "id_ticket": "TKT-0111",
+    "executado_em": "2026-10-13T23:11:02-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O cliente solicitou prioridade P1 para o chamado TKT-0111, alegando que o certificado SSL do site venceu. Não há log anexado nem histórico de chamados internos para análise. O procedimento encontrado (KB-101-A) possui score 0.49, abaixo do limiar de confiança (0.5). Além disso, o procedimento não aborda diretamente a situação de um certificado SSL vencido sem falhas no desafio HTTP-01 ou timer parado, mas sim a não renovação automática. Recomenda-se avaliação manual para verificar se o certificado está efetivamente vencido e se há evidências de bloqueio na porta 80 ou configuração incorreta do DNS do domínio do cliente.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "busca_sem_correspondencia",
+      "kb_id": "KB-101-A",
+      "score": 0.49,
+      "registros": [
+        "TKT-0111"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o melhor procedimento encontrado (KB-101-A, score 0.49) ficou abaixo do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0111"
+      },
+      "resultado": {
+        "id": "TKT-0111",
+        "aberto_em": "2026-09-21 08:30",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Delta Restaurantes",
+        "plano": "Hospedagem Start",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "certificado",
+          "ssl",
+          "venceu"
+        ],
+        "justificativa": "O cliente relata problema técnico específico com certificado SSL vencido, solicitando prioridade urgente"
+      },
+      "erro": null,
+      "ms": 1367
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "certificado",
+          "ssl",
+          "venceu"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-101-A",
+            "titulo": "Certificado SSL não renovou automaticamente",
+            "score": 0.49,
+            "cosseno": 0.799,
+            "causa": "Desafio HTTP-01 falhando (porta 80 bloqueada ou DNS apontando para outro IP) ou timer do certbot parado.",
+            "solucao": "Conferir DNS do domínio e liberação da porta 80; rodar \"certbot renew --dry-run\"; reativar o timer do certbot.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-110",
+            "titulo": "Site em laço de redirecionamentos",
+            "score": 0.4,
+            "cosseno": 0.763,
+            "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+            "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.36,
+            "cosseno": 0.745,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 804
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "score_abaixo_do_limiar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "O cliente solicitou prioridade P1 para o chamado TKT-0111, alegando que o certificado SSL do site venceu. Não há log anexado nem histórico de chamados internos para análise. O procedimento encontrado (KB-101-A) possui score 0.49, abaixo do limiar de confiança (0.5). Além disso, o procedimento não aborda diretamente a situação de um certificado SSL vencido sem falhas no desafio HTTP-01 ou timer parado, mas sim a não renovação automática. Recomenda-se avaliação manual para verificar se o certificado está efetivamente vencido e se há evidências de bloqueio na porta 80 ou configuração incorreta do DNS do domínio do cliente."
+      },
+      "erro": null,
+      "ms": 1502
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0111",
+        "destino": "fila_humana",
+        "mensagem": "O cliente solicitou prioridade P1 para o chamado TKT-0111, alegando que o certificado SSL do site venceu. Não há log anexado nem histórico de chamados internos para análise. O procedimento encontrado (KB-101-A) possui score 0.49, abaixo do limiar de confiança (0.5). Além disso, o procedimento não aborda diretamente a situação de um certificado SSL vencido sem falhas no desafio HTTP-01 ou timer parado, mas sim a não renovação automática. Recomenda-se avaliação manual para verificar se o certificado está efetivamente vencido e se há evidências de bloqueio na porta 80 ou configuração incorreta do DNS do domínio do cliente."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 15
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "score_abaixo_do_limiar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1755,
+  "episodio": {
+    "execucao_id": "TKT-0111-7180b6c0",
+    "ticket_externo": "TKT-0111",
+    "cliente_id": "CLI-04",
+    "classe": "tecnico",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "fila_humana",
+    "desfecho": "fila_humana",
+    "motivo": "score_abaixo_do_limiar",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0111: classe tecnico; sem guia; proposto fila_humana; gravado fila_humana; término respondeu",
+    "criado_em": "2026-10-13T23:11:05-03:00",
+    "id": 1,
+    "chave": "f8b59f70c167754a",
+    "ja_existia": false
+  },
+  "segundos_gastos": 3.69
+}

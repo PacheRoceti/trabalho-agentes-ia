@@ -1,0 +1,226 @@
+{
+  "execucao_id": "TKT-0123-6708bfc8",
+  "id_ticket": "TKT-0123",
+  "executado_em": "2026-10-13T23:57:43-03:00",
+  "commit": "6116341 + alterações locais",
+  "entrada": "Não consigo acessar minha VPS por SSH desde hoje cedo.",
+  "modelo": "ministral-8b-latest",
+  "prompt": "triagem-v2.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana"
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1735,
+  "tokens_saida": 223,
+  "custo_usd": 0.000294,
+  "scores_kb": {
+    "KB-103": 0.48,
+    "KB-114": 0.16,
+    "KB-101-A": 0.35
+  },
+  "saida": {
+    "id_ticket": "TKT-0123",
+    "executado_em": "2026-10-13T23:57:43-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O cliente relata **falha de acesso SSH** ao servidor VPS desde hoje cedo, afirmando que não consegue conectar-se via SSH. No entanto, o log anexado mostra que o problema é uma **falha de resolução DNS** para o domínio `vps.epsilon-studio.example`, com erro `SERVFAIL` no `nslookup`. Ao tentar acessar diretamente pelo IP do servidor (`203.0.113.57`), o login foi realizado normalmente, confirmando que o acesso SSH ao servidor está operacional. O histórico não registra ocorrências anteriores.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "busca_sem_correspondencia",
+      "kb_id": "KB-103",
+      "score": 0.48,
+      "registros": [
+        "TKT-0123"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o melhor procedimento encontrado (KB-103, score 0.48) ficou abaixo do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0123"
+      },
+      "resultado": {
+        "id": "TKT-0123",
+        "aberto_em": "2026-09-21 08:02",
+        "status": "novo",
+        "anexo_log": "2026-09-21 07:52 ssh deploy@vps.epsilon-studio.example -> ssh: Could not resolve hostname vps.epsilon-studio.example: Name or service not known. 2026-09-21 07:53 nslookup vps.epsilon-studio.example -> falha de resolução DNS: SERVFAIL. 2026-09-21 07:55 ssh deploy@203.0.113.57 (direto pelo IP do servidor) -> login feito normalmente.",
+        "cliente": "Epsilon Studio",
+        "plano": "VPS Pro",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": true,
+        "termos_busca": [
+          "acesso",
+          "ssh",
+          "vps",
+          "falha",
+          "resolução"
+        ],
+        "justificativa": "o cliente relata problema de acesso por SSH, mas o log aponta falha de resolução DNS, que é outro serviço."
+      },
+      "erro": null,
+      "ms": 907
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "acesso",
+          "ssh",
+          "vps",
+          "falha",
+          "resolução"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-103",
+            "titulo": "Acesso SSH bloqueado ou recusado",
+            "score": 0.48,
+            "cosseno": 0.795,
+            "causa": "IP do cliente banido pelo fail2ban após tentativas falhas, ou regra de firewall.",
+            "solucao": "Verificar se o IP do cliente está banido no fail2ban e liberar; conferir porta e regras do firewall.",
+            "acao_padrao": "anotar",
+            "time_destino": "Seguranca",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-114",
+            "titulo": "Login por FTP ou SFTP falhando",
+            "score": 0.16,
+            "cosseno": 0.758,
+            "causa": "Senha do usuário de FTP expirada ou alterada, ou IP do cliente barrado depois de tentativas de login sem sucesso.",
+            "solucao": "Redefinir a senha do usuário de FTP, conferir o registro de autenticação e liberar o IP do cliente se ele estiver barrado.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial",
+            "ressalva": "este procedimento NÃO cobre o caso relatado ('ssh'): o score foi reduzido"
+          },
+          {
+            "kb_id": "KB-101-A",
+            "titulo": "Certificado SSL não renovou automaticamente",
+            "score": 0.35,
+            "cosseno": 0.741,
+            "causa": "Desafio HTTP-01 falhando (porta 80 bloqueada ou DNS apontando para outro IP) ou timer do certbot parado.",
+            "solucao": "Conferir DNS do domínio e liberação da porta 80; rodar \"certbot renew --dry-run\"; reativar o timer do certbot.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 879
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "divergencia_relato_log"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "O cliente relata **falha de acesso SSH** ao servidor VPS desde hoje cedo, afirmando que não consegue conectar-se via SSH. No entanto, o log anexado mostra que o problema é uma **falha de resolução DNS** para o domínio `vps.epsilon-studio.example`, com erro `SERVFAIL` no `nslookup`. Ao tentar acessar diretamente pelo IP do servidor (`203.0.113.57`), o login foi realizado normalmente, confirmando que o acesso SSH ao servidor está operacional. O histórico não registra ocorrências anteriores."
+      },
+      "erro": null,
+      "ms": 1285
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0123",
+        "destino": "fila_humana",
+        "mensagem": "O cliente relata **falha de acesso SSH** ao servidor VPS desde hoje cedo, afirmando que não consegue conectar-se via SSH. No entanto, o log anexado mostra que o problema é uma **falha de resolução DNS** para o domínio `vps.epsilon-studio.example`, com erro `SERVFAIL` no `nslookup`. Ao tentar acessar diretamente pelo IP do servidor (`203.0.113.57`), o login foi realizado normalmente, confirmando que o acesso SSH ao servidor está operacional. O histórico não registra ocorrências anteriores."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana"
+      },
+      "erro": null,
+      "ms": 15
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": true,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "divergencia_relato_log"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1753,
+  "episodio": {
+    "execucao_id": "TKT-0123-6708bfc8",
+    "ticket_externo": "TKT-0123",
+    "cliente_id": "CLI-05",
+    "classe": "tecnico",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "fila_humana",
+    "desfecho": "fila_humana",
+    "motivo": "divergencia_relato_log",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0123: classe tecnico; sem guia; proposto fila_humana; gravado fila_humana; término respondeu",
+    "criado_em": "2026-10-13T23:57:46-03:00",
+    "id": 1,
+    "chave": "2a8bff63326c6910",
+    "ja_existia": false
+  },
+  "segundos_gastos": 3.089
+}
