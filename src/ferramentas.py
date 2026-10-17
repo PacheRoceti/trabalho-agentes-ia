@@ -210,7 +210,8 @@ def aprovar_pendencia(estado, con, acao: dict) -> dict:
     return resultado
 
 
-def encaminhar_pendencia(estado, con, acao: dict, motivo: str) -> tuple[dict, dict]:
+def encaminhar_pendencia(estado, con, acao: dict, motivo: str, chave: str | None = None,
+                         chave_aviso: str | None = None) -> tuple[dict, dict]:
     """A ação NÃO é executada (o analista a rejeitou, ou o prazo venceu sem resposta) e o CÓDIGO
     encaminha o chamado à fila humana com as considerações do agente: ação proposta, prioridade
     que o chamado teria, procedimento, score e texto redigido. No prazo vencido de um chamado que
@@ -218,6 +219,8 @@ def encaminhar_pendencia(estado, con, acao: dict, motivo: str) -> tuple[dict, di
     A ação pode ser também o pedido de informação ao cliente (H2, só no grafo): aí as considerações
     são a mensagem redigida, e NÃO há aviso ao gestor, porque um chamado que a triagem não
     conseguiu classificar não tem prioridade prevista (decisão de 12/10/2026).
+    `chave` e `chave_aviso` tornam a escrita idempotente (o grafo as passa desde 17/10/2026, para a
+    recuperação depois de uma queda poder refazê-la; o laço não as passa e grava como antes).
     Devolve os argumentos e o resultado da escrita, para a trajetória."""
     prazo = f"{estado.prazo_confirmacao_min:g} minutos"
     if motivo == MOTIVO_PRAZO_VENCIDO:
@@ -230,7 +233,8 @@ def encaminhar_pendencia(estado, con, acao: dict, motivo: str) -> tuple[dict, di
             f"enviar ao cliente o pedido de informação (o único permitido neste chamado). "
             f"Sustentação: a triagem não encontrou no relato o serviço afetado nem o sintoma. "
             f"Mensagem redigida: {acao['mensagem'].strip()}")
-        resultado = db.registrar_encaminhamento(con, acao["id_ticket"], "fila_humana", mensagem, None)
+        resultado = db.registrar_encaminhamento(con, acao["id_ticket"], "fila_humana", mensagem, None,
+                                              chave=chave)
         estado.desfecho = {"acao": "fila_humana", "kb_id": None, **resultado, "motivo": motivo}
         argumentos = {"id_ticket": acao["id_ticket"], "destino": "fila_humana", "mensagem": mensagem,
                       "motivo": motivo}
@@ -242,11 +246,12 @@ def encaminhar_pendencia(estado, con, acao: dict, motivo: str) -> tuple[dict, di
         f"prioridade prevista {prioridade}). "
         f"Sustentação: procedimento {acao['kb_id']}, score {estado.scores_kb.get(acao['kb_id'])}. "
         f"Resumo redigido: {acao['resumo'].strip()}")
-    resultado = db.registrar_encaminhamento(con, acao["id_ticket"], "fila_humana", mensagem, None)
+    resultado = db.registrar_encaminhamento(con, acao["id_ticket"], "fila_humana", mensagem, None,
+                                              chave=chave)
     if motivo == MOTIVO_PRAZO_VENCIDO and prioridade == PRIORIDADE_QUE_AVISA_GESTOR:
         resultado["aviso_gestor"] = db.avisar_gestor(
             con, acao["id_ticket"], prioridade, motivo, mensagem,
-            datetime.now().astimezone().isoformat(timespec="seconds"))
+            datetime.now().astimezone().isoformat(timespec="seconds"), chave=chave_aviso)
     estado.desfecho = {"acao": "fila_humana", "kb_id": None, **resultado, "motivo": motivo}
     argumentos = {"id_ticket": acao["id_ticket"], "destino": "fila_humana", "mensagem": mensagem,
                   "motivo": motivo}

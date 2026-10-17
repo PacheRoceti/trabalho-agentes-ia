@@ -378,7 +378,8 @@ episódio não entra no `redigir` nem em regra de decisão alguma, e não há le
 até 90 dias (`db.EPISODIO_RECENTE_DIAS`) a decisão entra na contagem do aviso; entre 90 e 365 dias
 ela aparece à parte, como antiga, e não conta; depois de 365 dias (`db.EPISODIO_MAX_DIAS`) o
 episódio não é lido e é apagado por `db.esquecer_episodios`, que roda no começo de cada comando do
-`main.py` (menos `--todos`), como `vencer_pendencias`. Os dois cortes são justificados pelo domínio
+`main.py` (menos `--todos`), como `vencer_pendencias`, e desde 17/10/2026 também a cada volta do
+vigia do prazo (`humano.md` §4.1). Os dois cortes são justificados pelo domínio
 e **não foram medidos**: não há episódio real com essa idade, e o teste usa episódios semeados com
 data antiga.
 

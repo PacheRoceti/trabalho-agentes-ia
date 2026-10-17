@@ -234,7 +234,7 @@ está em `arquitetura.md` §4; ao mudar um campo, as duas mudam juntas.
 | `passos` | `list[dict]` | os nós que registram um passo | o log e a saída | `operator.add` (concatena) |
 | `tentativas_redacao` | `int` | `redigir` | `_rota_validar` | `operator.add` (soma) |
 | `n_chamadas_modelo`, `tokens_entrada`, `tokens_saida`, `custo_usd` | número | `triagem`, `conferir_ressalva`, `redigir` | os tetos, o log | `operator.add` (soma) |
-| `tokens_embedding` | número | `buscar` | o log (não entra nos tetos) | `operator.add` (soma) |
+| `tokens_embedding` | número | `buscar` | o log; o custo deles vai junto para `custo_usd` (teto de dinheiro), e não para o teto de tokens | `operator.add` (soma) |
 | `segundos_gastos` | `float` | todos os nós | o teto de tempo | `operator.add` (soma) |
 
 `termino` e `motivo` têm mais de um escritor (`triagem`, `conferir_ressalva`, `redigir`,
@@ -343,7 +343,13 @@ frentes, de 671 do arquivo** (uma em cada quatro). A regra da contagem: linha de
 não está em branco, não é só comentário e não é docstring; o arquivo tinha 944 linhas ao todo.
 Depois da contagem, ainda em 12/10/2026, o arquivo ganhou 44 linhas **no fim** (a carga das
 regras aprendidas, `memoria.md` §5.1) e passou a 988. Elas não entram em nenhuma das quatro
-frentes, e as linhas citadas abaixo não mudaram de lugar.
+frentes, e as linhas citadas abaixo não mudaram de lugar. Em 17/10/2026 ganhou mais 13 linhas no
+fim (`_consumo_do_embedding`, que leva o custo do embedding ao `custo_usd`) e passou a 1.001. Elas
+pertencem à frente "os tetos" e não foram somadas à contagem; as linhas citadas continuam no lugar.
+No mesmo dia ganhou a recuperação depois de uma queda (`humano.md` §4.3): uma linha em
+`retomar_grafo`, antes do `Command(resume=...)`, que por isso passou da linha 943 para a 944, e o
+resto no fim do arquivo, que tem agora 1.115 linhas (com a `DURABILIDADE`, §5). A recuperação pertence à frente "erro
+recuperável × fatal" e não foi somada à contagem.
 
 | Frente | O que o LangGraph deu | O que continuou sendo código nosso | Linhas |
 |---|---|---|---|
@@ -395,7 +401,7 @@ nenhuma linha nossa de serialização:
 | Guardar o estado | `Estado.checkpoint()` (`src/agente.py:139-144`) e a coluna `checkpoint` da tabela `pendencias`, gravada por `db.gravar_checkpoint` | `SqliteSaver` (`src/grafo.py:761`), passado ao `compile()` (`:764`). Nenhum campo é listado: o estado inteiro vai |
 | Restaurar o estado | `Estado.de_checkpoint()` (`src/agente.py:147-154`), que lista os 21 campos a recuperar | `GRAFO.get_state()` (`src/grafo.py:834`, `:911`) |
 | Parar | a exceção `PausaParaHumano` (`src/ferramentas.py:63-69`), que derruba o laço | `interrupt(pendencia)` (`src/grafo.py:596`) |
-| Continuar de onde parou | `retomar()` reconstrói a conversa: acha as chamadas de ferramenta sem resposta e devolve uma observação para cada (`src/agente.py:449-460`), e acerta o relógio do teto de tempo (`:462-463`) | `Command(resume=resposta)` (`src/grafo.py:943`). O nó `confirmar` roda de novo e o `interrupt` devolve a resposta |
+| Continuar de onde parou | `retomar()` reconstrói a conversa: acha as chamadas de ferramenta sem resposta e devolve uma observação para cada (`src/agente.py:449-460`), e acerta o relógio do teto de tempo (`:462-463`) | `Command(resume=resposta)` (`src/grafo.py:944`). O nó `confirmar` roda de novo e o `interrupt` devolve a resposta |
 
 **O que essa frente não cobriu**, e continuou sendo código nosso: o prazo, a regra do relógio
 antes da pessoa, a conferência do texto editado e do motivo antes de responder, e a fila que o
@@ -419,11 +425,34 @@ com o motivo `superpassos`.
 Consequência: o teto de passos do laço deixou de existir como contagem de passos. O caminho
 técnico do grafo tem mais nós do que o laço tinha passos, então o número 8 não se transfere.
 
+**A durabilidade do checkpoint (17/10/2026).** A decisão: quando o estado de um passo precisa
+estar gravado em disco. Quando ela era explícita, no laço, a resposta era "antes de responder": o
+`Estado` ia para a tabela `pendencias` na hora da pausa (`Estado.checkpoint()`). No grafo, o
+LangGraph 1.2.14 decide por um parâmetro, `durability`, cujo padrão é `"async"`: o checkpoint de
+cada passo é gravado em segundo plano, enquanto o passo seguinte já roda. Nada no projeto o citava,
+e o comportamento só apareceu com o processo morto de verdade (`simular_queda.py`, `humano.md`
+§4.3). Matando o processo dentro de `db.abrir_chamado`, depois da aprovação, três vezes com cada
+modo:
+
+| Modo | Onde o checkpoint ficou | O que a recuperação faria |
+|---|---|---|
+| `"async"` (o padrão) | sem passo seguinte, como se tivesse acabado, em 2 de 3; em `confirmar` em 1 de 3. Nada gravado nas três | nos dois primeiros, concluiria a execução **sem desfecho**, e o chamado aprovado nunca seria aberto; no terceiro, reenviaria a resposta guardada |
+| `"sync"` | em `gravar`, nas 3 | roda `gravar`, e o chamado é aberto uma vez |
+
+Está declarado no código: a constante `DURABILIDADE = "sync"`, no fim de `src/grafo.py`, passada
+em toda invocação do grafo (`rodar_grafo`, `retomar_grafo` e a recuperação). Se o padrão da
+biblioteca mudar numa atualização, nada muda aqui. O custo é a espera da gravação a cada
+superpasso, não medida. Duas defesas a mais: o teste
+`test_processo_morto_de_verdade_fica_em_gravar_e_e_recuperado` repete a queda em três processos e
+falha com `"async"`; e a recuperação não conclui um checkpoint que diz que acabou sem término nem
+desfecho (`test_checkpoint_que_diz_que_acabou_sem_desfecho_nao_e_concluido`).
+
 ## 6. O que foi medido
 
 > **Sobre a coluna de custo.** Os valores em dólar deste documento são os do campo `custo_usd` dos
-> logs, calculados a US$ 0,15 por milhão de tokens. Em 13/10/2026 o preço do `ministral-8b-latest`
-> foi corrigido para US$ 0,20 (`modelos.md`): ao preço corrigido, cada valor é o do log vezes 4/3.
+> logs, calculados a US$ 0,15 por milhão de tokens, que é o preço da página oficial do
+> `ministral-8b-latest` (conferido em 17/10/2026; `modelos.md`). Em 13/10/2026 o projeto chegou a
+> usar US$ 0,20, e essa correção foi desfeita: os valores dos logs valem como estão.
 
 Três execuções dos 8 casos, todas em 10/10/2026, com `ministral-8b-latest`, `temperature=0`,
 `--auto-aprovar` e os prompts `triagem-v1.md` e `redigir-v1.md`:
@@ -692,8 +721,10 @@ Limites:
 
 - **O prazo foi encurtado para 1,2 segundo** (`--prazo-confirmacao 0.02`). O que fica
   demonstrado é o caminho do código quando o prazo vence, e não uma espera de 20 minutos.
-- **O prazo é conferido por um comando, e não cronometrado.** Quem venceu a ação foi o
-  `--pendencias` seguinte, 3 a 4 segundos depois (`humano.md` §4).
+- **O prazo foi conferido por um comando, e não cronometrado.** Quem venceu a ação foi o
+  `--pendencias` seguinte, 3 a 4 segundos depois (`humano.md` §4). Desde 17/10/2026 quem a vence
+  é o vigia do prazo, sem comando nenhum; a demonstração com os 20 minutos reais sobre o código
+  commitado AINDA NÃO FOI EXECUTADA (`humano.md` §4.1).
 - **Não há log da pausa em arquivo próprio.** Cada pasta tem o log final (`TKT-0003.json`,
   `TKT-0005.json`), que foi gravado por cima do da pausa; o momento da pausa está só no
   `saida-terminal.txt`. Em `logs/grafo-pausa/` e `logs/grafo-h2/` existe o `-pausado.json`.
@@ -755,10 +786,13 @@ três rodadas dos mesmos 44 casos não são 132 casos.
 - **O checkpoint não é histórico.** Ele é apagado quando a execução conclui (`_concluir()`,
   desde 12/10/2026), e uma execução nova do mesmo chamado apaga o de uma pausa anterior. O thread
   é o id do chamado; o histórico das execuções é o log. Só a execução pausada tem checkpoint.
-- **`gravar` não é idempotente para os encaminhamentos.** Abrir chamado tem a chave
-  `ticket:kb_id`, e o pedido ao cliente é idempotente pelo chamado
-  (`db.registrar_pedido_cliente`). Uma anotação ou um encaminhamento a uma fila gravado duas
-  vezes criaria duas linhas; o que impede isso hoje é o nó rodar uma vez, e não uma chave.
+- **`gravar` é idempotente desde 17/10/2026, mas só dentro de uma execução.** Abrir chamado tem a
+  chave `ticket:kb_id`, o pedido ao cliente é idempotente pelo chamado, e o encaminhamento e o aviso
+  ao gestor ganharam chave (execução + chamado + destino; um aviso por pendência), para a
+  recuperação depois de uma queda poder rodar o nó de novo (`humano.md` §4.3). Duas execuções do
+  mesmo chamado (o evento de abertura disparado duas vezes) ainda gravam dois encaminhamentos: a
+  chave reconhece a gravação refeita, não o chamado repetido. Isso se resolveria na entrada, com a
+  chave do evento.
 - **O H2 não envia nada.** Aprovado o pedido, o que acontece é uma linha em `encaminhamentos`
   com `enviado_em`: o sistema simulado não tem canal de mensagem (`humano.md` §2.4).
 
@@ -768,7 +802,7 @@ três rodadas dos mesmos 44 casos não são 132 casos.
   onde não cabe, o score a um centésimo do limiar e o relato que diz o serviço sem o sintoma.
 - Medir o grafo em chamados que não foram escritos pelo grupo: os 40 casos são de quem conhece
   os guias (§6.6).
-- Exercitar o prazo vencido com o prazo de verdade, de 20 minutos: a demonstração do §6.7
-  encurtou o prazo para 1,2 segundo.
+- Demonstrar o vigia com os 20 minutos reais sobre o código commitado (`humano.md` §4.1), e o
+  prazo real também no H2: o §6.7 encurtou o prazo para 1,2 segundo.
 - Implementar o H3 (`humano.md` §7), e com ele o nó `aguardar_cliente`. O H2 existe desde
   12/10/2026 (§6.3).

@@ -10,8 +10,8 @@ em docs/modelos.md.
 
 Os preços em candidatos() são de LISTA, em US$ por milhão de tokens, consultados em
 21/09/2026 em agregadores, e servem só para o custo SIMULADO (no plano gratuito o
-gasto real é zero). Os três foram verificados a partir do perfil do grupo na Mistral; o do
-ministral-8b-latest foi corrigido ali em 13/10/2026 (de US$ 0,15 para US$ 0,20).
+gasto real é zero). Os três foram conferidos em 17/10/2026 nas páginas oficiais dos modelos
+(entrada igual à saída; links em docs/fontes.md): 3B a US$ 0,10, 8B a US$ 0,15, 14B a US$ 0,20.
 """
 import os
 import time
@@ -34,11 +34,11 @@ def candidatos() -> list[dict]:
     base_url, api_key = os.environ.get("LLM_BASE_URL"), os.environ.get("OPENAI_API_KEY")
     return [
         {"nome": "ministral-3b-latest", "base_url": base_url, "api_key": api_key,
-         "preco": (0.10, 0.10), "temperatura": 0.0},
+         "preco": (0.10, 0.10), "temperatura": 0.0},   # página oficial do modelo, 17/10/2026
         {"nome": "ministral-8b-latest", "base_url": base_url, "api_key": api_key,
-         "preco": (0.20, 0.20), "temperatura": 0.0},   # perfil do grupo na Mistral, 13/10/2026
+         "preco": (0.15, 0.15), "temperatura": 0.0},   # página oficial do modelo, 17/10/2026
         {"nome": "ministral-14b-latest", "base_url": base_url, "api_key": api_key,
-         "preco": (0.20, 0.20), "temperatura": 0.0},
+         "preco": (0.20, 0.20), "temperatura": 0.0},   # página oficial do modelo, 17/10/2026
     ]
 
 

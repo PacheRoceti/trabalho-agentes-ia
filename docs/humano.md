@@ -350,9 +350,12 @@ prazo vencido. O encaminhamento é gravado pelo código (`encaminhar_pendencia`,
 rejeição do H2 seguem a mesma tabela, pela mesma função, sem a coluna do gestor (§2.4). O H3 não
 existe, e o prazo dele também não.
 
-**O prazo é conferido, não cronometrado.** Não há processo em segundo plano: as pendências
-vencidas são encaminhadas no começo do próximo comando do `main.py`. A ação vencida nunca é
-executada, mas a fila humana só a recebe quando alguém roda um comando (`arquitetura.md` §7).
+**Quem aplica o prazo (desde 17/10/2026): o vigia, e o começo de cada comando.** Até 16/10/2026
+o prazo era só conferido: as pendências vencidas eram encaminhadas no começo do próximo comando do
+`main.py`, e se ninguém rodasse nada o chamado ficava na pausa. A ação vencida nunca era executada,
+mas a fila humana não a recebia no minuto 20, e o gestor não era avisado do P1. Agora um processo
+à parte, o vigia (§4.1), aplica o prazo sozinho. O começo de cada comando continua aplicando-o,
+como segunda rede para quando o vigia não está rodando.
 
 **O aviso ao gestor.** Quem lê a fila humana é o próprio analista de suporte. Se ele não
 respondeu à confirmação, o encaminhamento cai na fila da mesma pessoa: o chamado não fica preso
@@ -367,6 +370,179 @@ suporte, na tabela `avisos_gestor`, com a mesma mensagem do encaminhamento (deci
 - **Limite:** o aviso é um registro numa tabela, e não uma notificação. O sistema simulado não
   tem canal de mensagem, e não há comando para o gestor listar os avisos.
 
+### 4.1 O vigia do prazo (17/10/2026)
+
+`python src/vigiar_prazos.py` é um processo à parte que aplica o prazo sem ninguém rodar comando
+nenhum. A regra não mudou e continua sendo do código: a cada volta ele chama a mesma
+`agente.vencer_pendencias` que o `main.py` chama, e o mesmo `db.esquecer_episodios` (o decaimento
+da memória episódica). Entre uma volta e outra ele dorme até o `vence_em` mais próximo, mais um
+segundo, e nunca mais que 30 s, porque uma pendência nova pode chegar a qualquer momento. Ele não
+aprova, não rejeita, não chama o modelo para decidir e não muda o prazo. Só no laço (`--laco`) a
+retomada chama o modelo, para a frase final, e por isso o vigia lê a chave da API do `.env`.
+
+**Feito para rodar sem terminal.**
+
+| Requisito | Como fica |
+|---|---|
+| nada interativo | a configuração vem do `.env` e dos argumentos (`--intervalo`, `--log`, `--uma-vez`) |
+| saída em arquivo | log rotativo em UTF-8 (`logs/vigia/vigia.log`, ignorado pelo git), e na tela quando há tela |
+| estado no banco | a pendência e o `vence_em` estão na tabela `pendencias`: reiniciar o vigia não perde nada, e a primeira volta depois de um reinício vence o que passou do prazo enquanto ele estava parado |
+| erro não o derruba | cada volta abre e fecha a própria conexão; um erro (rede, cota, banco recriado por `--todos` ou `--reset`) vira uma linha de log, e a próxima volta tenta de novo (`test_erro_numa_volta_nao_derruba_o_vigia`) |
+| um vigia por máquina | trava do sistema operacional em `dados/vigia.lock` (`db.travar_instancia`); o segundo sai sem fazer nada (`test_um_vigia_por_maquina_e_a_situacao_diz_se_ele_roda`) |
+| parada limpa | Ctrl+C, SIGTERM ou Ctrl+Break: termina a volta em curso e sai |
+| sinal de vida | `dados/vigia-batimento.json` (pid, última volta, quantas aguardam, próxima volta); o `main.py --pendencias` diz se o vigia está rodando ou PARADO |
+
+**A corrida que o vigia criou, e a trava que a fecha.** Com dois processos respondendo à mesma
+pendência (o vigia vencendo e o analista aprovando no mesmo instante), o grafo podia retomar a
+mesma execução duas vezes: `retomar_grafo` confere no checkpoint se a execução ainda está parada
+em `confirmar` e só depois grava a resolução, e os dois passavam pela conferência. O teste
+`test_duas_respostas_ao_mesmo_tempo_gravam_um_desfecho_so` reproduz isso: **sem a trava, o
+`TKT-0003` ficou com um chamado interno P1 aberto E um encaminhamento à fila humana com aviso ao
+gestor**, nas três vezes em que foi rodado assim. O laço já estava protegido, porque grava a
+resolução (`resolver_pendencia`, atômico) antes de escrever. A correção é uma trava do sistema
+operacional em `dados/respostas.lock` (`db.trava_das_respostas`), em volta de toda retomada
+(`agente.retomar`, a porta de entrada do `--aprovar`, do `--rejeitar`, do vencimento e do vigia):
+quem chega depois espera e, quando entra, já não encontra a pausa e não grava nada. A trava some
+quando o processo morre, então uma queda no meio de uma resposta não deixa a pendência presa. As
+conexões com os dois bancos passaram a esperar até 30 s (`db.ESPERA_BANCO_S`) em vez de falhar com
+"database is locked".
+
+**Demonstração com o prazo real de 20 minutos e o modelo real: AINDA NÃO EXECUTADA sobre o código
+commitado.** Uma execução de 17/10/2026 deu o resultado esperado (o `TKT-0003` pausou, e o vigia o
+venceu sozinho um segundo depois do `vence_em`, com fila humana e aviso ao gestor), mas rodou com
+o código sem commit (`9c2c70d + alterações locais`), e o código mudou depois dela (a recuperação
+entrou na volta do vigia, a escrita ganhou chave, o embedding entrou no custo). Pelo mesmo motivo
+das rodadas de referência (logs ligados a um commit que não reproduz o código), ela foi
+**descartada** e não está no repositório. Vai ser refeita sobre o commit de 17/10/2026, em
+`logs/grafo-prazo-vigia/`: banco recriado, o vigia num terminal à parte, o `TKT-0003` sem
+`--auto-aprovar`, ninguém rodando comando até o vencimento, e depois um `--pendencias` e um
+`--aprovar` atrasado.
+
+**Limites.**
+
+- **Alguém precisa subir o vigia.** Num terminal, ele morre com o terminal; como serviço (§4.2),
+  sobrevive. O grupo demonstrou o vigia num terminal, e não o instalou como serviço.
+- **Ele só vale na máquina do banco.** O SQLite não pode ser aberto por uma pasta de rede: o vigia,
+  o agente e os comandos do analista têm de rodar na mesma máquina. Analistas em outros PCs
+  precisariam entrar nela (SSH ou área de trabalho remota) ou de uma API que não existe.
+- **A precisão é de segundos, não de milissegundos:** o vigia acorda um segundo depois do
+  `vence_em`, e a volta leva o tempo de gravar o encaminhamento.
+- **O H3 continua sem prazo**, porque o H3 não existe.
+
+### 4.2 Como rodar o vigia em servidor
+
+O script é o mesmo; quem o mantém vivo é o sistema operacional. O grupo não instalou nenhuma das
+formas abaixo: elas ficam escritas para quem for implantar.
+
+**Windows, com o Agendador de Tarefas** (sem instalar nada): inicia no boot, roda sem ninguém
+logado e não depende de terminal. Nas propriedades da tarefa, marque "reiniciar se a tarefa
+falhar".
+
+```
+schtasks /Create /TN "VigiaPrazos" /SC ONSTART /RU SYSTEM /TR "C:\caminho\trabalho-agentes-ia\.venv\Scripts\python.exe C:\caminho\trabalho-agentes-ia\src\vigiar_prazos.py"
+```
+
+Para um serviço do Windows de verdade (iniciar, parar, reiniciar sozinho), o caminho usual é o
+NSSM, que embrulha o mesmo comando. Quem não quiser um processo sempre ativo pode agendar
+`python src/vigiar_prazos.py --uma-vez` a cada minuto: uma conferência e sai, com até um minuto de
+atraso (se a anterior ainda estiver rodando, a nova sai sem fazer nada).
+
+**Linux, com systemd.** Arquivo `/etc/systemd/system/vigia-prazos.service`, e depois
+`systemctl enable --now vigia-prazos` (a saída também vai para `journalctl -u vigia-prazos`):
+
+```ini
+[Unit]
+Description=Vigia do prazo de confirmação do agente de triagem
+After=network-online.target
+
+[Service]
+WorkingDirectory=/opt/trabalho-agentes-ia
+ExecStart=/opt/trabalho-agentes-ia/.venv/bin/python src/vigiar_prazos.py
+Restart=always
+RestartSec=10
+User=agente
+
+[Install]
+WantedBy=multi-user.target
+```
+
+O `systemctl stop` manda SIGTERM, e o vigia termina a volta em curso antes de sair.
+
+### 4.3 Uma queda no meio da retomada (17/10/2026)
+
+`dados/tickets.db` (o desfecho) e `dados/checkpoints.db` (onde a execução está) são arquivos
+separados: "gravou o desfecho" e "o checkpoint avançou" nunca são uma operação só. Até 16/10/2026,
+uma queda do processo no meio de uma retomada deixava a execução assim:
+
+| Janela | Onde caiu | Como ficava | O que acontece agora |
+|---|---|---|---|
+| J1 | em `confirmar`, ao processar a resposta | pendência resolvida, checkpoint ainda em `confirmar`: **presa**, e o texto editado pelo analista se perdia | a recuperação reenvia a resposta guardada, e o relógio decide igual, porque a hora é a gravada |
+| J2 | entre `confirmar` e a escrita | pendência aprovada, nada gravado, checkpoint em `gravar`: **presa** | a recuperação roda `gravar` |
+| J3 | no meio de `gravar` | parte gravada; refazer duplicaria o encaminhamento e o aviso ao gestor | a recuperação roda `gravar` de novo, e as chaves não deixam duplicar |
+| J4 | depois de gravar, antes do log | desfecho gravado, sem log, sem episódio, checkpoint para sempre | a recuperação grava o log e o episódio e apaga o checkpoint |
+
+**As quatro peças.**
+
+1. **A resposta é guardada antes de retomar.** `retomar_grafo` grava a resposta (decisão, quem,
+   quando, o texto editado e o motivo) na coluna `pendencias.resposta` antes do
+   `Command(resume=...)` (`db.guardar_resposta`). Não dependemos de o LangGraph guardar o valor do
+   `resume` antes de o nó rodar.
+2. **A escrita pode ser refeita.** Tudo o que o nó `gravar` escreve tem chave: o chamado interno
+   (`ticket:kb_id`, que já existia), o pedido ao cliente (um por chamado, já existia), o
+   encaminhamento e o aviso ao gestor (novos). A chave do encaminhamento é **execução + chamado +
+   destino** (`db.chave_do_encaminhamento`; decisão de 17/10/2026): reconhece a mesma gravação
+   refeita, e não cria a regra "um encaminhamento por destino". Uma execução nova do mesmo chamado
+   tem outro `execucao_id` e grava de novo, o que preserva o caso legítimo do cliente que manda mais
+   informação. O aviso tem chave pela pendência: um aviso por pendência vencida. As colunas nascem
+   em `db.garantir_colunas_da_recuperacao`, também em bancos antigos.
+3. **A rotina `grafo.retomar_interrompidas`** pega a trava das respostas (§4.1). Com ela, ninguém
+   está no meio de uma resposta, então o que está pela metade caiu. Ela acha as execuções paradas em
+   `confirmar` com resposta guardada, em `gravar`, em `finalizar` ou no fim do grafo sem log; em
+   `confirmar` reenvia a resposta, nos outros continua do checkpoint (`GRAFO.invoke(None)` roda os
+   nós que faltam); depois grava o log, com o campo `recuperacao`, e o episódio, e apaga o
+   checkpoint. Só conta como queda o checkpoint com mais de 5 minutos (`IDADE_MINIMA_DA_QUEDA_MIN`):
+   uma execução nova, que não usa a trava, pode estar em `gravar` agora mesmo, e nenhuma execução
+   viva fica parada num nó por 5 minutos (o teto de tempo é de 90 s).
+4. **Quem a chama:** o vigia, a cada volta, e o começo de cada comando do `main.py` pelo grafo,
+   antes do vencimento do prazo. Ela aparece como "EXECUÇÃO RETOMADA DEPOIS DE QUEDA".
+
+**Testes, sem chave** (`tests/test_recuperacao.py`, 12, e um em `tests/test_vigia.py`): dez
+derrubam o processo num ponto com uma exceção forçada numa função de `db.py` e rodam a recuperação.
+Uma janela por teste (J1 antes e depois de resolver a pendência, J2, J3 na anotação e no prazo
+vencido de P1, J4), mais a pausa normal que não é tocada, a execução recente que não conta como
+queda e as duas faces da chave A. **Sem a chave, o teste da J3 grava o encaminhamento duas vezes.**
+Um mata o processo de verdade, em três processos com um checkpointer em arquivo
+(`test_processo_morto_de_verdade_fica_em_gravar_e_e_recuperado`), e um confere que a recuperação
+não conclui um checkpoint que diz que acabou sem término nem desfecho.
+
+**A durabilidade do checkpoint é `"sync"` (decisão de 17/10/2026).** A conferência do
+`simular_queda.py` mostrou que o padrão do LangGraph, `durability="async"`, grava o checkpoint de
+cada passo em segundo plano, e que uma queda real leva o último: em três quedas dentro de
+`db.abrir_chamado`, o checkpoint ficou duas vezes sem passo seguinte (como se a execução tivesse
+acabado, sem nada gravado) e uma vez em `confirmar`. Com `"sync"`, ficou em `gravar` nas três. A
+constante `DURABILIDADE` é passada em toda invocação do grafo; a tabela e a justificativa estão
+no `grafo.md` §5, como decisão que virou parâmetro.
+
+**Limites.**
+
+- **O que caiu antes da decisão não é retomado.** Uma queda na triagem, na busca ou na redação não
+  gravou nada; o caminho é rodar o chamado de novo, que apaga o checkpoint velho. Retomar ali
+  chamaria o modelo de novo, e um erro que se repete viraria uma tentativa a cada volta do vigia.
+- **A recuperação espera 5 minutos.** Uma queda às 10h00 só termina às 10h05, na primeira volta
+  depois disso (ou no primeiro comando).
+- **Não foi demonstrado com o modelo real, e o modelo não muda o resultado.** A queda é do
+  processo (luz, máquina reiniciada, processo encerrado), e não do modelo: a janela vai do fim de
+  uma escrita no banco ao checkpoint seguinte, uma fração de segundo, e acontece depois das
+  chamadas ao modelo, com o desfecho já decidido. Rodar com o modelo real só acertaria a janela
+  por sorte. Os testes forçam a queda no ponto exato, e o que eles provam (a recuperação e as
+  chaves) é código, igual com o modelo real ou com o roteirizado.
+- **A simulação com o processo morto de verdade: `simular_queda.py`.** Os testes levantam uma
+  exceção, e o processo continua vivo. O script troca uma função de `src/db.py` por uma que mata o
+  processo com `os._exit`, sem `finally` e sem liberar nada, e a recuperação roda depois noutro
+  processo, sobre os arquivos em disco. A simulação com o modelo real até a pausa (a J2, em
+  `logs/grafo-queda/`) **AINDA NÃO FOI EXECUTADA** sobre o código commitado.
+- **O custo do `"sync"` não foi medido:** é a espera da gravação do checkpoint a cada superpasso.
+
 ## 5. Aprovar duas vezes (§8.5)
 
 **O que existe.** A abertura de chamado interno tem chave de idempotência, `ticket:kb_id`,
@@ -380,8 +556,16 @@ registro.
 - É derivada do conteúdo que identifica a ação (qual chamado, qual procedimento), e não do texto
   do resumo. Se o analista aprovar editando e a aprovação chegar duas vezes, a segunda não
   duplica: a chave é a mesma.
-- `registrar_encaminhamento` **não tem chave**. Uma anotação ou um encaminhamento à fila humana
-  gravado duas vezes cria duas linhas.
+- O encaminhamento (anotação, filas, fila humana depois de rejeição ou prazo vencido) e o aviso
+  ao gestor **têm chave no grafo desde 17/10/2026**: execução + chamado + destino, e um aviso por
+  pendência (§4.3). Sem a chave, a recuperação depois de uma queda gravava o encaminhamento duas
+  vezes (`test_j3_anotacao_gravada_e_queda_a_recuperacao_nao_duplica`).
+- **As três barreiras.** (1) A pendência já resolvida (`resolver_pendencia`, atômico) e a trava
+  das respostas (§4.1); (2) o checkpoint que não está mais em `confirmar`; (3) a chave derivada do
+  conteúdo. A aprovação repetida na mesma pausa é barrada pelas duas primeiras e nem chega à
+  escrita, que é o que os logs abaixo mostram. A chave é a barreira para o que chega por outro
+  caminho: a mesma gravação refeita depois de uma queda (§4.3) e, no chamado interno, a mesma ação
+  aprovada em duas execuções do mesmo chamado.
 - O pedido ao cliente, no grafo, **tem**: `db.registrar_pedido_cliente` é idempotente pelo chamado
   (a regra é um pedido por chamado). Repetir a escrita devolve o pedido que já existe, com
   `ja_existia: true`, e não reescreve a mensagem (`test_h2_o_envio_e_idempotente_pelo_chamado`).
@@ -440,11 +624,10 @@ não um analista.
 
 ## 7. O que falta para este item
 
-- Exercitar o prazo vencido com o prazo de verdade. No H1 e no H2 ele foi executado com o
-  modelo real em 12/10/2026 (`logs/grafo-h1-vencido/` e `logs/grafo-h2-vencido/`), com o prazo
-  encurtado para 1,2 segundo (`grafo.md` §6.7). A aprovação do H1 está em `logs/grafo-pausa/`,
-  e a rejeição em `logs/grafo-memoria-1/` (sem motivo) e `logs/grafo-procedural/` (com motivo),
-  de 11/10/2026.
+- Refazer, sobre o código commitado, a demonstração do vigia com os 20 minutos reais (§4.1) e
+  a simulação da queda com o modelo real (§4.3).
+- Exercitar o prazo real de 20 minutos também no H2: o H2 vencido só foi executado com o prazo
+  encurtado para 1,2 segundo (`logs/grafo-h2-vencido/`, `grafo.md` §6.7).
 - Implementar o H3: a pausa em `aguardando_cliente` e a retomada com a resposta, com o prazo de
   3 dias úteis contado do `enviado_em` do pedido (§2.4).
 - Exercitar os outros motivos de rejeição do H2 (`mensagem_ruim`, `outro`) com o modelo real: a
@@ -454,13 +637,18 @@ não um analista.
 - Separar a aprovação do envio, se um canal de mensagem (um MCP simulado, por exemplo) for
   ligado a `db.registrar_pedido_cliente`: aí a falha de entrega passa a existir e precisa de
   regra no `case.md`.
-- Aplicar o prazo vencido sem depender de alguém rodar um comando (§4).
+- Instalar o vigia do prazo como serviço (§4.2) e demonstrá-lo sobrevivendo a um reinício: a
+  demonstração de 17/10/2026 o rodou num terminal (§4.1).
 - Dar ao gestor um jeito de ver os avisos (hoje é uma tabela sem comando de leitura).
 - Levar o motivo da rejeição ao texto do encaminhamento: ele é pedido e vai à memória (§2.1 e
   §2.4), mas a fila humana ainda diz só que o analista rejeitou.
 - Mostrar a reincidência, o score e o SLA na tela de confirmação (§2.2). A prioridade prevista e a
   consequência já aparecem.
 - Deixar o analista editar o resumo a partir do texto do modelo, e não redigitando tudo (§2.2).
-- Dar chave de idempotência a `registrar_encaminhamento`.
+- Demonstrar a chave do chamado interno em log, com o modelo real: o mesmo chamado rodado e
+  aprovado duas vezes, e a segunda execução com `ja_existia: true` (§5). Hoje ela é provada só
+  pelos testes.
+- Resolver o evento de abertura duplicado na entrada (chave do evento): a chave do encaminhamento
+  reconhece a gravação refeita, e não duas execuções do mesmo chamado (§4.3).
 - Refazer o caso 6 (`logs/grafo-caso-6/`) com um analista de verdade respondendo: a demonstração
   foi feita por quem escreveu o sistema.

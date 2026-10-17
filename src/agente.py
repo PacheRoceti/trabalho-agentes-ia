@@ -262,7 +262,7 @@ def _entrada(con, id_ticket: str, texto: str | None = None) -> tuple[str, str | 
 
 
 def rodar(id_ticket: str, *, client, modelo: str, con, temperatura: float | None = 0.0,
-          preco_usd_por_mtok: tuple[float, float] = (0.20, 0.20),
+          preco_usd_por_mtok: tuple[float, float] = (0.15, 0.15),
           orcamento: Orcamento | None = None, confirmador=None,
           log_dir: Path | None = None, verbose: bool = True,
           prompt_arquivo: Path = PROMPT_ARQUIVO, texto: str | None = None,
@@ -374,7 +374,7 @@ class EdicaoRecusada(Exception):
     foi gravado e a ação continua à espera do analista."""
 
 
-def retomar(id_ticket: str, decisao: str, *, client, con, por: str = "analista de suporte",
+def _retomar(id_ticket: str, decisao: str, *, client, con, por: str = "analista de suporte",
             agora: datetime | None = None, orcamento: Orcamento | None = None,
             log_dir: Path | None = None, verbose: bool = True,
             resumo: str | None = None, motivo_rejeicao: str | None = None,
@@ -484,8 +484,9 @@ def _encaminhar_nao_executada(e: Estado, con, acao: dict, motivo: str) -> dict:
 
 def vencer_pendencias(*, client, con, agora: datetime | None = None,
                       log_dir: Path | None = None, verbose: bool = True) -> list[Estado]:
-    """Aplica o prazo a todas as pendências que venceram sem resposta. Não há processo em segundo
-    plano: quem chama é o ponto de entrada, antes de qualquer outro comando."""
+    """Aplica o prazo a todas as pendências que venceram sem resposta. Quem chama é o vigia do
+    prazo (src/vigiar_prazos.py), que roda à parte, e também o começo de cada comando do main.py,
+    como segunda rede para quando o vigia não está rodando."""
     vencidos = []
     for id_ticket in dict.fromkeys(p["ticket_externo"] for p in db.pendencias_aguardando(con)):
         e = retomar(id_ticket, "vencer", client=client, con=con, agora=agora,
@@ -493,6 +494,17 @@ def vencer_pendencias(*, client, con, agora: datetime | None = None,
         if e is not None:
             vencidos.append(e)
     return vencidos
+
+
+def retomar(id_ticket: str, decisao: str, **kw) -> Estado | None:
+    """A porta de entrada da retomada (main.py --aprovar/--rejeitar, o vencimento e o vigia).
+    Faz o que `_retomar` faz, uma resposta por vez entre todos os processos (db.trava_das_respostas):
+    quem chega depois espera e, quando entra, já não encontra a pausa e devolve None. O laço já
+    era protegido pelo `resolver_pendencia` atômico; o grafo, que confere a pausa no checkpoint
+    antes de gravar a resolução, não era. Fica aqui embaixo para não deslocar as linhas de
+    `_retomar` citadas em docs/grafo.md §4.1."""
+    with db.trava_das_respostas():
+        return _retomar(id_ticket, decisao, **kw)
 
 
 def _executar(e: Estado, con, chamada, verbose: bool) -> dict:

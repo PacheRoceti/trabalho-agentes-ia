@@ -113,7 +113,9 @@ GRAFO   src/grafo.py · objeto GRAFO, compilado uma vez · thread_id = id do cha
       │                       aprova no prazo        → aprovada (pode corrigir o texto:
       │                                                o resumo, no H1; a mensagem, no H2)
       │                       rejeita no prazo       → rejeitada
-      │                       sem resposta em 20 min → vencida (o relógio vale antes da pessoa)
+      │                       sem resposta em 20 min → vencida (o relógio vale antes da pessoa);
+      │                                                quem a vence é o vigia do prazo, outro
+      │                                                processo (src/vigiar_prazos.py)
       ▼
   [gravar]             [C] a ÚNICA escrita de desfecho da execução                  escrita
       │                    aprovada, H1         → abre o chamado interno; categoria, time e
@@ -298,7 +300,7 @@ dele. **Não há lista de mensagens no estado.**
 | `passos` | `list[dict]` | os nós que registram um passo | o log e a saída | cada nó | `operator.add` (concatena) |
 | `tentativas_redacao` | `int` | `redigir` | a aresta de `validar` | contagem | `operator.add` (soma) |
 | `n_chamadas_modelo`, `tokens_entrada`, `tokens_saida`, `custo_usd` | número | `triagem`, `conferir_ressalva`, `redigir` | os tetos; o log | o campo `usage` da resposta da API | `operator.add` (soma) |
-| `tokens_embedding` | número | `buscar` | o log (não entra nos tetos) | o campo `usage` da API de embedding; inclui a indexação dos guias quando o índice está vazio | `operator.add` (soma) |
+| `tokens_embedding` | número | `buscar` | o log; o custo deles vai junto para `custo_usd` (teto de dinheiro), e não para o teto de tokens | o campo `usage` da API de embedding; inclui a indexação dos guias quando o índice está vazio | `operator.add` (soma) |
 | `segundos_gastos` | `float` | todos os nós, pelo embrulho `_no()` | o teto de tempo | o relógio | `operator.add` (soma) |
 
 A coluna do reducer confere com a saída de `conferir_grafo.py` (§9.2).
@@ -330,8 +332,8 @@ O que limita uma execução, e quem confere:
 | Teto | Valor | O que conta | Quem confere |
 |---|---|---|---|
 | passos | 20 superpassos (`LIMITE_SUPERPASSOS`) | nós executados | o LangGraph (`recursion_limit`, com o nosso valor declarado no código) |
-| tokens | 30 mil | entrada + saída, somadas nas chamadas ao modelo | `_teto()`, antes de cada chamada ao modelo |
-| custo | US$ 0,05 | os tokens, ao preço de lista informado no `.env` | `_teto()` |
+| tokens | 30 mil | entrada + saída, somadas nas chamadas ao modelo de chat (o embedding não entra: ele não ocupa a janela do modelo) | `_teto()`, antes de cada chamada ao modelo |
+| custo | US$ 0,05 | os tokens de chat, ao preço do `.env`, **mais os de embedding da busca**, ao `PRECO_EMBEDDING_USD` (desde 17/10/2026) | `_teto()` |
 | tempo | 90 s | o tempo gasto **dentro dos nós**, somado em `segundos_gastos` | `_teto()` |
 | redações | 2 por execução (`MAX_REDACOES`) | passagens pelo nó `redigir` | a aresta de `validar` |
 | tentativas de triagem | 2 (`MAX_TENTATIVAS_TRIAGEM`) | respostas fora do contrato | o nó `triagem` |
@@ -480,10 +482,17 @@ Limites do que foi implementado:
 - **O aviso ao gestor é um registro, não uma notificação.** O sistema é simulado e não tem canal
   de mensagem: o aviso é uma linha em `avisos_gestor`, que o gestor precisa consultar. Não há
   comando no `main.py` para listá-la.
-- **O prazo é conferido, não cronometrado.** Não há processo em segundo plano. As pendências
-  vencidas são encaminhadas no começo do próximo comando do `main.py` (`vencer_pendencias`). Se
-  ninguém rodar nada, o chamado fica na pausa até alguém rodar: a regra garante que a ação
-  vencida nunca é executada, mas não garante que a fila humana a receba no minuto 20.
+- **O prazo depende de o vigia estar rodando.** Desde 17/10/2026 um processo à parte,
+  `src/vigiar_prazos.py`, aplica o prazo sozinho, dormindo até o próximo `vence_em`
+  (`humano.md` §4.1). O começo de cada comando do `main.py` continua aplicando-o
+  (`vencer_pendencias`), como segunda rede. Sem o vigia, vale o limite de antes: a ação vencida
+  nunca é executada, mas a fila humana só a recebe quando alguém roda um comando. Toda retomada
+  (vigia, `--aprovar`, `--rejeitar`) passa por uma trava entre processos, porque sem ela o vigia e
+  o analista respondendo no mesmo instante gravavam dois desfechos no grafo.
+- **Uma queda no meio da retomada é recuperada depois de 5 minutos.** A resposta
+  do analista é guardada antes de retomar, a escrita tem chave em tudo, e o vigia (ou o próximo
+  comando) termina o que ficou pela metade (`humano.md` §4.3). O que caiu antes da decisão não é
+  retomado: o chamado roda de novo. Demonstrado só nos testes, com a queda simulada.
 - **O [H3] não existe.** A espera pela resposta do cliente não foi implementada
   (`humano.md` §7): aprovado o pedido, a execução termina em ●T1.
 - **O [H2] não envia nada.** O sistema simulado não tem canal de mensagem: aprovar o pedido grava

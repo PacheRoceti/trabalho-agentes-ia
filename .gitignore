@@ -234,3 +234,8 @@ indice-*/
 *.db-wal
 *.db-shm
 *.db-journal
+
+# Vigia do prazo (src/vigiar_prazos.py): travas, sinal de vida e o log do serviço
+dados/*.lock
+dados/vigia-batimento.json
+logs/vigia/

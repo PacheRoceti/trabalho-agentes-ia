@@ -205,6 +205,53 @@ class TestVetorial(unittest.TestCase):
             self.assertEqual(json.loads((Path(d) / "TKT-0004.json").read_text(encoding="utf-8"))
                              ["tokens_embedding"], 0)                  # comercial: não busca, não gasta
 
+    # ---- o custo do embedding (desde 17/10/2026): no custo_usd e no teto de dinheiro, não no de tokens
+
+    def _contando(self, tokens_por_texto=10):
+        def contando(textos):
+            vetorial.TOKENS_EMBEDDING += tokens_por_texto * len(textos)
+            return self.emb(textos)
+        vetorial.EMBEDDER = contando
+        RELATOS["O certificado SSL do meu site venceu ontem e a renovação automática não rodou. "
+                "O navegador mostra aviso de site não seguro para os meus clientes."] = vetor(KB_101_A=0.9)
+
+    def test_o_custo_do_embedding_entra_no_custo_usd_e_o_log_o_separa(self):
+        self._contando()
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            e = rodar_grafo("TKT-0001", client=ModeloRoteirizado(ROTEIROS["TKT-0001"]), modelo="fake",
+                            con=self.con, verbose=False, confirmador=SIM, log_dir=Path(d),
+                            preco_usd_por_mtok=(0.15, 0.15))
+            log = json.loads((Path(d) / "TKT-0001.json").read_text(encoding="utf-8"))
+        chat = e.n_chamadas_modelo * (1000 + 50) * 0.15 / 1_000_000   # cada chamada roteirizada: 1000 + 50
+        embedding = log["tokens_embedding"] * vetorial.PRECO_USD_POR_MTOK / 1_000_000
+        self.assertEqual(log["tokens_embedding"], 10 * (N_GUIAS + N_FICHAS) + 10)
+        self.assertAlmostEqual(log["custo_embedding_usd"], embedding, places=9)
+        self.assertAlmostEqual(e.custo_usd, chat + embedding, places=9)
+        self.assertEqual(e.tokens, e.n_chamadas_modelo * 1050)       # os tokens são só os do chat
+
+    def test_o_teto_de_dinheiro_conta_o_embedding(self):
+        """Depois da triagem (US$ 0,0001575) e da busca (200 tokens de embedding, US$ 0,00002), a
+        execução passa de US$ 0,00017: para antes da redação. Sem o embedding, passaria."""
+        from agente import Orcamento, Termino
+        self._contando()
+        e = rodar_grafo("TKT-0001", client=ModeloRoteirizado(ROTEIROS["TKT-0001"]), modelo="fake",
+                        con=self.con, verbose=False, confirmador=SIM, preco_usd_por_mtok=(0.15, 0.15),
+                        orcamento=Orcamento(max_usd=0.00017))
+        self.assertEqual(e.termino, Termino.ORCAMENTO)
+        self.assertIn("custo", e.motivo)
+        self.assertEqual(e.n_chamadas_modelo, 1)
+
+    def test_o_teto_de_tokens_nao_conta_o_embedding(self):
+        """1.050 tokens de chat depois da triagem, mais 200 de embedding: com teto de 1.100 tokens a
+        execução segue, porque o teto mede só o que vai à janela do modelo de chat."""
+        from agente import Orcamento, Termino
+        self._contando()
+        e = rodar_grafo("TKT-0001", client=ModeloRoteirizado(ROTEIROS["TKT-0001"]), modelo="fake",
+                        con=self.con, verbose=False, confirmador=SIM, orcamento=Orcamento(max_tokens=1100))
+        self.assertEqual(e.termino, Termino.RESPONDEU)
+        self.assertEqual(e.n_chamadas_modelo, 2)
+
     # ---- o recuo
 
     def test_se_o_embedding_falha_a_busca_cai_para_a_de_palavras_e_diz_isso(self):

@@ -25,7 +25,7 @@ pip install -r requirements.txt
 cp .env.example .env                 # Windows: copy .env.example .env
 ```
 
-Abra o `.env` e preencha `LLM_BASE_URL`, `OPENAI_API_KEY` e `LLM_MODELO` (nomes das variáveis, sem valores no repositório; o `.env` está no `.gitignore`). Preencha também `PRECO_ENTRADA_USD` e `PRECO_SAIDA_USD` com o preço de lista do modelo, para o cálculo de custo.
+Abra o `.env` e preencha `LLM_BASE_URL`, `OPENAI_API_KEY` e `LLM_MODELO` (nomes das variáveis, sem valores no repositório; o `.env` está no `.gitignore`). Preencha também `PRECO_EMBEDDING_USD` (o preço do `mistral-embed`, que entra no custo desde 17/10/2026; em branco vale US$ 0,10) e `PRECO_ENTRADA_USD` e `PRECO_SAIDA_USD` com o preço de lista do modelo, para o cálculo de custo.
 
 Confira a instalação **sem gastar nada e sem chave** (testes offline, com modelo simulado):
 
@@ -88,6 +88,14 @@ python conferir_regras.py logs/grafo-regras-v2-1   # confere a regra aprendida d
 
 Uma sequência real (pausar, listar, uma edição recusada, aprovar editando e aprovar de novo sem duplicar) está em `logs/grafo-caso-6/saida-terminal.txt`; a aprovação simples, em `logs/grafo-pausa/saida-terminal.txt`.
 
+**Quem aplica o prazo: o vigia.** Deixe rodando, em outro terminal ou como serviço do sistema operacional ([`docs/humano.md`](docs/humano.md) §4.2):
+
+```bash
+python src/vigiar_prazos.py
+```
+
+Ele dorme até o próximo prazo e, quando um vence sem resposta, encaminha o chamado à fila humana (e avisa o gestor, se seria P1) sem ninguém rodar comando nenhum. O `--pendencias` diz se ele está rodando. Sem o vigia, o prazo vencido só é aplicado quando alguém roda o próximo comando do `main.py`. A demonstração com a espera real de 20 minutos, sobre o código commitado, ainda não foi executada ([`docs/humano.md`](docs/humano.md) §4.1).
+
 **O pedido de informação ao cliente também espera o analista** (desde 12/10/2026, só no grafo). A mensagem chega ao cliente e não tem volta, então o `devolver_cliente` pausa do mesmo jeito, com o mesmo prazo. A tela mostra o relato do cliente e a mensagem, que é um texto padrão com cinco perguntas (serviço, domínio ou banco, erro, data e hora, o que mudou), e não texto do modelo ([`docs/prompts.md`](docs/prompts.md) §2.2). As respostas são `--aprovar TKT-0000`, `--aprovar TKT-0000 --mensagem "texto corrigido"` (a mensagem do analista passa pela mesma regra: nenhuma informação interna) e `--rejeitar TKT-0000`, com `--motivo mensagem_ruim`, `informacao_suficiente` ou `outro`, se quiser. Rejeitado ou vencido, o chamado vai para a fila humana e o único pedido permitido do chamado não é gasto. **Limite:** o sistema simulado não tem canal de mensagem; "enviar" é gravar o pedido com a hora do envio. Sequência real em `logs/grafo-h2/saida-terminal.txt`, e o que ela achou em [`docs/humano.md`](docs/humano.md) §2.4.
 
 Os chamados disponíveis são os 44 do gabarito: `TKT-0001` a `TKT-0007` e o inexistente `TKT-0999`, da Parte 1, `TKT-0101` a `TKT-0132`, da ampliação de 12/10/2026, e `TKT-0133` a `TKT-0136`, de 13/10/2026 (ver [`dados/README.md`](dados/README.md)).
@@ -109,7 +117,7 @@ Como interpretar o término (`TERMINO:` na saída):
 | Término | Significa |
 |---|---|
 | `respondeu` | o agente registrou um desfecho e concluiu |
-| `aguardando_humano` | a ação irreversível (abrir chamado interno ou, no grafo, enviar o pedido ao cliente) espera o analista: nada foi gravado ainda. A ação fica na tabela `pendencias`, com o prazo de 20 minutos; `--aprovar` conclui a execução (término `respondeu`). Com `--rejeitar`, ou vencido o prazo, o chamado vai para a fila humana com as considerações do agente (término `respondeu`, desfecho `fila_humana`); no prazo vencido de um chamado que seria P1, o gestor também é avisado. O prazo é aplicado no começo do próximo comando do `main.py`: não há processo em segundo plano |
+| `aguardando_humano` | a ação irreversível (abrir chamado interno ou, no grafo, enviar o pedido ao cliente) espera o analista: nada foi gravado ainda. A ação fica na tabela `pendencias`, com o prazo de 20 minutos; `--aprovar` conclui a execução (término `respondeu`). Com `--rejeitar`, ou vencido o prazo, o chamado vai para a fila humana com as considerações do agente (término `respondeu`, desfecho `fila_humana`); no prazo vencido de um chamado que seria P1, o gestor também é avisado. Quem aplica o prazo sozinho é o vigia (`python src/vigiar_prazos.py`, um processo à parte); sem ele, o prazo é aplicado no começo do próximo comando do `main.py` |
 | `orcamento_esgotado` | passou de 30 mil tokens, US$ 0,05, 90 s ou do limite de passos (20 superpassos no grafo; 8 passos no laço); o motivo diz qual teto |
 | `erro_fatal` | não há como continuar: API fora ou chave inválida; no grafo, resposta do modelo fora do contrato 2 vezes ou texto redigido reprovado 2 vezes; no laço, modelo que encerra sem desfecho depois de 2 lembretes |
 
@@ -228,6 +236,8 @@ src/         grafo.py (o grafo em LangGraph: o caminho padrão) · vetorial.py (
 conferir_grafo.py   imprime o grafo compilado, para conferir com o desenho (docs/arquitetura.md §9)
 demonstrar_reducer.py   roda o grafo com e sem reducer (docs/grafo.md §3.2); grava logs/grafo-reducer/
 conferir_regras.py   lê os logs de uma rodada e confere a regra aprendida do redigir (docs/memoria.md §5.1)
+src/vigiar_prazos.py   o vigia do prazo: aplica os 20 minutos do analista sem ninguém rodar comando (docs/humano.md §4.1)
+simular_queda.py   mata o processo no meio de uma retomada, para mostrar a recuperação (docs/humano.md §4.3)
 src/prompts/ no grafo, em uso: triagem-v1.md · ressalva-v3.md · redigir-v3.md (carregados por grafo.py)
              triagem-v2.md (variante do teste da regra da frase no grafo, medida e não adotada,
              docs/prompts.md §3.7; roda com --prompt-triagem) · triagem-v1-sem-frase.md (o mesmo
@@ -239,7 +249,7 @@ src/prompts/ no grafo, em uso: triagem-v1.md · ressalva-v3.md · redigir-v3.md 
              agente-v1.md a agente-v4.md (histórico) · agente-v5-sem-frase.md (variante do teste da regra da frase,
              docs/prompts.md §3) · agente-v4-com-frase.md e agente-v4-sem-frase.md (testes anteriores, §3.6)
 dados/       seed.sql · gabarito.json · README.md (casos difíceis nomeados)
-tests/       testes offline (sem chave): test_grafo.py (o grafo) · test_offline.py (o laço) · test_vetorial.py (a busca vetorial)
+tests/       testes offline (sem chave): test_grafo.py (o grafo) · test_offline.py (o laço) · test_vetorial.py (a busca vetorial) · test_vigia.py (o vigia do prazo) · test_recuperacao.py (a recuperação depois de uma queda)
 docs/        case.md · io.md · prompts.md · arquitetura.md · grafo.md · rag.md · memoria.md · humano.md
              modelos.md · modelos-tabela-3.3.md · base-de-conhecimento-v2.md · fontes.md
              arquitetura-v2.md (histórico da Parte 1)

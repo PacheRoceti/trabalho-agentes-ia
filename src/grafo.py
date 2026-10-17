@@ -170,7 +170,7 @@ class EstadoGrafo(TypedDict, total=False):
     n_chamadas_modelo: Annotated[int, operator.add]
     tokens_entrada: Annotated[int, operator.add]
     tokens_saida: Annotated[int, operator.add]
-    tokens_embedding: Annotated[int, operator.add]     # buscar: os tokens da API de embedding (log; não entram no orçamento)
+    tokens_embedding: Annotated[int, operator.add]     # buscar: os tokens da API de embedding (o custo vai a custo_usd; não entram no teto de tokens)
     custo_usd: Annotated[float, operator.add]
     segundos_gastos: Annotated[float, operator.add]   # só o tempo dentro dos nós: a espera não conta
 
@@ -180,7 +180,7 @@ class Contexto:
     """O que os nós usam e NÃO vai para o checkpoint: conexões e configuração da chamada."""
     client: object
     con: object
-    preco_usd_por_mtok: tuple[float, float] = (0.20, 0.20)
+    preco_usd_por_mtok: tuple[float, float] = (0.15, 0.15)
     orcamento: Orcamento = field(default_factory=Orcamento)
     confirmador: object = None
     verbose: bool = True
@@ -364,7 +364,7 @@ def buscar(state, ctx):
         artigo = db.buscar_artigo(ctx.con, candidatos[0]["kb_id"])
         frases = [f.strip() for f in artigo["nao_cobre"].split(";") if f.strip()] if artigo else []
     return {"candidatos": candidatos, "ressalvas_do_melhor": frases,
-            "tokens_embedding": vetorial.TOKENS_EMBEDDING - antes,
+            **_consumo_do_embedding(vetorial.TOKENS_EMBEDDING - antes),   # tokens_embedding e custo_usd
             "passos": [_passo(state, "buscar_base_conhecimento", {"termos": state["termos"]},
                               {"resultados": candidatos, "limiar_para_agir_sozinho": LIMIAR_CONFIANCA})]}
 
@@ -631,7 +631,7 @@ def gravar(state, ctx):
         apoio = SimpleNamespace(prazo_confirmacao_min=state["prazo_confirmacao_min"],
                                 ticket=state["ticket"], desfecho=None,
                                 scores_kb={c["kb_id"]: c["score"] for c in state.get("candidatos") or []})
-        argumentos, resultado = encaminhar_pendencia(apoio, ctx.con, state["pendencia"], motivo)
+        argumentos, resultado = encaminhar_pendencia(apoio, ctx.con, state["pendencia"], motivo, **_chaves_da_gravacao(state, "fila_humana"))
         return {"desfecho": apoio.desfecho,
                 "passos": [_passo(state, "registrar_encaminhamento", argumentos, resultado)]}
     if acao in CAMPO_EDITAVEL:
@@ -652,7 +652,7 @@ def gravar(state, ctx):
         return {"desfecho": {"acao": acao, "kb_id": None, **resultado},
                 "passos": [_passo(state, "registrar_encaminhamento", argumentos, resultado)]}
     kb_id = proposto["kb_id"] if acao == "anotacao_interna" else None
-    resultado = db.registrar_encaminhamento(ctx.con, id_ticket, acao, texto, kb_id)
+    resultado = db.registrar_encaminhamento(ctx.con, id_ticket, acao, texto, kb_id, chave=_chaves_da_gravacao(state, acao)["chave"])
     desfecho = {"acao": acao, "kb_id": kb_id, **resultado}
     argumentos = {"id_ticket": id_ticket, "destino": acao, "mensagem": texto}
     if kb_id:
@@ -758,7 +758,7 @@ def _construir() -> StateGraph:
 # atravessa processos, e em memória ela morreria com o processo. CHECKPOINT_DB troca o arquivo
 # (os testes usam ":memory:").
 CHECKPOINT_DB = os.environ.get("CHECKPOINT_DB") or str(RAIZ / "dados" / "checkpoints.db")
-CHECKPOINTER = SqliteSaver(sqlite3.connect(CHECKPOINT_DB, check_same_thread=False))
+CHECKPOINTER = SqliteSaver(sqlite3.connect(CHECKPOINT_DB, check_same_thread=False, timeout=db.ESPERA_BANCO_S))
 
 # Compilado UMA vez, na importação. É este objeto que conferir_grafo.py importa.
 GRAFO = _construir().compile(checkpointer=CHECKPOINTER)
@@ -854,7 +854,7 @@ def _concluir(id_ticket: str, log_dir: Path | None, con, estourou: bool = False)
         registro.update(motor="langgraph", classe=v.get("classe"), log_diverge=v.get("log_diverge"),
                         desfecho_proposto=v.get("desfecho_proposto"),
                         tentativas_redacao=v.get("tentativas_redacao", 0),
-                        tokens_embedding=v.get("tokens_embedding", 0), episodio=episodio,
+                        tokens_embedding=v.get("tokens_embedding", 0), custo_embedding_usd=round(vetorial.custo_usd(v.get("tokens_embedding", 0)), 6), episodio=episodio,
                         segundos_gastos=round(v.get("segundos_gastos", 0.0), 3))
         (log_dir / f"{id_ticket}.json").write_text(
             json.dumps(registro, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -864,7 +864,7 @@ def _concluir(id_ticket: str, log_dir: Path | None, con, estourou: bool = False)
 
 
 def rodar_grafo(id_ticket: str, *, client, modelo: str, con, temperatura: float | None = 0.0,
-                preco_usd_por_mtok: tuple[float, float] = (0.20, 0.20),
+                preco_usd_por_mtok: tuple[float, float] = (0.15, 0.15),
                 orcamento: Orcamento | None = None, confirmador=None,
                 log_dir: Path | None = None, verbose: bool = True, texto: str | None = None,
                 prazo_confirmacao_min: float = PRAZO_CONFIRMACAO_MIN) -> Estado:
@@ -882,7 +882,7 @@ def rodar_grafo(id_ticket: str, *, client, modelo: str, con, temperatura: float 
                "executado_em": _agora(), "commit": _commit(), "texto_recebido": texto,
                "prazo_confirmacao_min": prazo_confirmacao_min}
     try:
-        GRAFO.invoke(inicial, _config(id_ticket), context=ctx)
+        GRAFO.invoke(inicial, _config(id_ticket), context=ctx, durability=DURABILIDADE)
     except GraphRecursionError:
         return _concluir(id_ticket, log_dir, con, estourou=True)
     return _concluir(id_ticket, log_dir, con)
@@ -940,7 +940,8 @@ def retomar_grafo(id_ticket: str, decisao: str, *, client, con, por: str = "anal
             raise ValueError(f"motivo de rejeição '{motivo_rejeicao}' não vale para {acao} "
                              f"(aceitos: {', '.join(db.MOTIVOS_POR_ACAO[acao])})")
         resposta["motivo_rejeicao"] = motivo_rejeicao
-    GRAFO.invoke(Command(resume=resposta), _config(id_ticket), context=ctx)
+    db.guardar_resposta(con, foto.values["pendencia_id"], resposta)   # antes de retomar: a recuperação a reenvia
+    GRAFO.invoke(Command(resume=resposta), _config(id_ticket), context=ctx, durability=DURABILIDADE)
     return _concluir(id_ticket, log_dir, con)
 
 
@@ -986,3 +987,129 @@ def prompts_em_uso() -> str:
     """A combinação de prompts da execução, para o log. Com a memória ligada, inclui as regras."""
     nomes = [PROMPT_TRIAGEM.name, PROMPT_RESSALVA.name, PROMPT_REDIGIR.name]
     return " + ".join(nomes + ([REGRAS_REDIGIR.name] if MEMORIA else []))
+
+
+# ================================================================ O CUSTO DO EMBEDDING
+# Desde 17/10/2026 o gasto da busca vetorial entra em `custo_usd` e, por ele, no teto de dinheiro
+# (`Orcamento.max_usd`), conferido pelo `_teto` antes da próxima chamada ao modelo. Não entra no
+# teto de tokens: aquele teto mede o que vai à janela do modelo de chat (o histórico que cresce a
+# cada volta), e o embedding não ocupa janela nenhuma. O log separa a parte do embedding
+# (`custo_embedding_usd`, derivado de `tokens_embedding` na hora de gravar). Fica no fim do arquivo
+# para não deslocar as linhas citadas em docs/grafo.md §4.
+
+def _consumo_do_embedding(tokens: int) -> dict:
+    """O que a busca soma ao estado: os tokens de embedding e o custo deles em `custo_usd`."""
+    return {"tokens_embedding": tokens, "custo_usd": vetorial.custo_usd(tokens)}
+
+
+# ================================================================ A RECUPERAÇÃO DEPOIS DE UMA QUEDA
+# Desde 17/10/2026 (docs/humano.md §4.3). `tickets.db` e `checkpoints.db` são arquivos separados:
+# "gravou o desfecho" e "o checkpoint avançou" nunca são uma operação só, e uma queda do processo
+# entre os dois deixava a execução presa. A saída não é transação: é escrita idempotente (a mesma
+# gravação refeita não duplica) mais esta rotina, que acha o que ficou pela metade e termina.
+# Só retoma o que está DEPOIS da decisão do analista (ou de um desfecho que não pede decisão): uma
+# queda antes disso (triagem, busca, redação) não gravou nada, e o caminho é rodar o chamado de
+# novo. Fica no fim do arquivo para não deslocar as linhas citadas em docs/grafo.md §4.
+
+# Uma execução viva não fica parada num nó por minutos (o teto de tempo é de 90 s): checkpoint mais
+# velho que isto, depois da decisão, é de um processo que caiu. As retomadas do analista e do
+# vigia já são excluídas pela trava das respostas; a idade cobre as execuções novas, que não a usam.
+IDADE_MINIMA_DA_QUEDA_MIN = 5
+
+
+def _chaves_da_gravacao(state, destino: str) -> dict:
+    """As chaves que tornam idempotente o que o nó `gravar` escreve: o encaminhamento (chave A:
+    execução + chamado + destino) e o aviso ao gestor (um por pendência)."""
+    pendencia_id = state.get("pendencia_id")
+    return {"chave": db.chave_do_encaminhamento(state["execucao_id"], state["id_ticket"], destino),
+            "chave_aviso": f"pendencia:{pendencia_id}" if pendencia_id else None}
+
+
+def execucoes_interrompidas(con, agora: datetime | None = None,
+                            idade_minima_min: float = IDADE_MINIMA_DA_QUEDA_MIN) -> list[dict]:
+    """As execuções que uma queda deixou pela metade, com o nó em que pararam:
+    - `confirmar` com a resposta do analista já guardada (J1: caiu ao processar a resposta);
+    - `gravar` (J2 e J3: caiu antes de gravar, ou no meio);
+    - `finalizar` ou o fim do grafo sem o log (J4: caiu depois de gravar).
+    A pausa normal (em `confirmar`, sem resposta) e o que parou antes da decisão ficam de fora."""
+    agora = agora or datetime.now().astimezone()
+    achadas = []
+    for thread in sorted({c.config["configurable"]["thread_id"] for c in CHECKPOINTER.list(None)}):
+        foto = GRAFO.get_state(_config(thread))
+        if not foto.values:
+            continue
+        if foto.created_at and (agora - datetime.fromisoformat(foto.created_at)).total_seconds() < idade_minima_min * 60:
+            continue
+        pendencia_id = foto.values.get("pendencia_id")
+        pendencia = db.ler_pendencia(con, pendencia_id) if pendencia_id else None
+        if pendencia and pendencia["ticket_externo"] != thread:     # banco recriado: não é desta execução
+            pendencia = None
+        proximo = tuple(foto.next)
+        if proximo == ("confirmar",):
+            if not (pendencia and pendencia["resposta"]):
+                continue                     # a pausa normal, à espera do analista (ou sem como retomar)
+            achadas.append({"id_ticket": thread, "parou_em": "confirmar", "pendencia": pendencia})
+        elif proximo == () and not (foto.values.get("termino") or foto.values.get("desfecho")):
+            # O checkpoint diz que a execução acabou, mas ela não tem término nem desfecho: foi o que
+            # o modo "async" deixava depois de uma queda (DURABILIDADE). Concluir gravaria um log sem
+            # desfecho e apagaria a única pista; fica para uma pessoa olhar.
+            achadas.append({"id_ticket": thread, "parou_em": "inconsistente", "pendencia": pendencia})
+        elif proximo in (("gravar",), ("finalizar",), ()):
+            achadas.append({"id_ticket": thread, "parou_em": proximo[0] if proximo else "fim (sem log)",
+                            "pendencia": pendencia})
+    return achadas
+
+
+def retomar_interrompidas(*, client, con, log_dir: Path | None = None, agora: datetime | None = None,
+                          verbose: bool = False) -> list[dict]:
+    """Termina as execuções interrompidas, uma resposta por vez (db.trava_das_respostas): com a trava
+    na mão, ninguém está no meio de uma resposta, então o que está pela metade caiu. Em `confirmar`,
+    reenvia a resposta guardada; em `gravar` e `finalizar`, continua do checkpoint
+    (`GRAFO.invoke(None)` roda os nós que faltam), e a escrita idempotente não duplica nada. O log
+    ganha o campo `recuperacao`. Devolve uma linha por execução: o `Estado`, ou o erro."""
+    feitas = []
+    with db.trava_das_respostas():
+        for achada in execucoes_interrompidas(con, agora):
+            thread, pendencia = achada["id_ticket"], achada["pendencia"]
+            if achada["parou_em"] == "inconsistente":
+                feitas.append({"id_ticket": thread, "parou_em": "inconsistente",
+                               "erro": "o checkpoint diz que a execução acabou, mas não há término "
+                                       "nem desfecho: não foi concluída; o checkpoint foi mantido"})
+                continue
+            pasta = ((pendencia or {}).get("checkpoint") or {}).get("log_dir")
+            destino = Path(pasta) if pasta else log_dir
+            ctx = Contexto(client=client, con=con, verbose=verbose)
+            try:
+                try:
+                    if achada["parou_em"] == "confirmar":
+                        GRAFO.invoke(Command(resume=pendencia["resposta"]), _config(thread), context=ctx, durability=DURABILIDADE)
+                    elif achada["parou_em"] in ("gravar", "finalizar"):
+                        GRAFO.invoke(None, _config(thread), context=ctx, durability=DURABILIDADE)
+                    e = _concluir(thread, destino, con)
+                except GraphRecursionError:
+                    e = _concluir(thread, destino, con, estourou=True)
+            except Exception as x:          # noqa: BLE001 - uma execução quebrada não trava as outras
+                feitas.append({"id_ticket": thread, "parou_em": achada["parou_em"], "erro": repr(x)})
+                continue
+            recuperacao = {"em": _agora(), "parou_em": achada["parou_em"]}
+            arquivo = destino / f"{thread}.json" if destino else None
+            if arquivo and arquivo.exists():
+                registro = json.loads(arquivo.read_text(encoding="utf-8"))
+                registro["recuperacao"] = recuperacao
+                arquivo.write_text(json.dumps(registro, ensure_ascii=False, indent=2), encoding="utf-8")
+            feitas.append({"id_ticket": thread, "parou_em": achada["parou_em"], "estado": e,
+                           "log": str(arquivo) if arquivo else None})
+    return feitas
+
+
+# ================================================================ A DURABILIDADE DO CHECKPOINT
+# Decisão que o framework tinha convertido em parâmetro com valor padrão (enunciado §6.6;
+# docs/grafo.md §5). O LangGraph 1.2.14 grava o checkpoint de cada passo em segundo plano
+# (`durability="async"`, o padrão), enquanto o passo seguinte já roda. Com o processo morto de
+# verdade (simular_queda.py, 17/10/2026), o checkpoint do passo `confirmar` se perdia: a execução
+# voltava a `confirmar`, e não ficava em `gravar`. "sync" grava o checkpoint antes de o passo
+# seguinte começar, e a execução fica exatamente onde caiu, como os testes e docs/humano.md §4.3
+# descrevem. O custo é a espera da gravação a cada superpasso. Passado em toda invocação do grafo;
+# se o padrão da biblioteca mudar numa atualização, nada muda aqui. Fica no fim do arquivo para
+# não deslocar as linhas citadas em docs/grafo.md §4.
+DURABILIDADE = "sync"

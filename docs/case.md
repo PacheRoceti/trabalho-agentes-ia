@@ -325,11 +325,11 @@ regra de que, na dúvida, o destino é a fila humana e não uma ação automáti
 #### O outro lado da conta
 
 - **Quanto custa rodar:** **medido** com `ministral-8b-latest` em 8 chamados simulados: cerca de
-  **6.900 tokens e US$ 0,0014 por chamado** (preço de lista de US$ 0,20 por milhão de tokens,
-  verificado a partir do perfil do grupo na Mistral em 13/10/2026; o log traz US$ 0,0010, calculado a US$ 0,15; simulado:
-  o gasto real é zero no plano gratuito, ver `docs/modelos.md`). A 433 chamados/mês, **≈ US$ 0,60
-  por mês**. A medição é do laço da Parte 1; o grafo gastou cerca de 1.900 tokens por chamado na
-  rodada de 40 casos (`grafo.md` §6.6), ≈ US$ 0,0004, mais o embedding (`rag.md` §4.3). Frente a ~65 h
+  **6.900 tokens e US$ 0,0010 por chamado** (preço de lista de US$ 0,15 por milhão de tokens, na
+  entrada e na saída, conferido na página oficial do modelo em 17/10/2026; simulado: o gasto real é
+  zero no plano gratuito, ver `docs/modelos.md`). A 433 chamados/mês, **≈ US$ 0,43 por mês**. A
+  medição é do laço da Parte 1; o grafo gastou cerca de 1.900 tokens por chamado na rodada de 40
+  casos (`grafo.md` §6.6), ≈ US$ 0,0003, mais o embedding (`rag.md` §4.3). Frente a ~65 h
   de analista, o custo do modelo é irrelevante: o que pesa é o custo do erro.
 - **Quanto custa construir:**
   3 Integrantes no grupo. 

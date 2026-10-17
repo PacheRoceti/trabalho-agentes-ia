@@ -82,7 +82,23 @@ processo exatamente (só a leitura do caso, ou o processo de decisão
 inteiro?); nenhuma métrica de taxa de erro ou qualidade da síntese; nem
 custo ou tempo de implementação do projeto.
 
-Preços de lista consultados em 21/09/2026 (agregadores) e depois verificados a partir do perfil do grupo na Mistral, que vale sobre eles (`modelos.md`, Fontes desta análise):
+Preços de lista consultados primeiro em 21/09/2026 em agregadores (links abaixo). Os dos três
+candidatos foram conferidos em 17/10/2026 nas páginas oficiais de cada modelo, na documentação da
+Mistral, e são os que valem; em todas, o preço de entrada é igual ao de saída. O do
+`mistral-embed`, o modelo da busca vetorial, foi conferido no mesmo dia: US$ 0,10 por milhão de
+tokens, um preço só, porque o embedding não gera texto. Antes o projeto usava US$ 0,05, lido no
+perfil do grupo na Mistral; vale a página oficial (`modelos.md`, Fontes desta análise; a conta do
+custo de embedding está no `rag.md` §4.3).
+
+| Modelo (alias usado) | Versão da página | US$ por milhão de tokens (entrada / saída) | Página oficial, conferida em 17/10/2026 |
+|---|---|---|---|
+| `ministral-3b-latest` | Ministral 3 3B (`ministral-3b-2512`) | 0,10 / 0,10 | https://docs.mistral.ai/models/ministral-3-3b-25-12 |
+| `ministral-8b-latest` | Ministral 3 8B (`ministral-8b-2512`) | 0,15 / 0,15 | https://docs.mistral.ai/models/ministral-3-8b-25-12 |
+| `ministral-14b-latest` | Ministral 3 14B (`ministral-14b-2512`) | 0,20 / 0,20 | https://docs.mistral.ai/models/ministral-3-14b-25-12 |
+| `mistral-embed` | Mistral Embed (`mistral-embed-2312`) | 0,10 (só entrada) | https://docs.mistral.ai/models/mistral-embed-23-12 |
+
+As páginas não dizem para qual versão o alias `-latest` aponta: a tabela supõe que é a de
+dezembro de 2025 (`2512`), a que as páginas descrevem.
 
 - Mistral, página oficial de preços: https://mistral.ai/pricing/
 - Ministral 3 (3B, 8B, 14B) — AI Pricing Guru, base de 02/09/2026: https://www.aipricing.guru/mistral-ai-pricing/

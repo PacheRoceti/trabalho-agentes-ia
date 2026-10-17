@@ -41,7 +41,16 @@ K_RRF = 60
 
 # Substituível nos testes e nas medições: função (lista de textos) -> lista de vetores.
 EMBEDDER = None
-TOKENS_EMBEDDING = 0              # acumulado da execução; não entra no orçamento do grafo
+TOKENS_EMBEDDING = 0              # acumulado do processo; o grafo soma a diferença de cada busca
+# Preço do mistral-embed, em US$ por milhão de tokens (página oficial, conferida em 17/10/2026).
+# Embedding não gera texto: é um preço só. O main.py o troca pelo PRECO_EMBEDDING_USD do .env.
+PRECO_USD_POR_MTOK = 0.10
+
+
+def custo_usd(tokens: int) -> float:
+    """Quanto custam os tokens de embedding. Desde 17/10/2026 o grafo soma isto ao `custo_usd` da
+    execução, e por ele ao teto de dinheiro; não ao teto de tokens (grafo._consumo_do_embedding)."""
+    return tokens * PRECO_USD_POR_MTOK / 1_000_000
 
 
 def escala(cosseno: float) -> float:

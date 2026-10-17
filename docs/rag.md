@@ -449,9 +449,12 @@ Os outros três (`TKT-0004`, `TKT-0005`, `TKT-0999`) não buscam. Pontos:
 - **Tokens de embedding por execução (campo `tokens_embedding` do log):** de 1.761 a 1.779 nas cinco
   que buscam, e 0 nas três que não buscam. Os números incluem a indexação dos 19 trechos: o
   `--todos` recria o banco, e o índice, a cada caso. Num banco já indexado a execução só embeda o relato.
-  A US$ 0,05 por milhão de tokens (verificado no perfil do grupo na Mistral, 13/10/2026), são cerca de US$ 0,00009 por
-  execução que busca. Na rodada de 40 casos (`logs/grafo-40-1/`), 54.835 tokens de embedding em
-  31 buscas: cerca de US$ 0,0027, também com a indexação repetida a cada caso.
+  A US$ 0,10 por milhão de tokens (página oficial do `mistral-embed`, conferida em 17/10/2026;
+  até então o projeto usava US$ 0,05, lido no perfil do grupo na Mistral), são cerca de
+  US$ 0,00018 por execução que busca. Na rodada de 40 casos (`logs/grafo-40-1/`), 54.835 tokens de
+  embedding em 31 buscas: cerca de US$ 0,0055, também com a indexação repetida a cada caso. Essa
+  conta é à mão: nos logs anteriores a 17/10/2026, o `custo_usd` não inclui o embedding. Desde
+  então ele inclui, e o log traz a parte do embedding separada em `custo_embedding_usd`.
 
 **O corpus de 7 guias, para comparação** (medido antes dos KB-107 a KB-115, preservado em
 `*-corpus7.*` e em `logs/grafo-rag/` e `logs/grafo-ressalva/`): calibração com folga de +0,036 (acertos
@@ -589,9 +592,13 @@ busca com outros termos quando a primeira vem fraca.
   como está.
 - Margem do portão: o segundo guia de um chamado chega a 0,50 e 0,53 (§4.3).
 - Calibração e teste usam o mesmo corpus de 16 guias, e o conjunto de 55 perguntas foi escrito pelo mesmo grupo.
-- O gasto de embedding fica fora da conta do código: os tokens estão no log (`tokens_embedding`), mas
-  não entram no orçamento nem no `custo_usd`. O preço (US$ 0,05 por milhão de tokens) foi conferido no
-  perfil do grupo na Mistral em 13/10/2026, e o custo do §4.3 é conta feita à mão sobre os tokens do log.
+- **Desde 17/10/2026 o gasto de embedding entra no `custo_usd` e no teto de dinheiro**, ao preço de
+  `PRECO_EMBEDDING_USD` (US$ 0,10 por milhão de tokens, página oficial; padrão em `vetorial.py`), e
+  o log o separa em `custo_embedding_usd`. Não entra no teto de tokens, que mede a janela do modelo
+  de chat. Limite: a indexação também é cobrada da execução que a dispara. No `--todos`, que recria
+  o índice a cada caso, isso é quase todo o embedding (cerca de 1.770 tokens por busca); num banco já
+  indexado, só o relato é embedado, e esse valor não foi medido. Os logs anteriores a 17/10/2026 têm
+  o `custo_usd` sem o embedding: compará-los com os novos pede descontar `custo_embedding_usd`.
 - As fichas de plano servem de contexto à redação e à tela do analista. Nenhuma regra de decisão usa o
   plano do cliente, e a coluna `planos` de `kb_artigos` não foi criada.
 - Repetir a medição das versões (§2.1): foi uma execução de cada combinação, com a busca por palavra e o

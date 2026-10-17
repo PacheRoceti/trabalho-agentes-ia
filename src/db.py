@@ -13,9 +13,12 @@ Esta camada é a candidata a virar servidor MCP, o que ficou para a Parte 3
 """
 import hashlib
 import json
+import os
 import re
 import sqlite3
+import time
 import unicodedata
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 
@@ -205,7 +208,7 @@ class FatoRecusado(Exception):
 def conectar() -> sqlite3.Connection:
     if not DB_PATH.exists():
         recriar_banco()
-    con = sqlite3.connect(DB_PATH)
+    con = sqlite3.connect(DB_PATH, timeout=ESPERA_BANCO_S)   # o vigia e o analista usam o banco juntos
     con.row_factory = sqlite3.Row
     con.execute(SQL_PENDENCIAS)
     con.execute(SQL_AVISOS_GESTOR)
@@ -219,6 +222,7 @@ def conectar() -> sqlite3.Connection:
     # Banco criado antes da chave de idempotência do episódio (12/10/2026).
     if "chave" not in {c["name"] for c in con.execute("PRAGMA table_info(episodios)")}:
         con.execute("ALTER TABLE episodios ADD COLUMN chave TEXT")
+    garantir_colunas_da_recuperacao(con)
     return con
 
 
@@ -239,6 +243,7 @@ def recriar_banco() -> None:
     con.execute(SQL_VETORES)
     con.execute(SQL_EPISODIOS)
     con.execute(SQL_FATOS)
+    garantir_colunas_da_recuperacao(con)
     con.commit()
     con.close()
 
@@ -493,14 +498,23 @@ def registrar_texto(con, id_ticket: str, texto: str) -> bool:
 
 
 def registrar_encaminhamento(con, id_ticket: str, destino: str, mensagem: str,
-                             kb_id: str | None) -> dict:
+                             kb_id: str | None, chave: str | None = None) -> dict:
     """Escrita REVERSÍVEL: uma linha numa fila/anotação, que um humano pode
-    desfazer. Aceita id inexistente de propósito (destino fila_humana)."""
+    desfazer. Aceita id inexistente de propósito (destino fila_humana).
+    Com `chave` (o grafo, desde 17/10/2026: execução + chamado + destino, chave_do_encaminhamento),
+    é idempotente: a mesma gravação refeita devolve a linha que já existe, com `ja_existia: true`.
+    Sem `chave` (o laço da Parte 1), grava sempre, como antes."""
+    if chave is not None:
+        existente = con.execute("SELECT id FROM encaminhamentos WHERE chave_idempotencia = ?",
+                                (chave,)).fetchone()
+        if existente:
+            return {"encaminhamento": existente["id"], "destino": destino, "ja_existia": True}
     cur = con.execute(
-        """INSERT INTO encaminhamentos (ticket_externo, destino, mensagem, kb_id, criado_em)
-           VALUES (?, ?, ?, ?, ?)""", (id_ticket, destino, mensagem, kb_id, AGORA))
+        """INSERT INTO encaminhamentos (ticket_externo, destino, mensagem, kb_id, criado_em, chave_idempotencia)
+           VALUES (?, ?, ?, ?, ?, ?)""", (id_ticket, destino, mensagem, kb_id, AGORA, chave))
     con.commit()
-    return {"encaminhamento": cur.lastrowid, "destino": destino}
+    resultado = {"encaminhamento": cur.lastrowid, "destino": destino}
+    return resultado if chave is None else {**resultado, "ja_existia": False}
 
 
 def registrar_pedido_cliente(con, id_ticket: str, mensagem: str, enviado_em: str | None = None) -> dict:
@@ -571,12 +585,18 @@ def resolver_pendencia(con, id_pendencia: int, status: str, quando: str, por: st
 
 
 def avisar_gestor(con, id_ticket: str, prioridade: str, motivo: str, mensagem: str,
-                  quando: str) -> int:
+                  quando: str, chave: str | None = None) -> int:
     """Registra o aviso ao gestor de suporte. É uma linha a mais, e não um desfecho: o desfecho
-    do chamado continua sendo o encaminhamento à fila humana."""
+    do chamado continua sendo o encaminhamento à fila humana.
+    Com `chave` (o grafo: um aviso por pendência, "pendencia:<id>"), refazer não avisa duas vezes."""
+    if chave is not None:
+        existente = con.execute("SELECT id FROM avisos_gestor WHERE chave_idempotencia = ?",
+                                (chave,)).fetchone()
+        if existente:
+            return existente["id"]
     cur = con.execute(
-        """INSERT INTO avisos_gestor (ticket_externo, prioridade, motivo, mensagem, criado_em)
-           VALUES (?, ?, ?, ?, ?)""", (id_ticket, prioridade, motivo, mensagem, quando))
+        """INSERT INTO avisos_gestor (ticket_externo, prioridade, motivo, mensagem, criado_em, chave_idempotencia)
+           VALUES (?, ?, ?, ?, ?, ?)""", (id_ticket, prioridade, motivo, mensagem, quando, chave))
     con.commit()
     return cur.lastrowid
 
@@ -620,7 +640,7 @@ def registrar_episodio(con, episodio: dict) -> dict:
 
 def esquecer_episodios(con, agora: datetime | None = None) -> int:
     """Remove os episódios com mais de EPISODIO_MAX_DIAS. Devolve quantos saíram. Como o prazo
-    das pendências, é conferido quando um comando roda: não há processo em segundo plano."""
+    das pendências, é conferido quando um comando roda e a cada volta do vigia do prazo."""
     agora = agora or datetime.now().astimezone()
     velhos = [l["id"] for l in con.execute("SELECT id, criado_em FROM episodios")
               if _idade_em_dias(l["criado_em"], agora) > EPISODIO_MAX_DIAS]
@@ -747,3 +767,117 @@ def contar(con, tabela: str, id_ticket: str) -> int:
     return con.execute(
         f"SELECT COUNT(*) FROM {tabela} WHERE ticket_externo = ?", (id_ticket,)
     ).fetchone()[0]
+
+
+# ------------------------------------------------------------------ travas entre processos
+# Desde 17/10/2026 o prazo também é aplicado por um processo à parte (src/vigiar_prazos.py), que
+# roda junto com os comandos do analista. Ficam no fim do arquivo para não deslocar linhas citadas.
+
+ESPERA_BANCO_S = 30          # quanto uma conexão espera o banco travado por outro processo
+TRAVA_RESPOSTAS = RAIZ / "dados" / "respostas.lock"
+TRAVA_VIGIA = RAIZ / "dados" / "vigia.lock"
+
+
+def _travar(arquivo, esperar: bool) -> bool:
+    """Trava exclusiva do arquivo inteiro, pelo sistema operacional: ela some quando o processo
+    morre, e por isso uma queda no meio de uma resposta não deixa a pendência presa."""
+    arquivo.seek(0)
+    if os.name == "nt":
+        import msvcrt
+        while True:
+            try:
+                msvcrt.locking(arquivo.fileno(), msvcrt.LK_NBLCK, 1)
+                return True
+            except OSError:
+                if not esperar:
+                    return False
+                time.sleep(0.1)
+    import fcntl
+    try:
+        fcntl.flock(arquivo, fcntl.LOCK_EX | (0 if esperar else fcntl.LOCK_NB))
+        return True
+    except OSError:
+        return False
+
+
+def _destravar(arquivo) -> None:
+    arquivo.seek(0)
+    if os.name == "nt":
+        import msvcrt
+        msvcrt.locking(arquivo.fileno(), msvcrt.LK_UNLCK, 1)
+    else:
+        import fcntl
+        fcntl.flock(arquivo, fcntl.LOCK_UN)
+
+
+@contextmanager
+def trava_das_respostas(caminho: Path | None = None):
+    """Uma resposta a uma pendência por vez, entre todos os processos (o vigia do prazo e os
+    comandos do analista). Sem ela, o vigia e um `--aprovar` dados no mesmo instante passariam os
+    dois pela conferência "ainda está pausado?" e retomariam a mesma execução duas vezes: no grafo,
+    um chamado interno E um encaminhamento à fila humana para o mesmo chamado. Quem chega depois
+    espera, e quando entra já não encontra a pausa."""
+    with open(caminho or TRAVA_RESPOSTAS, "a+b") as f:
+        _travar(f, esperar=True)
+        try:
+            yield
+        finally:
+            _destravar(f)
+
+
+def travar_instancia(caminho: Path | None = None):
+    """Garante um só vigia por máquina. Devolve o arquivo travado (mantenha-o aberto enquanto o
+    vigia roda) ou None se outro vigia já está rodando."""
+    f = open(caminho or TRAVA_VIGIA, "a+b")
+    if _travar(f, esperar=False):
+        return f
+    f.close()
+    return None
+
+
+# ------------------------------------------------------------------ recuperação depois de uma queda
+# Desde 17/10/2026, só no grafo (docs/humano.md §4.3). Uma queda do processo no meio de uma
+# retomada deixava a execução presa: a pendência já resolvida e nada gravado, ou o desfecho gravado
+# pela metade. Três coisas a tornam recuperável: a resposta do analista guardada ANTES de retomar
+# (pendencias.resposta), a escrita idempotente (chave nos encaminhamentos e nos avisos) e a rotina
+# grafo.retomar_interrompidas. As colunas nascem aqui, e não no seed, para valer também em bancos
+# criados antes delas.
+
+def garantir_colunas_da_recuperacao(con) -> None:
+    def colunas(tabela):
+        return {c[1] for c in con.execute(f"PRAGMA table_info({tabela})")}
+    for tabela, coluna in (("pendencias", "resposta"), ("encaminhamentos", "chave_idempotencia"),
+                           ("avisos_gestor", "chave_idempotencia")):
+        existentes = colunas(tabela)
+        if existentes and coluna not in existentes:
+            con.execute(f"ALTER TABLE {tabela} ADD COLUMN {coluna} TEXT")
+    # UNIQUE só onde a chave existe: o laço grava sem chave (NULL), e NULL não colide no SQLite.
+    con.execute("CREATE UNIQUE INDEX IF NOT EXISTS encaminhamentos_chave "
+                "ON encaminhamentos (chave_idempotencia)")
+    con.execute("CREATE UNIQUE INDEX IF NOT EXISTS avisos_gestor_chave "
+                "ON avisos_gestor (chave_idempotencia)")
+
+
+def chave_do_encaminhamento(execucao_id: str, id_ticket: str, destino: str) -> str:
+    """A chave A (decisão de 17/10/2026): reconhece a MESMA gravação refeita dentro da mesma
+    execução (a recuperação roda o nó `gravar` de novo). Uma execução nova do mesmo chamado tem
+    outro `execucao_id` e grava de novo: a chave não cria a regra "um encaminhamento por destino"."""
+    return f"{execucao_id}:{id_ticket}:{destino}"
+
+
+def guardar_resposta(con, id_pendencia: int, resposta: dict) -> None:
+    """Guarda a resposta à pendência (aprovar/rejeitar/vencer, quem, quando, o texto editado e o
+    motivo) antes de o grafo retomar. Se o processo cair no meio, a recuperação reenvia esta mesma
+    resposta, e o relógio decide igual, porque a hora é a gravada."""
+    con.execute("UPDATE pendencias SET resposta = ? WHERE id = ?",
+                (json.dumps(resposta, ensure_ascii=False), id_pendencia))
+    con.commit()
+
+
+def ler_pendencia(con, id_pendencia: int) -> dict | None:
+    linha = con.execute("SELECT * FROM pendencias WHERE id = ?", (id_pendencia,)).fetchone()
+    if linha is None:
+        return None
+    return {**dict(linha), "acao": json.loads(linha["acao"]),
+            "checkpoint": json.loads(linha["checkpoint"]) if linha["checkpoint"] else None,
+            "resposta": json.loads(linha["resposta"]) if linha["resposta"] else None}

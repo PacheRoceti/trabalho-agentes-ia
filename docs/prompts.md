@@ -602,10 +602,10 @@ só mudou no `TKT-0134`.
 
 **Sobre o código e o custo das duas passagens.** Todos os logs trazem o commit
 `6116341 + alterações locais`: nada foi commitado entre as execuções. As alterações locais
-eram, entre outras, a opção nova do `main.py`, os arquivos das variantes, a correção do preço
-padrão do modelo em `src/` e, na segunda passagem, os quatro casos. O custo é o do campo
-`custo_usd` dos logs, que saiu a US$ 0,15 por milhão de tokens; vale a nota do `grafo.md` §6
-sobre a correção do preço para US$ 0,20.
+eram, entre outras, a opção nova do `main.py`, os arquivos das variantes, a troca do preço
+padrão do modelo em `src/` (para US$ 0,20, desfeita em 17/10/2026) e, na segunda passagem, os
+quatro casos. O custo é o do campo `custo_usd` dos logs, que saiu a US$ 0,15 por milhão de
+tokens, o preço da página oficial do modelo (`modelos.md`): vale como está.
 
 O que os logs da segunda passagem mostram:
 

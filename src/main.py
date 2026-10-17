@@ -24,8 +24,9 @@
     python src/main.py --rejeitar TKT-0005 --motivo informacao_suficiente
   Rejeitada a ação ou vencido o prazo, o chamado vai para a fila humana com as considerações do
   agente. No prazo vencido de um chamado que seria P1, o gestor também é avisado (tabela
-  avisos_gestor). O prazo é aplicado no começo de qualquer comando que use o agente: não há
-  processo em segundo plano.
+  avisos_gestor). Quem aplica o prazo sozinho é o vigia, um processo à parte (pode rodar como
+  serviço; docs/humano.md §4.1 e §4.2); o começo de cada comando também o aplica, como segunda rede:
+    python src/vigiar_prazos.py                     vence as pendências na hora, sem ninguém rodar nada
 
     python src/main.py --todos --auto-aprovar       os casos do gabarito, do banco zerado, com verificador
                                                     (grava também logs/saida-demonstracao.txt)
@@ -346,8 +347,11 @@ def main():
     client = criar_cliente()
     modelo = os.environ["LLM_MODELO"]
     # .env em branco vale como ausente; padrão = ministral-8b-latest (US$ por milhão de tokens)
-    precos = (float(os.environ.get("PRECO_ENTRADA_USD") or "0.20"),
-              float(os.environ.get("PRECO_SAIDA_USD") or "0.20"))
+    precos = (float(os.environ.get("PRECO_ENTRADA_USD") or "0.15"),
+              float(os.environ.get("PRECO_SAIDA_USD") or "0.15"))
+    if os.environ.get("PRECO_EMBEDDING_USD"):    # a busca vetorial do grafo; padrão em vetorial.py
+        import vetorial
+        vetorial.PRECO_USD_POR_MTOK = float(os.environ["PRECO_EMBEDDING_USD"])
     # Sem --auto-aprovar não há confirmador: a ação irreversível fica pendente, com prazo.
     confirmador = confirmador_auto if args.auto_aprovar else None
     if args.grafo and (args.laco or args.prompt):
@@ -367,7 +371,19 @@ def main():
         esquecidos = db.esquecer_episodios(con)      # decaimento: o que passou de um ano sai da memória
         if esquecidos:
             print(f"\nMemória episódica: {esquecidos} episódio(s) com mais de {db.EPISODIO_MAX_DIAS} dias removido(s)")
+        # Uma queda no meio de uma retomada deixa a execução pela metade: termina antes de tudo
+        # (só no grafo; docs/humano.md §4.3). O vigia faz o mesmo a cada volta.
+        if usar_grafo:
+            import grafo as modulo_grafo
+            for r in modulo_grafo.retomar_interrompidas(client=client, con=con, log_dir=log_dir):
+                print(f"\n{'=' * 78}\n{r['id_ticket']}  EXECUÇÃO RETOMADA DEPOIS DE UMA QUEDA "
+                      f"(parou em {r['parou_em']})\n")
+                if "erro" in r:
+                    print(f"  a recuperação falhou: {r['erro']}")
+                else:
+                    mostrar(r["estado"])
         # O prazo vale antes da pessoa: o que venceu sem resposta vai para a fila humana agora.
+        # Quem aplica o prazo sozinho é o vigia (src/vigiar_prazos.py); aqui é a segunda rede.
         for estado in vencer_pendencias(client=client, con=con, log_dir=log_dir):
             print(f"\n{'=' * 78}\n{estado.id_ticket}  PRAZO DE CONFIRMAÇÃO VENCIDO: encaminhado à fila humana\n")
             mostrar(estado)
@@ -405,6 +421,8 @@ def main():
         if args.pendencias:
             pendentes = db.pendencias_aguardando(con)
             print(f"\n{len(pendentes)} ação(ões) aguardando o analista de suporte")
+            from vigiar_prazos import situacao
+            print(f"  {situacao()}")
             for p in pendentes:
                 mostrar_pendencia(p["acao"])
         if args.ticket and db.pendencias_aguardando(con, args.ticket):
