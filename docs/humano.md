@@ -93,8 +93,9 @@ do `TKT-0007`, pelo grafo (`logs/grafo-h1-tela/TKT-0007.json`):
   aviso: o desfecho proposto não muda com ele. A tela copiada acima é anterior a este campo; a nova está
   em `logs/grafo-memoria-2/`.
 - **Rejeitar dizendo por quê** (11/10/2026): `--rejeitar TKT-0007 --motivo caso_fora_do_guia` (ou
-  `guia_errado`, `resumo_ruim`, `outro`). O motivo é opcional, não muda o que a rejeição grava, e vai
-  para a memória: a linha `MEMÓRIA:` passa a separar as rejeições por motivo, e `--candidatas` lista os
+  `guia_errado`, `resumo_ruim`, `outro`). O motivo é opcional, não muda o desfecho que a rejeição grava, e vai
+  para a memória (e, desde 17/10/2026, para o texto do encaminhamento à fila humana: "Motivo
+  informado pelo analista: caso_fora_do_guia."): a linha `MEMÓRIA:` passa a separar as rejeições por motivo, e `--candidatas` lista os
   padrões que se repetiram (`memoria.md` §5). Só no grafo.
 - **`fatos_cliente`** (11/10/2026) vem da memória semântica (`memoria.md` §4): os fatos do ambiente do
   cliente que um analista confirmou (`--fato CLI-07 acesso=ssh`). A tela os repete em linhas
@@ -142,12 +143,32 @@ abertura aplicada na hora do pedido), **a consequência escrita** ("abre um cham
 A prioridade da tela é a **prevista**. A do chamado é calculada de novo na gravação; as duas só
 diferem se outro chamado do mesmo cliente e da mesma categoria for aberto durante a espera.
 
-| Ainda falta | Por que importa |
+| Faltava em 11/10/2026 | Por que importa |
 |---|---|
-| **a reincidência** que o sistema confirmou | é o que faz a prioridade subir; hoje o analista vê o P1 e não vê por quê |
-| **o score** do procedimento | é o que sustenta a ação. Hoje ele só aparece se o modelo o citar no resumo |
+| **a reincidência** que o sistema confirmou | é o que faz a prioridade subir; o analista via o P1 e não via por quê |
+| **o score** do procedimento | é o que sustenta a ação. Só aparecia se o modelo o citasse no resumo |
 | **o SLA** da prioridade | "P2" não diz ao analista que são 1 dia útil |
-| **editar o resumo num editor** | o texto corrigido vai inteiro na linha de comando; não há como partir do resumo do modelo e mudar uma frase |
+| **editar o resumo num editor** | o texto corrigido ia inteiro na linha de comando; não havia como partir do resumo do modelo e mudar uma frase |
+
+**As quatro entraram em 17/10/2026, só no grafo:**
+
+- **`score`, `reincidencia` e `sla_previsto`**, depois de `fatos_cliente`
+  (`grafo._tela_do_h1`). O score é o do guia proposto nesta execução, e a reincidência são os
+  chamados internos que a regra contou (mesmo cliente, mesma categoria, 30 dias), pela mesma
+  consulta que sobe a prioridade (`db.chamados_da_reincidencia`). O SLA vem da tabela do `case.md`
+  §2.1 (`db.SLA_POR_PRIORIDADE`). A tela os repete em linhas `SUSTENTAÇÃO:` e `REINCIDÊNCIA:`, e o
+  SLA entra na linha da consequência ("com prioridade P1 (SLA de resolução: 2 horas, contado da
+  abertura)"). Os três só informam: nenhuma regra de decisão os lê, e nenhum é editável.
+- **`--aprovar TKT-0007 --editar`** abre o texto proposto (o resumo, no H1; a mensagem, no H2) no
+  editor da variável `EDITOR` (sem ela, o Bloco de Notas, no Windows). Ao fechar, as linhas que
+  começam com `#` são descartadas, e o texto segue pelo mesmo caminho do `--resumo` e do
+  `--mensagem`, com a mesma conferência. Texto apagado não aprova nada. O relógio continua
+  correndo com o editor aberto: se o prazo vence antes, a aprovação vira prazo vencido, como
+  qualquer resposta tardia.
+
+Os dois foram provados só nos testes offline (`test_a_tela_do_h1_mostra_o_score_a_reincidencia_e_o_sla`
+e `TestEditor`, este com um editor de mentira). **Não há log com o modelo real nem uma pessoa
+usando o Bloco de Notas:** as telas copiadas neste documento são anteriores.
 
 ### 2.3 O que a proposta previa, e o que foi feito
 
@@ -362,7 +383,8 @@ respondeu à confirmação, o encaminhamento cai na fila da mesma pessoa: o cham
 numa pausa, mas nada garante que alguém o veja a tempo. Por isso, quando o prazo vence e o
 chamado interno seria **P1** (SLA de 2 horas), o código grava também um aviso ao gestor de
 suporte, na tabela `avisos_gestor`, com a mesma mensagem do encaminhamento (decisão de
-10/10/2026).
+10/10/2026). Desde 17/10/2026 o gestor os lista com `python src/main.py --avisos`, que só lê;
+nada o avisa de que chegou uma linha nova.
 
 - A prioridade usada é a **prevista**: a base do procedimento mais a reincidência, pela mesma
   regra da abertura de chamado, calculada na hora do vencimento.
@@ -408,7 +430,7 @@ conexões com os dois bancos passaram a esperar até 30 s (`db.ESPERA_BANCO_S`) 
 "database is locked".
 
 **Demonstração com o prazo real de 20 minutos e o modelo real** (`logs/grafo-prazo-vigia/`,
-17/10/2026, commit `77757ea` sem alterações locais, `ministral-8b-latest`, os prompts em uso).
+17/10/2026, commit `77757ea` sem alterações locais, `ministral-8b-2512`, os prompts em uso).
 Banco recriado; o vigia subiu às 16:02:18 num terminal à parte, com o log em `vigia.log`; o
 `TKT-0003` (o chamado que seria P1) rodou **sem** `--auto-aprovar`. Depois disso, ninguém rodou
 comando nenhum até o vencimento:
@@ -556,7 +578,7 @@ no `grafo.md` §5, como decisão que virou parâmetro.
   commit de forma reproduzível; a injeção de falha do `simular_queda.py` (abaixo) faz esse papel.
 
 **A simulação com o processo morto de verdade, sobre o modelo real** (`logs/grafo-queda/`,
-17/10/2026, commit `77757ea` sem alterações locais, `ministral-8b-latest`, os prompts em uso). Os
+17/10/2026, commit `77757ea` sem alterações locais, `ministral-8b-2512`, os prompts em uso). Os
 testes levantam uma exceção, e o processo continua vivo; o `simular_queda.py` troca uma função de
 `src/db.py` por uma que mata o processo com `os._exit`, sem `finally` e sem liberar nada, e a
 recuperação roda depois noutro processo, sobre os arquivos em disco. A J2, a queda entre a
@@ -673,14 +695,12 @@ não um analista.
 - Separar a aprovação do envio, se um canal de mensagem (um MCP simulado, por exemplo) for
   ligado a `db.registrar_pedido_cliente`: aí a falha de entrega passa a existir e precisa de
   regra no `case.md`.
-- Instalar o vigia do prazo como serviço (§4.2) e demonstrá-lo sobrevivendo a um reinício: a
-  demonstração de 17/10/2026 o rodou num terminal (§4.1).
-- Dar ao gestor um jeito de ver os avisos (hoje é uma tabela sem comando de leitura).
-- Levar o motivo da rejeição ao texto do encaminhamento: ele é pedido e vai à memória (§2.1 e
-  §2.4), mas a fila humana ainda diz só que o analista rejeitou.
-- Mostrar a reincidência, o score e o SLA na tela de confirmação (§2.2). A prioridade prevista e a
-  consequência já aparecem.
-- Deixar o analista editar o resumo a partir do texto do modelo, e não redigitando tudo (§2.2).
+- Demonstrar o vigia instalado como serviço sobrevivendo a um reinício: a demonstração de
+  17/10/2026 o rodou num terminal (§4.1).
+- Exercitar com o modelo real e uma pessoa o que entrou em 17/10/2026 (§2.2 e §2.4): a tela com
+  score, reincidência e SLA, o `--editar` no Bloco de Notas, o motivo no texto da fila humana e o
+  `--avisos`. Hoje os quatro são provados só pelos testes offline.
+- Avisar o gestor de que chegou um aviso: `--avisos` só lista o que já está na tabela.
 - Demonstrar a chave do chamado interno em log, com o modelo real: o mesmo chamado rodado e
   aprovado duas vezes, e a segunda execução com `ja_existia: true` (§5). Hoje ela é provada só
   pelos testes.

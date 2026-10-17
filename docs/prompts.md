@@ -679,7 +679,7 @@ evidência.
 - Decidir o que fazer com a recusa da fila humana sem busca, que leva o `TKT-0002` ao chamado
   indevido (§3.5).
 - Dar à redação um critério de acerto além do nó `validar`, e medir a triagem em chamados que
-  não foram escritos pelo grupo (o `triagem-v2.md` foi medido nos 40 casos do gabarito, §3.7).
+  não foram escritos pelo grupo (o `triagem-v2.md` foi medido nos 40 e nos 44 casos do gabarito, §3.7, todos escritos pelo grupo).
 - A regra da frase foi feita no grafo em 13 e 14/10/2026 só no prompt da triagem, e com uma
   frase (§3.7): o `ressalva-v3.md` e o `redigir-v3.md` não passaram por ela.
 - Medir a marca de divergência da triagem com mais execuções e tratar o que o §3.7 achou: com

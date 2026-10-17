@@ -3,16 +3,18 @@
 **Execução de referência:** `logs/grafo-44-3/` — 44 chamados do gabarito, executados em
 17/10/2026 entre 15:50 e 15:55, sobre o commit `77757ea` sem alterações locais, com a configuração
 **em uso** do grafo (`triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md`),
-modelo `ministral-8b-latest`, temperatura 0 (`docs/grafo.md` §6.9). Até 17/10/2026 a referência
+modelo `ministral-8b-2512`, temperatura 0 (`docs/grafo.md` §6.9). Até 17/10/2026 a referência
 era `logs/regra-da-frase/triagem-v1-3/`, de 14/10/2026, que rodou com código não commitado
-(lacuna L16); as seções abaixo foram escritas sobre ela e ainda a citam, com o mesmo 40 de 44 e as
-mesmas quatro falhas.
+(lacuna L16). As seções abaixo foram escritas sobre ela e, em 17/10/2026, passaram a citar a atual,
+conferidas nos logs: o mesmo 40 de 44, as mesmas quatro falhas e as mesmas 13 confirmações
+auto-aprovadas. Os links de evidência apontam para o commit `2ec98bc`, que tem o mesmo `src/` do
+`77757ea` mais os logs de referência; cada linha citada foi conferida nele.
 
 > **Por que não o log mais recente.** O último log gravado é `logs/regra-da-frase/triagem-v2-3/`
 > (00:43), mas ele roda o `triagem-v2.md`, variante **medida e não adotada** ([`docs/prompts.md`
-> L82](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/docs/prompts.md#L82)),
+> L82](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/docs/prompts.md#L82)),
 > carregada pelo parâmetro de experimento `--prompt-triagem` ([`src/main.py`
-> L324–333](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/main.py#L324-L333)).
+> L325–334](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/main.py#L325-L334)).
 > Descrever o sistema por ele seria descrever um prompt que o sistema não usa. Ele entra só como
 > evidência do experimento, no campo Avaliação.
 
@@ -22,10 +24,10 @@ mesmas quatro falhas.
 
 | | Afirmação | Evidência |
 |---|---|---|
-| Nome | Agente de Triagem e Abertura de Chamado Interno | [`README.md` L1](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/README.md#L1) |
-| Versão | commit `29d7beb` | `git rev-parse HEAD` → `29d7beb089687907b71859a66b7ceff33a6b35bf` |
-| Data | 14/10/2026 (último commit) | `git log -1` |
-| Integrantes | Daniel Filho Oliveira Lima · Pedro Gustavo de Campos Teixeira Silva · Pedro Roceti Pache | [`README.md` L3](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/README.md#L3) |
+| Nome | Agente de Triagem e Abertura de Chamado Interno | [`README.md` L1](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/README.md#L1) |
+| Versão | commit `77757ea`, o da execução de referência. Os links de evidência apontam para o `2ec98bc`, que tem o mesmo `src/` do `77757ea` e os logs de referência; as linhas citadas foram conferidas nele em 17/10/2026. A primeira versão deste documento foi escrita sobre o `29d7beb` (14/10/2026) | campo `commit` dos 44 JSON de `logs/grafo-44-3/` → `77757ea`, sem alterações locais |
+| Data | 17/10/2026 (a execução de referência) | campo `executado_em` dos 44 JSON de `logs/grafo-44-3/` |
+| Integrantes | Daniel Filho Oliveira Lima · Pedro Gustavo de Campos Teixeira Silva · Pedro Roceti Pache | [`README.md` L3](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/README.md#L3) |
 | Responsável quando algo dá errado | Pedro Roceti Pache | **LACUNA L1** — o repositório lista autores, não responsáveis |
 
 ## 2. Finalidade
@@ -35,8 +37,8 @@ registro, o log anexado e o histórico, classifica o assunto, consulta a base de
 um desfecho: abrir chamado interno (com confirmação do analista), anotar correção sugerida,
 encaminhar ao comercial, pedir informação ao cliente (com confirmação do analista) ou mandar para
 a fila humana.
-**Evidência.** [`docs/case.md` L227](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/docs/case.md#L227);
-desfechos possíveis no código: nó `decidir`, [`src/grafo.py` L430–462](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L430-L462);
+**Evidência.** [`docs/case.md` L227](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/docs/case.md#L227);
+desfechos possíveis no código: nó `decidir`, [`src/grafo.py` L430–462](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/grafo.py#L430-L462);
 na execução de referência, os 44 chamados terminaram em: 17 `fila_humana`, 11 `abrir_chamado_interno`,
 10 `anotacao_interna`, 4 `fila_comercial`, 2 `devolver_cliente` (campo `desfecho` de cada JSON).
 
@@ -44,10 +46,10 @@ na execução de referência, os 44 chamados terminaram em: 17 `fila_humana`, 11
 
 | Afirmação | Evidência |
 |---|---|
-| Executar correção no ambiente do cliente | ausência de ferramenta — [`src/ferramentas.py` L10–12 e L307–312](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/ferramentas.py#L307-L312) |
-| Encerrar chamado ou alterar a prioridade de um existente | ausência de ferramenta (idem); o caminho do grafo só grava por `db.abrir_chamado`, `db.registrar_encaminhamento` e `db.registrar_pedido_cliente`, no nó `gravar` ([`src/grafo.py` L621–663](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L621-L663)) |
-| Resolver o problema do cliente ou conversar com ele além do pedido de informação | [`docs/case.md` L227](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/docs/case.md#L227) |
-| Processar chamados reais de clientes enquanto a conta do provedor estiver no plano gratuito | decisão do grupo em [`docs/modelos.md` L43](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/docs/modelos.md#L43) — **é declaração, não controle** (nada no código impede) |
+| Executar correção no ambiente do cliente | ausência de ferramenta — [`src/ferramentas.py` L10–12 e L312–317](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/ferramentas.py#L312-L317) |
+| Encerrar chamado ou alterar a prioridade de um existente | ausência de ferramenta (idem); o caminho do grafo só grava por `db.abrir_chamado`, `db.registrar_encaminhamento` e `db.registrar_pedido_cliente` (e `db.avisar_gestor`, pela `encaminhar_pendencia`, no prazo vencido de um P1), no nó `gravar` ([`src/grafo.py` L621–663](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/grafo.py#L621-L663)) |
+| Resolver o problema do cliente ou conversar com ele além do pedido de informação | [`docs/case.md` L227](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/docs/case.md#L227) |
+| Processar chamados reais de clientes enquanto a conta do provedor estiver no plano gratuito | decisão do grupo em [`docs/modelos.md` L46](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/docs/modelos.md#L46) — **é declaração, não controle** (nada no código impede) |
 
 ## 3. Autoridade
 
@@ -56,51 +58,51 @@ credencial · plataforma · prompt.
 
 | Item | Especificação | Onde | Evidência |
 |---|---|---|---|
-| Escopo (leitura) | `consultar_ticket`, `buscar_base_conhecimento` | código | [`src/ferramentas.py` L3–8, L307–312](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/ferramentas.py#L3-L8) |
-| Escopo (escrita) | `abrir_chamado_interno` (irreversível), `registrar_encaminhamento` (reversível), envio do pedido ao cliente | código | idem; [`src/grafo.py` L621–663](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L621-L663) |
-| Quem escolhe a ação | no grafo, o **código** escolhe o desfecho; o modelo só classifica, confere ressalva e redige | código | [`src/grafo.py` L8–19](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L8-L19), [L430–462](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L430-L462) |
-| Proibido: executar correção, encerrar, reclassificar | não existe ferramenta | ausência de ferramenta | [`src/ferramentas.py` L10–12](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/ferramentas.py#L10-L12). **LACUNA L2**: nenhum teste afirma que o conjunto de ferramentas é exatamente este (um teste que falhe se alguém acrescentar uma ferramenta de escrita) |
-| Proibido: agir com correspondência abaixo do limiar 0,5 | vai à fila humana | código | `decidir`, [`src/grafo.py` L454–455](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L454-L455); teste `test_o_grafo_nao_age_quando_o_cosseno_fica_abaixo_do_limiar` (`tests/test_vetorial.py` L234) |
-| Proibido: agir quando o log aponta outro serviço | fila humana antes de olhar o score | código (o **sinal** vem do modelo) | [`src/grafo.py` L448–451](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L448-L451); teste em `tests/test_grafo.py` L151. Ressalva: se o modelo não marcar a divergência, o código não a vê |
-| Time e prioridade | vêm do guia da base; reincidência na janela de 30 dias sobe um nível; modelo e cliente não escolhem | código | [`src/db.py` L430–436, L446–474](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/db.py#L430-L474); teste `test_reincidencia_sobe_prioridade_no_codigo` (`tests/test_grafo.py` L204); caso `TKT-0003` da execução de referência: cliente exige "prioridade máxima", o guia KB-102 é P2 no seed e o sistema grava P1 por 1 reincidência confirmada, não pela exigência |
-| Abertura não duplica | chave ticket+guia é UNIQUE | código + plataforma (UNIQUE no SQLite) | [`src/db.py` L446–474](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/db.py#L446-L474); `dados/seed.sql` (coluna `chave_idempotencia ... UNIQUE`); teste `test_idempotencia_nao_duplica_chamado` (`tests/test_offline.py` L468) |
-| Pedido ao cliente | no máximo 1 por chamado; texto padrão do código; sem termos internos | código | [`src/grafo.py` L442–447](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L442-L447), [L94–104](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L94-L104); [`src/ferramentas.py` L46–48](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/ferramentas.py#L46-L48); testes `test_um_pedido_de_informacao_por_chamado`, `test_h2_o_envio_e_idempotente_pelo_chamado` |
-| "Envio" ao cliente | **não há canal**: enviar = gravar linha com `enviado_em` | código | [`src/db.py` L506–513](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/db.py#L506-L513) |
-| Credencial do modelo | uma chave (`OPENAI_API_KEY`) usada para chat **e** embeddings | credencial | [`.env.example`](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/.env.example); [`src/vetorial.py` L5–6](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/vetorial.py#L5-L6). **LACUNA L3**: não é identidade própria do agente; Conta dono da chave é do Daniel Lima |
+| Escopo (leitura) | `consultar_ticket`, `buscar_base_conhecimento` | código | [`src/ferramentas.py` L3–8, L312–317](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/ferramentas.py#L3-L8) |
+| Escopo (escrita) | `abrir_chamado_interno` (irreversível), `registrar_encaminhamento` (reversível), envio do pedido ao cliente | código | idem; [`src/grafo.py` L621–663](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/grafo.py#L621-L663) |
+| Quem escolhe a ação | no grafo, o **código** escolhe o desfecho; o modelo só classifica, confere ressalva e redige | código | [`src/grafo.py` L8–19](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/grafo.py#L8-L19), [L430–462](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/grafo.py#L430-L462) |
+| Proibido: executar correção, encerrar, reclassificar | não existe ferramenta | ausência de ferramenta | [`src/ferramentas.py` L10–12](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/ferramentas.py#L10-L12). **LACUNA L2**: nenhum teste afirma que o conjunto de ferramentas é exatamente este (um teste que falhe se alguém acrescentar uma ferramenta de escrita) |
+| Proibido: agir com correspondência abaixo do limiar 0,5 | vai à fila humana | código | `decidir`, [`src/grafo.py` L454–455](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/grafo.py#L454-L455); teste `test_o_grafo_nao_age_quando_o_cosseno_fica_abaixo_do_limiar` (`tests/test_vetorial.py` L281) |
+| Proibido: agir quando o log aponta outro serviço | fila humana antes de olhar o score | código (o **sinal** vem do modelo) | [`src/grafo.py` L448–451](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/grafo.py#L448-L451); teste em `tests/test_grafo.py` L151. Ressalva: se o modelo não marcar a divergência, o código não a vê |
+| Time e prioridade | vêm do guia da base; reincidência na janela de 30 dias sobe um nível; modelo e cliente não escolhem | código | [`src/db.py` L435–441, L451–479](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/db.py#L435-L479); teste `test_reincidencia_sobe_prioridade_no_codigo` (`tests/test_grafo.py` L204); caso `TKT-0003` da execução de referência: cliente exige "prioridade máxima", o guia KB-102 é P2 no seed e o sistema grava P1 por 1 reincidência confirmada, não pela exigência |
+| Abertura não duplica | chave ticket+guia é UNIQUE | código + plataforma (UNIQUE no SQLite) | [`src/db.py` L451–479](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/db.py#L451-L479); `dados/seed.sql` (coluna `chave_idempotencia ... UNIQUE`); teste `test_idempotencia_nao_duplica_chamado` (`tests/test_offline.py` L468) |
+| Pedido ao cliente | no máximo 1 por chamado; texto padrão do código; sem termos internos | código | [`src/grafo.py` L442–447](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/grafo.py#L442-L447), [L94–104](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/grafo.py#L94-L104); [`src/ferramentas.py` L46–48](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/ferramentas.py#L46-L48); testes `test_um_pedido_de_informacao_por_chamado`, `test_h2_o_envio_e_idempotente_pelo_chamado` |
+| "Envio" ao cliente | **não há canal**: enviar = gravar linha com `enviado_em` | código | [`src/db.py` L520–527](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/db.py#L520-L527) |
+| Credencial do modelo | uma chave (`OPENAI_API_KEY`) usada para chat **e** embeddings | credencial | [`.env.example`](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/.env.example); [`src/vetorial.py` L5–6](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/vetorial.py#L5-L6). **LACUNA L3**: não é identidade própria do agente; Conta dono da chave é do Daniel Lima |
 | Credencial do banco | **nenhuma**: o processo abre o SQLite com acesso total a todas as tabelas | — | **LACUNA L4**: todo limite de escrita está só no código; nenhum privilégio de banco os garante se o código falhar |
-| Limite por execução | tokens, custo e tempo (`Orcamento`: 30.000 tokens, US$ 0,05, 90 s) + 20 superpassos | código | [`src/agente.py` L184–191](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/agente.py#L184-L191), [`src/grafo.py` L71, L216–227](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L216-L227); testes `test_teto_de_tokens_termina_antes_da_redacao`, `test_limite_de_superpassos_e_declarado_no_codigo`. Medido: maior custo da execução de referência US$ 0,000416 |
-| Limite por janela (dia/mês) | não existe | — | **LACUNA L5**: só há teto por execução; o limite de requisições do plano gratuito ([`docs/modelos.md` L24](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/docs/modelos.md#L24)) é observação, não configuração |
-| Limiar de aprovação humana | **toda** abertura de chamado interno (H1) e **todo** pedido ao cliente (H2); prazo de 20 min; silêncio = não executa | código | [`src/ferramentas.py` L26–29](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/ferramentas.py#L26-L29); [`src/grafo.py` L583–619](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L583-L619); testes `test_sem_resposta_do_analista_o_grafo_pausa_no_interrupt`, `test_prazo_vencido_de_p1_vai_a_fila_humana_e_avisa_o_gestor`, `test_edicao_depois_do_prazo_nao_vale` |
-| Falha de controle | modelo indisponível → `ErroFatal`, nada é gravado (*fail-closed* para escrita); embedding indisponível → cai para busca por palavra (*fail-open* na leitura) | código | [`src/grafo.py` L239–247](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L239-L247); [`src/vetorial.py` L134–138](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/vetorial.py#L134-L138). **LACUNA L6**: sem teste do caminho de API indisponível |
+| Limite por execução | tokens, custo e tempo (`Orcamento`: 30.000 tokens, US$ 0,05, 90 s) + 20 superpassos | código | [`src/agente.py` L184–191](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/agente.py#L184-L191), [`src/grafo.py` L71, L216–227](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/grafo.py#L216-L227); testes `test_teto_de_tokens_termina_antes_da_redacao`, `test_limite_de_superpassos_e_declarado_no_codigo`. Medido: maior custo da execução de referência US$ 0,000416 |
+| Limite por janela (dia/mês) | não existe | — | **LACUNA L5**: só há teto por execução; o limite de requisições do plano gratuito ([`docs/modelos.md` L27](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/docs/modelos.md#L27)) é observação, não configuração |
+| Limiar de aprovação humana | **toda** abertura de chamado interno (H1) e **todo** pedido ao cliente (H2); prazo de 20 min; silêncio = não executa | código | [`src/ferramentas.py` L26–29](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/ferramentas.py#L26-L29); [`src/grafo.py` L583–619](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/grafo.py#L583-L619); testes `test_sem_resposta_do_analista_o_grafo_pausa_no_interrupt`, `test_prazo_vencido_de_p1_vai_a_fila_humana_e_avisa_o_gestor`, `test_edicao_depois_do_prazo_nao_vale` |
+| Falha de controle | modelo indisponível → `ErroFatal`, nada é gravado (*fail-closed* para escrita); embedding indisponível → cai para busca por palavra (*fail-open* na leitura) | código | [`src/grafo.py` L239–247](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/grafo.py#L239-L247); [`src/vetorial.py` L143–147](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/vetorial.py#L143-L147). **LACUNA L6**: sem teste do caminho de API indisponível |
 | Instrução no prompt | as regras de formato e de "não decidir desfecho" dos prompts | prompt | `src/prompts/triagem-v1.md`, `redigir-v3.md`. Limite aplicado **só** aqui conta como lacuna |
 
 ## 4. Ferramentas e integrações
 
 | Ferramenta / integração | Permissão | Evidência |
 |---|---|---|
-| `consultar_ticket` | leitura (SQLite `tickets_externos`, `chamados_internos`) | [`src/ferramentas.py` L85–101](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/ferramentas.py#L85-L101) |
-| `buscar_base_conhecimento` | leitura (`kb_artigos`, `kb_vetores`) + **envio do relato ao provedor** para embedding | [`src/vetorial.py` L129–136](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/vetorial.py#L129-L136) |
-| `abrir_chamado_interno` | escrita irreversível (`chamados_internos`) | [`src/db.py` L446–474](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/db.py#L446-L474) |
-| `registrar_encaminhamento` | escrita (`encaminhamentos`) | [`src/db.py` L495](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/db.py#L495) |
-| API de chat da Mistral (compatível com `openai`) | envio a terceiro: texto, cliente, plano, log anexado, histórico | [`src/grafo.py` L273–286](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L273-L286) |
-| API de embeddings (`mistral-embed`) | envio a terceiro: relato do cliente | [`src/vetorial.py` L29](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/vetorial.py#L29) |
-| Servidor MCP | nenhum (previsto para a Parte 3) | [`src/db.py` L10–11](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/db.py#L10-L11); dependências em [`requirements.txt`](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/requirements.txt) |
+| `consultar_ticket` | leitura (SQLite `tickets_externos`, `chamados_internos`) | [`src/ferramentas.py` L85–101](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/ferramentas.py#L85-L101) |
+| `buscar_base_conhecimento` | leitura (`kb_artigos`, `kb_vetores`) + **envio do relato ao provedor** para embedding | [`src/vetorial.py` L138–145](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/vetorial.py#L138-L145) |
+| `abrir_chamado_interno` | escrita irreversível (`chamados_internos`) | [`src/db.py` L451–479](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/db.py#L451-L479) |
+| `registrar_encaminhamento` | escrita (`encaminhamentos`) | [`src/db.py` L500](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/db.py#L500) |
+| API de chat da Mistral (compatível com `openai`) | envio a terceiro: texto, cliente, plano, log anexado, histórico | [`src/grafo.py` L273–286](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/grafo.py#L273-L286) |
+| API de embeddings (`mistral-embed`) | envio a terceiro: relato do cliente | [`src/vetorial.py` L29](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/vetorial.py#L29) |
+| Servidor MCP | nenhum (previsto para a Parte 3) | [`src/db.py` L10–11](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/db.py#L10-L11); dependências em [`requirements.txt`](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/requirements.txt) |
 
 ## 5. Modelo e provedor
 
 | | Afirmação | Evidência |
 |---|---|---|
-| Modelo | `ministral-8b-latest`, temperatura 0 | campos `modelo` e `temperatura` dos 44 JSON da execução de referência |
-| Versão datada | **não fixada**: o enunciado exige versão datada, e o `.env` usa o alias `-latest` | **LACUNA L8** — `docs/modelos.md` L222 já prevê rever "se o alias mudar de versão", mas o log não registra para qual versão o alias apontou |
-| Embedding | `mistral-embed` | [`src/vetorial.py` L29](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/vetorial.py#L29) |
-| Provedor | Mistral AI, plano gratuito | [`docs/modelos.md` L16–26](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/docs/modelos.md#L16-L26) |
-| Região de processamento | não verificada | **LACUNA L9** — o próprio [`docs/modelos.md` L55](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/docs/modelos.md#L55) diz "conferir região no contrato" |
-| Retenção e uso para treino | o plano gratuito **pode** usar os dados para treino; fontes divergem | [`docs/modelos.md` L43, L240](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/docs/modelos.md#L43). **LACUNA L10**: as fontes citadas são agregadores, não os termos da Mistral |
+| Modelo | `ministral-8b-2512`, temperatura 0 | campos `modelo` e `temperatura` dos 44 JSON da execução de referência |
+| Versão datada | **fixada** na execução de referência: os 44 logs registram a versão datada `ministral-8b-2512`, e não o alias. As execuções até 14/10/2026 (entre elas a referência anterior, `logs/regra-da-frase/triagem-v1-3/`) registram o alias `ministral-8b-latest`, e o log delas não diz para qual versão ele apontava | campo `modelo` de `logs/grafo-44-3/*.json`. ~~LACUNA L8~~: sanada para a execução de referência em 17/10/2026; continua valendo para os logs anteriores |
+| Embedding | `mistral-embed` | [`src/vetorial.py` L29](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/vetorial.py#L29) |
+| Provedor | Mistral AI, plano gratuito | [`docs/modelos.md` L19–29](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/docs/modelos.md#L19-L29) |
+| Região de processamento | não verificada | **LACUNA L9** — o próprio [`docs/modelos.md` L58](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/docs/modelos.md#L58) diz "conferir região no contrato" |
+| Retenção e uso para treino | o plano gratuito **pode** usar os dados para treino; fontes divergem | [`docs/modelos.md` L46, L245](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/docs/modelos.md#L46). **LACUNA L10**: as fontes citadas são agregadores, não os termos da Mistral |
 
 ## 6. Dados
 
 **Afirmação geral.** Todos os dados do repositório são simulados: clientes, domínios e servidores
-fictícios. **Evidência:** [`dados/seed.sql` L2–3](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/dados/seed.sql#L2-L3).
+fictícios. **Evidência:** [`dados/seed.sql` L2–3](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/dados/seed.sql#L2-L3).
 Os IPs do seed são da faixa de documentação 203.0.113.0/24, e o e-mail do `TKT-0123` usa o domínio
 reservado `.example`.
 
@@ -110,15 +112,15 @@ segue por onde **esse texto** passa.
 
 | Lugar | Dado | Finalidade | Base legal (LGPD art. 7º) | Prazo de guarda | Evidência |
 |---|---|---|---|---|---|
-| Entrada (`tickets_externos.texto`, SQLite local) | texto do chamado; o texto digitado sobrescreve o do banco | triagem | **LACUNA L18** (candidata: V, execução de contrato) | **LACUNA L11** — nenhum | [`src/db.py` L486–492](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/db.py#L486-L492) |
-| Prompt → Mistral (chat), 3 nós | texto, nome do cliente, plano, log anexado inteiro, histórico | classificar, conferir ressalva, redigir | **LACUNA L19** + transferência internacional (art. 33) se a região for fora do Brasil | termos do provedor (L9/L10) | [`src/grafo.py` L273–286](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L273-L286) |
-| Embedding → Mistral | relato do cliente | busca vetorial | idem | idem | [`src/vetorial.py` L129–136](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/vetorial.py#L129-L136) |
-| Checkpoint (`dados/checkpoints.db`) | texto e log anexado por inteiro | retomar execução pausada | **LACUNA L20** | apagado ao concluir; **pausa nunca resolvida fica** (**LACUNA L12**) | [`src/grafo.py` L831–833, L861–862](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L861-L862); teste `test_execucao_concluida_apaga_o_checkpoint_e_a_pausada_nao` |
-| Pendências (`pendencias.acao`) | resumo redigido; no H2, o relato | tela do analista | **LACUNA L21** | **LACUNA L12** — sem remoção | [`src/db.py` L68–80](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/db.py#L68-L80) |
+| Entrada (`tickets_externos.texto`, SQLite local) | texto do chamado; o texto digitado sobrescreve o do banco | triagem | **LACUNA L18** (candidata: V, execução de contrato) | **LACUNA L11** — nenhum | [`src/db.py` L491–497](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/db.py#L491-L497) |
+| Prompt → Mistral (chat), 3 nós | texto, nome do cliente, plano, log anexado inteiro, histórico | classificar, conferir ressalva, redigir | **LACUNA L19** + transferência internacional (art. 33) se a região for fora do Brasil | termos do provedor (L9/L10) | [`src/grafo.py` L273–286](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/grafo.py#L273-L286) |
+| Embedding → Mistral | relato do cliente | busca vetorial | idem | idem | [`src/vetorial.py` L138–145](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/vetorial.py#L138-L145) |
+| Checkpoint (`dados/checkpoints.db`) | texto e log anexado por inteiro | retomar execução pausada | **LACUNA L20** | apagado ao concluir; **pausa nunca resolvida fica** (**LACUNA L12**) | [`src/grafo.py` L831–833, L861–862](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/grafo.py#L861-L862); teste `test_execucao_concluida_apaga_o_checkpoint_e_a_pausada_nao` |
+| Pendências (`pendencias.acao`) | resumo redigido; no H2, o relato | tela do analista | **LACUNA L21** | **LACUNA L12** — sem remoção | [`src/db.py` L71–83](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/db.py#L71-L83) |
 | Chamado interno / encaminhamento | resumo ou mensagem redigidos | registro do desfecho | **LACUNA L22** | **LACUNA L23** (é registro de negócio) | `dados/seed.sql` (tabelas `chamados_internos`, `encaminhamentos`) |
-| Memória episódica (`episodios`) | id do cliente, classe, guia, veredito; resumo **montado pelo código** | precedentes na tela do analista | **LACUNA L24** | 365 dias, removido quando um comando roda | [`src/db.py` L113–142, L621–628](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/db.py#L621-L628) |
-| Memória semântica (`fatos_cliente`) | 3 chaves de vocabulário fechado, escritas por pessoa | contexto da tela e da ressalva | **LACUNA L25** | sem decaimento | [`src/db.py` L174–203](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/db.py#L174-L203) |
-| **Log de execução** (`logs/**/*.json`) | `entrada` completa + resultado de cada passo (inclui log anexado) | auditoria e avaliação | **LACUNA L26** | **indefinido: os logs são versionados no git** (`.gitignore` não exclui `logs/`) | ex.: `logs/regra-da-frase/triagem-v1-3/TKT-0002.json` contém o IP do log anexado |
+| Memória episódica (`episodios`) | id do cliente, classe, guia, veredito; resumo **montado pelo código** | precedentes na tela do analista | **LACUNA L24** | 365 dias, removido quando um comando roda e a cada volta do vigia do prazo | [`src/db.py` L116–145, L641–649](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/db.py#L641-L649) |
+| Memória semântica (`fatos_cliente`) | 3 chaves de vocabulário fechado, escritas por pessoa | contexto da tela e da ressalva | **LACUNA L25** | sem decaimento | [`src/db.py` L177–206](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/db.py#L177-L206) |
+| **Log de execução** (`logs/**/*.json`) | `entrada` completa + resultado de cada passo (inclui log anexado) | auditoria e avaliação | **LACUNA L26** | **indefinido: os logs são versionados no git** (`.gitignore` não exclui `logs/`) | ex.: `logs/grafo-44-3/TKT-0002.json` contém o IP do log anexado |
 
 **Minimização — pontos a declarar:**
 
@@ -131,13 +133,13 @@ segue por onde **esse texto** passa.
 
 | | Afirmação | Evidência |
 |---|---|---|
-| Suíte | 44 chamados rotulados (`dados/gabarito.json`) + verificador em código que confere **o banco**, não o texto | [`src/verificar.py` L1–5](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/verificar.py#L1-L5) |
-| Versão da suíte | **LACUNA L28** — sugestão: hash do `gabarito.json` no commit `29d7beb` | — |
+| Suíte | 44 chamados rotulados (`dados/gabarito.json`) + verificador em código que confere **o banco**, não o texto | [`src/verificar.py` L1–5](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/verificar.py#L1-L5) |
+| Versão da suíte | **LACUNA L28** — sugestão: hash do `gabarito.json` no commit `77757ea` | — |
 | Resultado agregado (config. em uso) | 40 de 44 nas três execuções, e de novo nas três de referência sobre código commitado | linha `RESULTADO` de `logs/regra-da-frase/triagem-v1-{1,2,3}/saida-demonstracao.txt` e de `logs/grafo-44-{1,2,3}/saida-demonstracao.txt` |
-| Por fatia | as 4 falhas da execução de referência são `escalonamento_seguranca` (TKT-0105), `reincidencia_silenciosa` (TKT-0106), `exigencia_de_prioridade` (TKT-0111), `servico_sem_sintoma` (TKT-0132); **as quatro foram à fila humana** com `score_abaixo_do_limiar`, nenhuma gravou chamado indevido | `logs/regra-da-frase/triagem-v1-3/saida-demonstracao.txt` (linhas `VERIFICADOR: FALHOU`) e `desfecho_proposto` dos 4 JSON |
-| Variante não adotada | `triagem-v2.md`: 39, 40 e 39 de 44 | `logs/regra-da-frase/triagem-v2-{1,2,3}/saida-demonstracao.txt`; [`docs/prompts.md` L82](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/docs/prompts.md#L82) |
-| Testes offline (código, sem modelo) | 146 testes passam | **a gerar:** `python -m pytest -q tests > docs/evidencias/testes-29d7beb.txt` (no commit `29d7beb`: `146 passed, 28 subtests passed`) |
-| Concordância do juiz com humano | não há juiz por modelo: o verificador é código determinístico | **LACUNA L13**: os rótulos são só do grupo, sem segunda rotulagem independente ([`docs/case.md` L368](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/docs/case.md#L368)), e o **texto** redigido (resumo do chamado) não é medido |
+| Por fatia | as 4 falhas da execução de referência são `escalonamento_seguranca` (TKT-0105), `reincidencia_silenciosa` (TKT-0106), `exigencia_de_prioridade` (TKT-0111), `servico_sem_sintoma` (TKT-0132); **as quatro foram à fila humana** com `score_abaixo_do_limiar`, nenhuma gravou chamado indevido | `logs/grafo-44-3/saida-demonstracao.txt` (linhas `VERIFICADOR: FALHOU`) e `desfecho_proposto` dos 4 JSON |
+| Variante não adotada | `triagem-v2.md`: 39, 40 e 39 de 44 | `logs/regra-da-frase/triagem-v2-{1,2,3}/saida-demonstracao.txt`; [`docs/prompts.md` L82](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/docs/prompts.md#L82) |
+| Testes offline (código, sem modelo) | 170 testes passam no commit `77757ea`, o da execução de referência (no `29d7beb` eram 146) | `python -m unittest discover -s tests` sobre o `77757ea`, rodado em 17/10/2026: `Ran 170 tests`, `OK`. A saída não foi guardada em arquivo (`docs/evidencias/` não existe) |
+| Concordância do juiz com humano | não há juiz por modelo: o verificador é código determinístico | **LACUNA L13**: os rótulos são só do grupo, sem segunda rotulagem independente ([`docs/case.md` L368](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/docs/case.md#L368)), e o **texto** redigido (resumo do chamado) não é medido |
 
 ## 8. Limites conhecidos
 
@@ -146,37 +148,37 @@ segue por onde **esse texto** passa.
 | Guias de segurança (KB-112) com relato em linguagem de usuário ficam abaixo do limiar e vão à fila humana em vez de abrir chamado | TKT-0105 e TKT-0106 na execução de referência |
 | A busca não acha o guia "anotar" quando o relato vem com exigência de prioridade | TKT-0111 |
 | Relato que diz o serviço, mas não o sintoma, vai à fila humana em vez de pedir informação (rótulo discutido pelo próprio grupo) | TKT-0132; `_nota` do caso em `dados/gabarito.json` |
-| O limiar 0,5 não separa perguntas sem resposta das que têm | [`docs/case.md` L402](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/docs/case.md#L402) |
-| A divergência relato × log depende do modelo marcar o sinal | [`src/grafo.py` L448–451](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L448-L451) |
-| A janela de reincidência conta a partir de uma data fixa simulada (`AGORA = 2026-09-21 12:00`), não do relógio | [`src/db.py` L28–29](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/db.py#L28-L29) |
-| A espera pela resposta do cliente ao pedido de informação (H3) não existe: não há segunda volta nem envio à fila humana após prazo | [`src/grafo.py` L24](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L24); [`docs/case.md` L227](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/docs/case.md#L227) |
+| O limiar 0,5 não separa perguntas sem resposta das que têm | [`docs/case.md` L403](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/docs/case.md#L403) |
+| A divergência relato × log depende do modelo marcar o sinal | [`src/grafo.py` L448–451](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/grafo.py#L448-L451) |
+| A janela de reincidência conta a partir de uma data fixa simulada (`AGORA = 2026-09-21 12:00`), não do relógio | [`src/db.py` L31–32](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/db.py#L31-L32) |
+| A espera pela resposta do cliente ao pedido de informação (H3) não existe: não há segunda volta nem envio à fila humana após prazo | [`src/grafo.py` L24](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/grafo.py#L24); [`docs/case.md` L227](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/docs/case.md#L227) |
 | **Não usar** com chamado real enquanto a conta for do plano gratuito | campo 5 |
 
 ## 9. Riscos aceitos
 
 | Risco | Razão | O que o limita | Evidência |
 |---|---|---|---|
-| Limiar 0,5 não recalibrado | nenhum limiar separou os casos | fila humana é o caminho de qualquer dúvida | [`docs/case.md` L402](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/docs/case.md#L402) ("o grupo assumiu o risco") |
-| Plano gratuito do provedor | o grupo não paga API | só dado simulado | [`docs/modelos.md` L16–18, L43](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/docs/modelos.md#L43) |
+| Limiar 0,5 não recalibrado | nenhum limiar separou os casos | fila humana é o caminho de qualquer dúvida | [`docs/case.md` L403](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/docs/case.md#L403) ("o grupo assumiu o risco") |
+| Plano gratuito do provedor | o grupo não paga API | só dado simulado | [`docs/modelos.md` L19–21, L46](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/docs/modelos.md#L46) |
 | **LACUNA L29** — as lacunas mantidas não têm registro de risco aceito | | | |
 
 ## 10. Supervisão humana
 
 | | Afirmação | Evidência |
 |---|---|---|
-| O que pausa | abrir chamado interno (H1) e pedido ao cliente (H2) | [`src/grafo.py` L73–80](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L73-L80) |
+| O que pausa | abrir chamado interno (H1) e pedido ao cliente (H2) | [`src/grafo.py` L73–80](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/grafo.py#L73-L80) |
 | Quem aprova | "analista de suporte", por comando no terminal (`--aprovar`, `--rejeitar`) | log `logs/grafo-pausa/TKT-0007.json` (`por: analista de suporte (terminal)`). **LACUNA L14**: não há identificação de **quem** aprovou; qualquer pessoa com o terminal aprova |
-| Em quanto tempo | 20 minutos; vencido, não executa e vai à fila humana; P1 vencido avisa o gestor. Desde 17/10/2026 quem aplica o prazo, sem comando nenhum, é o vigia (`src/vigiar_prazos.py`), que precisa estar rodando | [`src/ferramentas.py` L26–36](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/ferramentas.py#L26-L36); log `logs/grafo-h1-vencido/TKT-0003.json` (`status: vencida`); a espera real de 20 minutos vencida pelo vigia em `logs/grafo-prazo-vigia/` ([`docs/humano.md`](humano.md) §4.1) |
+| Em quanto tempo | 20 minutos; vencido, não executa e vai à fila humana; P1 vencido avisa o gestor. Desde 17/10/2026 quem aplica o prazo, sem comando nenhum, é o vigia (`src/vigiar_prazos.py`), que precisa estar rodando | [`src/ferramentas.py` L26–36](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/ferramentas.py#L26-L36); log `logs/grafo-h1-vencido/TKT-0003.json` (`status: vencida`); a espera real de 20 minutos vencida pelo vigia em `logs/grafo-prazo-vigia/` ([`docs/humano.md`](humano.md) §4.1) |
 | Rejeição | não executa; vai à fila humana com as considerações | log `logs/grafo-h2-rejeicao/TKT-0005.json`; teste `test_rejeitar_vai_a_fila_humana_com_as_consideracoes` |
-| **Atenção — execução de referência** | as 13 confirmações dela foram **auto-aprovadas**: `por: "auto-aprovado (--auto-aprovar; só para demonstração)"`. Os 44 casos medem a decisão do agente, **não** a supervisão | campo `confirmacoes` dos JSON; [`src/main.py` L81–82, L339–341](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/main.py#L339-L341) (`--todos` exige `--auto-aprovar`). **LACUNA L15**: nada impede usar `--auto-aprovar` fora de demonstração |
+| **Atenção — execução de referência** | as 13 confirmações dela foram **auto-aprovadas**: `por: "auto-aprovado (--auto-aprovar; só para demonstração)"`. Os 44 casos medem a decisão do agente, **não** a supervisão | campo `confirmacoes` dos JSON; [`src/main.py` L82–83, L340–342](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/main.py#L340-L342) (`--todos` exige `--auto-aprovar`). **LACUNA L15**: nada impede usar `--auto-aprovar` fora de demonstração |
 | Como interromper | ver Autoridade | **LACUNA L7** |
 
 ## 11. Registro e retenção
 
 | | Afirmação | Evidência |
 |---|---|---|
-| O que é registrado por execução | id da execução, data, commit, entrada, modelo, prompts, temperatura, cada passo com argumentos e resultado, confirmações, término e motivo, tokens, custo, scores, episódio | chaves de `logs/regra-da-frase/triagem-v1-3/TKT-0003.json`; gravação em [`src/grafo.py` L852–860](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L852-L860) |
-| Ligação log ↔ código | campo `commit` | [`src/agente.py` L56–66](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/agente.py#L56-L66). **LACUNA L16**: a execução de referência registra `6116341 + alterações locais`, ou seja, rodou com código não commitado; o commit seguinte (`4505e75`) alterou `src/main.py`, `src/grafo.py` e `src/agente.py`. Não dá para reproduzir exatamente o código que gerou o log |
+| O que é registrado por execução | id da execução, data, commit, entrada, modelo, prompts, temperatura, cada passo com argumentos e resultado, confirmações, término e motivo, tokens, custo, scores, episódio | chaves de `logs/grafo-44-3/TKT-0003.json` (que separa também o custo do embedding, `custo_embedding_usd`); gravação em [`src/grafo.py` L852–858](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/grafo.py#L852-L858) |
+| Ligação log ↔ código | campo `commit` | [`src/agente.py` L56–66](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/2ec98bccc2bc7cd5e19483272822646d622a7d64/src/agente.py#L56-L66). ~~LACUNA L16~~, sanada em 17/10/2026: a referência anterior (`logs/regra-da-frase/triagem-v1-3/`) registra `6116341 + alterações locais`, ou seja, rodou com código não commitado (o commit seguinte, `4505e75`, alterou `src/main.py`, `src/grafo.py` e `src/agente.py`). A execução de referência atual, `logs/grafo-44-3/`, registra `77757ea` sem marca, e as três rodadas de `logs/grafo-44-*` dão o mesmo 40 de 44 (`docs/grafo.md` §6.9) |
 | Por quanto tempo | **indefinido** (logs versionados no git) | **LACUNA L11** |
 | Quem acessa | **LACUNA L30** — o repositório é público | — |
 
@@ -201,7 +203,7 @@ segue por onde **esse texto** passa.
 | L5 | Autoridade | sem limite de gasto por janela | teto diário/mensal por chave, com alerta | Média |
 | L6 | Autoridade | *fail-closed* sem teste | teste com cliente simulado que lança `APIConnectionError` e confere que nada foi gravado | Baixa |
 | L7 | Autoridade / Supervisão | sem procedimento de interrupção | escrever quem, como, em que estado fica; executar uma vez e salvar a saída | Alta |
-| L8 | Modelo | alias `-latest` | fixar versão datada no `.env` e no log | Alta |
+| L8 | Modelo | alias `-latest` | fixar versão datada no `.env` e no log: **feito em 17/10/2026** para a execução de referência (os logs de `logs/grafo-44-*` registram `ministral-8b-2512`); os logs anteriores continuam com o alias | Alta |
 | L9 | Modelo | região não verificada | citar os termos oficiais do provedor, salvos em `docs/` | Alta |
 | L10 | Modelo | retenção/treino com fontes secundárias | idem | Alta |
 | L11 | Dados / Registro | log com texto inteiro, sem prazo | definir prazo; separar log de auditoria do log de avaliação; não versionar log com dado real | Alta |
@@ -221,7 +223,7 @@ segue por onde **esse texto** passa.
 | L25 | Dados | memória semântica sem base legal | mesma base de L18 (fato do ambiente contratado) | Alta |
 | L26 | Dados | log de execução sem base legal | art. 7º, IX, se for log de auditoria; com dado real, não versionar (L11) | Alta |
 | L27 | Dados — minimização | log anexado vai inteiro ao provedor | avaliar enviar só o trecho do serviço apontado (`src/grafo.py` L273–286), ou registrar como risco aceito | Média |
-| L28 | Avaliação | suíte sem identificador de versão | registrar `git hash-object dados/gabarito.json` no commit `29d7beb` | Média |
+| L28 | Avaliação | suíte sem identificador de versão | registrar `git hash-object dados/gabarito.json` no commit `77757ea` | Média |
 | L29 | Riscos aceitos | lacunas mantidas sem registro de risco aceito | uma linha em §9 por lacuna que o grupo decidir não corrigir, com razão e limite (candidatas: L4, L5, L6) | Alta |
 | L30 | Registro | sem definição de quem acessa os logs | declarar o acesso (hoje: repositório público, qualquer pessoa com o link) | Média |
 | L31 | Histórico | histórico de mudanças não preenchido | uma linha por versão a partir de `git log --oneline` | Baixa |

@@ -563,7 +563,7 @@ def _pendencia_do_chamado(state, ctx, proposto: dict) -> dict:
     artigo = db.buscar_artigo(ctx.con, proposto["kb_id"])
     # A prioridade entra na tela como PREVISTA: é a regra da abertura (procedimento + reincidência)
     # aplicada agora. A do chamado é calculada de novo na gravação, e ninguém a edita.
-    return {"ferramenta": "abrir_chamado_interno", "id_ticket": state["id_ticket"],
+    return _tela_do_h1(state, ctx, artigo, {"ferramenta": "abrir_chamado_interno", "id_ticket": state["id_ticket"],
             "categoria": artigo["categoria"], "resumo": state["texto_redigido"],
             "time_destino": artigo["time_destino"], "kb_id": proposto["kb_id"],
             "prioridade_prevista": db.prioridade_prevista(ctx.con, state["ticket"], artigo),
@@ -577,7 +577,7 @@ def _pendencia_do_chamado(state, ctx, proposto: dict) -> dict:
                                           artigo["categoria"]) if MEMORIA else None,
             # Memória semântica: os fatos do ambiente do cliente confirmados por um analista.
             "fatos_cliente": {c: f["valor"] for c, f in db.fatos_do_cliente(
-                ctx.con, state["ticket"]["_cliente_id"]).items()} if MEMORIA else None}
+                ctx.con, state["ticket"]["_cliente_id"]).items()} if MEMORIA else None})
 
 
 def confirmar(state, ctx):
@@ -631,7 +631,7 @@ def gravar(state, ctx):
         apoio = SimpleNamespace(prazo_confirmacao_min=state["prazo_confirmacao_min"],
                                 ticket=state["ticket"], desfecho=None,
                                 scores_kb={c["kb_id"]: c["score"] for c in state.get("candidatos") or []})
-        argumentos, resultado = encaminhar_pendencia(apoio, ctx.con, state["pendencia"], motivo, **_chaves_da_gravacao(state, "fila_humana"))
+        argumentos, resultado = encaminhar_pendencia(apoio, ctx.con, state["pendencia"], motivo, **_chaves_da_gravacao(state, "fila_humana"), motivo_do_analista=state["confirmacao"].get("motivo_rejeicao"))
         return {"desfecho": apoio.desfecho,
                 "passos": [_passo(state, "registrar_encaminhamento", argumentos, resultado)]}
     if acao in CAMPO_EDITAVEL:
@@ -1113,3 +1113,18 @@ def retomar_interrompidas(*, client, con, log_dir: Path | None = None, agora: da
 # se o padrão da biblioteca mudar numa atualização, nada muda aqui. Fica no fim do arquivo para
 # não deslocar as linhas citadas em docs/grafo.md §4.
 DURABILIDADE = "sync"
+
+
+# ------------------------------------------------------------------ a tela do H1 (17/10/2026)
+# No fim do arquivo, como os blocos acima, para não deslocar as linhas citadas em docs/grafo.md §4.
+
+def _tela_do_h1(state, ctx, artigo: dict, pendencia: dict) -> dict:
+    """O que faltava na tela do H1 (docs/humano.md §2.2): o score que sustenta a ação, os chamados
+    que a regra da reincidência contou (o porquê de a prioridade ter subido) e o SLA da prioridade
+    prevista. Só informam o analista: o desfecho já está decidido, e nada aqui é editável."""
+    score = next((c["score"] for c in state.get("candidatos") or []
+                  if c["kb_id"] == pendencia["kb_id"]), None)
+    return {**pendencia, "score": score,
+            "reincidencia": db.chamados_da_reincidencia(ctx.con, state["ticket"]["_cliente_id"],
+                                                        artigo["categoria"]),
+            "sla_previsto": db.SLA_POR_PRIORIDADE.get(pendencia["prioridade_prevista"])}

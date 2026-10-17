@@ -359,6 +359,9 @@ class TestGrafo(unittest.TestCase):
         self.assertEqual(e.confirmacoes[-1]["status"], "vencida")
         self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0003"), 0)
         self.assertEqual(db.contar(self.con, "avisos_gestor", "TKT-0003"), 1)
+        (aviso,) = db.avisos_ao_gestor(self.con)                       # o que o --avisos lista
+        self.assertEqual((aviso["ticket_externo"], aviso["prioridade"], aviso["motivo"]),
+                         ("TKT-0003", "P1", "confirmacao_nao_recebida"))
 
     def test_resposta_pelo_caminho_do_laco_chega_ao_grafo(self):
         """main.py --aprovar e o vencimento usam agente.retomar: a pendência diz quem continua."""
@@ -402,6 +405,41 @@ class TestGrafo(unittest.TestCase):
         p = self.rodar("TKT-0007", [triagem("tecnico", termos=UPLOAD), texto("Permissão negada ao gravar.")],
                        confirmador=None).pendencia
         self.assertEqual(p["guia_nao_cobre"], [])
+
+    # ---- o que entrou na tela do H1 em 17/10/2026 (docs/humano.md §2.2): só informa
+
+    def tela(self, pendencia):
+        import io, contextlib, main
+        saida = io.StringIO()
+        with contextlib.redirect_stdout(saida):
+            main.mostrar_pendencia(pendencia)
+        return saida.getvalue()
+
+    def test_a_tela_do_h1_mostra_o_score_a_reincidencia_e_o_sla(self):
+        e3 = self.rodar("TKT-0003", confirmador=None)
+        e7 = self.rodar("TKT-0007", confirmador=None)
+        p3, p7 = e3.pendencia, e7.pendencia
+        # a reincidência é a que o sistema confirma: os chamados que a regra contou
+        self.assertTrue(p3["reincidencia"])
+        self.assertTrue(all(c["chamado_interno"].startswith("INC-") for c in p3["reincidencia"]))
+        self.assertEqual(p7["reincidencia"], [])
+        self.assertEqual((p3["sla_previsto"], p7["sla_previsto"]), ("2 horas", "1 dia útil"))
+        self.assertGreaterEqual(p7["score"], 0.5)                    # é o score que passou no portão
+        self.assertEqual(p7["score"], e7.scores_kb["KB-102"])
+        (guardada,) = db.pendencias_aguardando(self.con, "TKT-0003")
+        self.assertEqual(guardada["acao"]["reincidencia"], p3["reincidencia"])   # vai para a tabela também
+        tela3, tela7 = self.tela(p3), self.tela(p7)
+        self.assertIn("REINCIDÊNCIA: confirmada pelo sistema", tela3)
+        self.assertIn(p3["reincidencia"][0]["chamado_interno"], tela3)
+        self.assertIn("SLA de resolução: 2 horas", tela3)
+        self.assertIn("REINCIDÊNCIA: nenhuma confirmada", tela7)
+        self.assertIn(f"SUSTENTAÇÃO: guia KB-102 com score {p7['score']}", tela7)
+        self.assertIn("--aprovar TKT-0007 --editar", tela7)
+
+    def test_a_tela_nova_nao_muda_o_desfecho(self):
+        e = self.rodar("TKT-0003")                                   # aprovado na hora
+        self.assertEqual(verificar("TKT-0003", e, self.con), (True, []))
+        self.assertEqual(e.desfecho["prioridade"], e.confirmacoes[-1]["pendencia"]["prioridade_prevista"])
 
     def test_a_ficha_do_plano_vai_a_redacao_so_na_rota_tecnica_e_nao_muda_o_desfecho(self):
         e = self.rodar("TKT-0007")
@@ -886,6 +924,16 @@ class TestGrafo(unittest.TestCase):
         e = self.rejeitar("TKT-0007")
         self.assertNotIn("motivo_rejeicao", e.confirmacoes[-1])
         self.assertIsNone(self.episodios()[0]["motivo_rejeicao"])
+        self.assertNotIn("Motivo informado", e.saida.resultado.texto)
+
+    def test_o_motivo_da_rejeicao_vai_ao_texto_da_fila_humana(self):
+        e = self.rejeitar("TKT-0007", "guia_errado")
+        self.assertIn("Motivo informado pelo analista: guia_errado.", e.saida.resultado.texto)
+        (linha,) = self.con.execute("SELECT mensagem FROM encaminhamentos WHERE ticket_externo = 'TKT-0007'"
+                                    " AND destino = 'fila_humana'").fetchall()
+        self.assertIn("guia_errado", linha["mensagem"])               # é o texto gravado, não só o da tela
+        e = self.rejeitar("TKT-0005", "informacao_suficiente")         # e no pedido ao cliente (H2)
+        self.assertIn("Motivo informado pelo analista: informacao_suficiente.", e.saida.resultado.texto)
 
     def test_motivo_invalido_ou_com_aprovacao_e_recusado_sem_gastar_a_resposta(self):
         self.rodar("TKT-0007", confirmador=None)
@@ -935,3 +983,33 @@ class TestGrafo(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestEditor(unittest.TestCase):
+    """main.editar_no_editor (--aprovar X --editar): o analista parte do texto proposto. A
+    conferência do texto não é daqui: segue pelo caminho do --resumo e do --mensagem."""
+
+    def editor(self, corpo: str) -> str:
+        """Um 'editor' de mentira: um script que reescreve o arquivo, como a pessoa faria."""
+        pasta = tempfile.mkdtemp()
+        script = Path(pasta) / "editor.py"
+        script.write_text("import sys, pathlib\n"
+                          "p = pathlib.Path(sys.argv[1])\n"
+                          "t = p.read_text(encoding='utf-8')\n"
+                          f"p.write_text({corpo}, encoding='utf-8')\n", encoding="utf-8")
+        return f'"{sys.executable}" "{script}"'
+
+    def test_devolve_o_texto_editado_sem_as_linhas_de_aviso(self):
+        import main
+        editado = main.editar_no_editor("Resumo do modelo.",
+                                        editor=self.editor("t.replace('do modelo', 'do analista')"))
+        self.assertEqual(editado, "Resumo do analista.")
+
+    def test_sem_mudar_nada_devolve_o_texto_proposto(self):
+        import main
+        self.assertEqual(main.editar_no_editor("Resumo do modelo.", editor=self.editor("t")),
+                         "Resumo do modelo.")
+
+    def test_texto_apagado_nao_aprova_nada(self):
+        import main
+        self.assertIsNone(main.editar_no_editor("Resumo do modelo.", editor=self.editor("''")))

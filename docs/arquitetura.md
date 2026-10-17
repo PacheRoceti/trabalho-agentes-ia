@@ -480,8 +480,8 @@ chamado interno) e a rejeição e o prazo vencido do H2 (`logs/grafo-h2-rejeicao
 Limites do que foi implementado:
 
 - **O aviso ao gestor é um registro, não uma notificação.** O sistema é simulado e não tem canal
-  de mensagem: o aviso é uma linha em `avisos_gestor`, que o gestor precisa consultar. Não há
-  comando no `main.py` para listá-la.
+  de mensagem: o aviso é uma linha em `avisos_gestor`, que o gestor precisa consultar: desde 17/10/2026
+  com `python src/main.py --avisos`, que só lê. Nada o avisa de que chegou uma linha nova.
 - **O prazo depende de o vigia estar rodando.** Desde 17/10/2026 um processo à parte,
   `src/vigiar_prazos.py`, aplica o prazo sozinho, dormindo até o próximo `vence_em`
   (`humano.md` §4.1). O começo de cada comando do `main.py` continua aplicando-o
@@ -502,8 +502,9 @@ Limites do que foi implementado:
   (`dados/tickets.db`), e o estado da execução é o checkpoint (`dados/checkpoints.db`).
   `--reset` e `--todos` recriam o primeiro e não o segundo; por isso `--todos` exige
   `--auto-aprovar`.
-- **A edição é só do texto (o resumo ou a mensagem), e pela linha de comando.** O analista
-  redigita o texto inteiro; não há editor que parta do texto do modelo.
+- **A edição é só do texto (o resumo ou a mensagem).** Pela linha de comando (`--resumo`,
+  `--mensagem`) o analista redigita o texto inteiro; desde 17/10/2026, `--editar` abre o texto
+  proposto num editor, para mudar só uma frase (`humano.md` §2.2).
 
 `--auto-aprovar` troca o analista por uma aprovação automática e existe só para a demonstração:
 com ele o nó `confirmar` recebe a resposta na hora, sem `interrupt`. As três rodadas de 8 casos

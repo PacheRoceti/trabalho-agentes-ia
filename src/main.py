@@ -16,6 +16,8 @@
     python src/main.py --aprovar TKT-0007 --resumo "texto corrigido"
                                                     aprova EDITANDO: o chamado é aberto com o resumo
                                                     do analista (só o resumo é editável; só no grafo)
+    python src/main.py --aprovar TKT-0007 --editar  aprova EDITANDO num editor de texto, a partir
+                                                    do texto do modelo (resumo no H1, mensagem no H2)
     python src/main.py --rejeitar TKT-0007          o chamado interno não é aberto
   Enviar o pedido de informação ao cliente também é irreversível, e no grafo pausa do mesmo jeito:
     python src/main.py --aprovar TKT-0005           registra o pedido como enviado ao cliente
@@ -24,7 +26,7 @@
     python src/main.py --rejeitar TKT-0005 --motivo informacao_suficiente
   Rejeitada a ação ou vencido o prazo, o chamado vai para a fila humana com as considerações do
   agente. No prazo vencido de um chamado que seria P1, o gestor também é avisado (tabela
-  avisos_gestor). Quem aplica o prazo sozinho é o vigia, um processo à parte (pode rodar como
+  avisos_gestor; python src/main.py --avisos os lista). Quem aplica o prazo sozinho é o vigia, um processo à parte (pode rodar como
   serviço; docs/humano.md §4.1 e §4.2); o começo de cada comando também o aplica, como segunda rede:
     python src/vigiar_prazos.py                     vence as pendências na hora, sem ninguém rodar nada
 
@@ -46,7 +48,10 @@
 import argparse
 import json
 import os
+import shlex
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from datetime import datetime
@@ -56,7 +61,7 @@ from dotenv import load_dotenv
 import db
 from agente import (PROMPT_ARQUIVO, PROMPTS, EdicaoRecusada, Orcamento, criar_cliente, retomar, rodar,
                     vencer_pendencias)
-from ferramentas import PRAZO_CONFIRMACAO_MIN
+from ferramentas import LIMIAR_CONFIANCA, PRAZO_CONFIRMACAO_MIN
 from verificar import GABARITO, verificar
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -83,6 +88,31 @@ def confirmador_auto(pendencia: dict):
     return True, "auto-aprovado (--auto-aprovar; só para demonstração)"
 
 
+AVISO_DO_EDITOR = ("# Edite o texto abaixo, salve e feche o editor para aprovar com ele.\n"
+                   "# As linhas que começam com # são descartadas. Texto vazio: nada é aprovado.\n")
+
+
+def editar_no_editor(texto: str, editor: str | None = None) -> str | None:
+    """Abre `texto` num editor e devolve o que o analista deixou ao fechá-lo (sem as linhas de
+    aviso), ou None se ele apagou tudo. O editor é o da variável EDITOR; sem ela, o Bloco de Notas
+    no Windows e o nano fora dele. A conferência do texto (nenhuma informação interna) não é daqui:
+    o texto segue pelo mesmo caminho do --resumo e do --mensagem (docs/humano.md §2.2)."""
+    editor = editor or os.environ.get("EDITOR") or ("notepad" if os.name == "nt" else "nano")
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".txt", delete=False) as f:
+        f.write(AVISO_DO_EDITOR + (texto or "").strip() + "\n")
+        caminho = f.name
+    try:
+        # no Windows o comando vai inteiro, como no terminal (aceita caminho com espaço entre aspas)
+        comando = f'{editor} "{caminho}"' if os.name == "nt" else shlex.split(editor) + [caminho]
+        subprocess.run(comando, check=True)
+        with open(caminho, encoding="utf-8-sig") as f:
+            linhas = [l for l in f.read().splitlines() if not l.lstrip().startswith("#")]
+    finally:
+        os.remove(caminho)
+    editado = "\n".join(linhas).strip()
+    return editado or None
+
+
 def mostrar_pendencia(pendencia: dict):
     """O que o analista vê: a ação proposta, até quando ele pode responder e como responder."""
     print("\n  >> AÇÃO IRREVERSÍVEL aguardando o analista de suporte:")
@@ -97,7 +127,7 @@ def mostrar_pendencia(pendencia: dict):
         print("     rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta")
         print(f"     responder: python src/main.py --aprovar {id_ticket}   |   --rejeitar {id_ticket}")
         print(f"     aprovar corrigindo a mensagem: python src/main.py --aprovar {id_ticket} "
-              f"--mensagem \"texto corrigido\"")
+              f"--mensagem \"texto corrigido\"   (ou --editar, num editor)")
         print(f"     rejeitar dizendo por quê: python src/main.py --rejeitar {id_ticket} --motivo "
               + " | ".join(db.MOTIVOS_POR_ACAO["devolver_cliente"]))
         return
@@ -121,12 +151,25 @@ def mostrar_pendencia(pendencia: dict):
         print(f"     MEMÓRIA: {p['ticket']} em {p['em']}, mesmo cliente e categoria: guia {p['kb_id']}, "
               f"gravado {p['desfecho'] or 'nada'}" + (f", analista: {p['veredito']}" if p["veredito"] else "")
               + (" (antigo)" if p["antigo"] else ""))
+    if pendencia.get("score") is not None:
+        print(f"     SUSTENTAÇÃO: guia {pendencia['kb_id']} com score {pendencia['score']} "
+              f"(o portão exige {LIMIAR_CONFIANCA})")
+    if "reincidencia" in pendencia:      # o grafo, desde 17/10/2026; o laço não traz o campo
+        anteriores = pendencia["reincidencia"] or []
+        print("     REINCIDÊNCIA: " + (
+            "confirmada pelo sistema (mesmo cliente e categoria, 30 dias): "
+            + ", ".join(f"{c['chamado_interno']} ({c['ticket_externo']}, {c['criado_em']})" for c in anteriores)
+            + "; por isso a prioridade sobe um nível" if anteriores
+            else "nenhuma confirmada pelo sistema; a prioridade é a do guia"))
+    sla = pendencia.get("sla_previsto")
     print(f"     se aprovada: abre um chamado interno para {pendencia.get('time_destino')}"
           + (f", com prioridade {prioridade}" if prioridade else "")
+          + (f" (SLA de resolução: {sla}, contado da abertura)" if sla else "")
           + ". Não há como apagar nem encerrar o chamado por aqui")
     print("     rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta")
     print(f"     responder: python src/main.py --aprovar {id_ticket}   |   --rejeitar {id_ticket}")
     print(f"     aprovar corrigindo o resumo: python src/main.py --aprovar {id_ticket} --resumo \"texto corrigido\"")
+    print(f"     ou, partindo do resumo do modelo num editor: python src/main.py --aprovar {id_ticket} --editar")
 
 
 def ler_texto(id_ticket: str, texto: str | None) -> str | None:
@@ -227,6 +270,14 @@ def main():
                     help="com --aprovar, quando a ação pendente é o pedido de informação ao cliente: "
                          "aprova EDITANDO, enviando esta mensagem no lugar do texto padrão do pedido. "
                          "Passa pela mesma regra: nada de informação interna (só no grafo)")
+    ap.add_argument("--editar", action="store_true",
+                    help="com --aprovar: aprova EDITANDO num editor de texto (EDITOR; padrão: Bloco de "
+                         "Notas no Windows), partindo do texto proposto: o resumo do chamado interno "
+                         "ou a mensagem ao cliente. Passa pelas mesmas regras do --resumo e do "
+                         "--mensagem (só no grafo)")
+    ap.add_argument("--avisos", action="store_true",
+                    help="lista os avisos ao gestor de suporte (prazo vencido de um chamado que seria "
+                         "P1). Só lê; não chama a API")
     ap.add_argument("--prazo-confirmacao", type=float, default=PRAZO_CONFIRMACAO_MIN, metavar="MIN",
                     help=f"prazo do analista para esta execução, em minutos (padrão: {PRAZO_CONFIRMACAO_MIN})")
     ap.add_argument("--reset", action="store_true", help="recria o banco simulado")
@@ -291,6 +342,17 @@ def main():
         print("Nada foi alterado: escrever ou não uma regra é decisão de uma pessoa.")
         if not (args.ticket or args.todos or args.pendencias or args.aprovar or args.rejeitar):
             return
+    if args.avisos:                      # só leitura, sem API: a tela do gestor de suporte
+        con = db.conectar()
+        avisos = db.avisos_ao_gestor(con)
+        con.close()
+        print(f"{len(avisos)} aviso(s) ao gestor de suporte (do mais novo para o mais antigo)")
+        for a in avisos:
+            print(f"  #{a['id']}  {a['criado_em']}  {a['ticket_externo']}  seria {a['prioridade']}  "
+                  f"motivo: {a['motivo']}")
+            print(f"    {a['mensagem']}")
+        if not (args.ticket or args.todos or args.pendencias or args.aprovar or args.rejeitar):
+            return
     resposta = args.aprovar or args.rejeitar
     if args.reset and not (args.ticket or args.todos or args.pendencias or resposta):
         return
@@ -302,10 +364,14 @@ def main():
         sys.exit("--resumo vale só com --aprovar: é a aprovação com o resumo corrigido.")
     if args.mensagem is not None and not args.aprovar:
         sys.exit("--mensagem vale só com --aprovar: é a aprovação com a mensagem ao cliente corrigida.")
+    if args.editar and (not args.aprovar or args.resumo is not None or args.mensagem is not None):
+        sys.exit("--editar vale só com --aprovar, e no lugar de --resumo ou --mensagem: o texto "
+                 "corrigido sai do editor.")
     if args.resumo is not None and args.mensagem is not None:
         sys.exit("Use --resumo (chamado interno) ou --mensagem (pedido ao cliente): a ação pendente "
                  "tem um texto só.")
-    if not (args.ticket or args.todos or args.pendencias or resposta or args.fato or args.candidatas):
+    if not (args.ticket or args.todos or args.pendencias or resposta or args.fato or args.candidatas
+            or args.avisos):
         ap.print_help()
         return
     if args.sem_filtro_revogados or args.sem_desempate_data:
@@ -387,6 +453,23 @@ def main():
         for estado in vencer_pendencias(client=client, con=con, log_dir=log_dir):
             print(f"\n{'=' * 78}\n{estado.id_ticket}  PRAZO DE CONFIRMAÇÃO VENCIDO: encaminhado à fila humana\n")
             mostrar(estado)
+        if resposta and args.editar:
+            registros = db.pendencias_aguardando(con, resposta)
+            if registros:                # sem pendência, o retomar abaixo diz que não há o que fazer
+                registro = registros[-1]
+                if (registro["checkpoint"] or {}).get("motor") != "grafo":
+                    con.close()
+                    sys.exit(f"\n{resposta}  EDIÇÃO RECUSADA: a aprovação com edição existe só no "
+                             f"grafo; esta ação foi pausada pelo laço (--laco). Aprove sem --editar, "
+                             f"ou rejeite.")
+                campo = "mensagem" if registro["acao"]["ferramenta"] == "devolver_cliente" else "resumo"
+                print(f"\nAbrindo o {campo} proposto no editor; salve e feche para aprovar.")
+                editado = editar_no_editor(registro["acao"][campo])
+                if editado is None:
+                    con.close()
+                    sys.exit(f"\n{resposta}  o texto ficou vazio: nada foi aprovado; a ação continua "
+                             f"aguardando o analista.")
+                setattr(args, campo, editado)
         if resposta:
             try:
                 estado = retomar(resposta, "aprovar" if args.aprovar else "rejeitar", client=client,

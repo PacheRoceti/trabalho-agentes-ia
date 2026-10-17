@@ -881,3 +881,31 @@ def ler_pendencia(con, id_pendencia: int) -> dict | None:
     return {**dict(linha), "acao": json.loads(linha["acao"]),
             "checkpoint": json.loads(linha["checkpoint"]) if linha["checkpoint"] else None,
             "resposta": json.loads(linha["resposta"]) if linha["resposta"] else None}
+
+
+# ------------------------------------------------------------------ a tela do analista (17/10/2026)
+# Só informam a pessoa que confirma: nenhuma regra de decisão lê o que está aqui (docs/humano.md §2.2).
+
+# O SLA de cada prioridade (case.md §2.1): prazo de RESOLUÇÃO, contado da abertura do chamado interno.
+SLA_POR_PRIORIDADE = {"P1": "2 horas", "P2": "1 dia útil", "P3": "3 dias úteis"}
+
+
+def chamados_da_reincidencia(con, cliente_id: str, categoria: str) -> list[dict]:
+    """Os chamados internos que a regra da reincidência conta (mesmo cliente, mesma categoria, na
+    janela de 30 dias): é a mesma consulta de `_reincidencia`, com os chamados em vez do número.
+    Mostra ao analista POR QUE a prioridade subiu."""
+    return [{"chamado_interno": f"INC-{l['id']:04d}", "ticket_externo": l["ticket_externo"],
+             "kb_id": l["kb_id"], "criado_em": l["criado_em"]}
+            for l in con.execute(
+                """SELECT id, ticket_externo, kb_id, criado_em FROM chamados_internos
+                   WHERE cliente_id = ? AND categoria = ?
+                     AND criado_em >= date(?, ?)
+                   ORDER BY criado_em""",
+                (cliente_id, categoria, AGORA, f"-{JANELA_REINCIDENCIA_DIAS} days"))]
+
+
+def avisos_ao_gestor(con) -> list[dict]:
+    """Os avisos ao gestor de suporte, do mais novo para o mais antigo. Só lê."""
+    return [dict(l) for l in con.execute(
+        "SELECT id, ticket_externo, prioridade, motivo, mensagem, criado_em FROM avisos_gestor "
+        "ORDER BY id DESC")]

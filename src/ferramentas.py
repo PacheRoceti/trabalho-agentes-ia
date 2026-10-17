@@ -211,7 +211,8 @@ def aprovar_pendencia(estado, con, acao: dict) -> dict:
 
 
 def encaminhar_pendencia(estado, con, acao: dict, motivo: str, chave: str | None = None,
-                         chave_aviso: str | None = None) -> tuple[dict, dict]:
+                         chave_aviso: str | None = None,
+                         motivo_do_analista: str | None = None) -> tuple[dict, dict]:
     """A ação NÃO é executada (o analista a rejeitou, ou o prazo venceu sem resposta) e o CÓDIGO
     encaminha o chamado à fila humana com as considerações do agente: ação proposta, prioridade
     que o chamado teria, procedimento, score e texto redigido. No prazo vencido de um chamado que
@@ -221,12 +222,17 @@ def encaminhar_pendencia(estado, con, acao: dict, motivo: str, chave: str | None
     conseguiu classificar não tem prioridade prevista (decisão de 12/10/2026).
     `chave` e `chave_aviso` tornam a escrita idempotente (o grafo as passa desde 17/10/2026, para a
     recuperação depois de uma queda poder refazê-la; o laço não as passa e grava como antes).
+    `motivo_do_analista` é o `--motivo` da rejeição (db.MOTIVOS_REJEICAO; só no grafo, desde
+    17/10/2026): vai ao texto do encaminhamento, para quem lê a fila humana saber por que a ação foi
+    recusada (docs/humano.md §7).
     Devolve os argumentos e o resultado da escrita, para a trajetória."""
     prazo = f"{estado.prazo_confirmacao_min:g} minutos"
     if motivo == MOTIVO_PRAZO_VENCIDO:
         abertura, por = f"Confirmação não recebida em {prazo}.", f"código: prazo de {prazo} vencido"
     else:
         abertura, por = "Ação rejeitada pelo analista de suporte.", "código: ação rejeitada pelo analista"
+        if motivo_do_analista:
+            abertura += f" Motivo informado pelo analista: {motivo_do_analista}."
     if acao.get("ferramenta") == "devolver_cliente":
         mensagem = (
             f"{abertura} Ação proposta pelo agente e NÃO executada: "
