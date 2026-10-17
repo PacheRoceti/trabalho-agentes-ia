@@ -1,0 +1,232 @@
+{
+  "execucao_id": "TKT-0127-bba8f66c",
+  "id_ticket": "TKT-0127",
+  "executado_em": "2026-10-17T15:50:10-03:00",
+  "commit": "77757ea",
+  "entrada": "Apagamos por engano a pasta de notas fiscais do sistema. Podem restaurar o backup de sexta-feira?",
+  "modelo": "ministral-8b-2512",
+  "prompt": "triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana",
+    "ja_existia": false
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1582,
+  "tokens_saida": 216,
+  "custo_usd": 0.000446,
+  "scores_kb": {
+    "KB-105": 0.47,
+    "KB-102": 0.42,
+    "KB-104": 0.37
+  },
+  "saida": {
+    "id_ticket": "TKT-0127",
+    "executado_em": "2026-10-17T15:50:10-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "O cliente solicitou a restauração de uma pasta deletada por engano, alegando que existe um backup de sexta-feira. Não há log anexado para análise técnica. O procedimento encontrado (KB-105) possui score 0.47, abaixo do limiar de confiança (0.5), e trata de falha no backup diário, sem relação direta com a restauração de arquivos específicos. Além disso, o procedimento não cobre o caso relatado, pois não aborda a restauração manual de pastas deletadas. Requer análise humana para avaliar viabilidade e escopo de suporte.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "busca_sem_correspondencia",
+      "kb_id": "KB-105",
+      "score": 0.47,
+      "registros": [
+        "TKT-0127",
+        "INC-0001"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o melhor procedimento encontrado (KB-105, score 0.47) ficou abaixo do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0127"
+      },
+      "resultado": {
+        "id": "TKT-0127",
+        "aberto_em": "2026-09-21 11:10",
+        "status": "novo",
+        "anexo_log": null,
+        "cliente": "Beta Logística",
+        "plano": "VPS Pro",
+        "historico_cliente": [
+          {
+            "chamado_interno": "INC-0001",
+            "categoria": "permissao_arquivos",
+            "criado_em": "2026-09-01 15:00",
+            "status": "resolvido"
+          }
+        ]
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "restaurar",
+          "backup",
+          "pasta"
+        ],
+        "justificativa": "o cliente relata perda de dados e solicita restauração de backup, indicando problema técnico de servidor ou permissão de arquivos."
+      },
+      "erro": null,
+      "ms": 1021
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "restaurar",
+          "backup",
+          "pasta"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-105",
+            "titulo": "Backup diário falhou",
+            "score": 0.47,
+            "cosseno": 0.791,
+            "causa": "Cota de armazenamento de backup excedida ou janela de backup sobreposta a outra tarefa.",
+            "solucao": "Conferir a cota do storage de backup e o agendamento; reexecutar o job manualmente.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-102",
+            "titulo": "Permissão negada ao gravar arquivos",
+            "score": 0.42,
+            "cosseno": 0.768,
+            "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+            "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.37,
+            "cosseno": 0.752,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1875
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "score_abaixo_do_limiar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "O cliente solicitou a restauração de uma pasta deletada por engano, alegando que existe um backup de sexta-feira. Não há log anexado para análise técnica. O procedimento encontrado (KB-105) possui score 0.47, abaixo do limiar de confiança (0.5), e trata de falha no backup diário, sem relação direta com a restauração de arquivos específicos. Além disso, o procedimento não cobre o caso relatado, pois não aborda a restauração manual de pastas deletadas. Requer análise humana para avaliar viabilidade e escopo de suporte."
+      },
+      "erro": null,
+      "ms": 1426
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0127",
+        "destino": "fila_humana",
+        "mensagem": "O cliente solicitou a restauração de uma pasta deletada por engano, alegando que existe um backup de sexta-feira. Não há log anexado para análise técnica. O procedimento encontrado (KB-105) possui score 0.47, abaixo do limiar de confiança (0.5), e trata de falha no backup diário, sem relação direta com a restauração de arquivos específicos. Além disso, o procedimento não cobre o caso relatado, pois não aborda a restauração manual de pastas deletadas. Requer análise humana para avaliar viabilidade e escopo de suporte."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana",
+        "ja_existia": false
+      },
+      "erro": null,
+      "ms": 7
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "score_abaixo_do_limiar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1766,
+  "custo_embedding_usd": 0.000177,
+  "episodio": {
+    "execucao_id": "TKT-0127-bba8f66c",
+    "ticket_externo": "TKT-0127",
+    "cliente_id": "CLI-02",
+    "classe": "tecnico",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "fila_humana",
+    "desfecho": "fila_humana",
+    "motivo": "score_abaixo_do_limiar",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0127: classe tecnico; sem guia; proposto fila_humana; gravado fila_humana; término respondeu",
+    "criado_em": "2026-10-17T15:50:14-03:00",
+    "id": 1,
+    "chave": "e699b2641a1516e3",
+    "ja_existia": false
+  },
+  "segundos_gastos": 4.33
+}

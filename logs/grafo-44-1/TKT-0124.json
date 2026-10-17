@@ -1,0 +1,228 @@
+{
+  "execucao_id": "TKT-0124-beee0be2",
+  "id_ticket": "TKT-0124",
+  "executado_em": "2026-10-17T15:46:23-03:00",
+  "commit": "77757ea",
+  "entrada": "Nosso site saiu do ar hoje: os clientes dizem que a página não abre.",
+  "modelo": "ministral-8b-2512",
+  "prompt": "triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "encaminhamento": 1,
+    "destino": "fila_humana",
+    "ja_existia": false
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1717,
+  "tokens_saida": 239,
+  "custo_usd": 0.000469,
+  "scores_kb": {
+    "KB-104": 0.47,
+    "KB-106": 0.44,
+    "KB-110": 0.42
+  },
+  "saida": {
+    "id_ticket": "TKT-0124",
+    "executado_em": "2026-10-17T15:46:23-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "fila_humana",
+      "texto": "No chamado **TKT-0124**, o cliente **Acme Contabilidade** relata que o site **está fora do ar**, com usuários afirmando que a página não abre. No entanto, o log anexado mostra que o domínio do cliente apresenta **erro de certificação SSL expirado (erro 60)**, mas ao ignorar a validação do certificado, o servidor responde com **HTTP/1.1 200 OK**, indicando que o site está acessível tecnicamente. Há **divergência entre o relato do cliente e o comportamento observado no log**. O histórico não registra ocorrências anteriores.",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "busca_sem_correspondencia",
+      "kb_id": "KB-104",
+      "score": 0.47,
+      "registros": [
+        "TKT-0124"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": false,
+      "motivo": "o melhor procedimento encontrado (KB-104, score 0.47) ficou abaixo do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0124"
+      },
+      "resultado": {
+        "id": "TKT-0124",
+        "aberto_em": "2026-09-21 09:36",
+        "status": "novo",
+        "anexo_log": "2026-09-21 09:31 curl -I https://www.acme-contabilidade.example -> curl: (60) SSL certificate problem: certificate has expired. 2026-09-21 09:32 curl -kI https://www.acme-contabilidade.example (ignorando a validação do certificado) -> HTTP/1.1 200 OK.",
+        "cliente": "Acme Contabilidade",
+        "plano": "Hospedagem Business",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": true,
+        "termos_busca": [
+          "site",
+          "saiu",
+          "ar",
+          "certificado",
+          "expirado"
+        ],
+        "justificativa": "o cliente relata o site fora do ar, mas o log confirma falha em certificado SSL expirado, que é um problema técnico de servidor"
+      },
+      "erro": null,
+      "ms": 925
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "site",
+          "saiu",
+          "ar",
+          "certificado",
+          "expirado"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.47,
+            "cosseno": 0.789,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-106",
+            "titulo": "Falha de resolução DNS do domínio",
+            "score": 0.44,
+            "cosseno": 0.777,
+            "causa": "Nameserver do domínio fora do ar ou zona DNS com registro inválido.",
+            "solucao": "Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-110",
+            "titulo": "Site em laço de redirecionamentos",
+            "score": 0.42,
+            "cosseno": 0.771,
+            "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+            "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1838
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "fila_humana",
+        "kb_id": null,
+        "motivo": "divergencia_relato_log"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "fila_humana"
+      },
+      "resultado": {
+        "texto": "No chamado **TKT-0124**, o cliente **Acme Contabilidade** relata que o site **está fora do ar**, com usuários afirmando que a página não abre. No entanto, o log anexado mostra que o domínio do cliente apresenta **erro de certificação SSL expirado (erro 60)**, mas ao ignorar a validação do certificado, o servidor responde com **HTTP/1.1 200 OK**, indicando que o site está acessível tecnicamente. Há **divergência entre o relato do cliente e o comportamento observado no log**. O histórico não registra ocorrências anteriores."
+      },
+      "erro": null,
+      "ms": 1413
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0124",
+        "destino": "fila_humana",
+        "mensagem": "No chamado **TKT-0124**, o cliente **Acme Contabilidade** relata que o site **está fora do ar**, com usuários afirmando que a página não abre. No entanto, o log anexado mostra que o domínio do cliente apresenta **erro de certificação SSL expirado (erro 60)**, mas ao ignorar a validação do certificado, o servidor responde com **HTTP/1.1 200 OK**, indicando que o site está acessível tecnicamente. Há **divergência entre o relato do cliente e o comportamento observado no log**. O histórico não registra ocorrências anteriores."
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "fila_humana",
+        "ja_existia": false
+      },
+      "erro": null,
+      "ms": 8
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": true,
+  "desfecho_proposto": {
+    "acao": "fila_humana",
+    "kb_id": null,
+    "motivo": "divergencia_relato_log"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1758,
+  "custo_embedding_usd": 0.000176,
+  "episodio": {
+    "execucao_id": "TKT-0124-beee0be2",
+    "ticket_externo": "TKT-0124",
+    "cliente_id": "CLI-01",
+    "classe": "tecnico",
+    "categoria": null,
+    "kb_id": null,
+    "score": null,
+    "acao_proposta": "fila_humana",
+    "desfecho": "fila_humana",
+    "motivo": "divergencia_relato_log",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0124: classe tecnico; sem guia; proposto fila_humana; gravado fila_humana; término respondeu",
+    "criado_em": "2026-10-17T15:46:28-03:00",
+    "id": 1,
+    "chave": "c586c065e1b97665",
+    "ja_existia": false
+  },
+  "segundos_gastos": 4.186
+}

@@ -113,6 +113,8 @@ clientes `CLI-01` a `CLI-04`.
 
 **Medição (13 e 14/10/2026):** três rodadas dos 44 casos pelo grafo, com os prompts em uso, deram
 **40 de 44** (`logs/regra-da-frase/triagem-v1-1/` a `-3/`): os 36 de antes e os quatro novos. As
+rodadas de referência, refeitas em 17/10/2026 sobre o commit `77757ea` sem alterações locais,
+deram o mesmo 40 de 44 (`logs/grafo-44-1/` a `-3/`; `docs/grafo.md` §6.9). As
 quatro falhas são as mesmas das rodadas de 12/10/2026. Com o prompt da triagem sem a frase em
 teste (`triagem-v2.md`), o `TKT-0134` foi à fila humana em duas de três rodadas; por isso a
 frase ficou (`docs/prompts.md` §3.7; `docs/grafo.md` §6.8). Os rótulos não foram mudados depois

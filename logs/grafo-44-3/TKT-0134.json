@@ -1,0 +1,284 @@
+{
+  "execucao_id": "TKT-0134-ee5166f2",
+  "id_ticket": "TKT-0134",
+  "executado_em": "2026-10-17T15:54:52-03:00",
+  "commit": "77757ea",
+  "entrada": "Pela terceira vez em duas semanas o domínio da escola parou de resolver: o site e a área do aluno não abrem em nenhuma rede.",
+  "modelo": "ministral-8b-2512",
+  "prompt": "triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-106",
+    "chamado_interno": "INC-0005",
+    "time_destino": "Infraestrutura",
+    "prioridade": "P1",
+    "reincidencias_confirmadas_no_sistema": 0,
+    "ja_existia": false
+  },
+  "pendencia": null,
+  "confirmacoes": [
+    {
+      "pendencia": {
+        "ferramenta": "abrir_chamado_interno",
+        "id_ticket": "TKT-0134",
+        "categoria": "dns_dominio",
+        "resumo": "O domínio do cliente (gama-cursos.example) apresenta falha de resolução DNS, com o nameserver **ns1.gama-cursos.example** não respondendo (timeout) e o registro de zona apresentando inconsistência (SERVFAIL). O histórico do sistema não confirma ocorrências anteriores, mas o cliente alega 3 incidentes em 2 semanas. O procedimento **KB-106** (score 0.55) sugere verificar o nameserver e os registros DNS do domínio para restabelecer o serviço. O escopo do plano **Hospedagem Start** cobre a resolução DNS, mas não a infraestrutura externa do cliente.",
+        "time_destino": "Infraestrutura",
+        "kb_id": "KB-106",
+        "prioridade_prevista": "P1",
+        "guia_publicado_em": "2026-03-18",
+        "guia_nao_cobre": [],
+        "plano": "Hospedagem Start",
+        "escopo_do_plano": "Hospedagem compartilhada de entrada. O suporte cobre o ambiente do servidor: a conta, os certificados, o DNS, o e-mail e os arquivos do site. Não cobre desenvolvimento, correção ou depuração do código do site do cliente. Atendimento por chamado, em horário comercial.",
+        "precedentes": {
+          "guia": {
+            "kb_id": "KB-106",
+            "janela_dias": 90,
+            "decisoes": 0,
+            "aprovados": 0,
+            "editados": 0,
+            "rejeitados": 0,
+            "decisoes_antigas": 0,
+            "rejeicoes_por_motivo": {}
+          },
+          "cliente": []
+        },
+        "fatos_cliente": {},
+        "pedido_em": "2026-10-17T15:54:56-03:00",
+        "vence_em": "2026-10-17T16:14:56-03:00"
+      },
+      "aprovado": true,
+      "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+      "status": "aprovada",
+      "resolvido_em": "2026-10-17T15:54:56-03:00",
+      "editado": false
+    }
+  ],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1691,
+  "tokens_saida": 236,
+  "custo_usd": 0.000466,
+  "scores_kb": {
+    "KB-106": 0.55,
+    "KB-110": 0.47,
+    "KB-112": 0.46
+  },
+  "saida": {
+    "id_ticket": "TKT-0134",
+    "executado_em": "2026-10-17T15:54:52-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "abrir_chamado_interno",
+      "texto": "O domínio do cliente (gama-cursos.example) apresenta falha de resolução DNS, com o nameserver **ns1.gama-cursos.example** não respondendo (timeout) e o registro de zona apresentando inconsistência (SERVFAIL). O histórico do sistema não confirma ocorrências anteriores, mas o cliente alega 3 incidentes em 2 semanas. O procedimento **KB-106** (score 0.55) sugere verificar o nameserver e os registros DNS do domínio para restabelecer o serviço. O escopo do plano **Hospedagem Start** cobre a resolução DNS, mas não a infraestrutura externa do cliente.",
+      "chamado_interno": "INC-0005",
+      "time_destino": "Infraestrutura",
+      "prioridade": "P1"
+    },
+    "fonte": {
+      "tipo": "procedimento_da_base",
+      "kb_id": "KB-106",
+      "score": 0.55,
+      "registros": [
+        "TKT-0134"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "confirmar",
+        "abrir_chamado_interno"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": true,
+      "motivo": "procedimento KB-106 com score 0.55, igual ou acima do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0134"
+      },
+      "resultado": {
+        "id": "TKT-0134",
+        "aberto_em": "2026-09-21 11:54",
+        "status": "novo",
+        "anexo_log": "2026-09-21 11:30 nslookup www.gama-cursos.example -> falha de resolução DNS: SERVFAIL. 2026-09-21 11:31 nslookup -type=ns gama-cursos.example -> nameserver ns1.gama-cursos.example não responde (timeout).",
+        "cliente": "Gama Cursos Online",
+        "plano": "Hospedagem Start",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "domínio",
+          "parou",
+          "resolver",
+          "site",
+          "área"
+        ],
+        "justificativa": "o cliente relata falha de resolução de domínio e acesso ao site, com log confirmando falha DNS"
+      },
+      "erro": null,
+      "ms": 836
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "domínio",
+          "parou",
+          "resolver",
+          "site",
+          "área"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-106",
+            "titulo": "Falha de resolução DNS do domínio",
+            "score": 0.55,
+            "cosseno": 0.823,
+            "causa": "Nameserver do domínio fora do ar ou zona DNS com registro inválido.",
+            "solucao": "Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-110",
+            "titulo": "Site em laço de redirecionamentos",
+            "score": 0.47,
+            "cosseno": 0.789,
+            "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+            "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-112",
+            "titulo": "Bloqueio indevido pelo firewall de aplicação (WAF)",
+            "score": 0.46,
+            "cosseno": 0.786,
+            "causa": "Regra do firewall de aplicação classificou como ataque uma requisição legítima do site e passou a devolver 403.",
+            "solucao": "Localizar no registro do WAF a regra acionada, liberar a requisição legítima com uma exceção restrita à URL e reavaliar a regra.",
+            "acao_padrao": "escalar",
+            "time_destino": "Seguranca",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1922
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "abrir_chamado_interno",
+        "kb_id": "KB-106",
+        "motivo": "procedimento_escalar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "abrir_chamado_interno"
+      },
+      "resultado": {
+        "texto": "O domínio do cliente (gama-cursos.example) apresenta falha de resolução DNS, com o nameserver **ns1.gama-cursos.example** não respondendo (timeout) e o registro de zona apresentando inconsistência (SERVFAIL). O histórico do sistema não confirma ocorrências anteriores, mas o cliente alega 3 incidentes em 2 semanas. O procedimento **KB-106** (score 0.55) sugere verificar o nameserver e os registros DNS do domínio para restabelecer o serviço. O escopo do plano **Hospedagem Start** cobre a resolução DNS, mas não a infraestrutura externa do cliente."
+      },
+      "erro": null,
+      "ms": 1298
+    },
+    {
+      "indice": 5,
+      "ferramenta": "confirmar",
+      "argumentos": {
+        "kb_id": "KB-106"
+      },
+      "resultado": {
+        "status": "aprovada",
+        "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+        "editado": false
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 6,
+      "ferramenta": "abrir_chamado_interno",
+      "argumentos": {
+        "id_ticket": "TKT-0134",
+        "resumo": "O domínio do cliente (gama-cursos.example) apresenta falha de resolução DNS, com o nameserver **ns1.gama-cursos.example** não respondendo (timeout) e o registro de zona apresentando inconsistência (SERVFAIL). O histórico do sistema não confirma ocorrências anteriores, mas o cliente alega 3 incidentes em 2 semanas. O procedimento **KB-106** (score 0.55) sugere verificar o nameserver e os registros DNS do domínio para restabelecer o serviço. O escopo do plano **Hospedagem Start** cobre a resolução DNS, mas não a infraestrutura externa do cliente.",
+        "kb_id": "KB-106"
+      },
+      "resultado": {
+        "chamado_interno": "INC-0005",
+        "time_destino": "Infraestrutura",
+        "prioridade": "P1",
+        "reincidencias_confirmadas_no_sistema": 0,
+        "ja_existia": false
+      },
+      "erro": null,
+      "ms": 7
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-106",
+    "motivo": "procedimento_escalar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1774,
+  "custo_embedding_usd": 0.000177,
+  "episodio": {
+    "execucao_id": "TKT-0134-ee5166f2",
+    "ticket_externo": "TKT-0134",
+    "cliente_id": "CLI-03",
+    "classe": "tecnico",
+    "categoria": "dns_dominio",
+    "kb_id": "KB-106",
+    "score": 0.55,
+    "acao_proposta": "abrir_chamado_interno",
+    "desfecho": "abrir_chamado_interno",
+    "motivo": "procedimento_escalar",
+    "veredito": "aprovado",
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0134: classe tecnico; guia KB-106 (score 0.55); proposto abrir_chamado_interno; gravado abrir_chamado_interno; analista: aprovado; término respondeu",
+    "criado_em": "2026-10-17T15:54:56-03:00",
+    "id": 1,
+    "chave": "07b188fff5881b59",
+    "ja_existia": false
+  },
+  "segundos_gastos": 4.066
+}

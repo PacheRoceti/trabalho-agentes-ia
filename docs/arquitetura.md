@@ -492,7 +492,8 @@ Limites do que foi implementado:
 - **Uma queda no meio da retomada é recuperada depois de 5 minutos.** A resposta
   do analista é guardada antes de retomar, a escrita tem chave em tudo, e o vigia (ou o próximo
   comando) termina o que ficou pela metade (`humano.md` §4.3). O que caiu antes da decisão não é
-  retomado: o chamado roda de novo. Demonstrado só nos testes, com a queda simulada.
+  retomado: o chamado roda de novo. Demonstrado nos testes e numa simulação com o processo morto de
+  verdade sobre o modelo real (`logs/grafo-queda/`, J2).
 - **O [H3] não existe.** A espera pela resposta do cliente não foi implementada
   (`humano.md` §7): aprovado o pedido, a execução termina em ●T1.
 - **O [H2] não envia nada.** O sistema simulado não tem canal de mensagem: aprovar o pedido grava

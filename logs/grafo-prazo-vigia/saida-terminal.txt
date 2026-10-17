@@ -1,0 +1,128 @@
+$ python src/main.py --reset
+Banco simulado recriado a partir de dados/seed.sql
+
+$ python src/vigiar_prazos.py --log logs/grafo-prazo-vigia/vigia.log   (em segundo plano, desde 16:02:18; saída em vigia.log)
+
+$ python src/main.py TKT-0003 --rodada grafo-prazo-vigia
+Texto do chamado TKT-0003 (Enter em branco usa o texto registrado):
+> 
+==============================================================================
+TKT-0003  (caso: escalonamento_reincidencia)  modelo: ministral-8b-2512  prompt: triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md (grafo)
+
+  nó consultar         consultar_ticket {"id_ticket": "TKT-0003"} -> ok
+  nó triagem           triagem {} -> ok
+  nó buscar            buscar_base_conhecimento {"termos": ["upload", "falham", "permissão", "negada"]} -> ok
+  nó conferir_ressalva conferir_ressalva {"kb_id": "KB-102", "situacoes": ["ssh"]} -> ok
+  nó decidir           decidir {} -> ok
+  nó redigir           redigir {"desfecho": "abrir_chamado_interno"} -> ok
+  ENTRADA: É a TERCEIRA vez que os uploads do meu sistema falham com permissão negada e nada é gravado! Exijo prioridade máxima agora.
+
+  TERMINO: aguardando_humano | desfecho: nenhum | passos: 6 | chamadas ao modelo: 3 | lembretes: 0 | tokens: 2527 | custo: US$ 0.00056
+  motivo: aguardando a confirmação do analista até 2026-10-17T16:22:35-03:00 (prazo de 20 minutos)
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0003",
+      "executado_em": "2026-10-17T16:02:28-03:00",
+      "termino": "aguardando_humano",
+      "resultado": {
+        "acao": null,
+        "texto": null,
+        "chamado_interno": null,
+        "time_destino": null,
+        "prioridade": null
+      },
+      "fonte": {
+        "tipo": "registro_do_chamado",
+        "kb_id": "KB-102",
+        "score": 0.55,
+        "registros": [
+          "TKT-0003",
+          "INC-0001"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "triagem",
+          "buscar_base_conhecimento",
+          "conferir_ressalva",
+          "decidir",
+          "redigir"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": false,
+        "motivo": "a execução terminou sem desfecho (aguardando_humano: aguardando a confirmação do analista até 2026-10-17T16:22:35-03:00 (prazo de 20 minutos))"
+      }
+    }
+
+  >> AÇÃO IRREVERSÍVEL aguardando o analista de suporte:
+     ferramenta: abrir_chamado_interno
+     id_ticket: TKT-0003
+     categoria: permissao_arquivos
+     resumo: O histórico confirma 1 ocorrência anterior (INC-0001) de falha de permissão em uploads, mas o cliente afirma que é a terceira vez. O problema relatado é falha de upload com mensagem de 'permissão negada' no sistema do cliente (domínio do cliente). Não há log anexado para análise. Procedimento KB-102 (score 0.55) sugere revisão de permissões em arquivos/pastas, mas não cobre o caso relatado com precisão. Exige acesso administrativo ao servidor.
+     time_destino: Infraestrutura
+     kb_id: KB-102
+     prioridade_prevista: P1
+     guia_publicado_em: 2026-10-06
+     guia_nao_cobre: ['ssh']
+     plano: VPS Pro
+     escopo_do_plano: Servidor virtual gerenciado pela empresa. O suporte cobre o sistema operacional, a rede, os certificados, o firewall e os backups da VPS. A aplicação instalada pelo cliente dentro da VPS está fora do escopo do suporte. Atendimento por chamado, em horário comercial.
+     precedentes: {'guia': {'kb_id': 'KB-102', 'janela_dias': 90, 'decisoes': 0, 'aprovados': 0, 'editados': 0, 'rejeitados': 0, 'decisoes_antigas': 0, 'rejeicoes_por_motivo': {}}, 'cliente': []}
+     fatos_cliente: {}
+     pedido_em: 2026-10-17T16:02:35-03:00
+     vence_em: 2026-10-17T16:22:35-03:00
+     faltam: 20 min
+     ATENÇÃO: o guia KB-102 declara que NÃO cobre: ssh. Confira se o relato cai numa dessas situações.
+     se aprovada: abre um chamado interno para Infraestrutura, com prioridade P1. Não há como apagar nem encerrar o chamado por aqui
+     rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta
+     responder: python src/main.py --aprovar TKT-0003   |   --rejeitar TKT-0003
+     aprovar corrigindo o resumo: python src/main.py --aprovar TKT-0003 --resumo "texto corrigido"
+
+$ python src/main.py --pendencias --rodada grafo-prazo-vigia
+
+1 ação(ões) aguardando o analista de suporte
+  vigia do prazo: rodando (pid 15432), última conferência às 2026-10-17T16:02:18-03:00
+
+  >> AÇÃO IRREVERSÍVEL aguardando o analista de suporte:
+     ferramenta: abrir_chamado_interno
+     id_ticket: TKT-0003
+     categoria: permissao_arquivos
+     resumo: O histórico confirma 1 ocorrência anterior (INC-0001) de falha de permissão em uploads, mas o cliente afirma que é a terceira vez. O problema relatado é falha de upload com mensagem de 'permissão negada' no sistema do cliente (domínio do cliente). Não há log anexado para análise. Procedimento KB-102 (score 0.55) sugere revisão de permissões em arquivos/pastas, mas não cobre o caso relatado com precisão. Exige acesso administrativo ao servidor.
+     time_destino: Infraestrutura
+     kb_id: KB-102
+     prioridade_prevista: P1
+     guia_publicado_em: 2026-10-06
+     guia_nao_cobre: ['ssh']
+     plano: VPS Pro
+     escopo_do_plano: Servidor virtual gerenciado pela empresa. O suporte cobre o sistema operacional, a rede, os certificados, o firewall e os backups da VPS. A aplicação instalada pelo cliente dentro da VPS está fora do escopo do suporte. Atendimento por chamado, em horário comercial.
+     precedentes: {'guia': {'kb_id': 'KB-102', 'janela_dias': 90, 'decisoes': 0, 'aprovados': 0, 'editados': 0, 'rejeitados': 0, 'decisoes_antigas': 0, 'rejeicoes_por_motivo': {}}, 'cliente': []}
+     fatos_cliente: {}
+     pedido_em: 2026-10-17T16:02:35-03:00
+     vence_em: 2026-10-17T16:22:35-03:00
+     faltam: 20 min
+     ATENÇÃO: o guia KB-102 declara que NÃO cobre: ssh. Confira se o relato cai numa dessas situações.
+     se aprovada: abre um chamado interno para Infraestrutura, com prioridade P1. Não há como apagar nem encerrar o chamado por aqui
+     rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta
+     responder: python src/main.py --aprovar TKT-0003   |   --rejeitar TKT-0003
+     aprovar corrigindo o resumo: python src/main.py --aprovar TKT-0003 --resumo "texto corrigido"
+
+# 16:22:58: nenhum comando foi rodado desde a pausa. O vigia registrou em vigia.log:
+#   2026-10-17 16:22:36 INFO PRAZO VENCIDO: TKT-0003 | abrir_chamado_interno | desfecho: fila_humana | motivo: confirmacao_nao_recebida | GESTOR AVISADO (aviso 1)
+
+$ python src/main.py --pendencias --rodada grafo-prazo-vigia
+
+0 ação(ões) aguardando o analista de suporte
+  vigia do prazo: rodando (pid 15432), última conferência às 2026-10-17T16:22:36-03:00
+
+$ python src/main.py --aprovar TKT-0003 --rodada grafo-prazo-vigia      (a aprovação que chega tarde)
+
+Não há confirmação pendente para TKT-0003.
+
+# O que ficou no banco para o TKT-0003 (dados/tickets.db):
+#   pendencias: 1
+#     {'id': 1, 'status': 'vencida', 'pedido_em': '2026-10-17T16:02:35-03:00', 'vence_em': '2026-10-17T16:22:35-03:00', 'resolvido_em': '2026-10-17T16:22:36-03:00', 'resolvido_por': 'ninguém: prazo vencido'}
+#   chamados_internos: 0
+#   encaminhamentos: 1
+#     {'id': 1, 'destino': 'fila_humana', 'criado_em': '2026-09-21 12:00'}
+#   avisos_gestor: 1
+#     {'id': 1, 'prioridade': 'P1', 'motivo': 'confirmacao_nao_recebida', 'criado_em': '2026-10-17T16:22:36-03:00'}
+# 16:23:05: vigia (pid 15432) encerrado com taskkill /F, fim da demonstração

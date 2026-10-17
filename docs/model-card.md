@@ -1,8 +1,12 @@
 # Model card — Agente de Triagem e Abertura de Chamado Interno
 
-**Execução de referência:** `logs/regra-da-frase/triagem-v1-3/` — 44 chamados do gabarito, executados
-em 14/10/2026 entre 00:35 e 00:40, com a configuração **em uso** do grafo (`triagem-v1.md +
-ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md`), modelo `ministral-8b-latest`, temperatura 0.
+**Execução de referência:** `logs/grafo-44-3/` — 44 chamados do gabarito, executados em
+17/10/2026 entre 15:50 e 15:55, sobre o commit `77757ea` sem alterações locais, com a configuração
+**em uso** do grafo (`triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md`),
+modelo `ministral-8b-latest`, temperatura 0 (`docs/grafo.md` §6.9). Até 17/10/2026 a referência
+era `logs/regra-da-frase/triagem-v1-3/`, de 14/10/2026, que rodou com código não commitado
+(lacuna L16); as seções abaixo foram escritas sobre ela e ainda a citam, com o mesmo 40 de 44 e as
+mesmas quatro falhas.
 
 > **Por que não o log mais recente.** O último log gravado é `logs/regra-da-frase/triagem-v2-3/`
 > (00:43), mas ele roda o `triagem-v2.md`, variante **medida e não adotada** ([`docs/prompts.md`
@@ -129,7 +133,7 @@ segue por onde **esse texto** passa.
 |---|---|---|
 | Suíte | 44 chamados rotulados (`dados/gabarito.json`) + verificador em código que confere **o banco**, não o texto | [`src/verificar.py` L1–5](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/verificar.py#L1-L5) |
 | Versão da suíte | **LACUNA L28** — sugestão: hash do `gabarito.json` no commit `29d7beb` | — |
-| Resultado agregado (config. em uso) | 40 de 44 nas três execuções | linha `RESULTADO` de `logs/regra-da-frase/triagem-v1-{1,2,3}/saida-demonstracao.txt` |
+| Resultado agregado (config. em uso) | 40 de 44 nas três execuções, e de novo nas três de referência sobre código commitado | linha `RESULTADO` de `logs/regra-da-frase/triagem-v1-{1,2,3}/saida-demonstracao.txt` e de `logs/grafo-44-{1,2,3}/saida-demonstracao.txt` |
 | Por fatia | as 4 falhas da execução de referência são `escalonamento_seguranca` (TKT-0105), `reincidencia_silenciosa` (TKT-0106), `exigencia_de_prioridade` (TKT-0111), `servico_sem_sintoma` (TKT-0132); **as quatro foram à fila humana** com `score_abaixo_do_limiar`, nenhuma gravou chamado indevido | `logs/regra-da-frase/triagem-v1-3/saida-demonstracao.txt` (linhas `VERIFICADOR: FALHOU`) e `desfecho_proposto` dos 4 JSON |
 | Variante não adotada | `triagem-v2.md`: 39, 40 e 39 de 44 | `logs/regra-da-frase/triagem-v2-{1,2,3}/saida-demonstracao.txt`; [`docs/prompts.md` L82](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/docs/prompts.md#L82) |
 | Testes offline (código, sem modelo) | 146 testes passam | **a gerar:** `python -m pytest -q tests > docs/evidencias/testes-29d7beb.txt` (no commit `29d7beb`: `146 passed, 28 subtests passed`) |
@@ -162,7 +166,7 @@ segue por onde **esse texto** passa.
 |---|---|---|
 | O que pausa | abrir chamado interno (H1) e pedido ao cliente (H2) | [`src/grafo.py` L73–80](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/grafo.py#L73-L80) |
 | Quem aprova | "analista de suporte", por comando no terminal (`--aprovar`, `--rejeitar`) | log `logs/grafo-pausa/TKT-0007.json` (`por: analista de suporte (terminal)`). **LACUNA L14**: não há identificação de **quem** aprovou; qualquer pessoa com o terminal aprova |
-| Em quanto tempo | 20 minutos; vencido, não executa e vai à fila humana; P1 vencido avisa o gestor. Desde 17/10/2026 quem aplica o prazo, sem comando nenhum, é o vigia (`src/vigiar_prazos.py`), que precisa estar rodando | [`src/ferramentas.py` L26–36](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/ferramentas.py#L26-L36); log `logs/grafo-h1-vencido/TKT-0003.json` (`status: vencida`); a demonstração com a espera real de 20 minutos ainda não foi executada sobre o código commitado ([`docs/humano.md`](humano.md) §4.1) |
+| Em quanto tempo | 20 minutos; vencido, não executa e vai à fila humana; P1 vencido avisa o gestor. Desde 17/10/2026 quem aplica o prazo, sem comando nenhum, é o vigia (`src/vigiar_prazos.py`), que precisa estar rodando | [`src/ferramentas.py` L26–36](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/ferramentas.py#L26-L36); log `logs/grafo-h1-vencido/TKT-0003.json` (`status: vencida`); a espera real de 20 minutos vencida pelo vigia em `logs/grafo-prazo-vigia/` ([`docs/humano.md`](humano.md) §4.1) |
 | Rejeição | não executa; vai à fila humana com as considerações | log `logs/grafo-h2-rejeicao/TKT-0005.json`; teste `test_rejeitar_vai_a_fila_humana_com_as_consideracoes` |
 | **Atenção — execução de referência** | as 13 confirmações dela foram **auto-aprovadas**: `por: "auto-aprovado (--auto-aprovar; só para demonstração)"`. Os 44 casos medem a decisão do agente, **não** a supervisão | campo `confirmacoes` dos JSON; [`src/main.py` L81–82, L339–341](https://github.com/PacheRoceti/trabalho-agentes-ia/blob/29d7beb089687907b71859a66b7ceff33a6b35bf/src/main.py#L339-L341) (`--todos` exige `--auto-aprovar`). **LACUNA L15**: nada impede usar `--auto-aprovar` fora de demonstração |
 | Como interromper | ver Autoridade | **LACUNA L7** |
@@ -205,7 +209,7 @@ segue por onde **esse texto** passa.
 | L13 | Avaliação | rótulos só do grupo; texto não medido | segunda rotulagem de uma amostra; medir o resumo | Média |
 | L14 | Supervisão | aprovador não identificado | registrar a identidade de quem aprova | Média |
 | L15 | Supervisão | `--auto-aprovar` sem trava | restringir a `--rodada`/demonstração, como já é feito com `--prompt-triagem` | Alta |
-| L16 | Registro | log de referência com código não commitado | rodar de novo a referência num commit limpo | Alta |
+| L16 | Registro | log de referência com código não commitado | **feito em 17/10/2026:** `logs/grafo-44-1/` a `-3/`, sobre o commit `77757ea` | Alta |
 | L17 | Histórico | sem aprovador das mudanças | registrar aprovação (PR revisado ou linha no histórico) | Baixa |
 | L18 | Dados | entrada sem base legal | declarar art. 7º, V (execução de contrato com o cliente) | Alta |
 | L19 | Dados | prompt e embedding ao provedor sem base legal nem análise de transferência internacional | mesma base de L18; avaliar art. 33 depois de fechar L9 | Alta |

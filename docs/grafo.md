@@ -723,8 +723,8 @@ Limites:
   demonstrado é o caminho do código quando o prazo vence, e não uma espera de 20 minutos.
 - **O prazo foi conferido por um comando, e não cronometrado.** Quem venceu a ação foi o
   `--pendencias` seguinte, 3 a 4 segundos depois (`humano.md` §4). Desde 17/10/2026 quem a vence
-  é o vigia do prazo, sem comando nenhum; a demonstração com os 20 minutos reais sobre o código
-  commitado AINDA NÃO FOI EXECUTADA (`humano.md` §4.1).
+  é o vigia do prazo, sem comando nenhum, demonstrado com os 20 minutos reais sobre o commit
+  `77757ea` (`humano.md` §4.1, `logs/grafo-prazo-vigia/`).
 - **Não há log da pausa em arquivo próprio.** Cada pasta tem o log final (`TKT-0003.json`,
   `TKT-0005.json`), que foi gravado por cima do da pausa; o momento da pausa está só no
   `saida-terminal.txt`. Em `logs/grafo-pausa/` e `logs/grafo-h2/` existe o `-pausado.json`.
@@ -778,6 +778,35 @@ três, com os desfechos do §6.6. Ficam como registro: a conclusão foi desfeita
 Limites: os do §6.6. Os quatro casos novos foram escritos por quem conhecia a frase em teste, e
 três rodadas dos mesmos 44 casos não são 132 casos.
 
+### 6.9 As rodadas de referência, sobre código commitado (17/10/2026)
+
+As rodadas do §6.8 trazem o commit `6116341 + alterações locais`: rodaram com código que não
+estava commitado, e o commit seguinte mudou `src/`. Não dá para reproduzir exatamente o código que
+as gerou. Estas três são a medição de referência do sistema, refeitas sobre o commit `77757ea`,
+com `src/` e `dados/` limpos (o carimbo de todos os 132 logs é `77757ea`, sem marca),
+`ministral-8b-latest`, `temperature=0`, os prompts em uso e aprovação automática:
+
+| Pasta | Horário | Verificador | Chamadas | Tokens de chat | Tokens de embedding | `custo_usd` (chat + embedding) |
+|---|---|---|---|---|---|---|
+| `logs/grafo-44-1/` | 15:43 a 15:47 | **40 de 44** | 98 | 84.525 | 61.911 | US$ 0,0189 (0,0127 + 0,0062) |
+| `logs/grafo-44-2/` | 15:47 a 15:50 | **40 de 44** | 98 | 84.522 | 61.911 | US$ 0,0189 (0,0127 + 0,0062) |
+| `logs/grafo-44-3/` | 15:50 a 15:55 | **40 de 44** | 98 | 84.821 | 61.911 | US$ 0,0189 (0,0127 + 0,0062) |
+
+- **O resultado repete o do §6.8:** 40 de 44 nas três, com as mesmas quatro falhas (`TKT-0105`,
+  `TKT-0106`, `TKT-0111` e `TKT-0132`), todas na fila humana. Nenhum chamado interno aberto
+  indevidamente.
+- **O custo agora inclui o embedding** (desde 17/10/2026; `rag.md` §6). A parte do chat, US$ 0,0127,
+  é a mesma do §6.8; o embedding é um terço do total, quase todo da indexação refeita a cada caso
+  pelo `--todos`.
+- **A marca de divergência continua variando nos mesmos dois casos:** o `TKT-0123` não foi marcado
+  em nenhuma das três, e o `TKT-0124` foi marcado em duas. O desfecho foi o certo nas seis, pela
+  razão do §6.8 (o score abaixo do limiar). O `TKT-0134` não foi marcado e o `TKT-0136` foi, nas
+  três, como devem.
+- A regra aprendida do `redigir` foi conferida com `python conferir_regras.py` nas três pastas: 42
+  redações do modelo em cada uma, nenhuma com domínio que o nó não recebeu.
+
+Limites: os do §6.6 e do §6.8.
+
 ## 7. Limites do que foi implementado
 
 - **A fila do analista continua sendo a tabela `pendencias`.** O `interrupt` guarda a execução; a
@@ -802,7 +831,7 @@ três rodadas dos mesmos 44 casos não são 132 casos.
   onde não cabe, o score a um centésimo do limiar e o relato que diz o serviço sem o sintoma.
 - Medir o grafo em chamados que não foram escritos pelo grupo: os 40 casos são de quem conhece
   os guias (§6.6).
-- Demonstrar o vigia com os 20 minutos reais sobre o código commitado (`humano.md` §4.1), e o
-  prazo real também no H2: o §6.7 encurtou o prazo para 1,2 segundo.
+- Exercitar o prazo real de 20 minutos também no H2. O do H1 foi vencido pelo vigia em 17/10/2026
+  (`humano.md` §4.1, `logs/grafo-prazo-vigia/`); o §6.7 encurtou o prazo para 1,2 segundo.
 - Implementar o H3 (`humano.md` §7), e com ele o nó `aguardar_cliente`. O H2 existe desde
   12/10/2026 (§6.3).

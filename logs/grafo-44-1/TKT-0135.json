@@ -1,0 +1,227 @@
+{
+  "execucao_id": "TKT-0135-9a5bc7b3",
+  "id_ticket": "TKT-0135",
+  "executado_em": "2026-10-17T15:47:08-03:00",
+  "commit": "77757ea",
+  "entrada": "É a segunda vez nesta semana que o backup diário falha: recebi de novo o e-mail de alerta hoje cedo.",
+  "modelo": "ministral-8b-2512",
+  "prompt": "triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "anotacao_interna",
+    "kb_id": "KB-105",
+    "encaminhamento": 1,
+    "destino": "anotacao_interna",
+    "ja_existia": false
+  },
+  "pendencia": null,
+  "confirmacoes": [],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1664,
+  "tokens_saida": 164,
+  "custo_usd": 0.000451,
+  "scores_kb": {
+    "KB-105": 0.7,
+    "KB-102": 0.5,
+    "KB-109": 0.49
+  },
+  "saida": {
+    "id_ticket": "TKT-0135",
+    "executado_em": "2026-10-17T15:47:08-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "anotacao_interna",
+      "texto": "Conferir a cota de armazenamento de backup e o agendamento do job de backup diário do domínio do cliente. Reexecutar o job manualmente conforme procedimento **KB-105**. *Nota: score 0.7 (limiar 0.5), mas não é seguro agir sozinho sem validação.*",
+      "chamado_interno": null,
+      "time_destino": null,
+      "prioridade": null
+    },
+    "fonte": {
+      "tipo": "procedimento_da_base",
+      "kb_id": "KB-105",
+      "score": 0.7,
+      "registros": [
+        "TKT-0135"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "registrar_encaminhamento"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": true,
+      "motivo": "procedimento KB-105 com score 0.7, igual ou acima do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0135"
+      },
+      "resultado": {
+        "id": "TKT-0135",
+        "aberto_em": "2026-09-21 11:56",
+        "status": "novo",
+        "anexo_log": "2026-09-21 02:00 painel de backups, execução diária da conta -> status: FALHOU. 2026-09-21 02:01 e-mail de alerta de falha de backup enviado.",
+        "cliente": "Acme Contabilidade",
+        "plano": "Hospedagem Business",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "backup",
+          "falha",
+          "execução",
+          "diário"
+        ],
+        "justificativa": "O cliente relata falha recorrente no backup diário, com log confirmando o problema no serviço de backups."
+      },
+      "erro": null,
+      "ms": 779
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "backup",
+          "falha",
+          "execução",
+          "diário"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-105",
+            "titulo": "Backup diário falhou",
+            "score": 0.7,
+            "cosseno": 0.883,
+            "causa": "Cota de armazenamento de backup excedida ou janela de backup sobreposta a outra tarefa.",
+            "solucao": "Conferir a cota do storage de backup e o agendamento; reexecutar o job manualmente.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-102",
+            "titulo": "Permissão negada ao gravar arquivos",
+            "score": 0.5,
+            "cosseno": 0.803,
+            "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+            "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-109",
+            "titulo": "Tarefa agendada (cron) não executa",
+            "score": 0.49,
+            "cosseno": 0.798,
+            "causa": "Entrada do crontab com sintaxe inválida, caminho do script errado ou usuário sem direito de execução sobre o script.",
+            "solucao": "Conferir a sintaxe da entrada no crontab, o caminho absoluto do script e o registro de execução do cron; testar o script à mão com o mesmo usuário.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 2122
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "anotacao_interna",
+        "kb_id": "KB-105",
+        "motivo": "procedimento_anotar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "anotacao_interna"
+      },
+      "resultado": {
+        "texto": "Conferir a cota de armazenamento de backup e o agendamento do job de backup diário do domínio do cliente. Reexecutar o job manualmente conforme procedimento **KB-105**. *Nota: score 0.7 (limiar 0.5), mas não é seguro agir sozinho sem validação.*"
+      },
+      "erro": null,
+      "ms": 881
+    },
+    {
+      "indice": 5,
+      "ferramenta": "registrar_encaminhamento",
+      "argumentos": {
+        "id_ticket": "TKT-0135",
+        "destino": "anotacao_interna",
+        "mensagem": "Conferir a cota de armazenamento de backup e o agendamento do job de backup diário do domínio do cliente. Reexecutar o job manualmente conforme procedimento **KB-105**. *Nota: score 0.7 (limiar 0.5), mas não é seguro agir sozinho sem validação.*",
+        "kb_id": "KB-105"
+      },
+      "resultado": {
+        "encaminhamento": 1,
+        "destino": "anotacao_interna",
+        "ja_existia": false
+      },
+      "erro": null,
+      "ms": 8
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "anotacao_interna",
+    "kb_id": "KB-105",
+    "motivo": "procedimento_anotar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1766,
+  "custo_embedding_usd": 0.000177,
+  "episodio": {
+    "execucao_id": "TKT-0135-9a5bc7b3",
+    "ticket_externo": "TKT-0135",
+    "cliente_id": "CLI-01",
+    "classe": "tecnico",
+    "categoria": "backup",
+    "kb_id": "KB-105",
+    "score": 0.7,
+    "acao_proposta": "anotacao_interna",
+    "desfecho": "anotacao_interna",
+    "motivo": "procedimento_anotar",
+    "veredito": null,
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0135: classe tecnico; guia KB-105 (score 0.7); proposto anotacao_interna; gravado anotacao_interna; término respondeu",
+    "criado_em": "2026-10-17T15:47:12-03:00",
+    "id": 1,
+    "chave": "127a9de56622b07c",
+    "ja_existia": false
+  },
+  "segundos_gastos": 3.793
+}

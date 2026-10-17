@@ -371,7 +371,8 @@ O custo do erro é **assimétrico**: abrir chamado interno indevidamente (o time
    o `TKT-0136`, com log anexado e uma afirmação do cliente que o histórico não confirma,
    escritos para o teste da regra da frase no prompt da triagem (`prompts.md` §3.7) e rotulados
    antes de qualquer execução. **Medido em 13 e 14/10/2026:** o grafo deu **40 de 44** em três
-   rodadas (`logs/regra-da-frase/triagem-v1-1/` a `-3/`; `grafo.md` §6.8): os 36 de antes e os
+   rodadas (`logs/regra-da-frase/triagem-v1-1/` a `-3/`; `grafo.md` §6.8) e de novo em 17/10/2026,
+   sobre o commit `77757ea`, sem alterações locais (`logs/grafo-44-1/` a `-3/`; `grafo.md` §6.9): os 36 de antes e os
    quatro novos. Por tipo: 2 de 3 chamados incompletos devolvidos ao cliente, 4 de 4
    redirecionados à fila comercial, 10 de 11 anotações internas e 11 de 13 chamados internos
    abertos com o guia certo. As quatro falhas são as mesmas de 12/10/2026. A meta continua

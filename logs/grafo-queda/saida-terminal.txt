@@ -1,0 +1,112 @@
+$ python src/main.py --reset
+Banco simulado recriado a partir de dados/seed.sql
+
+$ python src/main.py TKT-0007 --rodada grafo-queda
+Texto do chamado TKT-0007 (Enter em branco usa o texto registrado):
+> 
+==============================================================================
+TKT-0007  (caso: escalonamento_simples)  modelo: ministral-8b-2512  prompt: triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md (grafo)
+
+  nó consultar         consultar_ticket {"id_ticket": "TKT-0007"} -> ok
+  nó triagem           triagem {} -> ok
+  nó buscar            buscar_base_conhecimento {"termos": ["site", "salvar", "arquivos", "permissão", "negada"]} -> ok
+  nó conferir_ressalva conferir_ressalva {"kb_id": "KB-102", "situacoes": ["ssh"]} -> ok
+  nó decidir           decidir {} -> ok
+  nó redigir           redigir {"desfecho": "abrir_chamado_interno"} -> ok
+  ENTRADA: Meu site parou de salvar arquivos: todo upload falha com a mensagem de permissão negada. Preciso de ajuda para voltar a publicar.
+
+  TERMINO: aguardando_humano | desfecho: nenhum | passos: 6 | chamadas ao modelo: 3 | lembretes: 0 | tokens: 2475 | custo: US$ 0.00055
+  motivo: aguardando a confirmação do analista até 2026-10-17T16:15:51-03:00 (prazo de 20 minutos)
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0007",
+      "executado_em": "2026-10-17T15:55:45-03:00",
+      "termino": "aguardando_humano",
+      "resultado": {
+        "acao": null,
+        "texto": null,
+        "chamado_interno": null,
+        "time_destino": null,
+        "prioridade": null
+      },
+      "fonte": {
+        "tipo": "registro_do_chamado",
+        "kb_id": "KB-102",
+        "score": 0.72,
+        "registros": [
+          "TKT-0007"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "triagem",
+          "buscar_base_conhecimento",
+          "conferir_ressalva",
+          "decidir",
+          "redigir"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": false,
+        "motivo": "a execução terminou sem desfecho (aguardando_humano: aguardando a confirmação do analista até 2026-10-17T16:15:51-03:00 (prazo de 20 minutos))"
+      }
+    }
+
+  >> AÇÃO IRREVERSÍVEL aguardando o analista de suporte:
+     ferramenta: abrir_chamado_interno
+     id_ticket: TKT-0007
+     categoria: permissao_arquivos
+     resumo: No chamado **TKT-0007**, o cliente **Eta Engenharia** (plano **VPS Pro**) relata que o site está com falha ao salvar arquivos, exibindo mensagem de 'permissão negada' em uploads. Não há log anexado nem histórico de chamados internos anteriores. O procedimento **KB-102** (score **0.72**) sugere que a causa é arquivos ou pastas com dono ou permissões incorretos, comum após restauração, migração ou publicação por outro usuário. **Exige acesso de administrador ao servidor** para correção via `chown/chmod`.
+     time_destino: Infraestrutura
+     kb_id: KB-102
+     prioridade_prevista: P2
+     guia_publicado_em: 2026-10-06
+     guia_nao_cobre: ['ssh']
+     plano: VPS Pro
+     escopo_do_plano: Servidor virtual gerenciado pela empresa. O suporte cobre o sistema operacional, a rede, os certificados, o firewall e os backups da VPS. A aplicação instalada pelo cliente dentro da VPS está fora do escopo do suporte. Atendimento por chamado, em horário comercial.
+     precedentes: {'guia': {'kb_id': 'KB-102', 'janela_dias': 90, 'decisoes': 0, 'aprovados': 0, 'editados': 0, 'rejeitados': 0, 'decisoes_antigas': 0, 'rejeicoes_por_motivo': {}}, 'cliente': []}
+     fatos_cliente: {}
+     pedido_em: 2026-10-17T15:55:51-03:00
+     vence_em: 2026-10-17T16:15:51-03:00
+     faltam: 20 min
+     ATENÇÃO: o guia KB-102 declara que NÃO cobre: ssh. Confira se o relato cai numa dessas situações.
+     se aprovada: abre um chamado interno para Infraestrutura, com prioridade P2. Não há como apagar nem encerrar o chamado por aqui
+     rejeitada ou sem resposta no prazo, o chamado vai para a fila humana com esta ação proposta
+     responder: python src/main.py --aprovar TKT-0007   |   --rejeitar TKT-0007
+     aprovar corrigindo o resumo: python src/main.py --aprovar TKT-0007 --resumo "texto corrigido"
+
+$ python simular_queda.py cair TKT-0007 --em abrir_chamado      (15:55:51)
+  nó confirmar         confirmar {"kb_id": "KB-102"} -> ok
+  >> QUEDA SIMULADA em db.abrir_chamado (antes de gravar): o processo morre agora (os._exit(70))
+(código de saída do processo: 70)
+
+$ python simular_queda.py estado TKT-0007      (15:55:52)
+  pendência 1: aprovada, resolvida em 2026-10-17T15:55:52-03:00 por analista de suporte (simular_queda.py); resposta guardada: aprovar às 2026-10-17T15:55:52-03:00
+  chamados_internos: 0
+  encaminhamentos: 0
+  avisos_gestor: 0
+  checkpoint: parado em ['gravar'], gravado em 2026-10-17T18:55:52.885806+00:00
+
+# 16:01:27: nenhum comando foi rodado desde a queda. Passaram os 5 minutos de grafo.IDADE_MINIMA_DA_QUEDA_MIN.
+
+$ python src/vigiar_prazos.py --uma-vez --log logs/grafo-queda/vigia.log
+2026-10-17 16:01:28 INFO vigia iniciado (pid 10028); prazo de confirmação conferido a cada 30 s no máximo
+2026-10-17 16:01:29 WARNING EXECUÇÃO RETOMADA DEPOIS DE QUEDA: TKT-0007 | parou em gravar | desfecho: abrir_chamado_interno | log: C:\Users\df0l\Documents\GitHub\trabalho-agentes-ia\logs\grafo-queda\TKT-0007.json
+2026-10-17 16:01:29 INFO vigia parado
+
+$ python simular_queda.py estado TKT-0007      (16:01:29)
+  pendência 1: aprovada, resolvida em 2026-10-17T15:55:52-03:00 por analista de suporte (simular_queda.py); resposta guardada: aprovar às 2026-10-17T15:55:52-03:00
+  chamados_internos: 1
+  encaminhamentos: 0
+  avisos_gestor: 0
+  checkpoint: nenhum (a execução concluiu, ou nunca começou)
+
+$ python src/main.py --aprovar TKT-0007 --rodada grafo-queda      (a aprovação repetida, depois da recuperação)
+
+Não há confirmação pendente para TKT-0007.
+
+$ python simular_queda.py estado TKT-0007      (16:01:34)
+  pendência 1: aprovada, resolvida em 2026-10-17T15:55:52-03:00 por analista de suporte (simular_queda.py); resposta guardada: aprovar às 2026-10-17T15:55:52-03:00
+  chamados_internos: 1
+  encaminhamentos: 0
+  avisos_gestor: 0
+  checkpoint: nenhum (a execução concluiu, ou nunca começou)

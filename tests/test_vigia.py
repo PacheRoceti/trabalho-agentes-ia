@@ -3,7 +3,7 @@
 Provam o que é do CÓDIGO: a volta vence só o que passou do prazo, o vigia dorme até o próximo
 `vence_em`, um erro numa volta não o derruba, só um vigia roda por máquina, e duas respostas à
 mesma pendência dadas ao mesmo tempo (o vigia e o analista) gravam um desfecho só. A espera real
-de 20 minutos, com o modelo real, vai para logs/grafo-prazo-vigia/ (docs/humano.md §4.1).
+de 20 minutos, com o modelo real, está em logs/grafo-prazo-vigia/ (docs/humano.md §4.1).
 
     python -m unittest tests.test_vigia -v
 """

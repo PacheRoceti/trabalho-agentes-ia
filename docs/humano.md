@@ -407,16 +407,32 @@ quando o processo morre, então uma queda no meio de uma resposta não deixa a p
 conexões com os dois bancos passaram a esperar até 30 s (`db.ESPERA_BANCO_S`) em vez de falhar com
 "database is locked".
 
-**Demonstração com o prazo real de 20 minutos e o modelo real: AINDA NÃO EXECUTADA sobre o código
-commitado.** Uma execução de 17/10/2026 deu o resultado esperado (o `TKT-0003` pausou, e o vigia o
-venceu sozinho um segundo depois do `vence_em`, com fila humana e aviso ao gestor), mas rodou com
-o código sem commit (`9c2c70d + alterações locais`), e o código mudou depois dela (a recuperação
-entrou na volta do vigia, a escrita ganhou chave, o embedding entrou no custo). Pelo mesmo motivo
-das rodadas de referência (logs ligados a um commit que não reproduz o código), ela foi
-**descartada** e não está no repositório. Vai ser refeita sobre o commit de 17/10/2026, em
-`logs/grafo-prazo-vigia/`: banco recriado, o vigia num terminal à parte, o `TKT-0003` sem
-`--auto-aprovar`, ninguém rodando comando até o vencimento, e depois um `--pendencias` e um
-`--aprovar` atrasado.
+**Demonstração com o prazo real de 20 minutos e o modelo real** (`logs/grafo-prazo-vigia/`,
+17/10/2026, commit `77757ea` sem alterações locais, `ministral-8b-latest`, os prompts em uso).
+Banco recriado; o vigia subiu às 16:02:18 num terminal à parte, com o log em `vigia.log`; o
+`TKT-0003` (o chamado que seria P1) rodou **sem** `--auto-aprovar`. Depois disso, ninguém rodou
+comando nenhum até o vencimento:
+
+| Hora | Quem | O que aconteceu |
+|---|---|---|
+| 16:02:35 | `main.py TKT-0003` | pausou em `confirmar`, prazo até 16:22:35 (3 chamadas ao modelo, 2.527 tokens; `TKT-0003-pausado.json`) |
+| 16:02:3x | `main.py --pendencias` | 1 ação aguardando, prioridade prevista P1, "faltam: 20 min"; "vigia do prazo: rodando (pid 15432)" |
+| 16:22:36 | **o vigia, sozinho** | `PRAZO VENCIDO: TKT-0003 \| abrir_chamado_interno \| desfecho: fila_humana \| motivo: confirmacao_nao_recebida \| GESTOR AVISADO (aviso 1)`: um segundo depois do `vence_em` |
+| 16:22:58 | `main.py --pendencias` | 0 ações aguardando; o vigia rodando, com a última conferência às 16:22:36 |
+| 16:23:0x | `main.py --aprovar TKT-0003` | a aprovação que chega tarde: "Não há confirmação pendente para TKT-0003." |
+
+No banco: a pendência `vencida`, resolvida às 16:22:36 por "ninguém: prazo vencido"; **nenhum
+chamado interno**; um encaminhamento à fila humana; um aviso ao gestor, P1. O log final
+(`TKT-0003.json`) tem o término `respondeu`, o desfecho `fila_humana` com suficiência negativa ("a
+confirmação do analista não chegou em 20 minutos") e as mesmas 3 chamadas da pausa: o vencimento
+não chamou o modelo. A sequência inteira está em `saida-terminal.txt`. O vigia foi encerrado com
+`taskkill /F`, e por isso o log não tem a linha "vigia parado": a parada limpa por sinal não foi
+demonstrada. Uma execução só, de um chamado só. O `criado_em` do encaminhamento é a data fixa do
+banco simulado (`db.AGORA`), como em todo encaminhamento; o relógio de verdade está na pendência e
+no aviso.
+
+Uma primeira execução, mais cedo no mesmo dia, deu o mesmo resultado, mas rodou com código sem
+commit e anterior à recuperação e às chaves: foi descartada e não está no repositório.
 
 **Limites.**
 
@@ -536,11 +552,29 @@ no `grafo.md` §5, como decisão que virou parâmetro.
   chamadas ao modelo, com o desfecho já decidido. Rodar com o modelo real só acertaria a janela
   por sorte. Os testes forçam a queda no ponto exato, e o que eles provam (a recuperação e as
   chaves) é código, igual com o modelo real ou com o roteirizado.
-- **A simulação com o processo morto de verdade: `simular_queda.py`.** Os testes levantam uma
-  exceção, e o processo continua vivo. O script troca uma função de `src/db.py` por uma que mata o
-  processo com `os._exit`, sem `finally` e sem liberar nada, e a recuperação roda depois noutro
-  processo, sobre os arquivos em disco. A simulação com o modelo real até a pausa (a J2, em
-  `logs/grafo-queda/`) **AINDA NÃO FOI EXECUTADA** sobre o código commitado.
+- **A queda escolhida pelo script não é espontânea.** Ninguém derruba uma máquina no meio de um
+  commit de forma reproduzível; a injeção de falha do `simular_queda.py` (abaixo) faz esse papel.
+
+**A simulação com o processo morto de verdade, sobre o modelo real** (`logs/grafo-queda/`,
+17/10/2026, commit `77757ea` sem alterações locais, `ministral-8b-latest`, os prompts em uso). Os
+testes levantam uma exceção, e o processo continua vivo; o `simular_queda.py` troca uma função de
+`src/db.py` por uma que mata o processo com `os._exit`, sem `finally` e sem liberar nada, e a
+recuperação roda depois noutro processo, sobre os arquivos em disco. A J2, a queda entre a
+aprovação e a escrita:
+
+| Hora | Comando | O que aconteceu |
+|---|---|---|
+| 15:55:5x | `main.py TKT-0007 --rodada grafo-queda` | o modelo real fez a triagem, a conferência da ressalva e a redação (3 chamadas); a execução pausou à espera do analista (`TKT-0007-pausado.json`) |
+| 15:55:52 | `simular_queda.py cair TKT-0007 --em abrir_chamado` | aprovou, e o processo morreu antes de abrir o chamado (código de saída 70) |
+| 15:55:5x | `simular_queda.py estado TKT-0007` | pendência `aprovada`, com a resposta guardada; **nenhum chamado interno**; checkpoint parado em `gravar`. É o estado que até 16/10/2026 ficava preso para sempre |
+| 16:01:29 | `vigiar_prazos.py --uma-vez`, sem ninguém aprovar de novo | "EXECUÇÃO RETOMADA DEPOIS DE QUEDA: TKT-0007 \| parou em gravar \| desfecho: abrir_chamado_interno" |
+| 16:01:29 | `simular_queda.py estado TKT-0007` | **um chamado interno** (`INC-0005`, P2, Infraestrutura), checkpoint apagado |
+| 16:01:34 | `main.py --aprovar TKT-0007` (a aprovação repetida) | "Não há confirmação pendente para TKT-0007."; continua um chamado só |
+
+O log final (`TKT-0007.json`) tem o término `respondeu`, o campo `recuperacao` (`parou_em: gravar`)
+e as mesmas 3 chamadas da pausa: nem a retomada nem a recuperação chamaram o modelo. Com o
+`"sync"`, o checkpoint ficou em `gravar`, onde a execução caiu. A sequência inteira está em
+`saida-terminal.txt`, e a linha do vigia em `vigia.log`. Uma execução, de uma janela (J2).
 - **O custo do `"sync"` não foi medido:** é a espera da gravação do checkpoint a cada superpasso.
 
 ## 5. Aprovar duas vezes (§8.5)
@@ -624,8 +658,10 @@ não um analista.
 
 ## 7. O que falta para este item
 
-- Refazer, sobre o código commitado, a demonstração do vigia com os 20 minutos reais (§4.1) e
-  a simulação da queda com o modelo real (§4.3).
+- Simular as outras janelas da queda com o processo morto de verdade (J1, J3 e J4): com o
+  modelo real só a J2 foi simulada (§4.3); as outras estão nos testes.
+- Instalar o vigia como serviço e demonstrar a parada limpa por sinal: a demonstração o encerrou
+  com `taskkill /F` (§4.1).
 - Exercitar o prazo real de 20 minutos também no H2: o H2 vencido só foi executado com o prazo
   encurtado para 1,2 segundo (`logs/grafo-h2-vencido/`, `grafo.md` §6.7).
 - Implementar o H3: a pausa em `aguardando_cliente` e a retomada com a resposta, com o prazo de
