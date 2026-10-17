@@ -2,7 +2,9 @@
 
 > **Estado deste documento: 10/10/2026.** O grafo existe: é o `StateGraph` de
 > [`src/grafo.py`](../src/grafo.py), compilado uma vez (objeto `GRAFO`), com o LangGraph fixado no
-> `requirements.txt` (`langgraph==1.2.14`, `langgraph-checkpoint-sqlite==3.1.1`). O desenho abaixo
+> `requirements.txt` (`langgraph==1.2.14`, `langgraph-checkpoint-sqlite==3.1.1`; desde 17/10/2026
+> também as dependências transitivas, como `langchain-core==1.6.9` e `langgraph-checkpoint==4.2.0`,
+> porque os padrões do §5 moram nelas também). O desenho abaixo
 > foi conferido contra a saída de `python conferir_grafo.py`, que está colada em
 > [`arquitetura.md`](arquitetura.md) §9.
 >
@@ -349,7 +351,11 @@ pertencem à frente "os tetos" e não foram somadas à contagem; as linhas citad
 No mesmo dia ganhou a recuperação depois de uma queda (`humano.md` §4.3): uma linha em
 `retomar_grafo`, antes do `Command(resume=...)`, que por isso passou da linha 943 para a 944, e o
 resto no fim do arquivo, que tem agora 1.115 linhas (com a `DURABILIDADE`, §5). A recuperação pertence à frente "erro
-recuperável × fatal" e não foi somada à contagem.
+recuperável × fatal" e não foi somada à contagem. Ainda em 17/10/2026 o arquivo ganhou 15 linhas
+no fim (`_tela_do_h1`: score, reincidência e SLA na tela do H1, `humano.md` §2.2), e duas linhas
+mudaram no lugar, sem deslocar nenhuma (a chamada a `_tela_do_h1` em `_pendencia_do_chamado` e o
+motivo do analista passado por `gravar` ao texto da fila humana). O arquivo tem 1.130 linhas, e as
+linhas citadas continuam no lugar. Nada disso é frente do framework, e não entrou na contagem.
 
 | Frente | O que o LangGraph deu | O que continuou sendo código nosso | Linhas |
 |---|---|---|---|
@@ -446,6 +452,15 @@ superpasso, não medida. Duas defesas a mais: o teste
 `test_processo_morto_de_verdade_fica_em_gravar_e_e_recuperado` repete a queda em três processos e
 falha com `"async"`; e a recuperação não conclui um checkpoint que diz que acabou sem término nem
 desfecho (`test_checkpoint_que_diz_que_acabou_sem_desfecho_nao_e_concluido`).
+
+**As versões das dependências transitivas (17/10/2026).** Declarar o parâmetro no código só
+protege se a biblioteca que o interpreta também estiver fixada. Até esta data o
+`requirements.txt` fixava só as cinco dependências diretas, e um `pip install` novo podia trazer
+outro `langchain-core` ou outro `langgraph-checkpoint` (que serializa o checkpoint) sem nenhuma
+linha do projeto mudar. Agora ele fixa os 44 pacotes da árvore das cinco diretas, tirados do
+`pip freeze` da `.venv` e conferidos contra essa árvore (nenhum pacote a mais). Uma venv nova,
+instalada só pelo arquivo, deu o mesmo `pip freeze` da `.venv` em 43 segundos, e os 176 testes
+offline passaram nela. Não foi medido em outro sistema operacional além do Windows.
 
 ## 6. O que foi medido
 
@@ -784,7 +799,9 @@ As rodadas do §6.8 trazem o commit `6116341 + alterações locais`: rodaram com
 estava commitado, e o commit seguinte mudou `src/`. Não dá para reproduzir exatamente o código que
 as gerou. Estas três são a medição de referência do sistema, refeitas sobre o commit `77757ea`,
 com `src/` e `dados/` limpos (o carimbo de todos os 132 logs é `77757ea`, sem marca),
-`ministral-8b-latest`, `temperature=0`, os prompts em uso e aprovação automática:
+`ministral-8b-2512` (a versão datada, registrada no campo `modelo` dos 132 logs; as rodadas
+anteriores registram o alias `ministral-8b-latest`), `temperature=0`, os prompts em uso e
+aprovação automática:
 
 | Pasta | Horário | Verificador | Chamadas | Tokens de chat | Tokens de embedding | `custo_usd` (chat + embedding) |
 |---|---|---|---|---|---|---|
