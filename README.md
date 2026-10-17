@@ -14,7 +14,7 @@ Histórico da Parte 1 (o laço sem framework): [`docs/arquitetura-v2.md`](docs/a
 
 ## Como rodar
 
-Requisitos: Python 3.10+ e uma chave de API de um provedor compatível com a biblioteca `openai` (usamos a Mistral, como nos laboratórios).
+Requisitos: Python 3.10+, Git e uma chave de API de um provedor compatível com a biblioteca `openai` (usamos a Mistral, como nos laboratórios).
 
 ```bash
 git clone https://github.com/PacheRoceti/trabalho-agentes-ia.git
@@ -33,13 +33,17 @@ Confira a instalação **sem gastar nada e sem chave** (testes offline, com mode
 python -m unittest discover -s tests
 ```
 
-Rode os casos de demonstração (usa a API):
+Rode os 44 casos do gabarito pelo grafo, com o verificador (usa a API). O `--rodada` manda os logs para uma pasta sua, `logs/minha-rodada/`:
 
 ```bash
-python src/main.py --todos --auto-aprovar
+python src/main.py --todos --auto-aprovar --rodada minha-rodada
 ```
 
 O banco de dados simulado (`dados/tickets.db`, SQLite) é criado sozinho a partir de `dados/seed.sql`; não há nada para instalar além do `pip install`.
+
+**Testado do zero em 17/10/2026**, num clone limpo do commit `4cd1b52`, no Windows, com Python 3.14 e Git Bash, numa venv nova (só com o `pip`) e com o cache do `pip` desligado (`pip install --no-cache-dir -r requirements.txt`): os 44 pacotes vieram do PyPI, e os passos acima até o `pip install` levaram 36 segundos. Os 176 testes offline passaram em 76 segundos, sem alterar nenhum arquivo versionado, e um chamado real (`TKT-0001`, com `--rodada`) terminou em `anotacao_interna`. Python e Git já estavam instalados, e são os dois requisitos. No mesmo clone, com o `.env` preenchido, rodaram todos os comandos de [Como usar](#como-usar), cada um com o seu `--rodada`; o `--todos` deu 40 de 44 em 247 segundos, com as mesmas quatro falhas das rodadas de referência ([`docs/grafo.md`](docs/grafo.md) §6.9), e o `git status` do clone mostrou só as pastas novas de `logs/`. Essa rodada ficou no clone e não é medição registrada.
+
+> **Não sobrescreva os logs versionados.** O que está em `logs/` é a evidência citada neste README e em `docs/` (com data, modelo e commit). Por isso **todo comando deste README que executa um chamado leva `--rodada NOME`**, e os logs vão para `logs/NOME/`. Escolha um nome que **ainda não exista** em `logs/` (por exemplo `teste-` + a data): um nome repetido, como `grafo-44-1`, sobrescreve a rodada que já está lá. Sem `--rodada`, o grafo grava em `logs/grafo/`, e o laço (`--laco`) em `logs/TKT-*.json` e `logs/saida-demonstracao.txt`, que são logs versionados. `--aprovar` e `--rejeitar` não precisam de `--rodada`: a retomada grava na pasta da execução que pausou.
 
 ## Como usar
 
@@ -47,25 +51,36 @@ O banco de dados simulado (`dados/tickets.db`, SQLite) é criado sozinho a parti
 
 **O que você digita.**
 
+Todos pelo grafo, que é o caminho padrão do `main.py`: não é preciso nenhuma opção para escolhê-lo.
+
 ```bash
-python src/main.py TKT-0001 "O certificado SSL do meu site venceu ontem e a renovação automática não rodou."
-python src/main.py TKT-0003                 # sem o texto: o programa pede que você o digite
-python src/main.py TKT-0003 --auto-aprovar  # não espera a confirmação antes de abrir chamado interno (só para demonstração)
+# um chamado, com o texto digitado (usa a API); log em logs/minha-rodada/
+python src/main.py TKT-0001 "O certificado SSL do meu site venceu ontem e a renovação automática não rodou." --rodada minha-rodada
+python src/main.py TKT-0003 --rodada minha-rodada                 # sem o texto: o programa pede que você o digite
+python src/main.py TKT-0003 --auto-aprovar --rodada minha-rodada  # não espera a confirmação antes de abrir chamado interno (só para demonstração)
+
+# o analista responde, de outro terminal (a retomada grava na pasta da execução que pausou)
 python src/main.py --pendencias             # as ações que aguardam o analista, e quanto tempo falta
-python src/main.py --aprovar TKT-0003       # o analista aprova: o chamado interno é aberto e a execução conclui
+python src/main.py --aprovar TKT-0003       # aprova: o chamado interno é aberto e a execução conclui
 python src/main.py --aprovar TKT-0003 --resumo "texto corrigido"   # aprova EDITANDO: abre o chamado com o resumo do analista
-python src/main.py --rejeitar TKT-0003      # o analista rejeita: o chamado interno não é aberto, e o chamado vai para a fila humana
+python src/main.py --aprovar TKT-0003 --editar                     # aprova EDITANDO num editor, partindo do resumo do modelo
+python src/main.py --rejeitar TKT-0003 --motivo guia_errado        # rejeita: o chamado não é aberto e vai para a fila humana (--motivo é opcional)
 python src/main.py --aprovar TKT-0005 --mensagem "texto corrigido" # pedido ao cliente: aprova EDITANDO a mensagem (sem informação interna)
-python src/main.py --todos --auto-aprovar   # os 44 casos do gabarito, cada um a partir do banco zerado, com verificador (sobrescreve logs/grafo/: para experimentar, acrescente --rodada NOME)
-python src/main.py --reset                  # recria o banco simulado
-python src/main.py TKT-0001 --laco          # o mesmo chamado pelo laço da Parte 1, e não pelo grafo; logs em logs/
-python conferir_grafo.py                    # imprime os nós, as arestas e os campos do grafo compilado (sem chave)
-python demonstrar_reducer.py                # o que o grafo faz com um campo SEM reducer (sem chave); docs/grafo.md §3.2
-python demonstrar_reducer.py --real         # o mesmo, com o modelo de verdade (usa a API)
-python conferir_regras.py logs/grafo-regras-v2-1   # confere a regra aprendida do redigir nos logs de uma rodada (sem chave)
+python src/main.py --avisos                 # os avisos ao gestor (prazo vencido de um P1); só lê
+
+# os 44 casos do gabarito, cada um a partir do banco zerado, com verificador (usa a API)
+python src/main.py --todos --auto-aprovar --rodada minha-rodada
+
+# sem chave e sem API
+python src/main.py --reset                  # recria o banco simulado (não toca em logs/)
+python conferir_grafo.py                    # imprime os nós, as arestas e os campos do grafo compilado
+python conferir_regras.py logs/grafo-regras-v2-1   # confere a regra aprendida do redigir nos logs de uma rodada (só lê)
+python src/ver_log.py logs/grafo-44-1/TKT-0003.json   # a trajetória legível de um log (só lê)
 ```
 
-**Dois caminhos.** O padrão é o grafo em LangGraph (`src/grafo.py`): o modelo classifica e redige, e o código decide o desfecho. Os logs dele vão para `logs/grafo/`. Com `--laco`, o chamado passa pelo laço da Parte 1 (`src/agente.py`), que grava em `logs/`; `--prompt ARQUIVO` escolhe um prompt do laço e já implica `--laco`. A entrada, a saída validada, o verificador e os comandos `--pendencias`, `--aprovar` e `--rejeitar` são os mesmos nos dois.
+O `demonstrar_reducer.py` (o grafo com um campo **sem** reducer, [`docs/grafo.md`](docs/grafo.md) §3.2) não está na lista porque **regrava** `logs/grafo-reducer/saida-terminal.txt` (com `--real`, `saida-terminal-real.txt`) e não aceita `--rodada`: a saída dele já está nesses dois arquivos.
+
+**O grafo é o sistema.** O caminho do `main.py` é o grafo em LangGraph (`src/grafo.py`): o modelo classifica e redige, e o código decide o desfecho. O laço da Parte 1 (`src/agente.py`) continua no repositório como histórico e só roda com `--laco` (`--prompt ARQUIVO` escolhe um prompt do laço e já implica `--laco`); se for rodá-lo, use também `--rodada`: `python src/main.py TKT-0001 --laco --rodada minha-rodada-laco`. A entrada, a saída validada, o verificador e os comandos `--pendencias`, `--aprovar` e `--rejeitar` valem para os dois; aprovar editando e o pedido ao cliente esperando o analista existem só no grafo.
 
 **O que foi medido no grafo:** 8 de 8 casos no verificador em três execuções (10/10/2026; `logs/grafo/`, `logs/grafo-rodada-2/`, `logs/grafo-rodada-3/`), cada uma com 15 chamadas ao modelo e cerca de 12,6 mil tokens nos 8 casos. O laço, na rodada 3 do `agente-v5.md`, deu 7 de 8, com 31 chamadas e 69.889 tokens ([`docs/grafo.md`](docs/grafo.md) §6). Essas três rodadas são anteriores à busca vetorial e ao nó da ressalva. Com os dois, a rodada de 11/10/2026 deu 8 de 8, com 17 chamadas e 14.440 tokens (`logs/grafo-fatos/`). Com o código e os prompts de 12/10/2026 (o pedido ao cliente esperando o analista, em texto padrão, e o `redigir-v3.md`), três rodadas deram 8 de 8, com 16 chamadas e cerca de 13,2 mil tokens cada (`logs/grafo-redigir-v3-1/` a `-3/`; [`docs/grafo.md`](docs/grafo.md) §6.5). Ainda em 12/10/2026 o gabarito passou de 8 para 40 casos, os 32 novos rotulados antes de rodar: três rodadas deram **36 de 40**, com 89 chamadas e cerca de 76 mil tokens cada (`logs/grafo-40-1/` a `-3/`). As quatro falhas são as mesmas nas três e foram todas para a fila humana; nenhum chamado interno foi aberto indevidamente ([`docs/grafo.md`](docs/grafo.md) §6.6). Em 13/10/2026 o gabarito ganhou quatro casos, escritos para o teste da regra da frase no prompt da triagem ([`docs/prompts.md`](docs/prompts.md) §3.7): com os prompts em uso, três rodadas dos 44 casos deram **40 de 44**, os 36 de antes mais os quatro novos (`logs/regra-da-frase/triagem-v1-1/` a `-3/`; [`docs/grafo.md`](docs/grafo.md) §6.8). As rodadas de referência, refeitas em 17/10/2026 sobre o commit `77757ea` sem alterações locais, deram o mesmo 40 de 44 (`logs/grafo-44-1/` a `-3/`, [`docs/grafo.md`](docs/grafo.md) §6.9). A frase testada voltou: sem ela, um dos casos novos foi à fila humana em duas de três rodadas. Uma primeira passagem do teste, nos 40 casos, tinha concluído que a frase saía (`logs/regra-da-frase/triagem-v1-a` e `-b`, `triagem-v1-sem-frase-a` e `-b`, e `logs/grafo-triagem-v2-1/` a `-3/`); os casos novos desfizeram a conclusão. **O exemplo abaixo e os de `docs/io.md` são do grafo**, copiados de `logs/grafo-40-1/` (12/10/2026, commit `4aa9818`).
 
@@ -130,9 +145,10 @@ pelo grafo: execução de `2026-10-12T17:37:33-03:00`, com `ministral-8b-latest`
 O log completo está em `logs/grafo-40-1/TKT-0001.json`; os outros exemplos (recusa, fora do escopo,
 entrada incompleta, entrada ambígua e pergunta fora do corpus) estão no `docs/io.md` §3.
 
-O que a pessoa digita: `python src/main.py TKT-0001 "texto do chamado"`. Esta execução veio da
-rodada `python src/main.py --todos --auto-aprovar --rodada grafo-40-1`, que usa o texto registrado
-no banco para o chamado. Entrada (o campo `entrada` do log):
+O que a pessoa digita: `python src/main.py TKT-0001 "texto do chamado" --rodada minha-rodada`.
+Esta execução veio da rodada versionada `grafo-40-1` (um `--todos --auto-aprovar`), que usa o
+texto registrado no banco para o chamado. Para repeti-la, use um nome de rodada novo: repetir
+`grafo-40-1` sobrescreveria o log citado aqui. Entrada (o campo `entrada` do log):
 
 ```
 O certificado SSL do meu site venceu ontem e a renovação automática não rodou. O navegador mostra aviso de site não seguro para os meus clientes.
@@ -207,9 +223,10 @@ no mesmo dia, e não de uma rodada só:
 | `TKT-0007.json` | 21:22:39 | `2ffb2b5 + alterações locais` | `abrir_chamado_interno` (KB-102, score 0,89, P2) | OK |
 | `TKT-0999.json` | 21:22:46 | `2ffb2b5 + alterações locais` | `fila_humana` (id inexistente; 1 lembrete) | OK |
 
-Os três das 21h22 foram refeitos um a um (`python src/main.py TKT-0003 --reset --auto-aprovar`, e o
-mesmo para os outros dois): os anteriores eram do `agente-v3.md`, sem data, sem commit e sem o
-campo `saida`, e os do `TKT-0003` e do `TKT-0007` ainda tinham o texto antigo do chamado.
+Os três das 21h22 foram refeitos um a um, pelo laço, com `--reset --auto-aprovar` e sem `--rodada`
+(por isso foram gravados direto em `logs/`; não repita, porque isso regravaria estes logs): os
+anteriores eram do `agente-v3.md`, sem data, sem commit e sem o campo `saida`, e os do `TKT-0003`
+e do `TKT-0007` ainda tinham o texto antigo do chamado.
 
 **Estes oito logs não têm saída de terminal**, porque vieram de execuções avulsas, e não de um
 `--todos`. A saída de terminal que ficava ao lado deles, `logs/saida-demonstracao.txt`, era da
@@ -237,7 +254,7 @@ src/         grafo.py (o grafo em LangGraph: o caminho padrão) · vetorial.py (
              verificar.py · main.py · medir_rag.py (as medições de docs/rag.md) · comparar_modelos.py
              (item 3.3 da Parte 1) · ver_log.py · testar_api.py
 conferir_grafo.py   imprime o grafo compilado, para conferir com o desenho (docs/arquitetura.md §9)
-demonstrar_reducer.py   roda o grafo com e sem reducer (docs/grafo.md §3.2); grava logs/grafo-reducer/
+demonstrar_reducer.py   roda o grafo com e sem reducer (docs/grafo.md §3.2); REGRAVA logs/grafo-reducer/
 conferir_regras.py   lê os logs de uma rodada e confere a regra aprendida do redigir (docs/memoria.md §5.1)
 src/vigiar_prazos.py   o vigia do prazo: aplica os 20 minutos do analista sem ninguém rodar comando (docs/humano.md §4.1)
 simular_queda.py   mata o processo no meio de uma retomada, para mostrar a recuperação (docs/humano.md §4.3)
