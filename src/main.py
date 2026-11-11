@@ -407,17 +407,7 @@ def main():
         sys.exit("--todos recria o banco a cada caso, e uma ação pendente se perderia: "
                  "use --todos --auto-aprovar.")
 
-    for var in ("LLM_BASE_URL", "OPENAI_API_KEY", "LLM_MODELO"):
-        if not os.environ.get(var):
-            sys.exit(f"Falta a variável {var}. Copie .env.example para .env e preencha.")
-    client = criar_cliente()
-    modelo = os.environ["LLM_MODELO"]
-    # .env em branco vale como ausente; padrão = ministral-8b-latest (US$ por milhão de tokens)
-    precos = (float(os.environ.get("PRECO_ENTRADA_USD") or "0.15"),
-              float(os.environ.get("PRECO_SAIDA_USD") or "0.15"))
-    if os.environ.get("PRECO_EMBEDDING_USD"):    # a busca vetorial do grafo; padrão em vetorial.py
-        import vetorial
-        vetorial.PRECO_USD_POR_MTOK = float(os.environ["PRECO_EMBEDDING_USD"])
+    client, modelo, precos = preparar_api()
     # Sem --auto-aprovar não há confirmador: a ação irreversível fica pendente, com prazo.
     confirmador = confirmador_auto if args.auto_aprovar else None
     if args.grafo and (args.laco or args.prompt):
@@ -541,6 +531,24 @@ def main():
         executar(args.ticket, client, modelo, precos, confirmador, con, log_dir, prompt_arquivo, texto,
                  args.prazo_confirmacao, grafo=usar_grafo)
         con.close()
+
+
+# No fim do arquivo para não deslocar as linhas citadas em exercicios/aula14-respostas.md.
+def preparar_api():
+    """O cliente da API, o modelo e os preços, lidos do .env (já carregado). É o mesmo preparo
+    para o main e para a suíte de avaliação (evals/rodar.py), que roda o sistema por aqui."""
+    for var in ("LLM_BASE_URL", "OPENAI_API_KEY", "LLM_MODELO"):
+        if not os.environ.get(var):
+            sys.exit(f"Falta a variável {var}. Copie .env.example para .env e preencha.")
+    client = criar_cliente()
+    modelo = os.environ["LLM_MODELO"]
+    # .env em branco vale como ausente; padrão = ministral-8b-latest (US$ por milhão de tokens)
+    precos = (float(os.environ.get("PRECO_ENTRADA_USD") or "0.15"),
+              float(os.environ.get("PRECO_SAIDA_USD") or "0.15"))
+    if os.environ.get("PRECO_EMBEDDING_USD"):    # a busca vetorial do grafo; padrão em vetorial.py
+        import vetorial
+        vetorial.PRECO_USD_POR_MTOK = float(os.environ["PRECO_EMBEDDING_USD"])
+    return client, modelo, precos
 
 
 if __name__ == "__main__":

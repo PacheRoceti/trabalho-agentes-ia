@@ -245,6 +245,19 @@ gravar `logs/saida-demonstracao.txt` e regravaria os oito logs acima. As rodadas
 
 **Quando ele não sabe.** Não chuta: o score da base abaixo de 0,5, um id inexistente ou um relato que contradiz o log anexado terminam em `fila_humana`, com uma mensagem que diz o que foi encontrado e por que um humano deve olhar.
 
+## Como rodar a suíte de avaliação
+
+A suíte roda os 44 casos do golden dataset ([`evals/dataset/v1.0.0.json`](evals/dataset/v1.0.0.json)) sobre o sistema entregue, pelo mesmo `main.executar` do `--todos`, três vezes cada, e confere cada execução em três níveis: o objeto de saída, a trajetória do log e o que ficou gravado no banco ([`docs/evals.md`](docs/evals.md)).
+
+```bash
+python -m evals.rodar --versao 1.0.0          # usa a API: 132 execuções, uns 12 a 15 min; grava evals/resultados/v1.0.0-<data e hora>/
+python -m evals.comparar evals/resultados/<rodada-A> evals/resultados/<rodada-B>   # compara duas rodadas, por classe (só lê)
+python -m evals.comparar evals/resultados/<rodada>                                 # mostra uma rodada
+python -m unittest tests.test_evals           # os testes da suíte, sem chave
+```
+
+Rode da raiz do repositório. Uma rodada que já existe não é sobrescrita (`--nome` escolhe outro nome), e a suíte recria `dados/tickets.db`, como o `--todos`. O número de cada classe é o pass^3: a fração dos casos que passaram nas três repetições.
+
 ## Estrutura
 
 ```
@@ -269,9 +282,11 @@ src/prompts/ no grafo, em uso: triagem-v1.md · ressalva-v3.md · redigir-v3.md 
              agente-v1.md a agente-v4.md (histórico) · agente-v5-sem-frase.md (variante do teste da regra da frase,
              docs/prompts.md §3) · agente-v4-com-frase.md e agente-v4-sem-frase.md (testes anteriores, §3.6)
 dados/       seed.sql · gabarito.json · README.md (casos difíceis nomeados)
-tests/       testes offline (sem chave): test_grafo.py (o grafo) · test_offline.py (o laço) · test_vetorial.py (a busca vetorial) · test_vigia.py (o vigia do prazo) · test_recuperacao.py (a recuperação depois de uma queda)
+evals/       a suíte de avaliação (docs/evals.md): dataset/ (o golden dataset, versionado) · rodar.py ·
+             comparar.py · checagens.py (as propriedades conferidas) · resultados/ (uma pasta por rodada)
+tests/       testes offline (sem chave): test_grafo.py (o grafo) · test_offline.py (o laço) · test_vetorial.py (a busca vetorial) · test_vigia.py (o vigia do prazo) · test_recuperacao.py (a recuperação depois de uma queda) · test_evals.py (a suíte)
 docs/        case.md · io.md · prompts.md · arquitetura.md · grafo.md · rag.md · memoria.md · humano.md
-             modelos.md · modelos-tabela-3.3.md · base-de-conhecimento-v2.md · fontes.md
+             modelos.md · modelos-tabela-3.3.md · base-de-conhecimento-v2.md · fontes.md · evals.md
              arquitetura-v2.md (histórico da Parte 1)
 logs/        trajetória de cada execução demonstrada (JSON); logs/grafo*/ são do grafo, logs/TKT-*.json e
              logs/rodada-*/ do laço, logs/rag-medicao/ das medições da busca
