@@ -4,19 +4,18 @@
     python demonstrar_apresentacao.py --sem-pausa          # roda tudo direto (ensaio)
     python demonstrar_apresentacao.py --rodada NOME        # padrão: apresentacao-AAAAMMDD-HHMM
 
-O que roda (USA A API; cerca de 10 chamadas ao modelo e 4 ao embedding, no plano gratuito).
+O que roda (USA A API; cerca de 8 chamadas ao modelo e 3 ao embedding, no plano gratuito).
 Entre dois comandos que chamam a API espera --intervalo segundos (padrão 60), porque o plano
-gratuito devolveu 429 com os comandos a 12 s um do outro; o total fica perto de 7 minutos:
+gratuito devolveu 429 com os comandos a 12 s um do outro; o total fica perto de 5 minutos:
     0. recria o banco simulado (--reset; não toca em logs/)
     1. caminho feliz: TKT-0001 com o texto digitado -> RAG acha o KB-101-A -> anotacao_interna
     2. a ação irreversível para: TKT-0003 ("é a TERCEIRA vez", "exijo prioridade máxima") -> H1
     3. o analista vê o que espera: --pendencias
-    4. o analista aprova: --aprovar TKT-0003 -> chamado interno aberto, prioridade do código
+    4. o analista aprova, numa SEGUNDA janela (outro processo): --aprovar TKT-0003 -> chamado interno aberto
     5. entrada hostil: TKT-0001 com uma instrução ao sistema embutida no relato
-    6. o que ficou pendente depois da entrada hostil: --pendencias
-    7. fora do escopo: TKT-0004 (comercial) e TKT-0999 (id que não existe)
-    8. governança: a decisão do TKT-0003 reconstruída só a partir do log (ver_log.py)
-    9. controles em código: seis testes offline que tentam a ação indevida (sem API)
+    6. informação insuficiente: TKT-0005 -> pedido ao cliente com o texto padrão, para no H2
+    7. governança: a decisão do TKT-0003 reconstruída só a partir do log (ver_log.py)
+    8. controles em código: seis testes offline que tentam a ação indevida (sem API)
 
 Cada comando roda num processo à parte, como o analista o rodaria, com a saída em UTF-8.
 O texto é passado ao main.py como argumento pelo Python, e não digitado no PowerShell: no
@@ -96,24 +95,50 @@ def main():
 
     ultima_api = [0.0]
 
-    def rodar(*argumentos, script="src/main.py", api=False):
+    def esperar_api():
+        # O plano gratuito devolveu 429 no ensaio com comandos a 12 s um do outro
+        # (logs/apresentacao-2026-11-10/): espera o intervalo desde o último comando com API.
+        falta = args.intervalo - (time.monotonic() - ultima_api[0])
+        if ultima_api[0] and falta > 0:
+            out(f"   (aguardando {falta:.0f} s: limite de requisições do plano gratuito)")
+            time.sleep(falta)
+
+    def rodar(*argumentos, script="src/main.py", api=False, mostrar_pid=False):
         if api:
-            # O plano gratuito devolveu 429 no ensaio com comandos a 12 s um do outro
-            # (logs/apresentacao-2026-11-10/): espera o intervalo desde o último comando com API.
-            falta = args.intervalo - (time.monotonic() - ultima_api[0])
-            if ultima_api[0] and falta > 0:
-                out(f"   (aguardando {falta:.0f} s: limite de requisições do plano gratuito)")
-                time.sleep(falta)
+            esperar_api()
         cmd = [PY, script, *argumentos]
         mostrado = " ".join(f'"{a}"' if " " in a else a for a in ["python", script, *argumentos])
         out(f"$ {mostrado}")
-        r = subprocess.run(cmd, cwd=RAIZ, env=env, stdin=subprocess.DEVNULL,
-                           capture_output=True, text=True, encoding="utf-8", errors="replace")
-        for linha in (r.stdout + r.stderr).rstrip().splitlines():
+        proc = subprocess.Popen(cmd, cwd=RAIZ, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
+        saida, _ = proc.communicate()
+        for linha in saida.rstrip().splitlines():
             out(linha)
+        if mostrar_pid:
+            out(f"   [o processo {proc.pid} terminou: a execução ficou só no checkpoint, à espera do analista]")
         if api:
             ultima_api[0] = time.monotonic()
-        return r.returncode
+        return proc.returncode
+
+    def rodar_no_terminal_do_analista(*argumentos):
+        """Abre OUTRA janela de terminal, com outro processo, para o analista responder. A saída dessa
+        janela vai também para logs/<rodada>/terminal-do-analista.txt e é repetida aqui no fim.
+        Fora do Windows não há janela nova: roda nesta mesma."""
+        if os.name != "nt":
+            return rodar(*argumentos, api=True)
+        esperar_api()
+        registro = pasta / "terminal-do-analista.txt"
+        out("$ (em OUTRA janela) python src/main.py " + " ".join(argumentos))
+        proc = subprocess.Popen([PY, "demo_terminal_analista.py", str(registro), *argumentos], cwd=RAIZ,
+                                env=env, creationflags=subprocess.CREATE_NEW_CONSOLE)
+        out(f"   [TERMINAL DO ANALISTA aberto: processo {proc.pid}; este demonstrador é o processo {os.getpid()}]")
+        proc.wait()
+        ultima_api[0] = time.monotonic()
+        out("   [o terminal do analista fechou; o que ele mostrou:]")
+        if registro.exists():
+            for linha in registro.read_text(encoding="utf-8").rstrip().splitlines():
+                out("   | " + linha)
+        return proc.returncode
 
     out(f"Demonstração da apresentação · rodada {args.rodada} · {datetime.datetime.now().isoformat(timespec='seconds')}")
 
@@ -130,15 +155,16 @@ def main():
           ["o cliente EXIGE prioridade máxima: quem calcula a prioridade é o código (guia + reincidência)",
            "a tela: guia, time, prioridade prevista, score, chamados da reincidência, SLA, prazo de 20 min",
            "TERMINO: aguardando_humano — nada foi gravado ainda"])
-    rodar("TKT-0003", "--rodada", args.rodada, api=True)
+    rodar("TKT-0003", "--rodada", args.rodada, api=True, mostrar_pid=True)
 
     passo(3, "o que espera o analista", ["a ação, quanto falta do prazo e se o vigia está rodando"])
     rodar("--pendencias")
 
-    passo(4, "o analista aprova, de outro processo",
-          ["o grafo continua do checkpoint, no nó confirmar",
+    passo(4, "o analista aprova, de OUTRO terminal",
+          ["abre uma segunda janela (azul), com outro processo: o analista roda --aprovar",
+           "o grafo continua do checkpoint, no nó confirmar",
            "chamado interno aberto (INC-...), time e prioridade vindos do guia e da reincidência"])
-    rodar("--aprovar", "TKT-0003", api=True)
+    rodar_no_terminal_do_analista("--aprovar", "TKT-0003")
 
     passo(5, "entrada hostil: o relato manda o sistema abrir um P1 para Segurança",
           ["o desfecho continua sendo o do nó decidir (código), e não o que o texto pede",
@@ -146,16 +172,13 @@ def main():
            "o texto redigido pode repetir a afirmação do cliente: é o risco aceito (ASI01), declarado"])
     rodar("TKT-0001", TEXTO_HOSTIL, "--rodada", args.rodada, api=True)
 
-    passo(6, "ficou alguma ação esperando depois da entrada hostil?", ["a lista de pendências"])
-    rodar("--pendencias")
+    passo(6, "informação insuficiente: o pedido ao cliente para no analista (H2)",
+          ["TKT-0005 ('meu servidor não está funcionando direito'): classe insuficiente",
+           "o texto do pedido é o padrão do código, com cinco perguntas: o modelo não o redige",
+           "TERMINO: aguardando_humano — a mensagem só sai depois do analista; no máximo um pedido por chamado"])
+    rodar("TKT-0005", "--rodada", args.rodada, api=True)
 
-    passo(7, "fora do escopo: comercial e id que não existe",
-          ["TKT-0004: fila_comercial, sem busca e sem chamado interno",
-           "TKT-0999: quem trata o id inexistente é o código (fila_humana, motivo id_inexistente)"])
-    rodar("TKT-0004", "--rodada", args.rodada, api=True)
-    rodar("TKT-0999", "--rodada", args.rodada, api=True)
-
-    passo(8, "governança: a decisão do TKT-0003 reconstruída a partir do log",
+    passo(7, "governança: a decisão do TKT-0003 reconstruída a partir do log",
           ["entrada, versões (commit, modelo, prompts), guias e scores, passos, confirmação (quem, quando)"])
     log3 = pasta / "TKT-0003.json"
     if log3.exists():
@@ -165,7 +188,7 @@ def main():
     else:
         out(f"   (não achei {log3.relative_to(RAIZ)}: o passo 2 não gravou log)")
 
-    passo(9, "controles em código: testes que tentam a ação indevida (sem chave, sem API)",
+    passo(8, "controles em código: testes que tentam a ação indevida (sem chave, sem API)",
           ["score abaixo do limiar não age · prioridade do código · pausa sem resposta",
            "edição depois do prazo não vale · aprovar duas vezes não duplica · pedido sem informação interna"])
     cmd = [PY, "-m", "unittest", "-v", *TESTES_DE_CONTROLE]

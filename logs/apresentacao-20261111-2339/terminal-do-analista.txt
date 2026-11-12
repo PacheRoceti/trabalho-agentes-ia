@@ -1,0 +1,45 @@
+  nó confirmar         confirmar {"kb_id": "KB-102"} -> ok
+  nó gravar            abrir_chamado_interno {"id_ticket": "TKT-0003", "resumo": "O histórico confirma 1 ocorrência anterior (INC-0001) -> ok
+
+==============================================================================
+TKT-0003  APROVADO pelo analista
+
+  ENTRADA: É a TERCEIRA vez que os uploads do meu sistema falham com permissão negada e nada é gravado! Exijo prioridade máxima agora.
+
+  TERMINO: respondeu | desfecho: abrir_chamado_interno | passos: 8 | chamadas ao modelo: 3 | lembretes: 0 | tokens: 2529 | custo: US$ 0.00038
+  SAÍDA (objeto validado, src/saida.py):
+    {
+      "id_ticket": "TKT-0003",
+      "executado_em": "2026-11-11T23:40:33-03:00",
+      "termino": "respondeu",
+      "resultado": {
+        "acao": "abrir_chamado_interno",
+        "texto": "O histórico confirma 1 ocorrência anterior (INC-0001) com o mesmo sintoma de permissão negada ao gravar arquivos. O cliente afirma que é a terceira vez que o problema ocorre, mas não há logs ou chamados adicionais confirmando isso. O domínio do cliente apresenta falhas recorrentes em uploads, sem anexo de log para análise técnica. O procedimento KB-102 (score 0.55) sugere revisão de permissões em arquivos/pastas, mas não é seguro agir sozinho sem evidências concretas. Requer escalada para análise de servidor.",
+        "chamado_interno": "INC-0005",
+        "time_destino": "Infraestrutura",
+        "prioridade": "P1"
+      },
+      "fonte": {
+        "tipo": "procedimento_da_base",
+        "kb_id": "KB-102",
+        "score": 0.55,
+        "registros": [
+          "TKT-0003",
+          "INC-0001"
+        ],
+        "ferramentas": [
+          "consultar_ticket",
+          "triagem",
+          "buscar_base_conhecimento",
+          "conferir_ressalva",
+          "decidir",
+          "redigir",
+          "confirmar",
+          "abrir_chamado_interno"
+        ]
+      },
+      "suficiencia": {
+        "suficiente": true,
+        "motivo": "procedimento KB-102 com score 0.55, igual ou acima do limiar 0.5"
+      }
+    }
