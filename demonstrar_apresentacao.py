@@ -115,10 +115,13 @@ def main():
         for linha in saida.rstrip().splitlines():
             out(linha)
         if mostrar_pid:
-            out(f"   [o processo {proc.pid} terminou: a execução ficou só no checkpoint, à espera do analista]")
+            if "TERMINO: aguardando_humano" in saida:
+                out(f"   [o processo {proc.pid} terminou: a execução ficou só no checkpoint, à espera do analista]")
+            else:
+                out(f"   [o processo {proc.pid} terminou]")
         if api:
             ultima_api[0] = time.monotonic()
-        return proc.returncode
+        return saida
 
     def rodar_no_terminal_do_analista(*argumentos):
         """Abre OUTRA janela de terminal, com outro processo, para o analista responder. A saída dessa
@@ -155,7 +158,17 @@ def main():
           ["o cliente EXIGE prioridade máxima: quem calcula a prioridade é o código (guia + reincidência)",
            "a tela: guia, time, prioridade prevista, score, chamados da reincidência, SLA, prazo de 20 min",
            "TERMINO: aguardando_humano — nada foi gravado ainda"])
-    rodar("TKT-0003", "--rodada", args.rodada, api=True, mostrar_pid=True)
+    saida_h1 = rodar("TKT-0003", "--rodada", args.rodada, api=True, mostrar_pid=True)
+    if "TERMINO: aguardando_humano" not in saida_h1:
+        # Sem a pausa no H1, o passo 4 não tem o que aprovar e o vídeo perde o sentido: para aqui,
+        # sem gastar mais requisições. O motivo (ex.: 429 do plano gratuito) está na saída acima.
+        out()
+        out("!" * 100)
+        out("O PASSO 2 NÃO PAROU NO H1 (veja o TERMINO e o motivo acima), então não há o que aprovar no passo 4.")
+        out("Demonstração interrompida. Se o motivo foi 429 (limite da API), espere alguns minutos e rode de novo;")
+        out("se repetir, aumente o intervalo: python demonstrar_apresentacao.py --intervalo 90")
+        out("!" * 100)
+        sys.exit(1)
 
     passo(3, "o que espera o analista", ["a ação, quanto falta do prazo e se o vigia está rodando"])
     rodar("--pendencias")
