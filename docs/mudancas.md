@@ -5,7 +5,19 @@
 > de cada trace; o commit vai ao log e ao trace de cada execução.
 
 **A base.** A entrega da Parte 2 é tomada aqui como o commit `8cac30b` (17/10/2026), o último antes
-do primeiro trabalho da Parte 3 (o exercício da aula 14, em 23/10/2026). **A confirmar pelo grupo.**
+do primeiro trabalho da Parte 3 (o exercício da aula 14, em 23/10/2026).
+
+**Conferido em 21/11/2026 contra a devolutiva da Parte 2.** A devolutiva não cita o commit que
+corrigiu, mas cita coisas que só existem a partir do `4cd1b52`, o penúltimo commit da Parte 2, de
+17/10/2026, que antecede o `8cac30b` no mesmo dia:
+- **Os 176 testes offline.** O `2ec98bc` e o `6b9365f` têm 170; o `4cd1b52` e o `8cac30b` têm 176.
+- **O `requirements.txt` com as dependências diretas e as transitivas fixadas.** São 44 pacotes
+  desde o `6b9365f`; antes eram 5.
+
+Entre o `4cd1b52` e o `8cac30b`, só o README mudou. Entre o `8cac30b` e o `67f8691` (23/10), só
+entrou o `exercicios/aula14-respostas.md`. As linhas que a devolutiva cita (por exemplo,
+`src/grafo.py:761` e `docs/io.md:134`) são as mesmas nesses commits. O código corrigido, portanto, é
+o do `8cac30b`.
 
 ## 1. As correções que a Parte 2 apontou
 
