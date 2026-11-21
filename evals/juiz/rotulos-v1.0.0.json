@@ -3,11 +3,11 @@
   "versao_rubrica": "1.0.0",
   "rodada": "v1.0.0-2026-11-20-2129",
   "_leia": "Para cada item: rotulo_humano = SIM se todo passo do texto está na causa ou na solução de algum procedimento, NAO se algum não está (a mesma rubrica do juiz); nota = uma frase dizendo por quê. Preencha rotulado_por e o limiar ANTES de rodar o juiz. Não leia o veredito do juiz antes de rotular: ele ainda não existe quando este arquivo é preenchido.",
-  "rotulado_por": null,
+  "rotulado_por": "Pedro Gustavo de Campos Teixeira Silva",
   "limiar": {
-    "concordancia_minima_pct": null,
-    "max_falsos_sim": null,
-    "declarado_em": null
+    "concordancia_minima_pct": 85,
+    "max_falsos_sim": 1,
+    "declarado_em": "2026-11-21T14:20:11Z"
   },
   "itens": [
     {
@@ -35,8 +35,8 @@
         }
       ],
       "texto": "Conferir configuração do DNS do **domínio do cliente** e liberação da porta 80 no firewall (se aplicável). Executar o comando `certbot renew --dry-run` para verificar se o desafio HTTP-01 é bem-sucedido. Caso o timer do certbot esteja parado, reativá-lo conforme procedimento KB-101-A.",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "SIM",
+      "nota": "Todos os passos estão respaldados pela KB-101-A: conferir o DNS do domínio, verificar a liberação da porta 80, executar certbot renew --dry-run e reativar o timer do certbot caso esteja parado. A menção ao firewall apenas contextualiza a liberação da porta 80"
     },
     {
       "id": "TKT-0003",
@@ -63,8 +63,8 @@
         }
       ],
       "texto": "O histórico confirma 1 ocorrência anterior (INC-0001), mas o cliente afirma que é a terceira vez que os uploads falham com permissão negada no domínio do cliente. O procedimento KB-102 sugere que arquivos ou pastas podem ter dono ou permissões incorretas, comum após restauração ou migração. Não há log anexado para análise detalhada. Requer acesso de administrador ao servidor para correção.",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "SIM",
+      "nota": "O texto apenas descreve o histórico e a possível causa. A exigência de acesso administrativo está expressamente prevista na KB-102."
     },
     {
       "id": "TKT-0007",
@@ -91,8 +91,8 @@
         }
       ],
       "texto": "Resumo para abertura de chamado interno: o domínio do cliente (VPS Pro) apresenta falha no upload de arquivos, com mensagem de permissão negada. O histórico não confirma ocorrências anteriores. O cliente afirma que o site parou de salvar arquivos e solicita ajuda para publicar. Não há log anexado para análise detalhada. Procedimento KB-102 (score 0.73) sugere correção de permissões via `chown/chmod`, mas exige acesso administrativo ao servidor. **Ação necessária:** Verificar permissões em arquivos/pastas da conta e corrigir conforme procedimento.",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "SIM",
+      "nota": "A verificação e correção das permissões com chown/chmod, mediante acesso administrativo, estão previstas na KB-102."
     },
     {
       "id": "TKT-0101",
@@ -119,8 +119,8 @@
         }
       ],
       "texto": "Resumo para escalar: **Erro 502 no site do cliente (domínio do cliente) após deploy às 9h**. O histórico não confirma ocorrências anteriores. O cliente afirma que todas as páginas estão fora do ar desde o deploy. Não há log anexado para análise técnica. Procedimento encontrado (KB-104, score 0.61) sugere falha no processo da aplicação ou configuração do nginx, mas **o caso está fora do escopo do suporte** (aplicação cliente). Aplicar solução apenas se o cliente concordar com a reversão do deploy.",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "SIM",
+      "nota": "A falha no processo da aplicação ou na configuração do nginx está prevista na KB-104. A reversão do deploy condicionada à concordância do cliente também está de acordo com o procedimento."
     },
     {
       "id": "TKT-0102",
@@ -147,8 +147,8 @@
         }
       ],
       "texto": "O domínio do cliente (Gama Cursos Online) apresenta falha de resolução DNS, com o nameserver **ns1** não respondendo desde a madrugada. Não há log anexado para análise técnica. O histórico não confirma ocorrências anteriores. O cliente relata que o domínio parou de abrir. **Score do procedimento (KB-106) é 0.57, abaixo do limiar (0.5), não sendo seguro agir sozinho sem escalar para suporte especializado.**",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "NAO",
+      "nota": "Afirma que o score 0.57 está abaixo do limiar 0.5, mas 0.57 é superior a 0.5. A conclusão de que não é seguro agir sozinho não está respaldada pelo procedimento KB-106."
     },
     {
       "id": "TKT-0103",
@@ -175,8 +175,8 @@
         }
       ],
       "texto": "Problema de permissão negada em uploads para o domínio do cliente (chamado TKT-0103). O cliente relata dificuldade para realizar uploads, mas não há log anexado para análise detalhada. O histórico não confirma ocorrências anteriores. O procedimento **KB-102** sugere que a causa pode ser arquivos ou pastas com dono ou permissões incorretas, comum após restauração, migração ou publicação por outro usuário. **Ação necessária:** Verificar e corrigir permissões (chown/chmod) nos arquivos/pastas da pasta *uploads* do cliente, exigindo acesso de administrador ao servidor. **Escopo:** Cobertura do plano Business (suporte ao ambiente do servidor).",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "NAO",
+      "nota": "Afirma que o plano Business oferece cobertura de suporte ao ambiente do servidor, informação que não consta na KB-102"
     },
     {
       "id": "TKT-0104",
@@ -203,8 +203,8 @@
         }
       ],
       "texto": "Resumo para escalar: o domínio do cliente apresenta erro de conexão recusada com o banco de dados após reinício do servidor (log anexado mostra `ERROR 2003` e `Connection refused` para `db.zeta.com.br`). O histórico não confirma ocorrências anteriores. O cliente afirma que o problema começou após o reinício, mas não há registro de chamado interno anterior. O procedimento **KB-107** (score 0.68) sugere verificar se o serviço do banco está ativo e ajustar o limite de conexões simultâneas.",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "SIM",
+      "nota": "A causa provável de permissões incorretas em arquivos e pastas e a necessidade de acesso administrativo para correção via chown/chmod estão previstas na KB-102"
     },
     {
       "id": "TKT-0107",
@@ -231,8 +231,8 @@
         }
       ],
       "texto": "Resumo para equipe interna: Cliente Iota Transportes (plano VPS Pro) relata **falha persistente em gravar comprovantes de entrega**, com erro de 'permissão negada' na pasta de arquivos. O histórico confirma **1 ocorrência anterior (INC-0003)**, em 10/08/2026, já resolvida. O cliente afirma reincidência e prioridade, mas não há log anexado para análise técnica. **Causa provável**: permissões incorretas em arquivos/pastas (score 0.62 no procedimento KB-102). Exige acesso administrativo ao servidor para correção via *chown/chmod*.",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "SIM",
+      "nota": "A causa provável de permissões incorretas e a necessidade de acesso administrativo para correção via chown/chmod estão previstas na KB-102."
     },
     {
       "id": "TKT-0108",
@@ -259,8 +259,8 @@
         }
       ],
       "texto": "Resumo para equipe interna: domínio da escola (plano Hospedagem Start) apresenta falha de resolução DNS desde as 7h, afetando acesso ao site e aos e-mails. O histórico confirma uma ocorrência anterior resolvida (INC-0004), mas o cliente afirma que o problema persiste. Não há log anexado para análise técnica. Procedimento KB-106 (score 0.63) sugere verificar nameserver e registros DNS do domínio.",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "SIM",
+      "nota": "A verificação do nameserver e dos registros DNS está prevista na KB-106. As demais informações são apenas contexto do chamado"
     },
     {
       "id": "TKT-0109",
@@ -287,8 +287,8 @@
         }
       ],
       "texto": "O cliente Beta Logística (plano VPS Pro) relata que o servidor está com CPU em uso máximo desde a manhã, causando lentidão no sistema de rastreamento para todos os motoristas. O histórico confirma 1 ocorrência anterior (INC-0001), mas não há relação aparente com o problema atual. Não há log anexado para análise. O procedimento **KB-115** (score 0.62) sugere que a causa pode ser um processo da aplicação consumindo recursos além da capacidade, mas não cobre o caso relatado, pois o escopo do plano não inclui aplicações do cliente. **Ação necessária:** Escalar para a Infraestrutura para avaliar o servidor e verificar se há necessidade de dimensionamento.",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "NAO",
+      "nota": "A ação de escalar para a Infraestrutura para avaliar o servidor e verificar a necessidade de dimensionamento está respaldada, mas a afirmação de que o plano não inclui aplicações do cliente não consta no procedimento KB-115"
     },
     {
       "id": "TKT-0110",
@@ -315,8 +315,8 @@
         }
       ],
       "texto": "Conferir a cota de armazenamento de backup e o agendamento do job de backup diário para o domínio do cliente. Reexecutar o job manualmente conforme procedimento **KB-105**. *Nota: procedimento encontrado com score 0.66 (limiar 0.5), não é seguro agir sozinho sem validação prévia.*",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "NAO",
+      "nota": "A afirmação de que não é seguro agir sozinho sem validação prévia não consta no procedimento KB-105"
     },
     {
       "id": "TKT-0112",
@@ -343,8 +343,8 @@
         }
       ],
       "texto": "Procedimento **KB-103** encontrado para o caso de acesso SSH bloqueado ou recusado (score **0.62**, abaixo do limiar de **0.5** para execução segura sem supervisão). **Não cobre o caso relatado**, pois não há log anexado para verificar se o bloqueio é por fail2ban ou regra de firewall. **Ação necessária:** Verificar manualmente se o IP do cliente está banido no fail2ban ou se há restrições no firewall. Confirmar se a porta **22** está aberta e se não há regras adicionais bloqueando o acesso.",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "NAO",
+      "nota": "O score 0.62 é superior ao limiar 0.5, não inferior. Além disso, afirmar que a KB-103 não cobre o caso contradiz sua aplicação direta a problemas de acesso SSH bloqueado ou recusado"
     },
     {
       "id": "TKT-0113",
@@ -371,8 +371,8 @@
         }
       ],
       "texto": "Seguir procedimento **KB-108 - Disco ou cota de armazenamento cheia** para verificar e limpar diretórios com excesso de ocupação no **o domínio do cliente** (plano **Hospedagem Start**). Verificar se há esgotamento de inodes após a limpeza. **Score do procedimento: 0.65** (abaixo do limiar de 0.70). **Não agir sozinho sem validação.**",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "NAO",
+      "nota": "A orientação de não agir sozinho sem validação não consta na KB-108"
     },
     {
       "id": "TKT-0114",
@@ -399,8 +399,8 @@
         }
       ],
       "texto": "Conferir a sintaxe da entrada no crontab do usuário do cliente para a tarefa de geração de relatórios, validando se o caminho do script é absoluto e se o usuário possui permissão de execução sobre o arquivo. Verificar também o registro de execução do cron para identificar possíveis erros ocultos. O procedimento **KB-109** foi aplicado, mas o cliente deve confirmar se o script funciona manualmente com o mesmo usuário antes de qualquer alteração no crontab.",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "SIM",
+      "nota": "A conferência da sintaxe do crontab, do caminho absoluto, das permissões de execução e dos registros do cron está prevista na KB-109"
     },
     {
       "id": "TKT-0115",
@@ -427,8 +427,8 @@
         }
       ],
       "texto": "Procedimento KB-110 - Site em laço de redirecionamentos (score 0.7): revisar as **regras de redirecionamento do nginx** para remover possíveis conflitos (ex.: regra duplicada que força HTTPS e volta ao HTTP). Testar com `curl -I` seguindo os redirecionamentos. **Não cobre alterações no código do site do cliente** (escopo do plano).",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "NAO",
+      "nota": "A afirmação de que o plano não cobre alterações no código do site do cliente não consta na KB-110"
     },
     {
       "id": "TKT-0116",
@@ -455,8 +455,8 @@
         }
       ],
       "texto": "Conferir os registros **SPF** e **DKIM** da zona de **o domínio do cliente** e verificar se o IP de envio de e-mails está em listas de bloqueio (RBLs). Caso os registros estejam ausentes ou incorretos, corrigi-los na zona DNS e solicitar ao cliente que reenvie uma mensagem de teste para validação. **O procedimento KB-111 não cobre a configuração de listas de bloqueio externas ao servidor (como listas de spam de provedores), mas a verificação dos registros SPF/DKIM é obrigatória para o plano Business.**",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "NAO",
+      "nota": "Afirma que a verificação de SPF/DKIM é obrigatória para o plano Business, informação que não consta na KB-111. Além disso, restringe a verificação de listas de bloqueio externas, enquanto o procedimento determina consultar as listas de bloqueio para o IP de envio"
     },
     {
       "id": "TKT-0117",
@@ -483,8 +483,8 @@
         }
       ],
       "texto": "Procedimento KB-113 - Aplicação PHP esgotando a memória: verificar o registro de erros do site para confirmar a mensagem de limite de memória esgotada. Ajustar o limite de memória da conta dentro do teto do plano (Hospedagem Start), mas **não cobrir a depuração do código do site**, que é responsabilidade do cliente. Caso o script seja identificado como de alto consumo, sugerir ao cliente a migração para um plano com maior capacidade de memória ou a otimização do código.",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "NAO",
+      "nota": "Sugerir migração para um plano superior ou otimização do código não consta na KB-113. A afirmação de que a depuração do código é responsabilidade do cliente também não está prevista no procedimento"
     },
     {
       "id": "TKT-0118",
@@ -511,8 +511,8 @@
         }
       ],
       "texto": "Verificar e redefinir a senha do usuário de FTP do cliente (Iota Transportes) conforme procedimento **KB-114**. Conferir o registro de autenticação para identificar se o IP do cliente está bloqueado por tentativas de login falhas. Caso o IP esteja bloqueado, liberá-lo. **Nota:** O procedimento não aborda a aplicação FTP em si, que está fora do escopo do suporte.",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "NAO",
+      "nota": "A afirmação de que a aplicação FTP está fora do escopo do suporte não consta na KB-114"
     },
     {
       "id": "TKT-0133",
@@ -539,8 +539,8 @@
         }
       ],
       "texto": "Resumo para escalar: no domínio do cliente (VPS Pro), o sistema de upload de anexos falha com erro 'Permission denied' ao tentar gravar arquivos na pasta `/home/beta/public_html/anexos/`. O histórico confirma 1 ocorrência anterior (INC-0001), mas o cliente afirma que é a terceira vez neste mês. O log anexado confirma o erro em dois tentativas de upload (pedidos 4471). O procedimento KB-102 (score 0.61) sugere revisão de permissões em arquivos/pastas, mas exige acesso administrativo ao servidor.",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "SIM",
+      "nota": "A revisão das permissões de arquivos e pastas e a exigência de acesso administrativo estão previstas na KB-102"
     },
     {
       "id": "TKT-0134",
@@ -567,8 +567,8 @@
         }
       ],
       "texto": "Resumo para escalada interna - Falha de resolução DNS no domínio do cliente (Gama Cursos Online, plano Hospedagem Start). O cliente relata que o site e a área do aluno não abrem há três vezes em duas semanas, mas o histórico do sistema não confirma ocorrências anteriores. O log anexado mostra falha de resolução DNS (SERVFAIL) e timeout no nameserver **ns1.gama-cursos.example**. O procedimento **KB-106** (score 0.55) sugere verificar o nameserver e registros DNS, mas não cobre o caso relatado. O suporte está limitado ao ambiente do servidor (DNS, conta, certificados, arquivos e e-mail).",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "NAO",
+      "nota": "Afirma que a KB-106 não cobre o caso relatado, embora o procedimento trate diretamente de falha de resolução DNS. A delimitação do escopo do suporte também não consta na KB-106"
     },
     {
       "id": "TKT-0135",
@@ -595,8 +595,8 @@
         }
       ],
       "texto": "Conferir a cota de armazenamento de backup e o agendamento do job de backup do **domínio do cliente** conforme procedimento **KB-105**. Reexecutar o job manualmente após a verificação. O procedimento encontrado possui score 0.7, acima do limiar de 0.5, mas não cobre a ocorrência de duas falhas na mesma semana. Validar se a causa relatada (cota excedida ou janela sobreposta) se aplica ao caso.",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "NAO",
+      "nota": "Afirma que a KB-105 não cobre duas falhas na mesma semana, restrição que não consta no procedimento"
     },
     {
       "id": "TKT-0136",
@@ -623,8 +623,8 @@
         }
       ],
       "texto": "Resumo para escalar: o domínio do cliente apresenta falha de resolução DNS (SERVFAIL) no registro do nome **www.delta-restaurantes.example**, mas o acesso direto ao IP do servidor (203.0.113.71) permite carregar a página inicial normalmente. O histórico do sistema não confirma ocorrências anteriores, embora o cliente afirme que é a terceira vez no mês. O procedimento **KB-106** (score 0.51) sugere verificar o nameserver e os registros DNS do domínio, mas não cobre a zona externa do cliente. **Ação necessária:** escalar para o time de DNS externo.",
-      "rotulo_humano": null,
-      "nota": ""
+      "rotulo_humano": "NAO",
+      "nota": "A afirmação de que a KB-106 não cobre a zona externa do cliente e a orientação de escalar para o time de DNS externo não constam no procedimento"
     }
   ]
 }

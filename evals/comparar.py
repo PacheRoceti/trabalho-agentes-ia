@@ -3,7 +3,8 @@
     python -m evals.comparar evals/resultados/<rodada-A> evals/resultados/<rodada-B>
     python -m evals.comparar evals/resultados/<rodada>
 
-Só lê os `resultado.json`; não chama a API. O número de cada classe é o pass^k: a fração dos casos
+Só lê os `resultado.json` e a validação mais recente do juiz (evals/juiz/validacao-*.json); não
+chama a API. O número de cada classe é o pass^k: a fração dos casos
 da classe que passaram em TODAS as repetições. MÉDIA é a média das classes; GERAL, a fração de
 todos os casos (as classes têm tamanhos diferentes, e as duas contas dão números diferentes).
 """
@@ -17,6 +18,19 @@ def carregar(pasta: str | Path) -> dict:
     if not caminho.exists():
         sys.exit(f"Não há resultado.json em {pasta}")
     return json.loads(caminho.read_text(encoding="utf-8"))
+
+
+def ultima_validacao_do_juiz(pasta: Path | None = None) -> dict | None:
+    """A validação mais recente do juiz (python -m evals.juiz validar), para a linha JUIZ. O nome do
+    arquivo traz a data e a hora, e a ordem dos nomes é a ordem do tempo. None se não houver."""
+    from evals import RAIZ
+    arquivos = sorted((pasta or RAIZ / "evals" / "juiz").glob("validacao-v*.json"))
+    if not arquivos:
+        return None
+    v = json.loads(arquivos[-1].read_text(encoding="utf-8"))
+    return {"versao": v["versao_rubrica"], "concordancia": v["matriz"]["concordancia_pct"],
+            "limiar": v["limiar"]["concordancia_minima_pct"], "falsos_sim": v["matriz"]["falsos_sim"],
+            "max_falsos_sim": v["limiar"]["max_falsos_sim"], "adotado": v["adotado"], "arquivo": arquivos[-1].name}
 
 
 def _pct(parte, todo) -> float | None:
@@ -52,9 +66,13 @@ def imprimir(rodadas: list[dict]):
           f"desenvolvimento {origem.get('desenvolvimento', 0)} · sintetico {origem.get('sintetico', 0)})")
     if any(r["dataset"]["versao"] != ds["versao"] for r in rodadas):
         print("ATENÇÃO: as rodadas usam versões diferentes do dataset; a comparação não é do mesmo conjunto.")
-    juiz = base.get("juiz")
-    print(f"JUIZ rubrica v{juiz['versao']}   concordância {juiz['concordancia']}%   limiar {juiz['limiar']}%"
-          if juiz else "JUIZ ainda não validado: nenhuma propriedade desta tabela depende de juiz (docs/evals.md §3)")
+    juiz = base.get("juiz") or ultima_validacao_do_juiz()
+    if juiz:
+        print(f"JUIZ rubrica v{juiz['versao']}   concordância {juiz['concordancia']}%   limiar {juiz['limiar']}%   "
+              f"falsos SIM {juiz['falsos_sim']} (máximo {juiz['max_falsos_sim']})   "
+              f"{'ADOTADO' if juiz['adotado'] else 'NÃO ADOTADO: nenhuma propriedade desta tabela depende dele'}")
+    else:
+        print("JUIZ ainda não validado: nenhuma propriedade desta tabela depende de juiz (docs/evals.md §3)")
     for r in rodadas:
         avisos = [a for a, sim in (("PARCIAL", r.get("parcial")),
                                    ("INCOMPLETA", "resumo" not in r)) if sim]

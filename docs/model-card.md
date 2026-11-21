@@ -143,7 +143,7 @@ Neste card ficam as lacunas que aquele mapa aponta:
 | Casos hostis (a mudança desta entrega) | Os textos com o conteúdo plantado foram de 2 de 2 na 1.0.0 para 0 na 1.1.0. O custo foi 1 `erro_fatal` (`TKT-0138`) | `evals/resultados/v1.0.0-hostis-2026-11-21/`, `v1.1.0-hostis-2026-11-21/`; `docs/evals.md` §4.4 |
 | SLO de qualidade | pelo menos 75% das execuções com desfecho certo; medido **90,9%** na 1.1.0, com 36% do orçamento de erro consumido | `docs/observabilidade.md` §8 |
 | Repetições | **1 por versão** (pass^1), por causa do limite do plano. O pass^3 previsto não foi medido | `docs/evals.md` §4.2 |
-| Concordância do juiz com humano | **O juiz existe, mas não foi validado.** A rubrica `evals/prompts/juiz-v1.0.0.md` confere a fidelidade da correção ao guia, e os 22 itens estão separados para rótulo humano. Não há rótulo, limiar nem matriz ainda, e o juiz não foi rodado | `evals/juiz/rotulos-v1.0.0.json` (`rotulado_por: null`); `docs/evals.md` §3. **LACUNA L13** |
+| Concordância do juiz com humano | **Validado e NÃO ADOTADO** (21/11/2026). A rubrica `evals/prompts/juiz-v1.0.0.md` confere a fidelidade da correção ao guia. Comparada aos 22 rótulos humanos (9 SIM e 13 NAO, de Pedro Gustavo de Campos Teixeira Silva), deu **77,3% de concordância e 3 falsos SIM**, contra o limiar declarado antes de rodar: pelo menos 85% de concordância e no máximo 1 falso SIM. Dos 5 desacordos, a leitura dos registros aponta 3 defeitos do juiz e 2 da rubrica, classificação a confirmar pelo grupo | `evals/juiz/rotulos-v1.0.0.json`; `evals/juiz/validacao-v1.0.0-2026-11-21-1645.json` (matriz e desacordos); `docs/evals.md` §3. **LACUNA L13** |
 | Testes offline (código, sem modelo) | 214 testes passam com as correções da devolutiva (206 no `925b464`) | `python -m unittest discover -s tests`, rodado em 21/11/2026: `Ran 214 tests`, `OK` |
 
 ## 8. Limites conhecidos
@@ -287,7 +287,7 @@ As correções que a correção da Parte 2 apontou, e cada mudança com o commit
 | L10 | Modelo | a retenção e o uso para treino vêm de fontes secundárias | idem | Alta |
 | L11 | Dados e Registro | o log e o trace guardam o texto inteiro, sem prazo, no git | definir o prazo; separar o registro de auditoria do de avaliação; não versionar log nem trace com dado real | Alta |
 | L12 | Dados | o checkpoint e a pendência não resolvidos não são removidos | vencer e limpar as pendências não resolvidas | Média |
-| L13 | Avaliação | o juiz não foi validado e os rótulos são só do grupo | uma pessoa do grupo rotula os 22 itens de `evals/juiz/rotulos-v1.0.0.json`, com nota, rotulador e limiar declarados antes de medir; depois, `python -m evals.juiz validar ...` e a leitura dos desacordos | Alta |
+| L13 | Avaliação | o juiz foi validado e não atingiu o limiar (77,3% contra 85%; 3 falsos SIM contra 1), e por isso a fidelidade da redação ao guia não tem verificador automático | rubrica v1.1.0, com afirmações sobre score, limiar, cobertura e escopo contadas como passo, sem NAO com todos os passos presentes, e com o contrato de saída validado em código; medida contra 22 saídas **novas**, rotuladas antes de rodar (`docs/evals.md` §3.1) | Alta |
 | ~~L14~~ | Supervisão | o aprovador não era identificado | **resolvida em parte em 20/11/2026** (C2: o usuário do sistema operacional); o resíduo é risco aceito | — |
 | ~~L15~~ | Supervisão | o `--auto-aprovar` não tinha trava | **resolvida em 20/11/2026** (C2) | — |
 | ~~L16~~ | Registro | a execução de referência rodou com código não commitado | **resolvida em 17/10/2026**; as rodadas da Parte 3 registram o commit sem marca | — |
@@ -310,4 +310,4 @@ As correções que a correção da Parte 2 apontou, e cada mudança com o commit
 | L33 | Ferramentas | a instalação não confere hash (ASI04) | gerar o `requirements.txt` com `--require-hashes` | Média |
 | L34 | Autoridade | a rota comercial grava sem busca (ASI02) | buscar também na rota comercial, e mandar à fila humana se um guia técnico passar do limiar; medir antes, porque muda o desfecho dos casos comerciais | Média |
 | L35 | Registro | a recuperação depois de uma queda não grava trace | abrir uma raiz `invoke_agent` em `grafo.retomar_interrompidas` (`docs/observabilidade.md` §9, O5) | Baixa |
-| L36 | Avaliação | a redação com passo inventado que não é comando não tem sinal (falha F4) | é a L13: o juiz validado, rodado sobre uma amostra das redações | Média |
+| L36 | Avaliação | a redação com passo inventado que não é comando não tem sinal (falha F4) | é a L13: um juiz que passe no limiar, rodado sobre uma amostra das redações | Média |

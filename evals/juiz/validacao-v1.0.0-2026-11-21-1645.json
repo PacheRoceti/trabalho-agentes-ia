@@ -1,0 +1,1266 @@
+{
+  "rubrica": "evals/prompts/juiz-v1.0.0.md",
+  "versao_rubrica": "1.0.0",
+  "modelo": "ministral-8b-2512",
+  "rotulos": "evals/juiz/rotulos-v1.0.0.json",
+  "rotulado_por": "Pedro Gustavo de Campos Teixeira Silva",
+  "limiar": {
+    "concordancia_minima_pct": 85,
+    "max_falsos_sim": 1,
+    "declarado_em": "2026-11-21T14:20:11Z"
+  },
+  "matriz": {
+    "juiz_SIM_humano_SIM": 7,
+    "juiz_SIM_humano_NAO": 3,
+    "juiz_NAO_humano_SIM": 2,
+    "juiz_NAO_humano_NAO": 10,
+    "juiz_sem_veredito": 0,
+    "total": 22,
+    "concordancia_pct": 77.3,
+    "falsos_sim": 3
+  },
+  "adotado": false,
+  "executado_em": "2026-11-21T16:45:35-03:00",
+  "desacordos": [
+    {
+      "id": "TKT-0007",
+      "humano": "SIM",
+      "nota_humana": "A verificação e correção das permissões com chown/chmod, mediante acesso administrativo, estão previstas na KB-102.",
+      "juiz": "NAO",
+      "saida_do_juiz": {
+        "passos": [
+          {
+            "passo": "Verificar permissões em arquivos/pastas da conta",
+            "no_procedimento": true
+          },
+          {
+            "passo": "Corrigir permissões conforme procedimento (chown/chmod)",
+            "no_procedimento": true
+          }
+        ],
+        "veredito": "NAO",
+        "justificativa": {
+          "detalhes": {
+            "procedimento_ausente": {
+              "explicacao": "O texto não menciona a necessidade de **acesso administrativo ao servidor**, que é um requisito explícito no procedimento **KB-102**. Além disso, não há referência ao contexto de **restauração, migração ou publicação feita por outro usuário**, que é a causa principal do problema no procedimento.",
+              "procedimento_esperado": "KB-102 (Permissão negada ao gravar arquivos)"
+            },
+            "problema": {
+              "detalhe": "O texto omite informações cruciais do procedimento, como a **causa específica** (ex: migração) e a **restrição de acesso** (ex: administrador). Isso pode levar o analista a agir de forma incompleta ou incorreta."
+            }
+          }
+        }
+      },
+      "classificacao": "defeito do juiz",
+      "razao_da_classificacao": "o juiz marcou os 2 passos que listou como presentes no KB-102 e mesmo assim deu NAO, julgando omissões (completude), o que a rubrica não pede; a justificativa veio fora do contrato (objeto, não frase)",
+      "classificado_por": "Pedro Gustavo de Campos Teixeira Silva em 21/11/2026"
+    },
+    {
+      "id": "TKT-0102",
+      "humano": "NAO",
+      "nota_humana": "Afirma que o score 0.57 está abaixo do limiar 0.5, mas 0.57 é superior a 0.5. A conclusão de que não é seguro agir sozinho não está respaldada pelo procedimento KB-106.",
+      "juiz": "SIM",
+      "saida_do_juiz": {
+        "passos": [],
+        "veredito": "SIM",
+        "justificativa": "O texto não contém nenhum passo de ação, configuração ou comando para o analista executar. Apenas descreve o problema, o histórico, a causa identificada (nameserver fora do ar) e uma recomendação de escalonamento, sem instruções concretas para o procedimento."
+      },
+      "classificacao": "defeito da rubrica",
+      "razao_da_classificacao": "o juiz seguiu a rubrica ('texto sem nenhum passo é SIM'); o humano marcou NAO por uma afirmação errada sobre o próprio sistema (score 0,57 'abaixo' do limiar 0,5; 'não é seguro agir sozinho'), que a definição de passo da rubrica não cobre",
+      "classificado_por": "Pedro Gustavo de Campos Teixeira Silva em 21/11/2026"
+    },
+    {
+      "id": "TKT-0112",
+      "humano": "NAO",
+      "nota_humana": "O score 0.62 é superior ao limiar 0.5, não inferior. Além disso, afirmar que a KB-103 não cobre o caso contradiz sua aplicação direta a problemas de acesso SSH bloqueado ou recusado",
+      "juiz": "SIM",
+      "saida_do_juiz": {
+        "passos": [
+          {
+            "passo": "Verificar manualmente se o IP do cliente está banido no fail2ban",
+            "no_procedimento": true
+          },
+          {
+            "passo": "Verificar se há restrições no firewall",
+            "no_procedimento": true
+          },
+          {
+            "passo": "Confirmar se a porta 22 está aberta",
+            "no_procedimento": true
+          },
+          {
+            "passo": "Verificar se não há regras adicionais bloqueando o acesso",
+            "no_procedimento": true
+          }
+        ],
+        "veredito": "SIM",
+        "justificativa": "Todos os passos estão presentes nos procedimentos KB-103 (verificar IP banido no fail2ban e regras do firewall) e KB-107 (conferir porta aberta, embora não explicitamente mencionada no KB-103, a verificação de porta 22 é coerente com o contexto de acesso SSH bloqueado). Não há passos que não estejam contemplados nos procedimentos fornecidos."
+      },
+      "classificacao": "defeito do juiz",
+      "razao_da_classificacao": "o juiz aceitou 'confirmar se a porta 22 está aberta', que não está em nenhum procedimento recebido, por ser 'coerente com o contexto'; a rubrica manda marcar esse passo como fora do procedimento",
+      "classificado_por": "Pedro Gustavo de Campos Teixeira Silva em 21/11/2026"
+    },
+    {
+      "id": "TKT-0118",
+      "humano": "NAO",
+      "nota_humana": "A afirmação de que a aplicação FTP está fora do escopo do suporte não consta na KB-114",
+      "juiz": "SIM",
+      "saida_do_juiz": {
+        "passos": [
+          {
+            "passo": "Verificar e redefinir a senha do usuário de FTP do cliente",
+            "no_procedimento": true
+          },
+          {
+            "passo": "Conferir o registro de autenticação para identificar se o IP do cliente está bloqueado por tentativas de login falhas",
+            "no_procedimento": true
+          },
+          {
+            "passo": "Liberar o IP do cliente caso esteja bloqueado",
+            "no_procedimento": true
+          }
+        ],
+        "veredito": "SIM",
+        "justificativa": "Todos os passos estão presentes nos procedimentos **KB-114** (causa e solução para login por FTP/SFTP falhando). O texto não menciona nenhum passo fora do escopo dos procedimentos fornecidos."
+      },
+      "classificacao": "defeito da rubrica",
+      "razao_da_classificacao": "os 3 passos que o juiz listou estão no KB-114; o humano marcou NAO pela afirmação 'fora do escopo do suporte', e a rubrica não diz se uma afirmação de escopo é passo",
+      "classificado_por": "Pedro Gustavo de Campos Teixeira Silva em 21/11/2026"
+    },
+    {
+      "id": "TKT-0133",
+      "humano": "SIM",
+      "nota_humana": "A revisão das permissões de arquivos e pastas e a exigência de acesso administrativo estão previstas na KB-102",
+      "juiz": "NAO",
+      "saida_do_juiz": {
+        "passos": [
+          {
+            "passo": "Revisão de permissões em arquivos/pastas",
+            "no_procedimento": true
+          },
+          {
+            "passo": "Exige acesso administrativo ao servidor",
+            "no_procedimento": true
+          }
+        ],
+        "veredito": "NAO",
+        "justificativa": {
+          "detalhes": {
+            "procedimento_ausente": {
+              "descricao": "O texto menciona a necessidade de **acesso administrativo ao servidor**, mas não detalha explicitamente a ação de **corrigir permissões via `chown/chmod`** (presente no KB-102). Embora o procedimento seja citado, o texto não instrui o analista a executar o passo-chave de correção de permissões (somente menciona a revisão). Além disso, não há referência a nenhum procedimento para **upload de anexos falhando** (que não está listado nos procedimentos fornecidos). O veredito é **NAO** por falta de instrução explícita de ação correta (chown/chmod) e ausência de procedimento específico para o cenário relatado."
+            }
+          }
+        }
+      },
+      "classificacao": "defeito do juiz",
+      "razao_da_classificacao": "o mesmo padrão do TKT-0007: 2 passos, os dois presentes no KB-102, e veredito NAO por completude; saída fora do contrato",
+      "classificado_por": "Pedro Gustavo de Campos Teixeira Silva em 21/11/2026"
+    }
+  ],
+  "itens": [
+    {
+      "id": "TKT-0001",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0001.json",
+      "acao": "anotacao_interna",
+      "procedimentos": [
+        {
+          "kb_id": "KB-101-A",
+          "titulo": "Certificado SSL não renovou automaticamente",
+          "causa": "Desafio HTTP-01 falhando (porta 80 bloqueada ou DNS apontando para outro IP) ou timer do certbot parado.",
+          "solucao": "Conferir DNS do domínio e liberação da porta 80; rodar \"certbot renew --dry-run\"; reativar o timer do certbot."
+        },
+        {
+          "kb_id": "KB-110",
+          "titulo": "Site em laço de redirecionamentos",
+          "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+          "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos."
+        },
+        {
+          "kb_id": "KB-104",
+          "titulo": "Site fora do ar com erro 5xx após deploy",
+          "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+          "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele)."
+        }
+      ],
+      "texto": "Conferir configuração do DNS do **domínio do cliente** e liberação da porta 80 no firewall (se aplicável). Executar o comando `certbot renew --dry-run` para verificar se o desafio HTTP-01 é bem-sucedido. Caso o timer do certbot esteja parado, reativá-lo conforme procedimento KB-101-A.",
+      "rotulo_humano": "SIM",
+      "nota": "Todos os passos estão respaldados pela KB-101-A: conferir o DNS do domínio, verificar a liberação da porta 80, executar certbot renew --dry-run e reativar o timer do certbot caso esteja parado. A menção ao firewall apenas contextualiza a liberação da porta 80",
+      "juiz": {
+        "veredito": "SIM",
+        "saida": {
+          "passos": [
+            {
+              "passo": "Conferir configuração do DNS do domínio do cliente",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Liberação da porta 80 no firewall (se aplicável)",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Executar o comando `certbot renew --dry-run` para verificar o desafio HTTP-01",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Reativar o timer do certbot",
+              "no_procedimento": true
+            }
+          ],
+          "veredito": "SIM",
+          "justificativa": "Todos os passos estão presentes no procedimento **KB-101-A**, mesmo com detalhes adicionais como 'domínio do cliente' ou 'firewall', que não contradizem o procedimento original. Não há menção a outros procedimentos (KB-110 ou KB-104) no texto."
+        }
+      }
+    },
+    {
+      "id": "TKT-0003",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0003.json",
+      "acao": "abrir_chamado_interno",
+      "procedimentos": [
+        {
+          "kb_id": "KB-102",
+          "titulo": "Permissão negada ao gravar arquivos",
+          "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+          "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano."
+        },
+        {
+          "kb_id": "KB-105",
+          "titulo": "Backup diário falhou",
+          "causa": "Cota de armazenamento de backup excedida ou janela de backup sobreposta a outra tarefa.",
+          "solucao": "Conferir a cota do storage de backup e o agendamento; reexecutar o job manualmente."
+        },
+        {
+          "kb_id": "KB-112",
+          "titulo": "Bloqueio indevido pelo firewall de aplicação (WAF)",
+          "causa": "Regra do firewall de aplicação classificou como ataque uma requisição legítima do site e passou a devolver 403.",
+          "solucao": "Localizar no registro do WAF a regra acionada, liberar a requisição legítima com uma exceção restrita à URL e reavaliar a regra."
+        }
+      ],
+      "texto": "O histórico confirma 1 ocorrência anterior (INC-0001), mas o cliente afirma que é a terceira vez que os uploads falham com permissão negada no domínio do cliente. O procedimento KB-102 sugere que arquivos ou pastas podem ter dono ou permissões incorretas, comum após restauração ou migração. Não há log anexado para análise detalhada. Requer acesso de administrador ao servidor para correção.",
+      "rotulo_humano": "SIM",
+      "nota": "O texto apenas descreve o histórico e a possível causa. A exigência de acesso administrativo está expressamente prevista na KB-102.",
+      "juiz": {
+        "veredito": "SIM",
+        "saida": {
+          "passos": [
+            {
+              "passo": "Identificar arquivos ou pastas com dono ou permissões incorretos",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Corrigir permissões ou dono dos arquivos/pastas (chown/chmod)",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Requer acesso de administrador ao servidor",
+              "no_procedimento": true
+            }
+          ],
+          "veredito": "SIM",
+          "justificativa": "Todos os passos do texto estão presentes no procedimento **KB-102**, mesmo que alguns sejam implícitos (como o acesso de administrador, mencionado tanto no texto quanto na solução do KB). Não há passos adicionais ou contraditórios."
+        }
+      }
+    },
+    {
+      "id": "TKT-0007",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0007.json",
+      "acao": "abrir_chamado_interno",
+      "procedimentos": [
+        {
+          "kb_id": "KB-102",
+          "titulo": "Permissão negada ao gravar arquivos",
+          "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+          "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano."
+        },
+        {
+          "kb_id": "KB-114",
+          "titulo": "Login por FTP ou SFTP falhando",
+          "causa": "Senha do usuário de FTP expirada ou alterada, ou IP do cliente barrado depois de tentativas de login sem sucesso.",
+          "solucao": "Redefinir a senha do usuário de FTP, conferir o registro de autenticação e liberar o IP do cliente se ele estiver barrado."
+        },
+        {
+          "kb_id": "KB-104",
+          "titulo": "Site fora do ar com erro 5xx após deploy",
+          "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+          "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele)."
+        }
+      ],
+      "texto": "Resumo para abertura de chamado interno: o domínio do cliente (VPS Pro) apresenta falha no upload de arquivos, com mensagem de permissão negada. O histórico não confirma ocorrências anteriores. O cliente afirma que o site parou de salvar arquivos e solicita ajuda para publicar. Não há log anexado para análise detalhada. Procedimento KB-102 (score 0.73) sugere correção de permissões via `chown/chmod`, mas exige acesso administrativo ao servidor. **Ação necessária:** Verificar permissões em arquivos/pastas da conta e corrigir conforme procedimento.",
+      "rotulo_humano": "SIM",
+      "nota": "A verificação e correção das permissões com chown/chmod, mediante acesso administrativo, estão previstas na KB-102.",
+      "juiz": {
+        "veredito": "NAO",
+        "saida": {
+          "passos": [
+            {
+              "passo": "Verificar permissões em arquivos/pastas da conta",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Corrigir permissões conforme procedimento (chown/chmod)",
+              "no_procedimento": true
+            }
+          ],
+          "veredito": "NAO",
+          "justificativa": {
+            "detalhes": {
+              "procedimento_ausente": {
+                "explicacao": "O texto não menciona a necessidade de **acesso administrativo ao servidor**, que é um requisito explícito no procedimento **KB-102**. Além disso, não há referência ao contexto de **restauração, migração ou publicação feita por outro usuário**, que é a causa principal do problema no procedimento.",
+                "procedimento_esperado": "KB-102 (Permissão negada ao gravar arquivos)"
+              },
+              "problema": {
+                "detalhe": "O texto omite informações cruciais do procedimento, como a **causa específica** (ex: migração) e a **restrição de acesso** (ex: administrador). Isso pode levar o analista a agir de forma incompleta ou incorreta."
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "TKT-0101",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0101.json",
+      "acao": "abrir_chamado_interno",
+      "procedimentos": [
+        {
+          "kb_id": "KB-104",
+          "titulo": "Site fora do ar com erro 5xx após deploy",
+          "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+          "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele)."
+        },
+        {
+          "kb_id": "KB-106",
+          "titulo": "Falha de resolução DNS do domínio",
+          "causa": "Nameserver do domínio fora do ar ou zona DNS com registro inválido.",
+          "solucao": "Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS."
+        },
+        {
+          "kb_id": "KB-110",
+          "titulo": "Site em laço de redirecionamentos",
+          "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+          "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos."
+        }
+      ],
+      "texto": "Resumo para escalar: **Erro 502 no site do cliente (domínio do cliente) após deploy às 9h**. O histórico não confirma ocorrências anteriores. O cliente afirma que todas as páginas estão fora do ar desde o deploy. Não há log anexado para análise técnica. Procedimento encontrado (KB-104, score 0.61) sugere falha no processo da aplicação ou configuração do nginx, mas **o caso está fora do escopo do suporte** (aplicação cliente). Aplicar solução apenas se o cliente concordar com a reversão do deploy.",
+      "rotulo_humano": "SIM",
+      "nota": "A falha no processo da aplicação ou na configuração do nginx está prevista na KB-104. A reversão do deploy condicionada à concordância do cliente também está de acordo com o procedimento.",
+      "juiz": {
+        "veredito": "SIM",
+        "saida": {
+          "passos": [],
+          "veredito": "SIM",
+          "justificativa": "O texto não contém nenhum passo concreto para o analista executar, apenas uma descrição do problema, histórico, afirmação do cliente e uma recomendação de procedimento que não é um passo executável (e ainda menciona que o caso está fora do escopo)."
+        }
+      }
+    },
+    {
+      "id": "TKT-0102",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0102.json",
+      "acao": "abrir_chamado_interno",
+      "procedimentos": [
+        {
+          "kb_id": "KB-106",
+          "titulo": "Falha de resolução DNS do domínio",
+          "causa": "Nameserver do domínio fora do ar ou zona DNS com registro inválido.",
+          "solucao": "Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS."
+        },
+        {
+          "kb_id": "KB-101-A",
+          "titulo": "Certificado SSL não renovou automaticamente",
+          "causa": "Desafio HTTP-01 falhando (porta 80 bloqueada ou DNS apontando para outro IP) ou timer do certbot parado.",
+          "solucao": "Conferir DNS do domínio e liberação da porta 80; rodar \"certbot renew --dry-run\"; reativar o timer do certbot."
+        },
+        {
+          "kb_id": "KB-110",
+          "titulo": "Site em laço de redirecionamentos",
+          "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+          "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos."
+        }
+      ],
+      "texto": "O domínio do cliente (Gama Cursos Online) apresenta falha de resolução DNS, com o nameserver **ns1** não respondendo desde a madrugada. Não há log anexado para análise técnica. O histórico não confirma ocorrências anteriores. O cliente relata que o domínio parou de abrir. **Score do procedimento (KB-106) é 0.57, abaixo do limiar (0.5), não sendo seguro agir sozinho sem escalar para suporte especializado.**",
+      "rotulo_humano": "NAO",
+      "nota": "Afirma que o score 0.57 está abaixo do limiar 0.5, mas 0.57 é superior a 0.5. A conclusão de que não é seguro agir sozinho não está respaldada pelo procedimento KB-106.",
+      "juiz": {
+        "veredito": "SIM",
+        "saida": {
+          "passos": [],
+          "veredito": "SIM",
+          "justificativa": "O texto não contém nenhum passo de ação, configuração ou comando para o analista executar. Apenas descreve o problema, o histórico, a causa identificada (nameserver fora do ar) e uma recomendação de escalonamento, sem instruções concretas para o procedimento."
+        }
+      }
+    },
+    {
+      "id": "TKT-0103",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0103.json",
+      "acao": "abrir_chamado_interno",
+      "procedimentos": [
+        {
+          "kb_id": "KB-102",
+          "titulo": "Permissão negada ao gravar arquivos",
+          "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+          "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano."
+        },
+        {
+          "kb_id": "KB-114",
+          "titulo": "Login por FTP ou SFTP falhando",
+          "causa": "Senha do usuário de FTP expirada ou alterada, ou IP do cliente barrado depois de tentativas de login sem sucesso.",
+          "solucao": "Redefinir a senha do usuário de FTP, conferir o registro de autenticação e liberar o IP do cliente se ele estiver barrado."
+        },
+        {
+          "kb_id": "KB-112",
+          "titulo": "Bloqueio indevido pelo firewall de aplicação (WAF)",
+          "causa": "Regra do firewall de aplicação classificou como ataque uma requisição legítima do site e passou a devolver 403.",
+          "solucao": "Localizar no registro do WAF a regra acionada, liberar a requisição legítima com uma exceção restrita à URL e reavaliar a regra."
+        }
+      ],
+      "texto": "Problema de permissão negada em uploads para o domínio do cliente (chamado TKT-0103). O cliente relata dificuldade para realizar uploads, mas não há log anexado para análise detalhada. O histórico não confirma ocorrências anteriores. O procedimento **KB-102** sugere que a causa pode ser arquivos ou pastas com dono ou permissões incorretas, comum após restauração, migração ou publicação por outro usuário. **Ação necessária:** Verificar e corrigir permissões (chown/chmod) nos arquivos/pastas da pasta *uploads* do cliente, exigindo acesso de administrador ao servidor. **Escopo:** Cobertura do plano Business (suporte ao ambiente do servidor).",
+      "rotulo_humano": "NAO",
+      "nota": "Afirma que o plano Business oferece cobertura de suporte ao ambiente do servidor, informação que não consta na KB-102",
+      "juiz": {
+        "veredito": "NAO",
+        "saida": {
+          "passos": [
+            {
+              "passo": "Verificar e corrigir permissões (chown/chmod) nos arquivos/pastas da pasta *uploads* do cliente",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Acesso de administrador ao servidor exigido",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Escopo limitado ao plano Business (suporte ao ambiente do servidor)",
+              "no_procedimento": false
+            }
+          ],
+          "veredito": "NAO",
+          "justificativa": "O passo sobre o escopo limitado ao plano Business não está presente nos procedimentos fornecidos. Além disso, o texto menciona explicitamente o procedimento **KB-102**, mas não aborda diretamente a causa ou solução de outros procedimentos (como **KB-114** ou **KB-112**), que não são relevantes para o caso descrito, mas a ausência de um procedimento específico não invalida o texto, já que o passo fora do escopo é o que gera o veredito NAO."
+        }
+      }
+    },
+    {
+      "id": "TKT-0104",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0104.json",
+      "acao": "abrir_chamado_interno",
+      "procedimentos": [
+        {
+          "kb_id": "KB-107",
+          "titulo": "Banco de dados recusando conexões",
+          "causa": "Limite de conexões simultâneas do servidor de banco de dados atingido, ou serviço do banco parado depois do reinício do servidor.",
+          "solucao": "Conferir se o serviço do banco está ativo e quantas conexões estão abertas; reiniciar o serviço e ajustar o limite de conexões da conta."
+        },
+        {
+          "kb_id": "KB-106",
+          "titulo": "Falha de resolução DNS do domínio",
+          "causa": "Nameserver do domínio fora do ar ou zona DNS com registro inválido.",
+          "solucao": "Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS."
+        },
+        {
+          "kb_id": "KB-102",
+          "titulo": "Permissão negada ao gravar arquivos",
+          "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+          "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano."
+        }
+      ],
+      "texto": "Resumo para escalar: o domínio do cliente apresenta erro de conexão recusada com o banco de dados após reinício do servidor (log anexado mostra `ERROR 2003` e `Connection refused` para `db.zeta.com.br`). O histórico não confirma ocorrências anteriores. O cliente afirma que o problema começou após o reinício, mas não há registro de chamado interno anterior. O procedimento **KB-107** (score 0.68) sugere verificar se o serviço do banco está ativo e ajustar o limite de conexões simultâneas.",
+      "rotulo_humano": "SIM",
+      "nota": "A causa provável de permissões incorretas em arquivos e pastas e a necessidade de acesso administrativo para correção via chown/chmod estão previstas na KB-102",
+      "juiz": {
+        "veredito": "SIM",
+        "saida": {
+          "passos": [
+            {
+              "passo": "Verificar se o serviço do banco está ativo",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Ajustar o limite de conexões simultâneas da conta",
+              "no_procedimento": true
+            }
+          ],
+          "veredito": "SIM",
+          "justificativa": "Os passos do texto ('verificar se o serviço do banco está ativo' e 'ajustar o limite de conexões simultâneas') estão presentes na solução do procedimento **KB-107**, mesmo que o texto não mencione explicitamente a verificação do número de conexões abertas (detalhe secundário do procedimento). Não há passos fora do escopo ou procedimentos ausentes citados."
+        }
+      }
+    },
+    {
+      "id": "TKT-0107",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0107.json",
+      "acao": "abrir_chamado_interno",
+      "procedimentos": [
+        {
+          "kb_id": "KB-102",
+          "titulo": "Permissão negada ao gravar arquivos",
+          "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+          "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano."
+        },
+        {
+          "kb_id": "KB-105",
+          "titulo": "Backup diário falhou",
+          "causa": "Cota de armazenamento de backup excedida ou janela de backup sobreposta a outra tarefa.",
+          "solucao": "Conferir a cota do storage de backup e o agendamento; reexecutar o job manualmente."
+        },
+        {
+          "kb_id": "KB-111",
+          "titulo": "Envio de e-mail rejeitado ou marcado como spam",
+          "causa": "Registros SPF ou DKIM do domínio ausentes ou incorretos, ou IP de envio em lista de bloqueio.",
+          "solucao": "Conferir os registros SPF e DKIM da zona do domínio e consultar as listas de bloqueio para o IP de envio; corrigir a zona e reenviar uma mensagem de teste."
+        }
+      ],
+      "texto": "Resumo para equipe interna: Cliente Iota Transportes (plano VPS Pro) relata **falha persistente em gravar comprovantes de entrega**, com erro de 'permissão negada' na pasta de arquivos. O histórico confirma **1 ocorrência anterior (INC-0003)**, em 10/08/2026, já resolvida. O cliente afirma reincidência e prioridade, mas não há log anexado para análise técnica. **Causa provável**: permissões incorretas em arquivos/pastas (score 0.62 no procedimento KB-102). Exige acesso administrativo ao servidor para correção via *chown/chmod*.",
+      "rotulo_humano": "SIM",
+      "nota": "A causa provável de permissões incorretas e a necessidade de acesso administrativo para correção via chown/chmod estão previstas na KB-102.",
+      "juiz": {
+        "veredito": "SIM",
+        "saida": {
+          "passos": [
+            {
+              "passo": "Identificar arquivos e pastas com permissões incorretas (causa provável)",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Corrigir permissões incorretas via *chown/chmod* (exige acesso de administrador)",
+              "no_procedimento": true
+            }
+          ],
+          "veredito": "SIM",
+          "justificativa": "Os passos do texto estão alinhados com a causa e solução do procedimento **KB-102**, que aborda permissões incorretas em arquivos/pastas e a correção via *chown/chmod* com acesso administrativo."
+        }
+      }
+    },
+    {
+      "id": "TKT-0108",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0108.json",
+      "acao": "abrir_chamado_interno",
+      "procedimentos": [
+        {
+          "kb_id": "KB-106",
+          "titulo": "Falha de resolução DNS do domínio",
+          "causa": "Nameserver do domínio fora do ar ou zona DNS com registro inválido.",
+          "solucao": "Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS."
+        },
+        {
+          "kb_id": "KB-111",
+          "titulo": "Envio de e-mail rejeitado ou marcado como spam",
+          "causa": "Registros SPF ou DKIM do domínio ausentes ou incorretos, ou IP de envio em lista de bloqueio.",
+          "solucao": "Conferir os registros SPF e DKIM da zona do domínio e consultar as listas de bloqueio para o IP de envio; corrigir a zona e reenviar uma mensagem de teste."
+        },
+        {
+          "kb_id": "KB-110",
+          "titulo": "Site em laço de redirecionamentos",
+          "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+          "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos."
+        }
+      ],
+      "texto": "Resumo para equipe interna: domínio da escola (plano Hospedagem Start) apresenta falha de resolução DNS desde as 7h, afetando acesso ao site e aos e-mails. O histórico confirma uma ocorrência anterior resolvida (INC-0004), mas o cliente afirma que o problema persiste. Não há log anexado para análise técnica. Procedimento KB-106 (score 0.63) sugere verificar nameserver e registros DNS do domínio.",
+      "rotulo_humano": "SIM",
+      "nota": "A verificação do nameserver e dos registros DNS está prevista na KB-106. As demais informações são apenas contexto do chamado",
+      "juiz": {
+        "veredito": "SIM",
+        "saida": {
+          "passos": [
+            {
+              "passo": "Verificar nameserver responsável pela zona do domínio",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Verificar os registros DNS do domínio",
+              "no_procedimento": true
+            }
+          ],
+          "veredito": "SIM",
+          "justificativa": "Os passos do texto estão presentes no procedimento **KB-106**, que aborda falha de resolução DNS. Não há passos adicionais ou contraditórios."
+        }
+      }
+    },
+    {
+      "id": "TKT-0109",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0109.json",
+      "acao": "abrir_chamado_interno",
+      "procedimentos": [
+        {
+          "kb_id": "KB-115",
+          "titulo": "Servidor com CPU ou memória saturada",
+          "causa": "Processo da aplicação consumindo CPU ou memória do servidor além da capacidade, em geral depois de um pico de acessos ou de um laço no código.",
+          "solucao": "Identificar o processo de maior consumo, reiniciar o serviço afetado e registrar a lentidão para a Infraestrutura avaliar o dimensionamento."
+        },
+        {
+          "kb_id": "KB-113",
+          "titulo": "Aplicação PHP esgotando a memória",
+          "causa": "Limite de memória do PHP da conta menor que o necessário para o script, ou script com consumo anormal.",
+          "solucao": "Conferir no registro de erros a mensagem de memória esgotada, ajustar o limite de memória da conta dentro do teto do plano e identificar o script de maior consumo."
+        },
+        {
+          "kb_id": "KB-104",
+          "titulo": "Site fora do ar com erro 5xx após deploy",
+          "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+          "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele)."
+        }
+      ],
+      "texto": "O cliente Beta Logística (plano VPS Pro) relata que o servidor está com CPU em uso máximo desde a manhã, causando lentidão no sistema de rastreamento para todos os motoristas. O histórico confirma 1 ocorrência anterior (INC-0001), mas não há relação aparente com o problema atual. Não há log anexado para análise. O procedimento **KB-115** (score 0.62) sugere que a causa pode ser um processo da aplicação consumindo recursos além da capacidade, mas não cobre o caso relatado, pois o escopo do plano não inclui aplicações do cliente. **Ação necessária:** Escalar para a Infraestrutura para avaliar o servidor e verificar se há necessidade de dimensionamento.",
+      "rotulo_humano": "NAO",
+      "nota": "A ação de escalar para a Infraestrutura para avaliar o servidor e verificar a necessidade de dimensionamento está respaldada, mas a afirmação de que o plano não inclui aplicações do cliente não consta no procedimento KB-115",
+      "juiz": {
+        "veredito": "NAO",
+        "saida": {
+          "passos": [
+            {
+              "passo": "Escalar para a Infraestrutura para avaliar o servidor e verificar se há necessidade de dimensionamento.",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Não há relação aparente com o problema atual (aunque este paso es una observación, no es una acción o comando).",
+              "no_procedimento": false
+            },
+            {
+              "passo": "Não há log anexado para análise (aunque este paso es una observación, no es una acción o comando).",
+              "no_procedimento": false
+            },
+            {
+              "passo": "Identificar o processo de maior consumo (implicito no procedimento KB-115, mas não mencionado explicitamente no texto como ação).",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Reiniciar o serviço afetado (implicito no procedimento KB-115, mas não mencionado explicitamente no texto como ação).",
+              "no_procedimento": true
+            }
+          ],
+          "veredito": "NAO",
+          "justificativa": {
+            "detalhes": {
+              "problema_principal": "O texto não menciona explicitamente os passos obrigatórios do procedimento **KB-115** (identificar o processo de maior consumo e reiniciar o serviço afetado), embora eles estejam implícitos. Além disso, o texto menciona que o procedimento **KB-115** não cobre o caso relatado devido ao escopo do plano, mas ainda assim sugere escalar para a Infraestrutura, o que está alinhado com o procedimento, mas não abrange todas as etapas necessárias. O texto também não menciona a verificação de logs ou ajustes de memória (procedimentos **KB-113** ou **KB-104**), que não são aplicáveis ao cenário relatado, mas a ausência de passos explícitos de **KB-115** é o ponto crítico para o veredito.",
+              "passos_ausentes_explicitamente": [
+                "Identificar o processo de maior consumo",
+                "Reiniciar o serviço afetado"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "TKT-0110",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0110.json",
+      "acao": "anotacao_interna",
+      "procedimentos": [
+        {
+          "kb_id": "KB-105",
+          "titulo": "Backup diário falhou",
+          "causa": "Cota de armazenamento de backup excedida ou janela de backup sobreposta a outra tarefa.",
+          "solucao": "Conferir a cota do storage de backup e o agendamento; reexecutar o job manualmente."
+        },
+        {
+          "kb_id": "KB-102",
+          "titulo": "Permissão negada ao gravar arquivos",
+          "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+          "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano."
+        },
+        {
+          "kb_id": "KB-111",
+          "titulo": "Envio de e-mail rejeitado ou marcado como spam",
+          "causa": "Registros SPF ou DKIM do domínio ausentes ou incorretos, ou IP de envio em lista de bloqueio.",
+          "solucao": "Conferir os registros SPF e DKIM da zona do domínio e consultar as listas de bloqueio para o IP de envio; corrigir a zona e reenviar uma mensagem de teste."
+        }
+      ],
+      "texto": "Conferir a cota de armazenamento de backup e o agendamento do job de backup diário para o domínio do cliente. Reexecutar o job manualmente conforme procedimento **KB-105**. *Nota: procedimento encontrado com score 0.66 (limiar 0.5), não é seguro agir sozinho sem validação prévia.*",
+      "rotulo_humano": "NAO",
+      "nota": "A afirmação de que não é seguro agir sozinho sem validação prévia não consta no procedimento KB-105",
+      "juiz": {
+        "veredito": "NAO",
+        "saida": {
+          "passos": [
+            {
+              "passo": "Conferir a cota de armazenamento de backup",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Conferir o agendamento do job de backup diário",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Reexecutar o job manualmente",
+              "no_procedimento": true
+            }
+          ],
+          "veredito": "NAO",
+          "justificativa": "O texto menciona um procedimento específico (**KB-105**) e inclui uma nota de alerta sobre a segurança de agir sem validação prévia, o que não está presente nos procedimentos fornecidos. Além disso, não há menção explícita à causa ou à necessidade de validação prévia em nenhum dos procedimentos listados. Embora os passos estejam alinhados com o procedimento **KB-105**, a nota de alerta e a referência ao procedimento com score de confiança não foram mencionadas nos procedimentos originais."
+        }
+      }
+    },
+    {
+      "id": "TKT-0112",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0112.json",
+      "acao": "anotacao_interna",
+      "procedimentos": [
+        {
+          "kb_id": "KB-103",
+          "titulo": "Acesso SSH bloqueado ou recusado",
+          "causa": "IP do cliente banido pelo fail2ban após tentativas falhas, ou regra de firewall.",
+          "solucao": "Verificar se o IP do cliente está banido no fail2ban e liberar; conferir porta e regras do firewall."
+        },
+        {
+          "kb_id": "KB-114",
+          "titulo": "Login por FTP ou SFTP falhando",
+          "causa": "Senha do usuário de FTP expirada ou alterada, ou IP do cliente barrado depois de tentativas de login sem sucesso.",
+          "solucao": "Redefinir a senha do usuário de FTP, conferir o registro de autenticação e liberar o IP do cliente se ele estiver barrado."
+        },
+        {
+          "kb_id": "KB-107",
+          "titulo": "Banco de dados recusando conexões",
+          "causa": "Limite de conexões simultâneas do servidor de banco de dados atingido, ou serviço do banco parado depois do reinício do servidor.",
+          "solucao": "Conferir se o serviço do banco está ativo e quantas conexões estão abertas; reiniciar o serviço e ajustar o limite de conexões da conta."
+        }
+      ],
+      "texto": "Procedimento **KB-103** encontrado para o caso de acesso SSH bloqueado ou recusado (score **0.62**, abaixo do limiar de **0.5** para execução segura sem supervisão). **Não cobre o caso relatado**, pois não há log anexado para verificar se o bloqueio é por fail2ban ou regra de firewall. **Ação necessária:** Verificar manualmente se o IP do cliente está banido no fail2ban ou se há restrições no firewall. Confirmar se a porta **22** está aberta e se não há regras adicionais bloqueando o acesso.",
+      "rotulo_humano": "NAO",
+      "nota": "O score 0.62 é superior ao limiar 0.5, não inferior. Além disso, afirmar que a KB-103 não cobre o caso contradiz sua aplicação direta a problemas de acesso SSH bloqueado ou recusado",
+      "juiz": {
+        "veredito": "SIM",
+        "saida": {
+          "passos": [
+            {
+              "passo": "Verificar manualmente se o IP do cliente está banido no fail2ban",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Verificar se há restrições no firewall",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Confirmar se a porta 22 está aberta",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Verificar se não há regras adicionais bloqueando o acesso",
+              "no_procedimento": true
+            }
+          ],
+          "veredito": "SIM",
+          "justificativa": "Todos os passos estão presentes nos procedimentos KB-103 (verificar IP banido no fail2ban e regras do firewall) e KB-107 (conferir porta aberta, embora não explicitamente mencionada no KB-103, a verificação de porta 22 é coerente com o contexto de acesso SSH bloqueado). Não há passos que não estejam contemplados nos procedimentos fornecidos."
+        }
+      }
+    },
+    {
+      "id": "TKT-0113",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0113.json",
+      "acao": "anotacao_interna",
+      "procedimentos": [
+        {
+          "kb_id": "KB-108",
+          "titulo": "Disco ou cota de armazenamento cheia",
+          "causa": "Cota de disco da conta excedida por logs, caches ou cópias antigas acumulados.",
+          "solucao": "Listar os diretórios que mais ocupam espaço, remover logs e caches antigos e conferir se a cota de inodes também se esgotou."
+        },
+        {
+          "kb_id": "KB-105",
+          "titulo": "Backup diário falhou",
+          "causa": "Cota de armazenamento de backup excedida ou janela de backup sobreposta a outra tarefa.",
+          "solucao": "Conferir a cota do storage de backup e o agendamento; reexecutar o job manualmente."
+        },
+        {
+          "kb_id": "KB-102",
+          "titulo": "Permissão negada ao gravar arquivos",
+          "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+          "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano."
+        }
+      ],
+      "texto": "Seguir procedimento **KB-108 - Disco ou cota de armazenamento cheia** para verificar e limpar diretórios com excesso de ocupação no **o domínio do cliente** (plano **Hospedagem Start**). Verificar se há esgotamento de inodes após a limpeza. **Score do procedimento: 0.65** (abaixo do limiar de 0.70). **Não agir sozinho sem validação.**",
+      "rotulo_humano": "NAO",
+      "nota": "A orientação de não agir sozinho sem validação não consta na KB-108",
+      "juiz": {
+        "veredito": "NAO",
+        "saida": {
+          "passos": [
+            {
+              "passo": "Seguir procedimento KB-108 para verificar e limpar diretórios com excesso de ocupação",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Verificar se há esgotamento de inodes após a limpeza",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Não agir sozinho sem validação",
+              "no_procedimento": false
+            }
+          ],
+          "veredito": "NAO",
+          "justificativa": "O passo 'Não agir sozinho sem validação' não está presente em nenhum dos procedimentos fornecidos. Além disso, o texto menciona um **domínio do cliente** e um **plano Hospedagem Start**, que não são passos ou ações, mas detalhes contextuais que não constam como parte das soluções ou causas dos procedimentos."
+        }
+      }
+    },
+    {
+      "id": "TKT-0114",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0114.json",
+      "acao": "anotacao_interna",
+      "procedimentos": [
+        {
+          "kb_id": "KB-109",
+          "titulo": "Tarefa agendada (cron) não executa",
+          "causa": "Entrada do crontab com sintaxe inválida, caminho do script errado ou usuário sem direito de execução sobre o script.",
+          "solucao": "Conferir a sintaxe da entrada no crontab, o caminho absoluto do script e o registro de execução do cron; testar o script à mão com o mesmo usuário."
+        },
+        {
+          "kb_id": "KB-105",
+          "titulo": "Backup diário falhou",
+          "causa": "Cota de armazenamento de backup excedida ou janela de backup sobreposta a outra tarefa.",
+          "solucao": "Conferir a cota do storage de backup e o agendamento; reexecutar o job manualmente."
+        },
+        {
+          "kb_id": "KB-102",
+          "titulo": "Permissão negada ao gravar arquivos",
+          "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+          "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano."
+        }
+      ],
+      "texto": "Conferir a sintaxe da entrada no crontab do usuário do cliente para a tarefa de geração de relatórios, validando se o caminho do script é absoluto e se o usuário possui permissão de execução sobre o arquivo. Verificar também o registro de execução do cron para identificar possíveis erros ocultos. O procedimento **KB-109** foi aplicado, mas o cliente deve confirmar se o script funciona manualmente com o mesmo usuário antes de qualquer alteração no crontab.",
+      "rotulo_humano": "SIM",
+      "nota": "A conferência da sintaxe do crontab, do caminho absoluto, das permissões de execução e dos registros do cron está prevista na KB-109",
+      "juiz": {
+        "veredito": "SIM",
+        "saida": {
+          "passos": [
+            {
+              "passo": "Conferir a sintaxe da entrada no crontab do usuário do cliente para a tarefa de geração de relatórios",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Validar se o caminho do script é absoluto",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Verificar se o usuário possui permissão de execução sobre o arquivo",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Verificar o registro de execução do cron para identificar possíveis erros ocultos",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Testar o script manualmente com o mesmo usuário antes de qualquer alteração no crontab",
+              "no_procedimento": true
+            }
+          ],
+          "veredito": "SIM",
+          "justificativa": "Todos os passos do texto estão alinhados com o procedimento **KB-109**, que aborda sintaxe inválida, caminho do script e permissões de execução, além de sugerir testar o script manualmente. Não há passos que contradizem ou extrapolam os procedimentos fornecidos."
+        }
+      }
+    },
+    {
+      "id": "TKT-0115",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0115.json",
+      "acao": "anotacao_interna",
+      "procedimentos": [
+        {
+          "kb_id": "KB-110",
+          "titulo": "Site em laço de redirecionamentos",
+          "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+          "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos."
+        },
+        {
+          "kb_id": "KB-112",
+          "titulo": "Bloqueio indevido pelo firewall de aplicação (WAF)",
+          "causa": "Regra do firewall de aplicação classificou como ataque uma requisição legítima do site e passou a devolver 403.",
+          "solucao": "Localizar no registro do WAF a regra acionada, liberar a requisição legítima com uma exceção restrita à URL e reavaliar a regra."
+        },
+        {
+          "kb_id": "KB-101-A",
+          "titulo": "Certificado SSL não renovou automaticamente",
+          "causa": "Desafio HTTP-01 falhando (porta 80 bloqueada ou DNS apontando para outro IP) ou timer do certbot parado.",
+          "solucao": "Conferir DNS do domínio e liberação da porta 80; rodar \"certbot renew --dry-run\"; reativar o timer do certbot."
+        }
+      ],
+      "texto": "Procedimento KB-110 - Site em laço de redirecionamentos (score 0.7): revisar as **regras de redirecionamento do nginx** para remover possíveis conflitos (ex.: regra duplicada que força HTTPS e volta ao HTTP). Testar com `curl -I` seguindo os redirecionamentos. **Não cobre alterações no código do site do cliente** (escopo do plano).",
+      "rotulo_humano": "NAO",
+      "nota": "A afirmação de que o plano não cobre alterações no código do site do cliente não consta na KB-110",
+      "juiz": {
+        "veredito": "NAO",
+        "saida": {
+          "passos": [
+            {
+              "passo": "revisar as regras de redirecionamento do nginx",
+              "no_procedimento": true
+            },
+            {
+              "passo": "remover possíveis conflitos (ex.: regra duplicada que força HTTPS e volta ao HTTP)",
+              "no_procedimento": true
+            },
+            {
+              "passo": "testar com `curl -I` seguindo os redirecionamentos",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Não cobre alterações no código do site do cliente (escopo do plano)",
+              "no_procedimento": false
+            }
+          ],
+          "veredito": "NAO",
+          "justificativa": "O texto menciona um escopo que não está presente em nenhum dos procedimentos fornecidos (KB-110, KB-112 ou KB-101-A). Além disso, o texto não menciona nada sobre o WAF ou o certbot, que são abordados em outros procedimentos, mas isso não invalida o veredito, pois o passo fora do escopo já é suficiente para classificar como 'NAO'."
+        }
+      }
+    },
+    {
+      "id": "TKT-0116",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0116.json",
+      "acao": "anotacao_interna",
+      "procedimentos": [
+        {
+          "kb_id": "KB-111",
+          "titulo": "Envio de e-mail rejeitado ou marcado como spam",
+          "causa": "Registros SPF ou DKIM do domínio ausentes ou incorretos, ou IP de envio em lista de bloqueio.",
+          "solucao": "Conferir os registros SPF e DKIM da zona do domínio e consultar as listas de bloqueio para o IP de envio; corrigir a zona e reenviar uma mensagem de teste."
+        },
+        {
+          "kb_id": "KB-112",
+          "titulo": "Bloqueio indevido pelo firewall de aplicação (WAF)",
+          "causa": "Regra do firewall de aplicação classificou como ataque uma requisição legítima do site e passou a devolver 403.",
+          "solucao": "Localizar no registro do WAF a regra acionada, liberar a requisição legítima com uma exceção restrita à URL e reavaliar a regra."
+        },
+        {
+          "kb_id": "KB-104",
+          "titulo": "Site fora do ar com erro 5xx após deploy",
+          "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+          "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele)."
+        }
+      ],
+      "texto": "Conferir os registros **SPF** e **DKIM** da zona de **o domínio do cliente** e verificar se o IP de envio de e-mails está em listas de bloqueio (RBLs). Caso os registros estejam ausentes ou incorretos, corrigi-los na zona DNS e solicitar ao cliente que reenvie uma mensagem de teste para validação. **O procedimento KB-111 não cobre a configuração de listas de bloqueio externas ao servidor (como listas de spam de provedores), mas a verificação dos registros SPF/DKIM é obrigatória para o plano Business.**",
+      "rotulo_humano": "NAO",
+      "nota": "Afirma que a verificação de SPF/DKIM é obrigatória para o plano Business, informação que não consta na KB-111. Além disso, restringe a verificação de listas de bloqueio externas, enquanto o procedimento determina consultar as listas de bloqueio para o IP de envio",
+      "juiz": {
+        "veredito": "NAO",
+        "saida": {
+          "passos": [
+            {
+              "passo": "Conferir os registros SPF da zona do domínio",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Conferir os registros DKIM da zona do domínio",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Verificar se o IP de envio de e-mails está em listas de bloqueio (RBLs)",
+              "no_procedimento": false
+            },
+            {
+              "passo": "Corrigir registros SPF ou DKIM ausentes ou incorretos na zona DNS",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Solicitar ao cliente que reenvie uma mensagem de teste para validação",
+              "no_procedimento": true
+            },
+            {
+              "passo": "O procedimento KB-111 não cobre a configuração de listas de bloqueio externas ao servidor (como listas de spam de provedores)",
+              "no_procedimento": false
+            }
+          ],
+          "veredito": "NAO",
+          "justificativa": "O texto menciona a verificação de listas de bloqueio externas (RBLs) e uma observação sobre listas de spam de provedores, que não estão contempladas nos procedimentos fornecidos. Além disso, o texto não menciona a localização de regras do WAF ou reinício de processos da aplicação, que são passos presentes em outros procedimentos, mas não aplicáveis ao contexto do texto."
+        }
+      }
+    },
+    {
+      "id": "TKT-0117",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0117.json",
+      "acao": "anotacao_interna",
+      "procedimentos": [
+        {
+          "kb_id": "KB-113",
+          "titulo": "Aplicação PHP esgotando a memória",
+          "causa": "Limite de memória do PHP da conta menor que o necessário para o script, ou script com consumo anormal.",
+          "solucao": "Conferir no registro de erros a mensagem de memória esgotada, ajustar o limite de memória da conta dentro do teto do plano e identificar o script de maior consumo."
+        },
+        {
+          "kb_id": "KB-102",
+          "titulo": "Permissão negada ao gravar arquivos",
+          "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+          "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano."
+        },
+        {
+          "kb_id": "KB-115",
+          "titulo": "Servidor com CPU ou memória saturada",
+          "causa": "Processo da aplicação consumindo CPU ou memória do servidor além da capacidade, em geral depois de um pico de acessos ou de um laço no código.",
+          "solucao": "Identificar o processo de maior consumo, reiniciar o serviço afetado e registrar a lentidão para a Infraestrutura avaliar o dimensionamento."
+        }
+      ],
+      "texto": "Procedimento KB-113 - Aplicação PHP esgotando a memória: verificar o registro de erros do site para confirmar a mensagem de limite de memória esgotada. Ajustar o limite de memória da conta dentro do teto do plano (Hospedagem Start), mas **não cobrir a depuração do código do site**, que é responsabilidade do cliente. Caso o script seja identificado como de alto consumo, sugerir ao cliente a migração para um plano com maior capacidade de memória ou a otimização do código.",
+      "rotulo_humano": "NAO",
+      "nota": "Sugerir migração para um plano superior ou otimização do código não consta na KB-113. A afirmação de que a depuração do código é responsabilidade do cliente também não está prevista no procedimento",
+      "juiz": {
+        "veredito": "NAO",
+        "saida": {
+          "passos": [
+            {
+              "passo": "verificar o registro de erros do site para confirmar a mensagem de limite de memória esgotada",
+              "no_procedimento": true
+            },
+            {
+              "passo": "ajustar o limite de memória da conta dentro do teto do plano (Hospedagem Start)",
+              "no_procedimento": true
+            },
+            {
+              "passo": "identificar o script de maior consumo",
+              "no_procedimento": true
+            },
+            {
+              "passo": "sugerir ao cliente a migração para um plano com maior capacidade de memória ou a otimização do código",
+              "no_procedimento": false
+            },
+            {
+              "passo": "não cobrir a depuração do código do site (responsabilidade do cliente)",
+              "no_procedimento": false
+            }
+          ],
+          "veredito": "NAO",
+          "justificativa": "O texto inclui passos que não estão explicitamente descritos nos procedimentos fornecidos: 'não cobrir a depuração do código do site' (responsabilidade do cliente) e 'sugerir ao cliente a migração para um plano com maior capacidade de memória ou a otimização do código', que não é uma ação prescrita nos procedimentos. Além disso, o procedimento KB-113 não menciona a necessidade de migração para um plano com maior capacidade de memória como solução."
+        }
+      }
+    },
+    {
+      "id": "TKT-0118",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0118.json",
+      "acao": "anotacao_interna",
+      "procedimentos": [
+        {
+          "kb_id": "KB-114",
+          "titulo": "Login por FTP ou SFTP falhando",
+          "causa": "Senha do usuário de FTP expirada ou alterada, ou IP do cliente barrado depois de tentativas de login sem sucesso.",
+          "solucao": "Redefinir a senha do usuário de FTP, conferir o registro de autenticação e liberar o IP do cliente se ele estiver barrado."
+        },
+        {
+          "kb_id": "KB-102",
+          "titulo": "Permissão negada ao gravar arquivos",
+          "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+          "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano."
+        },
+        {
+          "kb_id": "KB-103",
+          "titulo": "Acesso SSH bloqueado ou recusado",
+          "causa": "IP do cliente banido pelo fail2ban após tentativas falhas, ou regra de firewall.",
+          "solucao": "Verificar se o IP do cliente está banido no fail2ban e liberar; conferir porta e regras do firewall."
+        }
+      ],
+      "texto": "Verificar e redefinir a senha do usuário de FTP do cliente (Iota Transportes) conforme procedimento **KB-114**. Conferir o registro de autenticação para identificar se o IP do cliente está bloqueado por tentativas de login falhas. Caso o IP esteja bloqueado, liberá-lo. **Nota:** O procedimento não aborda a aplicação FTP em si, que está fora do escopo do suporte.",
+      "rotulo_humano": "NAO",
+      "nota": "A afirmação de que a aplicação FTP está fora do escopo do suporte não consta na KB-114",
+      "juiz": {
+        "veredito": "SIM",
+        "saida": {
+          "passos": [
+            {
+              "passo": "Verificar e redefinir a senha do usuário de FTP do cliente",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Conferir o registro de autenticação para identificar se o IP do cliente está bloqueado por tentativas de login falhas",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Liberar o IP do cliente caso esteja bloqueado",
+              "no_procedimento": true
+            }
+          ],
+          "veredito": "SIM",
+          "justificativa": "Todos os passos estão presentes nos procedimentos **KB-114** (causa e solução para login por FTP/SFTP falhando). O texto não menciona nenhum passo fora do escopo dos procedimentos fornecidos."
+        }
+      }
+    },
+    {
+      "id": "TKT-0133",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0133.json",
+      "acao": "abrir_chamado_interno",
+      "procedimentos": [
+        {
+          "kb_id": "KB-102",
+          "titulo": "Permissão negada ao gravar arquivos",
+          "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+          "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano."
+        },
+        {
+          "kb_id": "KB-105",
+          "titulo": "Backup diário falhou",
+          "causa": "Cota de armazenamento de backup excedida ou janela de backup sobreposta a outra tarefa.",
+          "solucao": "Conferir a cota do storage de backup e o agendamento; reexecutar o job manualmente."
+        },
+        {
+          "kb_id": "KB-114",
+          "titulo": "Login por FTP ou SFTP falhando",
+          "causa": "Senha do usuário de FTP expirada ou alterada, ou IP do cliente barrado depois de tentativas de login sem sucesso.",
+          "solucao": "Redefinir a senha do usuário de FTP, conferir o registro de autenticação e liberar o IP do cliente se ele estiver barrado."
+        }
+      ],
+      "texto": "Resumo para escalar: no domínio do cliente (VPS Pro), o sistema de upload de anexos falha com erro 'Permission denied' ao tentar gravar arquivos na pasta `/home/beta/public_html/anexos/`. O histórico confirma 1 ocorrência anterior (INC-0001), mas o cliente afirma que é a terceira vez neste mês. O log anexado confirma o erro em dois tentativas de upload (pedidos 4471). O procedimento KB-102 (score 0.61) sugere revisão de permissões em arquivos/pastas, mas exige acesso administrativo ao servidor.",
+      "rotulo_humano": "SIM",
+      "nota": "A revisão das permissões de arquivos e pastas e a exigência de acesso administrativo estão previstas na KB-102",
+      "juiz": {
+        "veredito": "NAO",
+        "saida": {
+          "passos": [
+            {
+              "passo": "Revisão de permissões em arquivos/pastas",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Exige acesso administrativo ao servidor",
+              "no_procedimento": true
+            }
+          ],
+          "veredito": "NAO",
+          "justificativa": {
+            "detalhes": {
+              "procedimento_ausente": {
+                "descricao": "O texto menciona a necessidade de **acesso administrativo ao servidor**, mas não detalha explicitamente a ação de **corrigir permissões via `chown/chmod`** (presente no KB-102). Embora o procedimento seja citado, o texto não instrui o analista a executar o passo-chave de correção de permissões (somente menciona a revisão). Além disso, não há referência a nenhum procedimento para **upload de anexos falhando** (que não está listado nos procedimentos fornecidos). O veredito é **NAO** por falta de instrução explícita de ação correta (chown/chmod) e ausência de procedimento específico para o cenário relatado."
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "TKT-0134",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0134.json",
+      "acao": "abrir_chamado_interno",
+      "procedimentos": [
+        {
+          "kb_id": "KB-106",
+          "titulo": "Falha de resolução DNS do domínio",
+          "causa": "Nameserver do domínio fora do ar ou zona DNS com registro inválido.",
+          "solucao": "Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS."
+        },
+        {
+          "kb_id": "KB-110",
+          "titulo": "Site em laço de redirecionamentos",
+          "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+          "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos."
+        },
+        {
+          "kb_id": "KB-112",
+          "titulo": "Bloqueio indevido pelo firewall de aplicação (WAF)",
+          "causa": "Regra do firewall de aplicação classificou como ataque uma requisição legítima do site e passou a devolver 403.",
+          "solucao": "Localizar no registro do WAF a regra acionada, liberar a requisição legítima com uma exceção restrita à URL e reavaliar a regra."
+        }
+      ],
+      "texto": "Resumo para escalada interna - Falha de resolução DNS no domínio do cliente (Gama Cursos Online, plano Hospedagem Start). O cliente relata que o site e a área do aluno não abrem há três vezes em duas semanas, mas o histórico do sistema não confirma ocorrências anteriores. O log anexado mostra falha de resolução DNS (SERVFAIL) e timeout no nameserver **ns1.gama-cursos.example**. O procedimento **KB-106** (score 0.55) sugere verificar o nameserver e registros DNS, mas não cobre o caso relatado. O suporte está limitado ao ambiente do servidor (DNS, conta, certificados, arquivos e e-mail).",
+      "rotulo_humano": "NAO",
+      "nota": "Afirma que a KB-106 não cobre o caso relatado, embora o procedimento trate diretamente de falha de resolução DNS. A delimitação do escopo do suporte também não consta na KB-106",
+      "juiz": {
+        "veredito": "NAO",
+        "saida": {
+          "passos": [
+            {
+              "passo": "Verificar o nameserver responsável pela zona (ns1.gama-cursos.example)",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Verificar os registros DNS do domínio",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Restabelecer o serviço de DNS",
+              "no_procedimento": true
+            }
+          ],
+          "veredito": "NAO",
+          "justificativa": {
+            "detalhes": {
+              "procedimento_faltante": "O texto menciona que o procedimento **KB-106** não cobre o caso relatado, mas não há instruções adicionais ou passos específicos para lidar com a situação específica de **SERVFAIL** ou timeout no nameserver, que não estão explicitamente descritos nos procedimentos fornecidos. Além disso, o texto não menciona a necessidade de revisar ou remover conflitos de redirecionamento ou liberar regras no WAF, que são outros procedimentos válidos, mas não aplicados aqui. O veredito é NAO porque o texto não segue estritamente os passos de um único procedimento e não aborda um procedimento adicional que seria necessário para resolver o problema relatado."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "TKT-0135",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0135.json",
+      "acao": "anotacao_interna",
+      "procedimentos": [
+        {
+          "kb_id": "KB-105",
+          "titulo": "Backup diário falhou",
+          "causa": "Cota de armazenamento de backup excedida ou janela de backup sobreposta a outra tarefa.",
+          "solucao": "Conferir a cota do storage de backup e o agendamento; reexecutar o job manualmente."
+        },
+        {
+          "kb_id": "KB-102",
+          "titulo": "Permissão negada ao gravar arquivos",
+          "causa": "Arquivos ou pastas da conta com dono ou permissões incorretos, em geral depois de restauração, migração ou publicação feita por outro usuário.",
+          "solucao": "Identificar os arquivos e pastas com dono ou permissões incorretos e corrigi-los (chown/chmod). Exige acesso de administrador ao servidor, em qualquer plano."
+        },
+        {
+          "kb_id": "KB-109",
+          "titulo": "Tarefa agendada (cron) não executa",
+          "causa": "Entrada do crontab com sintaxe inválida, caminho do script errado ou usuário sem direito de execução sobre o script.",
+          "solucao": "Conferir a sintaxe da entrada no crontab, o caminho absoluto do script e o registro de execução do cron; testar o script à mão com o mesmo usuário."
+        }
+      ],
+      "texto": "Conferir a cota de armazenamento de backup e o agendamento do job de backup do **domínio do cliente** conforme procedimento **KB-105**. Reexecutar o job manualmente após a verificação. O procedimento encontrado possui score 0.7, acima do limiar de 0.5, mas não cobre a ocorrência de duas falhas na mesma semana. Validar se a causa relatada (cota excedida ou janela sobreposta) se aplica ao caso.",
+      "rotulo_humano": "NAO",
+      "nota": "Afirma que a KB-105 não cobre duas falhas na mesma semana, restrição que não consta no procedimento",
+      "juiz": {
+        "veredito": "NAO",
+        "saida": {
+          "passos": [
+            {
+              "passo": "Conferir a cota de armazenamento de backup",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Conferir o agendamento do job de backup",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Reexecutar o job manualmente após a verificação",
+              "no_procedimento": true
+            },
+            {
+              "passo": "Validar se a causa relatada (cota excedida ou janela sobreposta) se aplica ao caso",
+              "no_procedimento": false
+            }
+          ],
+          "veredito": "NAO",
+          "justificativa": "O passo 'Validar se a causa relatada (cota excedida ou janela sobreposta) se aplica ao caso' não é um procedimento prescrito, mas uma validação adicional não documentada nos procedimentos fornecidos. Além disso, o texto menciona um procedimento específico (KB-105) para o domínio do cliente, mas não aborda a ocorrência de duas falhas na mesma semana, que não está coberta por nenhum dos procedimentos fornecidos."
+        }
+      }
+    },
+    {
+      "id": "TKT-0136",
+      "log": "evals/resultados/v1.0.0-2026-11-20-2129/logs/rep-1/TKT-0136.json",
+      "acao": "abrir_chamado_interno",
+      "procedimentos": [
+        {
+          "kb_id": "KB-106",
+          "titulo": "Falha de resolução DNS do domínio",
+          "causa": "Nameserver do domínio fora do ar ou zona DNS com registro inválido.",
+          "solucao": "Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS."
+        },
+        {
+          "kb_id": "KB-104",
+          "titulo": "Site fora do ar com erro 5xx após deploy",
+          "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+          "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele)."
+        },
+        {
+          "kb_id": "KB-110",
+          "titulo": "Site em laço de redirecionamentos",
+          "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+          "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos."
+        }
+      ],
+      "texto": "Resumo para escalar: o domínio do cliente apresenta falha de resolução DNS (SERVFAIL) no registro do nome **www.delta-restaurantes.example**, mas o acesso direto ao IP do servidor (203.0.113.71) permite carregar a página inicial normalmente. O histórico do sistema não confirma ocorrências anteriores, embora o cliente afirme que é a terceira vez no mês. O procedimento **KB-106** (score 0.51) sugere verificar o nameserver e os registros DNS do domínio, mas não cobre a zona externa do cliente. **Ação necessária:** escalar para o time de DNS externo.",
+      "rotulo_humano": "NAO",
+      "nota": "A afirmação de que a KB-106 não cobre a zona externa do cliente e a orientação de escalar para o time de DNS externo não constam no procedimento",
+      "juiz": {
+        "veredito": "NAO",
+        "saida": {
+          "passos": [
+            {
+              "passo": "escalar para o time de DNS externo",
+              "no_procedimento": false
+            }
+          ],
+          "veredito": "NAO",
+          "justificativa": "O passo 'escalar para o time de DNS externo' não está presente em nenhum dos procedimentos fornecidos (KB-106, KB-104 ou KB-110). O procedimento **KB-106** sugere verificar o nameserver e os registros DNS, mas não menciona escalar para um time externo. Além disso, o texto menciona que o procedimento **KB-106** não cobre a zona externa do cliente, o que não é um passo de ação, mas uma observação."
+        }
+      }
+    }
+  ]
+}
