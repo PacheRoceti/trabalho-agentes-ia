@@ -243,21 +243,21 @@ leitura (ASI03). Elas vão para a seção Lacunas do `docs/model-card.md`.
 fictícios, IPs da faixa de documentação 203.0.113.0/24. Mas o sistema foi desenhado para receber
 **texto livre de cliente**, que num uso real pode trazer nome, e-mail, IP, trechos de log com dados
 de usuários finais e até uma senha colada no relato. O mapa abaixo segue esse texto. As bases legais
-são as **candidatas** do `docs/model-card.md` §6: o grupo não as decidiu, e por isso continuam
-marcadas como lacuna ali.
+foram **declaradas pelo grupo em 21/11/2026** (`docs/model-card.md` §6). O prazo de guarda do
+protótipo, com dado simulado, é **até o fim da disciplina**; com dado real, continua indefinido (L11).
 
 | Lugar | Dado | Finalidade | Base legal (LGPD, art. 7º) | Prazo de guarda |
 |---|---|---|---|---|
-| **entrada** (`tickets_externos.texto` e `anexo_log`) | o relato e o log anexado | triagem | candidata: V (execução de contrato); LACUNA L18 | nenhum definido (L11) |
+| **entrada** (`tickets_externos.texto` e `anexo_log`) | o relato e o log anexado | triagem | V (execução do contrato) | protótipo: até o fim da disciplina; com dado real, indefinido (L11) |
 | **prompt → Mistral (chat)**, nos três nós de modelo | relato, nome do cliente, plano, log anexado inteiro, histórico | classificar, conferir ressalva, redigir | a mesma da entrada, e transferência internacional (art. 33) se o provedor processar fora do Brasil; LACUNA L19 | o do provedor, não verificado (L9, L10) |
 | **embedding → Mistral** | o relato | busca vetorial | idem | idem |
 | **índice** (`kb_vetores`) | só os guias e as fichas de plano; **nenhum dado de cliente** | busca | não se aplica | reconstruído quando o corpus muda |
-| **checkpoint** (`dados/checkpoints.db`) | o estado da execução, com o relato e o log anexado | retomar a execução pausada | candidata: V; LACUNA L20 | apagado quando a execução conclui (`src/grafo.py:861-862`); a pausa nunca resolvida fica (L12) |
-| **pendência** (`pendencias.acao`) | o resumo redigido; no H2, o relato | a tela do analista | candidata: V; LACUNA L21 | sem remoção (L12) |
-| **memória episódica** (`episodios`) | id do cliente, classe, guia, score, desfecho, veredito, e um resumo **montado pelo código** a partir desses campos | precedentes na tela do analista | candidata: IX (legítimo interesse); LACUNA L24 | 90 dias contam; de 90 a 365 aparecem como antigos; depois são apagados (`db.esquecer_episodios`, `src/db.py:641`) |
-| **memória semântica** (`fatos_cliente`) | id do cliente e um de seis valores fechados | contexto da tela e da ressalva | candidata: V; LACUNA L25 | sem decaimento; substituído por contradição |
-| **log JSON** (`logs/**/*.json`) | a entrada inteira e o argumento e resultado de cada passo (inclui o log anexado e o texto redigido) | auditoria e avaliação | candidata: IX; LACUNA L26 | indefinido: os logs são versionados no git (L11) |
-| **trace** (`logs/**/*.trace.jsonl`, novo) | a entrada (`triagem.entrada`), os argumentos e resultados das ferramentas (cortados em 4.000 caracteres), a saída e quem aprovou | registro da decisão e observabilidade | **herda a classificação do log**: a mesma lacuna | o mesmo do log: indefinido |
+| **checkpoint** (`dados/checkpoints.db`) | o estado da execução, com o relato e o log anexado | retomar a execução pausada | V | apagado quando a execução conclui (`src/grafo.py:861-862`); toda pausa termina pelo prazo de 20 minutos |
+| **pendência** (`pendencias.acao`) | o resumo redigido; no H2, o relato | a tela do analista | V | a linha não é removida (L12) |
+| **memória episódica** (`episodios`) | id do cliente, classe, guia, score, desfecho, veredito, e um resumo **montado pelo código** a partir desses campos | precedentes na tela do analista | IX (legítimo interesse) | 90 dias contam; de 90 a 365 aparecem como antigos; depois são apagados (`db.esquecer_episodios`, `src/db.py:641`) |
+| **memória semântica** (`fatos_cliente`) | id do cliente e um de seis valores fechados | contexto da tela e da ressalva | V | sem decaimento; substituído por contradição |
+| **log JSON** (`logs/**/*.json`) | a entrada inteira e o argumento e resultado de cada passo (inclui o log anexado e o texto redigido) | auditoria e avaliação | IX (registro de auditoria) | protótipo: até o fim da disciplina; com dado real, indefinido (L11) |
+| **trace** (`logs/**/*.trace.jsonl`, novo) | a entrada (`triagem.entrada`), os argumentos e resultados das ferramentas (cortados em 4.000 caracteres), a saída e quem aprovou | registro da decisão e observabilidade | **herda a classificação do log**: IX (registro de auditoria) | o mesmo do log: protótipo, até o fim da disciplina; com dado real, indefinido (L11) |
 
 **Minimização, o que fica declarado:** o log anexado vai inteiro ao provedor, mesmo quando só o
 serviço apontado interessa à triagem (L27); e **o sistema não filtra credencial nem identificador

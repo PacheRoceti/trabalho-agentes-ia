@@ -22,7 +22,7 @@ campo 12 e em `docs/mudancas.md`.
 | Versão | **1.1.0**, commit `fa74011`. A versão vai a cada trace, no atributo `triagem.versao` | `src/versao.py`; atributo da raiz em `src/telemetria.py:123` (`telemetria.raiz`) |
 | Data | 20/11/2026 (a rodada da 1.1.0) | `evals/resultados/v1.1.0-2026-11-20-2244/resultado.json` |
 | Integrantes | Daniel Filho Oliveira Lima · Pedro Gustavo de Campos Teixeira Silva · Pedro Roceti Pache | `README.md` L3 |
-| Responsável quando algo dá errado | Pedro Roceti Pache | **LACUNA L1**: o repositório lista autores, e não responsáveis por papel |
+| Responsável quando algo dá errado | **Pedro Roceti Pache**, nos quatro papéis: produto, desenvolvimento, operação e risco | decisão do grupo, registrada em 21/11/2026. ~~LACUNA L1~~, resolvida |
 
 ## 2. Finalidade
 
@@ -127,9 +127,9 @@ Neste card ficam as lacunas que aquele mapa aponta:
 
 | Lugar | Lacuna |
 |---|---|
-| Entrada, prompt, embedding, checkpoint, pendências, chamado, encaminhamento, memórias, log e trace | **LACUNAS L18 a L26**: nenhuma base legal (LGPD, art. 7º) está declarada pelo responsável. As candidatas estão na seção Lacunas |
-| Log e trace (`logs/**`, `evals/resultados/**`) | **LACUNA L11**: o texto inteiro do cliente fica guardado sem prazo, num repositório git |
-| Checkpoint e pendência nunca resolvidos | **LACUNA L12**: não são removidos |
+| Entrada, prompt, embedding, checkpoint, pendências, chamado, encaminhamento, memórias, log e trace | **Bases legais declaradas pelo grupo em 21/11/2026** (LGPD, art. 7º). O **inciso V**, execução do contrato de hospedagem, vale para a entrada, o prompt e o embedding enviados ao provedor, o checkpoint, as pendências, o chamado interno, o encaminhamento e a memória semântica. O **inciso IX**, legítimo interesse, vale para a memória episódica e para o log e o trace, como registro de auditoria. As lacunas L18, L20 a L22 e L24 a L26 estão resolvidas. Continua aberta a **L19**, só na transferência internacional (art. 33), que depende da região do provedor (L9) |
+| Log e trace (`logs/**`, `evals/resultados/**`) | Com o dado simulado do protótipo, o prazo é **até o fim da disciplina** (declarado em 21/11/2026). Com dado real, o prazo **não está definido** (**LACUNA L11**): o texto inteiro do cliente ficaria num repositório git |
+| Checkpoint e pendência | Toda pausa termina, pelo prazo de 20 minutos que o vigia e o começo de cada comando aplicam, e o checkpoint é apagado quando a execução conclui (`src/grafo.py:862`, `:874`). **LACUNA L12**: a **linha** da tabela `pendencias`, com o resumo redigido e, no H2, o relato, não é removida nunca |
 | Log anexado | **LACUNA L27**: vai inteiro ao provedor |
 
 ## 7. Avaliação
@@ -201,7 +201,7 @@ ao lado, para a suíte e para o `ver_log.py`.
 | Pausa e aprovação | são dois traces no mesmo arquivo, ligados pelo `triagem.execucao_id` | teste `test_pausa_e_aprovacao_sao_dois_traces_ligados_pela_execucao` |
 | Ligação com o código | o atributo `triagem.commit`, com a marca "+ alterações locais" quando `src/` ou `dados/` têm mudança não commitada | `src/agente.py:56-66` |
 | Onde fica | `logs/<rodada>/<id>.trace.jsonl`; na suíte, `evals/resultados/<rodada>/logs/rep-N/` | `README.md`, "Como ver os traces" |
-| Por quanto tempo | **Indefinido.** Os traces citados nos documentos são versionados no git (o `.gitignore` não exclui `logs/` nem `evals/resultados/`), e ficam enquanto o repositório existir | **LACUNA L11** |
+| Por quanto tempo | **No protótipo, até o fim da disciplina** (declarado pelo grupo em 21/11/2026). Os traces citados nos documentos são versionados no git (o `.gitignore` não exclui `logs/` nem `evals/resultados/`), e o dado é simulado. **Com dado real, não está definido** | **LACUNA L11** (o prazo com dado real) |
 | Quem pode ler | **Qualquer pessoa com o link**: o repositório é público. O trace traz a entrada inteira do cliente e herda a classificação do log (`docs/seguranca.md` §5.1). Com dado simulado não fere ninguém; com dado real, seria vazamento | **LACUNA L30** |
 | O que não tem trace | a recuperação depois de uma queda (`docs/humano.md` §4.3) | **LACUNA L35** |
 
@@ -275,7 +275,7 @@ As correções que a correção da Parte 2 apontou, e cada mudança com o commit
 
 | # | Campo | Lacuna | Correção proposta | Prioridade |
 |---|---|---|---|---|
-| L1 | Identificação | não há responsável por papel | nomear um responsável por papel: produto, desenvolvimento, operação e risco | Alta |
+| ~~L1~~ | Identificação | não havia responsável por papel | **resolvida em 21/11/2026**: Pedro Roceti Pache nos quatro papéis | — |
 | L2 | Autoridade | a ausência de ferramenta não tem teste | criar um teste que compare `FUNCOES` e as escritas do nó `gravar` com a lista declarada | Média |
 | L3 | Autoridade | a chave é compartilhada, e não é uma identidade do agente | criar uma chave própria do agente, separada para chat e embedding | Média |
 | L4 | Autoridade | não há privilégio de banco | no protótipo, declarar como risco aceito; em produção, usar um usuário de banco com escrita só nas tabelas de desfecho, e uma conexão só de leitura nos nós que só leem (`docs/seguranca.md`, ASI03) | Média |
@@ -285,22 +285,22 @@ As correções que a correção da Parte 2 apontou, e cada mudança com o commit
 | ~~L8~~ | Modelo | alias `-latest` no chat | **resolvida em 17/10/2026** | — |
 | L9 | Modelo | a região de processamento não foi verificada | citar os termos oficiais do provedor e salvá-los em `docs/` | Alta |
 | L10 | Modelo | a retenção e o uso para treino vêm de fontes secundárias | idem | Alta |
-| L11 | Dados e Registro | o log e o trace guardam o texto inteiro, sem prazo, no git | definir o prazo; separar o registro de auditoria do de avaliação; não versionar log nem trace com dado real | Alta |
-| L12 | Dados | o checkpoint e a pendência não resolvidos não são removidos | vencer e limpar as pendências não resolvidas | Média |
+| L11 | Dados e Registro | com dado real, o log e o trace guardariam o texto inteiro, sem prazo, no git (no protótipo, o prazo é o fim da disciplina) | definir o prazo para dado real; separar o registro de auditoria do de avaliação; não versionar log nem trace com dado real | Alta |
+| L12 | Dados | a linha da pendência, com o resumo e, no H2, o relato, nunca é removida (a pausa termina e o checkpoint é apagado) | apagar ou anonimizar a pendência resolvida depois de um prazo, como o decaimento dos episódios | Média |
 | L13 | Avaliação | o juiz foi validado e não atingiu o limiar (77,3% contra 85%; 3 falsos SIM contra 1), e por isso a fidelidade da redação ao guia não tem verificador automático | rubrica v1.1.0, com afirmações sobre score, limiar, cobertura e escopo contadas como passo, sem NAO com todos os passos presentes, e com o contrato de saída validado em código; medida contra 22 saídas **novas**, rotuladas antes de rodar (`docs/evals.md` §3.1) | Alta |
 | ~~L14~~ | Supervisão | o aprovador não era identificado | **resolvida em parte em 20/11/2026** (C2: o usuário do sistema operacional); o resíduo é risco aceito | — |
 | ~~L15~~ | Supervisão | o `--auto-aprovar` não tinha trava | **resolvida em 20/11/2026** (C2) | — |
 | ~~L16~~ | Registro | a execução de referência rodou com código não commitado | **resolvida em 17/10/2026**; as rodadas da Parte 3 registram o commit sem marca | — |
 | L17 | Histórico | as mudanças não têm aprovador | registrar a aprovação: um PR revisado ou uma linha no `docs/mudancas.md` | Baixa |
-| L18 | Dados | a entrada não tem base legal | declarar o art. 7º, V (execução de contrato com o cliente) | Alta |
-| L19 | Dados | o prompt e o embedding vão ao provedor sem base legal nem análise de transferência internacional | usar a mesma base da L18; avaliar o art. 33 depois de fechar a L9 | Alta |
-| L20 | Dados | o checkpoint não tem base legal | usar a mesma base da L18 | Alta |
-| L21 | Dados | as pendências não têm base legal | usar a mesma base da L18 | Alta |
-| L22 | Dados | o chamado interno e o encaminhamento não têm base legal | usar a mesma base da L18 | Alta |
-| L23 | Dados | o chamado interno e o encaminhamento não têm prazo de guarda | definir o prazo do registro de atendimento | Alta |
-| L24 | Dados | a memória episódica não tem base legal | declarar o art. 7º, IX (legítimo interesse) | Alta |
-| L25 | Dados | a memória semântica não tem base legal | usar a mesma base da L18 | Alta |
-| L26 | Dados | o log e o trace não têm base legal | declarar o art. 7º, IX, se forem registro de auditoria; com dado real, não versionar (L11) | Alta |
+| ~~L18~~ | Dados | a entrada não tem base legal | **resolvida em 21/11/2026**: art. 7º, V, declarado pelo grupo | — |
+| L19 | Dados | o prompt e o embedding vão ao provedor sem análise de transferência internacional (a base legal, art. 7º, V, foi declarada em 21/11/2026) | avaliar o art. 33 depois de fechar a L9 | Alta |
+| ~~L20~~ | Dados | o checkpoint não tem base legal | **resolvida em 21/11/2026**: art. 7º, V, declarado pelo grupo | — |
+| ~~L21~~ | Dados | as pendências não têm base legal | **resolvida em 21/11/2026**: art. 7º, V, declarado pelo grupo | — |
+| ~~L22~~ | Dados | o chamado interno e o encaminhamento não têm base legal | **resolvida em 21/11/2026**: art. 7º, V, declarado pelo grupo | — |
+| L23 | Dados | com dado real, o chamado interno e o encaminhamento não têm prazo de guarda (no protótipo, o prazo é o fim da disciplina) | definir o prazo do registro de atendimento com a política da empresa | Alta |
+| ~~L24~~ | Dados | a memória episódica não tem base legal | **resolvida em 21/11/2026**: art. 7º, IX, declarado pelo grupo | — |
+| ~~L25~~ | Dados | a memória semântica não tem base legal | **resolvida em 21/11/2026**: art. 7º, V, declarado pelo grupo | — |
+| ~~L26~~ | Dados | o log e o trace não têm base legal | **resolvida em 21/11/2026**: art. 7º, IX, declarado pelo grupo | — |
 | L27 | Dados (minimização) | o log anexado vai inteiro ao provedor | avaliar enviar só o trecho do serviço apontado (`src/grafo.py:273-286`), ou registrar como risco aceito | Média |
 | ~~L28~~ | Avaliação | a suíte não tinha versão | **resolvida em 20/11/2026**: dataset v1.0.0 e v1.1.0 | — |
 | ~~L29~~ | Riscos aceitos | não havia registro de risco aceito | **resolvida em 20/11/2026**: `docs/seguranca.md` §4 | — |
