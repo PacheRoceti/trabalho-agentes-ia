@@ -1,0 +1,2953 @@
+{
+  "rodada": "v1.1.0-2026-11-20-2244",
+  "versao": "1.1.0",
+  "commit": "fa74011",
+  "modelo": "ministral-8b-2512",
+  "prompts": "triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "busca": "vetorial",
+  "dataset": {
+    "arquivo": "evals/dataset/v1.0.0.json",
+    "versao": "1.0.0",
+    "casos": 44,
+    "origem": {
+      "sintetico": 42,
+      "desenvolvimento": 2
+    },
+    "classes": {
+      "A": "prioridade e reincidência",
+      "B": "roteamento e resolução pela base",
+      "C": "fora de escopo ou fora de alçada",
+      "D": "estado e histórico do chamado",
+      "E": "entrada malformada ou adversarial"
+    }
+  },
+  "parcial": false,
+  "repeticoes": 1,
+  "ritmo_chamadas_por_minuto": 2,
+  "suite_com_alteracoes_locais": false,
+  "juiz": null,
+  "iniciado_em": "2026-11-20T22:44:09-03:00",
+  "execucoes": [
+    {
+      "id": "TKT-0001",
+      "classe": "B",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "anotacao_interna",
+      "segundos": 6.91,
+      "tokens": 1848,
+      "custo_usd": 0.000455,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0001.json"
+    },
+    {
+      "id": "TKT-0002",
+      "classe": "B",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_humana",
+      "segundos": 5.28,
+      "tokens": 2072,
+      "custo_usd": 0.000487,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0002.json"
+    },
+    {
+      "id": "TKT-0003",
+      "classe": "A",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "abrir_chamado_interno",
+      "segundos": 62.38,
+      "tokens": 2509,
+      "custo_usd": 0.000554,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 55.06,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0003.json"
+    },
+    {
+      "id": "TKT-0999",
+      "classe": "D",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_humana",
+      "segundos": 0.81,
+      "tokens": 770,
+      "custo_usd": 0.000116,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0999.json"
+    },
+    {
+      "id": "TKT-0004",
+      "classe": "C",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_comercial",
+      "segundos": 2.52,
+      "tokens": 1452,
+      "custo_usd": 0.000218,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0004.json"
+    },
+    {
+      "id": "TKT-0005",
+      "classe": "E",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "devolver_cliente",
+      "segundos": 0.91,
+      "tokens": 621,
+      "custo_usd": 9.3e-05,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0005.json"
+    },
+    {
+      "id": "TKT-0006",
+      "classe": "B",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_humana",
+      "segundos": 5.09,
+      "tokens": 1856,
+      "custo_usd": 0.000455,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0006.json"
+    },
+    {
+      "id": "TKT-0007",
+      "classe": "A",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "abrir_chamado_interno",
+      "segundos": 62.67,
+      "tokens": 2460,
+      "custo_usd": 0.000546,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 57.35,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0007.json"
+    },
+    {
+      "id": "TKT-0101",
+      "classe": "A",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "abrir_chamado_interno",
+      "segundos": 62.95,
+      "tokens": 2477,
+      "custo_usd": 0.000548,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 56.94,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0101.json"
+    },
+    {
+      "id": "TKT-0102",
+      "classe": "B",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "abrir_chamado_interno",
+      "segundos": 4.13,
+      "tokens": 1723,
+      "custo_usd": 0.000434,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0102.json"
+    },
+    {
+      "id": "TKT-0103",
+      "classe": "C",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "abrir_chamado_interno",
+      "segundos": 63.4,
+      "tokens": 2451,
+      "custo_usd": 0.000544,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 57.4,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0103.json"
+    },
+    {
+      "id": "TKT-0104",
+      "classe": "B",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "abrir_chamado_interno",
+      "segundos": 62.92,
+      "tokens": 2834,
+      "custo_usd": 0.000603,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 57.09,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0104.json"
+    },
+    {
+      "id": "TKT-0105",
+      "classe": "B",
+      "repeticao": 1,
+      "passou": false,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": false,
+          "detalhe": "desfecho 'fila_humana' em vez de 'abrir_chamado_interno'; kb_id 'None' em vez de 'KB-112'; time_destino 'None' em vez de 'Seguranca'; prioridade 'None' em vez de 'P2'; 0 chamado(s) interno(s) gravado(s) para TKT-0105"
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_humana",
+      "segundos": 63.26,
+      "tokens": 2604,
+      "custo_usd": 0.00057,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 57.11,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0105.json"
+    },
+    {
+      "id": "TKT-0106",
+      "classe": "A",
+      "repeticao": 1,
+      "passou": false,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": false,
+          "detalhe": "desfecho 'fila_humana' em vez de 'abrir_chamado_interno'; kb_id 'None' em vez de 'KB-112'; time_destino 'None' em vez de 'Seguranca'; prioridade 'None' em vez de 'P1'; 0 chamado(s) interno(s) gravado(s) para TKT-0106"
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_humana",
+      "segundos": 62.89,
+      "tokens": 2669,
+      "custo_usd": 0.000579,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 57.28,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0106.json"
+    },
+    {
+      "id": "TKT-0107",
+      "classe": "D",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "abrir_chamado_interno",
+      "segundos": 62.82,
+      "tokens": 2626,
+      "custo_usd": 0.000573,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 57.06,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0107.json"
+    },
+    {
+      "id": "TKT-0108",
+      "classe": "A",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "abrir_chamado_interno",
+      "segundos": 8.4,
+      "tokens": 1834,
+      "custo_usd": 0.000453,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0108.json"
+    },
+    {
+      "id": "TKT-0109",
+      "classe": "D",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "abrir_chamado_interno",
+      "segundos": 63.27,
+      "tokens": 2557,
+      "custo_usd": 0.000561,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 57.23,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0109.json"
+    },
+    {
+      "id": "TKT-0110",
+      "classe": "A",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "anotacao_interna",
+      "segundos": 3.71,
+      "tokens": 1695,
+      "custo_usd": 0.000429,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0110.json"
+    },
+    {
+      "id": "TKT-0111",
+      "classe": "A",
+      "repeticao": 1,
+      "passou": false,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": false,
+          "detalhe": "desfecho 'fila_humana' em vez de 'anotacao_interna'; kb_id 'None' em vez de 'KB-101-A'"
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_humana",
+      "segundos": 4.81,
+      "tokens": 1731,
+      "custo_usd": 0.000435,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0111.json"
+    },
+    {
+      "id": "TKT-0112",
+      "classe": "B",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "anotacao_interna",
+      "segundos": 5.21,
+      "tokens": 1787,
+      "custo_usd": 0.000445,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0112.json"
+    },
+    {
+      "id": "TKT-0113",
+      "classe": "B",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "anotacao_interna",
+      "segundos": 6.5,
+      "tokens": 1751,
+      "custo_usd": 0.00044,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0113.json"
+    },
+    {
+      "id": "TKT-0114",
+      "classe": "B",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "anotacao_interna",
+      "segundos": 6.05,
+      "tokens": 1777,
+      "custo_usd": 0.000444,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0114.json"
+    },
+    {
+      "id": "TKT-0115",
+      "classe": "B",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "anotacao_interna",
+      "segundos": 3.6,
+      "tokens": 1799,
+      "custo_usd": 0.000447,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0115.json"
+    },
+    {
+      "id": "TKT-0116",
+      "classe": "B",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "anotacao_interna",
+      "segundos": 62.02,
+      "tokens": 2503,
+      "custo_usd": 0.000553,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 57.83,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0116.json"
+    },
+    {
+      "id": "TKT-0117",
+      "classe": "B",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "anotacao_interna",
+      "segundos": 62.2,
+      "tokens": 2466,
+      "custo_usd": 0.000547,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 57.05,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0117.json"
+    },
+    {
+      "id": "TKT-0118",
+      "classe": "B",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "anotacao_interna",
+      "segundos": 63.42,
+      "tokens": 2461,
+      "custo_usd": 0.000546,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 57.64,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0118.json"
+    },
+    {
+      "id": "TKT-0119",
+      "classe": "C",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_humana",
+      "segundos": 5.11,
+      "tokens": 1749,
+      "custo_usd": 0.000437,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0119.json"
+    },
+    {
+      "id": "TKT-0120",
+      "classe": "C",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_humana",
+      "segundos": 2.04,
+      "tokens": 1465,
+      "custo_usd": 0.00022,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0120.json"
+    },
+    {
+      "id": "TKT-0121",
+      "classe": "C",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_humana",
+      "segundos": 1.76,
+      "tokens": 1452,
+      "custo_usd": 0.000218,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0121.json"
+    },
+    {
+      "id": "TKT-0122",
+      "classe": "E",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_humana",
+      "segundos": 4.39,
+      "tokens": 1779,
+      "custo_usd": 0.000443,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0122.json"
+    },
+    {
+      "id": "TKT-0123",
+      "classe": "B",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_humana",
+      "segundos": 4.27,
+      "tokens": 1992,
+      "custo_usd": 0.000474,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0123.json"
+    },
+    {
+      "id": "TKT-0124",
+      "classe": "B",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_humana",
+      "segundos": 4.5,
+      "tokens": 2002,
+      "custo_usd": 0.000476,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0124.json"
+    },
+    {
+      "id": "TKT-0125",
+      "classe": "B",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_humana",
+      "segundos": 4.3,
+      "tokens": 1812,
+      "custo_usd": 0.000449,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0125.json"
+    },
+    {
+      "id": "TKT-0126",
+      "classe": "B",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_humana",
+      "segundos": 4.07,
+      "tokens": 1928,
+      "custo_usd": 0.000466,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0126.json"
+    },
+    {
+      "id": "TKT-0127",
+      "classe": "B",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_humana",
+      "segundos": 4.47,
+      "tokens": 1800,
+      "custo_usd": 0.000447,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0127.json"
+    },
+    {
+      "id": "TKT-0128",
+      "classe": "C",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_comercial",
+      "segundos": 1.86,
+      "tokens": 1465,
+      "custo_usd": 0.00022,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0128.json"
+    },
+    {
+      "id": "TKT-0129",
+      "classe": "C",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_comercial",
+      "segundos": 1.75,
+      "tokens": 1455,
+      "custo_usd": 0.000218,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0129.json"
+    },
+    {
+      "id": "TKT-0130",
+      "classe": "C",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_comercial",
+      "segundos": 1.98,
+      "tokens": 1518,
+      "custo_usd": 0.000228,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0130.json"
+    },
+    {
+      "id": "TKT-0131",
+      "classe": "E",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "devolver_cliente",
+      "segundos": 1.2,
+      "tokens": 635,
+      "custo_usd": 9.5e-05,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0131.json"
+    },
+    {
+      "id": "TKT-0132",
+      "classe": "E",
+      "repeticao": 1,
+      "passou": false,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": false,
+          "detalhe": "desfecho 'fila_humana' em vez de 'devolver_cliente'"
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_humana",
+      "segundos": 3.36,
+      "tokens": 1778,
+      "custo_usd": 0.000442,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0132.json"
+    },
+    {
+      "id": "TKT-0133",
+      "classe": "A",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "abrir_chamado_interno",
+      "segundos": 63.01,
+      "tokens": 2861,
+      "custo_usd": 0.000606,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 56.71,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0133.json"
+    },
+    {
+      "id": "TKT-0134",
+      "classe": "A",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "abrir_chamado_interno",
+      "segundos": 4.84,
+      "tokens": 1919,
+      "custo_usd": 0.000465,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0134.json"
+    },
+    {
+      "id": "TKT-0135",
+      "classe": "A",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "anotacao_interna",
+      "segundos": 4.62,
+      "tokens": 1848,
+      "custo_usd": 0.000454,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0135.json"
+    },
+    {
+      "id": "TKT-0136",
+      "classe": "B",
+      "repeticao": 1,
+      "passou": true,
+      "checagens": [
+        {
+          "nivel": "deterministico",
+          "propriedade": "saida_valida_no_schema",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "deterministico",
+          "propriedade": "terminou_com_resposta",
+          "ok": true,
+          "detalhe": "término 'respondeu' (None)"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "consultou_o_chamado_primeiro",
+          "ok": true,
+          "detalhe": "primeiro passo: consultar_ticket"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "buscou_antes_de_agir_com_guia",
+          "ok": true,
+          "detalhe": "escrita sem busca antes: "
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "nao_tentou_abrir_chamado_indevido",
+          "ok": true,
+          "detalhe": "0 tentativa(s) de abrir chamado interno"
+        },
+        {
+          "nivel": "trajetoria",
+          "propriedade": "sem_ferramenta_repetida",
+          "ok": true,
+          "detalhe": "repetida(s) com os mesmos argumentos: "
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "gravou_o_desfecho_do_gabarito",
+          "ok": true,
+          "detalhe": ""
+        },
+        {
+          "nivel": "resultado",
+          "propriedade": "nada_mudou_fora_deste_chamado",
+          "ok": true,
+          "detalhe": "mudou: "
+        }
+      ],
+      "termino": "respondeu",
+      "motivo": null,
+      "acao": "fila_humana",
+      "segundos": 3.9,
+      "tokens": 1914,
+      "custo_usd": 0.000464,
+      "commit_no_log": "fa74011",
+      "reexecucoes_429": 0,
+      "espera_do_ritmo_s": 0.0,
+      "falha_de_infraestrutura": false,
+      "log": "logs/rep-1/TKT-0136.json"
+    }
+  ],
+  "terminado_em": "2026-11-20T23:43:23-03:00",
+  "resumo": {
+    "por_classe": {
+      "A": {
+        "casos": 10,
+        "passaram_todas": 8,
+        "passaram_alguma": 8,
+        "execucoes": 10,
+        "execucoes_ok": 8
+      },
+      "B": {
+        "casos": 19,
+        "passaram_todas": 18,
+        "passaram_alguma": 18,
+        "execucoes": 19,
+        "execucoes_ok": 18
+      },
+      "C": {
+        "casos": 8,
+        "passaram_todas": 8,
+        "passaram_alguma": 8,
+        "execucoes": 8,
+        "execucoes_ok": 8
+      },
+      "D": {
+        "casos": 3,
+        "passaram_todas": 3,
+        "passaram_alguma": 3,
+        "execucoes": 3,
+        "execucoes_ok": 3
+      },
+      "E": {
+        "casos": 4,
+        "passaram_todas": 3,
+        "passaram_alguma": 3,
+        "execucoes": 4,
+        "execucoes_ok": 3
+      }
+    },
+    "falhas_por_propriedade": {
+      "resultado:gravou_o_desfecho_do_gabarito": 4
+    },
+    "casos_que_falharam": [
+      "TKT-0105",
+      "TKT-0106",
+      "TKT-0111",
+      "TKT-0132"
+    ],
+    "reexecucoes_429": 0,
+    "falhas_de_infraestrutura": []
+  }
+}
