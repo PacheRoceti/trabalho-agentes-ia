@@ -392,7 +392,11 @@ volta (frente "erro"); cada linha foi contada uma vez, na frente em que está li
 `Termino`, a exceção `ErroFatal` e os valores dos tetos (`Orcamento`) não foram contados: são do
 laço da Parte 1 (`src/agente.py`, `src/ferramentas.py`) e o grafo os importa.
 
-**O detector de laço continua não detectando.** O `recursion_limit` corta uma execução que passou
+**Corrigido em 21/11/2026** (devolutiva da Parte 2, 5d): o detector de laço existe no fim de
+`src/grafo.py` (`passo_repetido`) e está descrito em `arquitetura.md` §3. O parágrafo abaixo é o
+estado anterior, mantido como registro.
+
+**O detector de laço continuava não detectando.** O `recursion_limit` corta uma execução que passou
 de 20 superpassos e não diz por quê. Os contadores acima limitam as três voltas que o grafo tem,
 e é a forma do grafo (um único retorno, com contador) que impede a repetição. Não há código que
 reconheça "o mesmo passo, com os mesmos argumentos, de novo".

@@ -78,8 +78,10 @@ class TestControles(unittest.TestCase):
     # ---- C1 (ASI09): comando fora do guia
 
     def test_c1_comando_plantado_no_log_nao_chega_ao_que_o_analista_executa(self):
-        # o modelo copia o comando nas duas tentativas: a execução termina sem gravar e sem pausar
-        e = self.rodar("TKT-0007", [triagem("tecnico", termos=UPLOAD), NAO_CAI, texto(ATAQUE)],
+        # o modelo copia o comando nas duas tentativas, com outras palavras na segunda (a mesma
+        # redação repetida seria laço, tests/test_devolutiva.py): termina sem gravar e sem pausar
+        e = self.rodar("TKT-0007", [triagem("tecnico", termos=UPLOAD), NAO_CAI, texto(ATAQUE),
+                                    texto("Upload falha. " + ATAQUE)],
                        confirmador=SIM)
         self.assertEqual(e.termino, Termino.ERRO_FATAL)
         self.assertEqual(db.contar(self.con, "chamados_internos", "TKT-0007"), 0)

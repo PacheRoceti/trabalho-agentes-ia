@@ -33,7 +33,7 @@ Confira a instalação **sem gastar nada e sem chave** (testes offline, com mode
 python -m unittest discover -s tests
 ```
 
-Rode os 44 casos do gabarito pelo grafo, com o verificador (usa a API). O `--rodada` manda os logs para uma pasta sua, `logs/minha-rodada/`:
+Rode os 47 casos do gabarito pelo grafo, com o verificador (usa a API). O `--rodada` manda os logs para uma pasta sua, `logs/minha-rodada/`:
 
 ```bash
 python src/main.py --todos --auto-aprovar --rodada minha-rodada
@@ -68,7 +68,7 @@ python src/main.py --rejeitar TKT-0003 --motivo guia_errado        # rejeita: o 
 python src/main.py --aprovar TKT-0005 --mensagem "texto corrigido" # pedido ao cliente: aprova EDITANDO a mensagem (sem informação interna)
 python src/main.py --avisos                 # os avisos ao gestor (prazo vencido de um P1); só lê
 
-# os 44 casos do gabarito, cada um a partir do banco zerado, com verificador (usa a API)
+# os 47 casos do gabarito, cada um a partir do banco zerado, com verificador (usa a API)
 python src/main.py --todos --auto-aprovar --rodada minha-rodada
 
 # sem chave e sem API
@@ -247,15 +247,29 @@ gravar `logs/saida-demonstracao.txt` e regravaria os oito logs acima. As rodadas
 
 ## Como rodar a suíte de avaliação
 
-A suíte roda os 44 casos do golden dataset ([`evals/dataset/v1.0.0.json`](evals/dataset/v1.0.0.json)) sobre o sistema entregue, pelo mesmo `main.executar` do `--todos`, três vezes cada, e confere cada execução em três níveis: o objeto de saída, a trajetória do log e o que ficou gravado no banco ([`docs/evals.md`](docs/evals.md)).
+A suíte roda os casos do golden dataset sobre o sistema entregue, pelo mesmo `main.executar` do `--todos`, e confere cada execução em três níveis: o objeto de saída, a trajetória do log e o que ficou gravado no banco ([`docs/evals.md`](docs/evals.md)). Sem `--dataset`, vale o mais novo de `evals/dataset/`: hoje o [`v1.1.0.json`](evals/dataset/v1.1.0.json), com 47 casos (os 44 do [`v1.0.0.json`](evals/dataset/v1.0.0.json) e 3 hostis).
 
 ```bash
-python -m evals.rodar --repeticoes 1         # usa a API: os 44 casos, uma hora no limite de 2 chamadas por minuto; grava evals/resultados/v<versão>-<data e hora>/
+python -m evals.rodar --repeticoes 1         # usa a API: os 47 casos, cerca de uma hora no limite de 2 chamadas por minuto; grava evals/resultados/v<versão>-<data e hora>/
+python -m evals.rodar --repeticoes 1 --casos TKT-0137 TKT-0138 TKT-0139 --nome minha-rodada-hostis   # usa a API: só os 3 casos hostis (docs/evals.md §4.4)
 python -m evals.comparar evals/resultados/<rodada-A> evals/resultados/<rodada-B>   # compara duas rodadas, por classe (só lê)
 python -m evals.comparar evals/resultados/<rodada>                                 # mostra uma rodada
 python -m evals.metricas evals/resultados/<rodada-A> evals/resultados/<rodada-B>  # latência p50/p95, custo, términos, erro por ferramenta e o SLI de qualidade, por versão, dos traces (só lê; docs/observabilidade.md)
 python -m evals.juiz validar evals/juiz/rotulos-v1.0.0.json                       # o juiz contra os rótulos humanos (usa a API; docs/evals.md §3)
 python -m unittest tests.test_evals           # os testes da suíte, sem chave
+```
+
+## Como rodar os testes dos controles de segurança
+
+Os três controles da versão 1.1.0 ficam fora do prompt ([`docs/seguranca.md`](docs/seguranca.md) §3):
+- **C1:** comando fora do guia recuperado.
+- **C2:** `--auto-aprovar` só para medir, com o aprovador identificado.
+- **C3:** teto de retomadas depois de uma queda.
+
+Cada controle tem um teste que tenta a ação indevida e confere o bloqueio, e outro que confere o que ele deixa passar:
+
+```bash
+python -m unittest tests.test_seguranca -v    # 6 testes, sem chave e sem rede
 ```
 
 Sem `--versao`, vale a de [`src/versao.py`](src/versao.py), que é a mesma que vai aos traces. Rode da raiz do repositório. Uma rodada que já existe não é sobrescrita (`--nome` escolhe outro nome), e a suíte recria `dados/tickets.db`, como o `--todos`. O número de cada classe é o pass^k: a fração dos casos que passaram em todas as k repetições. As rodadas desta entrega usam uma repetição, por causa do limite da API ([`docs/evals.md`](docs/evals.md) §4.2), e a suíte espaça as chamadas ao modelo para caber nele (`--chamadas-por-minuto`, padrão 2).
@@ -299,10 +313,10 @@ src/prompts/ no grafo, em uso: triagem-v1.md · ressalva-v3.md · redigir-v3.md 
              docs/prompts.md §3) · agente-v4-com-frase.md e agente-v4-sem-frase.md (testes anteriores, §3.6)
 dados/       seed.sql · gabarito.json · README.md (casos difíceis nomeados)
 evals/       a suíte de avaliação (docs/evals.md): dataset/ (o golden dataset, versionado) · rodar.py ·
-             comparar.py · checagens.py (as propriedades conferidas) · resultados/ (uma pasta por rodada)
-tests/       testes offline (sem chave): test_grafo.py (o grafo) · test_offline.py (o laço) · test_vetorial.py (a busca vetorial) · test_vigia.py (o vigia do prazo) · test_recuperacao.py (a recuperação depois de uma queda) · test_evals.py (a suíte) · test_trace.py (o trace)
+             comparar.py · checagens.py (as propriedades conferidas) · metricas.py (as métricas dos traces) · juiz.py e prompts/ (o juiz e a rubrica) · juiz/ (os rótulos) · resultados/ (uma pasta por rodada)
+tests/       testes offline (sem chave): test_grafo.py (o grafo) · test_offline.py (o laço) · test_vetorial.py (a busca vetorial) · test_vigia.py (o vigia do prazo) · test_recuperacao.py (a recuperação depois de uma queda) · test_evals.py (a suíte) · test_trace.py (o trace) · test_seguranca.py (os controles C1, C2 e C3) · test_devolutiva.py (as correções da devolutiva da Parte 2)
 docs/        case.md · io.md · prompts.md · arquitetura.md · grafo.md · rag.md · memoria.md · humano.md
-             modelos.md · modelos-tabela-3.3.md · base-de-conhecimento-v2.md · fontes.md · evals.md · observabilidade.md
+             modelos.md · modelos-tabela-3.3.md · base-de-conhecimento-v2.md · fontes.md · evals.md · observabilidade.md · seguranca.md · model-card.md · mudancas.md
              arquitetura-v2.md (histórico da Parte 1)
 logs/        trajetória de cada execução demonstrada (JSON); logs/grafo*/ são do grafo, logs/TKT-*.json e
              logs/rodada-*/ do laço, logs/rag-medicao/ das medições da busca

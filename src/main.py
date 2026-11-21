@@ -147,8 +147,8 @@ def mostrar_pendencia(pendencia: dict):
                  if guia["decisoes_antigas"] else ""))
     for chave, valor in (pendencia.get("fatos_cliente") or {}).items():
         print(f"     FATO CONFIRMADO do cliente: {chave} = {valor} ({db.FATOS_ACEITOS[chave][valor]})")
-    for p in memoria.get("cliente") or []:
-        print(f"     MEMÓRIA: {p['ticket']} em {p['em']}, mesmo cliente e categoria: guia {p['kb_id']}, "
+    for p in (memoria.get("cliente") or []) + (memoria.get("parecidos") or []):   # parecidos: memória por semelhança
+        print(f"     MEMÓRIA: {p['ticket']} em {p['em']}, {p.get('por', 'mesmo cliente e categoria')}: guia {p['kb_id']}, "
               f"gravado {p['desfecho'] or 'nada'}" + (f", analista: {p['veredito']}" if p["veredito"] else "")
               + (" (antigo)" if p["antigo"] else ""))
     if pendencia.get("score") is not None:

@@ -1,6 +1,6 @@
 # Mudanças desde a Parte 2 (Parte 3, item 0)
 
-> **Estado deste documento: 20/11/2026.** É também o histórico de mudanças que o
+> **Estado deste documento: 21/11/2026.** É também o histórico de mudanças que o
 > `docs/model-card.md` cobra no campo 12. A versão do sistema mora em `src/versao.py` e vai à raiz
 > de cada trace; o commit vai ao log e ao trace de cada execução.
 
@@ -9,8 +9,21 @@ do primeiro trabalho da Parte 3 (o exercício da aula 14, em 23/10/2026). **A co
 
 ## 1. As correções que a Parte 2 apontou
 
-**Nenhuma devolução da correção da Parte 2 está registrada no repositório** até 20/11/2026. Se o
-professor apontou defeitos, eles entram aqui primeiro: o que estava errado, o que mudou e o commit.
+A devolutiva da Parte 2 (nota 9,7) descontou dois subcritérios. Os dois foram corrigidos em
+21/11/2026, **só com testes offline**: nenhuma rodada com o modelo real mediu as correções (decisão
+do grupo). Os testes novos estão em `tests/test_devolutiva.py`, e os que mudaram estão listados
+em cada linha.
+
+| Subcritério | O que estava errado (a devolutiva) | O que mudou | Onde | Commit |
+|---|---|---|---|---|
+| **4b. As três memórias** (−0,13) | A memória episódica era lida só por consulta exata (o guia; o cliente e a categoria), e não por semelhança com o caso atual: um caso parecido com outro guia ou outro cliente nunca era lembrado | A tela do H1 traz também até 3 episódios de **outro** guia parecidos com o caso atual, por embedding (`mistral-embed`) da descrição estruturada do caso (classe, categoria, título e causa do guia, ação proposta). O episódio continua sem o texto do cliente. Só informa: o desfecho não muda | `vetorial.precedentes_parecidos` e `grafo._tela_do_h1`, no fim dos dois arquivos; duas linhas trocadas por uma cada em `main.mostrar_pendencia`; `docs/memoria.md` §3.1 | *a preencher pelo grupo* |
+| **5d. Limites e término** (−0,13) | Não havia detector de laço: o contador do retorno `validar → redigir` e o `recursion_limit` limitam o dano, mas não percebem que o sistema repete a mesma ação | Cada nó passa por `grafo.passo_repetido`: o passo que repete outro da trajetória (mesmo nó, mesmos argumentos, mesmo resultado) encerra a execução em `erro_fatal`, com o motivo "laço detectado", e nada executa depois, além do `finalizar`. Nada é gravado (*fail-closed*) | fim de `src/grafo.py`; `docs/arquitetura.md` §3. Dois testes antigos ganharam uma segunda redação **diferente** no roteiro: `test_texto_recusado_duas_vezes_termina_em_erro_fatal_sem_gravar` (`tests/test_grafo.py`) e `test_c1_comando_plantado_no_log_nao_chega_ao_que_o_analista_executa` (`tests/test_seguranca.py`). O roteiro antigo repetia o mesmo texto, o que agora é laço; o que eles provam (duas recusas do `validar`) não mudou | *a preencher pelo grupo* |
+
+**O que isso muda nos números.** O término de uma execução não muda com o detector: a redação
+repetida já terminava em `erro_fatal` pelo `MAX_REDACOES`, e agora termina mais cedo, com outro
+motivo. Os números da 1.1.0 (`fa74011`) foram medidos **antes** destas correções, e a constante
+`VERSAO` continua 1.1.0. Uma execução com o código novo é reconhecida pelo campo `commit` do log
+e do trace, e não pela versão.
 
 ## 2. As versões do sistema
 
@@ -40,6 +53,7 @@ feitas em 20/11/2026.
 
 ## 4. O que ainda não tem versão
 
+- **As correções da devolutiva (§1)** mudam o código sem mudar a `VERSAO` e sem rodada medida.
 - **Os documentos da Parte 3** (`docs/seguranca.md`, este arquivo) não mudam o sistema e não têm
   versão própria; o histórico deles é o do git.
 - **As linhas citadas nos docs da Parte 2** continuam valendo: as mudanças da 1.0.0 e da 1.1.0 em

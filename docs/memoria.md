@@ -180,13 +180,13 @@ O agente só conversa com o cliente em um caso: quando falta informação para c
 | O que vai ao checkpoint | o `Estado` do laço, com `historico` e `passos` | o `EstadoGrafo` inteiro, gravado pelo `SqliteSaver` a cada superpasso. Não há lista de mensagens (`arquitetura.md` §4) |
 | Quando o checkpoint some | ao fim da execução; sobrevive em `aguardando_humano` e `aguardando_cliente` | ao fim da execução; sobrevive em `aguardando_humano`. O término `aguardando_cliente` não existe (o H3 não foi implementado) |
 | Campo `pedido_cliente` | guarda o pedido enviado e a resposta | não existe. O pedido enviado é uma linha em `encaminhamentos`, com `enviado_em`, e a contagem é feita no banco |
-| Episódica | índice por similaridade, lido no passo de busca | tabela `episodios`, lida por **consulta exata** (guia; cliente e categoria), só para a tela do H1 (§3). A razão está abaixo da tabela |
+| Episódica | índice por similaridade, lido no passo de busca | tabela `episodios`, lida por **consulta exata** (guia; cliente e categoria) e, desde 21/11/2026, também **por semelhança** com o caso atual (§3.1), só para a tela do H1. A razão de não ter sido no passo de busca está abaixo da tabela |
 | Semântica | plano e reincidência por cliente, escritos pelo código | fatos do ambiente do cliente, escritos por uma pessoa (§4). Plano e reincidência continuam vindo do sistema de tickets |
 | Procedural | regra no prompt do laço, nascida de decisões de triagem que o analista reverte, depois de 3 correções revisadas | uma regra, no prompt do nó `redigir` do grafo, escrita por uma pessoa num arquivo próprio (§5.1). O analista só vê as duas pausas (H1 e H2) e não tem como reverter uma decisão de triagem: as correções que o sistema registra são a rejeição com motivo e a aprovação com edição, e por isso a regra mira o texto. A primeira regra não veio das 3 correções (exceção do §1.4) |
 | Ordem de descarte (§1.2) | memória, depois trechos, depois passos antigos | **nenhum código corta a janela.** Ver abaixo |
 | Remoção a pedido do titular (§2.3) | cinco estruturas, com varredura | **não escolhida** (decisão de 12/10/2026): o §2.3 traz a razão e onde o identificador fica |
 
-**Por que a episódica não é por similaridade (situação em 12/10/2026).** O índice de embeddings
+**Por que a episódica não era por similaridade (situação em 12/10/2026; corrigido em 21/11/2026, §3.1).** O índice de embeddings
 do §1.3 não foi feito, e não será na Parte 2. Duas decisões tomadas depois do desenho o
 dispensam: o episódio guarda só campos estruturados, nunca o texto do cliente nem o do modelo
 (§1.4), então não há texto para embedar; e a memória só avisa o analista, sem entrar em regra de
@@ -362,7 +362,8 @@ Isso tem um custo concreto para a avaliação (aula 11, e para o próprio verifi
 ## 3. O que existe em código: a memória episódica (11/10/2026)
 
 Decisão do grupo: registro estruturado + sinal do analista, **só como aviso na tela do H1**. O
-episódio não entra no `redigir` nem em regra de decisão alguma, e não há leitura por similaridade.
+episódio não entra no `redigir` nem em regra de decisão alguma. Até 21/11/2026 não havia leitura por
+similaridade; desde então há, na tela do H1 (§3.1).
 
 | Pergunta | Resposta, no código |
 |---|---|
@@ -370,7 +371,7 @@ episódio não entra no `redigir` nem em regra de decisão alguma, e não há le
 | Quem escreve | o **código**, em `grafo._concluir`, uma linha por execução **concluída** (a pausada no H1 ou no H2 só vira episódio quando o analista responde ou o prazo vence). A escrita é idempotente pela chave do conteúdo (`db.chave_do_episodio`, §1.4) |
 | O que guarda | id do chamado, `cliente_id`, classe da triagem, categoria e id do guia proposto, score, ação proposta, desfecho gravado, motivo, veredito do analista (`aprovado`, `editado`, `rejeitado`, `vencido` ou vazio quando não houve H1), término, data real e um resumo montado pelo código |
 | O que não guarda | o texto do cliente, o log anexado, o nome do cliente e o texto que o modelo redigiu (teste `test_o_episodio_nao_guarda_o_texto_do_cliente_nem_o_que_o_modelo_redigiu`) |
-| Como é lida | `db.precedentes`, por consulta exata: as decisões do analista sobre o guia proposto e os 3 últimos episódios do mesmo cliente na mesma categoria |
+| Como é lida | `db.precedentes`, por consulta exata: as decisões do analista sobre o guia proposto e os 3 últimos episódios do mesmo cliente na mesma categoria. E, desde 21/11/2026, `vetorial.precedentes_parecidos`, por semelhança: até 3 episódios de **outro** guia parecidos com o caso atual (§3.1) |
 | Onde aparece | no campo `precedentes` da pendência do H1 e em linhas `MEMÓRIA:` na tela (`humano.md` §2.1). Os guias `anotar` não passam pelo H1, então para eles a memória é gravada e não é mostrada a ninguém |
 | O que muda no desfecho | **nada.** Com três rejeições anteriores do mesmo guia, o grafo propõe e grava a mesma ação (teste `test_o_precedente_so_avisa_e_nao_muda_o_desfecho`) |
 
@@ -399,6 +400,43 @@ decidiu 1 vez(es) sobre o guia KB-102: 1 rejeitada(s)" e o episódio anterior do
 - Não há remoção a pedido do titular: o grupo não escolheu essa causa (§2.3). O episódio sai pelo decaimento, e o log não sai. O checkpoint da execução concluída é apagado desde 12/10/2026 (§1.4), o que não é remoção a pedido: é o ciclo de vida dele.
 - O laço da Parte 1 (`--laco`) não lê nem grava episódios.
 - O log da execução ganhou o campo `episodio` (o registro gravado), e os logs anteriores a esta data não o têm.
+
+### 3.1 A leitura por semelhança (21/11/2026)
+
+**Por que mudou.** A devolutiva da Parte 2 (subcritério 4b) descontou a leitura só por consulta
+exata: a episódica pede a recuperação por semelhança com o caso atual, e do jeito que estava um caso
+parecido com outro guia ou outro cliente nunca era lembrado. O "o que se perde" do parágrafo
+acima era esse defeito.
+
+**O que foi feito, sem desfazer a regra do §1.4.** O episódio continua sem o texto do cliente. A
+semelhança é medida sobre a **descrição estruturada do caso**, que o código monta igual dos dois
+lados (`vetorial.texto_do_caso`): classe da triagem, categoria, título e causa do guia proposto e
+ação proposta. O caso atual é descrito pelo guia que o `decidir` propôs; o episódio, pelo guia que
+ele propôs. Os dois vão ao `mistral-embed`, e o vetor do episódio fica guardado na tabela
+`episodios_vetores` (refeito só quando o texto ou o modelo mudam).
+
+| Pergunta | Resposta, no código |
+|---|---|
+| Quem lê | `vetorial.precedentes_parecidos` (fim de `src/vetorial.py`), chamado pela tela do H1 (`grafo._tela_do_h1`, fim de `src/grafo.py`) |
+| O que devolve | até `TOP_PARECIDOS` (3) episódios de **outro** guia com cosseno ≥ `LIMIAR_PARECIDO` (0,80), do mais parecido ao menos. Os do mesmo guia já estão na contagem exata, e os do mesmo cliente e categoria, na lista exata: ficam de fora para não repetir |
+| Decaimento | o mesmo do §3: depois de 365 dias não é lido; entre 90 e 365, vem marcado como antigo |
+| Onde aparece | em `precedentes.parecidos` da pendência do H1 e em linhas `MEMÓRIA: ..., parecido (cosseno 0,95), outro guia` na tela |
+| O que muda no desfecho | **nada**, como o resto da episódica: o desfecho já foi decidido quando a tela é montada |
+| Quando o embedding falha | *fail-open*: a tela vai sem os parecidos, e `parecidos_motivo` diz por quê. A pausa do H1 acontece igual |
+| Na busca por palavra | sem embedder (os testes offline, `--busca palavra`), o campo fica `None`, com o motivo |
+
+**Testes** (offline, embedder de mentira; `tests/test_devolutiva.py`):
+- `test_lembra_o_caso_parecido_de_outro_guia_e_outro_cliente`;
+- `test_respeita_o_decaimento_e_guarda_o_vetor_do_episodio`;
+- `test_a_tela_do_h1_traz_os_parecidos_e_o_texto_do_cliente_nao_vai_ao_embedding`;
+- `test_sem_embedding_a_tela_vai_sem_os_parecidos_e_diz_por_que`.
+
+**Limites declarados.**
+- **O limiar não foi calibrado.** O 0,80 é o mesmo número do portão da busca, por falta de medição sobre estas descrições: AINDA NÃO MEDIDO.
+- **A semelhança é de situação, e não de relato.** Dois chamados com o mesmo guia proposto têm a mesma descrição, e dois relatos parecidos que caíram em guias diferentes só se parecem se os guias se parecem.
+- **O episódio sem guia não entra.** É o caso da fila humana sem procedimento e do comercial.
+- **O custo do embedding fica de fora.** Os tokens deste embedding não entram no `custo_usd` da execução.
+- **Não foi medido com o modelo real.** A correção foi feita só com testes offline (decisão do grupo, 21/11/2026).
 
 ## 4. O que existe em código: a memória semântica (11/10/2026)
 

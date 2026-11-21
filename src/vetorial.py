@@ -219,3 +219,84 @@ def _embeddings(client, textos: list[str]):
             raise
         telemetria.atributos(span, {"gen_ai.usage.input_tokens": getattr(r.usage, "total_tokens", None)})
         return r
+
+
+# ================================================================ A MEMÓRIA EPISÓDICA POR SEMELHANÇA (21/11/2026)
+# Correção da devolutiva da Parte 2 (subcritério 4b): a episódica era lida só por consulta exata
+# (o mesmo guia; o mesmo cliente e categoria), e um caso parecido com outro guia ou outro cliente
+# nunca era lembrado. Aqui, a semelhança com o caso atual, por embedding (docs/memoria.md §3.1).
+#
+# O que é comparado: a DESCRIÇÃO ESTRUTURADA do caso (classe, categoria, título e causa do guia
+# proposto, ação proposta), montada pelo código dos dois lados. O episódio não guarda o texto do
+# cliente (decisão de privacidade, docs/memoria.md §1.3), e continua não guardando: a semelhança é a
+# de situação, não a de relato. O vetor fica em `episodios_vetores`, refeito quando o texto ou o
+# modelo mudam; nasce aqui, e o `recriar_banco` o derruba com as outras tabelas.
+#
+# Só informa, como o resto da episódica: o resultado vai à tela do H1 e nenhuma regra de decisão o lê.
+# Quem chama trata a exceção do embedding (fail-open: a tela vai sem os parecidos e diz por quê).
+LIMIAR_PARECIDO = 0.80    # NÃO calibrado: o mesmo número do portão, por falta de medição (AINDA NÃO MEDIDO)
+TOP_PARECIDOS = 3
+
+SQL_EPISODIOS_VETORES = """
+CREATE TABLE IF NOT EXISTS episodios_vetores (
+    episodio_id INTEGER PRIMARY KEY,
+    texto_hash  TEXT NOT NULL,
+    modelo      TEXT NOT NULL,
+    vetor       TEXT NOT NULL
+)"""
+
+
+def texto_do_caso(classe: str | None, artigo, acao: str | None) -> str:
+    """A descrição do caso que é embedada, igual para o caso atual e para o episódio. Só campos do
+    sistema: nada do relato, do log anexado nem do que o modelo redigiu."""
+    return (f"Classe {classe or 'sem triagem'}. Categoria {artigo['categoria']}. {artigo['titulo']}. "
+            f"{artigo['causa']} Ação proposta: {acao or 'nenhuma'}.")
+
+
+def precedentes_parecidos(con: sqlite3.Connection, classe: str | None, artigo, acao: str | None,
+                          cliente_id: str | None, agora=None, top: int = TOP_PARECIDOS,
+                          limiar: float = LIMIAR_PARECIDO) -> list[dict]:
+    """Os episódios mais parecidos com o caso atual, de OUTRO guia (os do mesmo guia já estão na
+    contagem exata de db.precedentes) e fora da lista do mesmo cliente e categoria (que já aparece).
+    Só os que passam de `limiar` no cosseno, no máximo `top`, do mais parecido ao menos. Respeita o
+    decaimento de db.py: o que passou de EPISODIO_MAX_DIAS não é lido, e o que passou de
+    EPISODIO_RECENTE_DIAS vem marcado como antigo. Levanta exceção se o embedding falhar."""
+    from datetime import datetime
+    agora = agora or datetime.now().astimezone()
+    con.execute(SQL_EPISODIOS_VETORES)
+    candidatos = []
+    for ep in con.execute("""SELECT e.*, a.titulo, a.causa, a.categoria AS categoria_do_guia
+                               FROM episodios e JOIN kb_artigos a ON a.id = e.kb_id
+                               WHERE e.kb_id IS NOT NULL AND e.kb_id != ?""", (artigo["id"],)):
+        if cliente_id and ep["cliente_id"] == cliente_id and ep["categoria"] == artigo["categoria"]:
+            continue
+        idade = db._idade_em_dias(ep["criado_em"], agora)
+        if idade > db.EPISODIO_MAX_DIAS:
+            continue
+        texto = texto_do_caso(ep["classe"], {"categoria": ep["categoria_do_guia"], "titulo": ep["titulo"],
+                                             "causa": ep["causa"]}, ep["acao_proposta"])
+        candidatos.append((dict(ep), idade, texto, hashlib.sha1(texto.encode("utf-8")).hexdigest()))
+    if not candidatos:
+        return []
+    guardados = {r["episodio_id"]: r for r in con.execute("SELECT * FROM episodios_vetores")}
+    pendentes = []
+    for ep, _, texto, h in candidatos:
+        g = guardados.get(ep["id"])
+        if g is None or g["texto_hash"] != h or g["modelo"] != MODELO_EMBEDDING:
+            pendentes.append((ep["id"], texto, h))
+    vetores = embedar([texto_do_caso(classe, artigo, acao)] + [t for _, t, _ in pendentes])
+    for (episodio_id, _, h), v in zip(pendentes, vetores[1:]):
+        con.execute("INSERT OR REPLACE INTO episodios_vetores VALUES (?, ?, ?, ?)",
+                    (episodio_id, h, MODELO_EMBEDDING, json.dumps(v)))
+    con.commit()
+    do_banco = {r["episodio_id"]: json.loads(r["vetor"]) for r in con.execute("SELECT * FROM episodios_vetores")}
+    parecidos = []
+    for ep, idade, _, _ in candidatos:
+        c = cosseno(vetores[0], do_banco[ep["id"]])
+        if c >= limiar:
+            parecidos.append({"ticket": ep["ticket_externo"], "em": ep["criado_em"][:10], "kb_id": ep["kb_id"],
+                              "desfecho": ep["desfecho"], "veredito": ep["veredito"],
+                              "antigo": idade > db.EPISODIO_RECENTE_DIAS, "cosseno": round(c, 3),
+                              "por": f"parecido (cosseno {c:.2f}), outro guia"})
+    parecidos.sort(key=lambda p: -p["cosseno"])
+    return parecidos[:top]

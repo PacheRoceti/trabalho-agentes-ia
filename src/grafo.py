@@ -1405,3 +1405,83 @@ def retomar_interrompidas(*, client, con, log_dir: Path | None = None, agora: da
                 f"gravado por esta rotina; o checkpoint foi mantido. Último erro: {f['erro']}",
                 quando, chave=f"retomada:{execucao_id}")
     return feitas
+
+
+# ================================================================ O DETECTOR DE LAÇO (21/11/2026)
+# Correção da devolutiva da Parte 2 (subcritério 5d; enunciado da Parte 2, §6.5): além do
+# `recursion_limit` (LIMITE_SUPERPASSOS) e do contador do retorno validar -> redigir (MAX_REDACOES),
+# que limitam o dano sem perceber a repetição, o grafo agora percebe quando um nó repete um passo
+# que já está na trajetória: o mesmo nó, com os mesmos argumentos, devolvendo o mesmo resultado (ou o
+# mesmo erro). Repetir a mesma ação sem que nada mude é laço, e não progresso.
+#
+# Quando dispara: a execução termina em `erro_fatal`, com o motivo começando por MOTIVO_LACO, e os
+# nós seguintes não executam (só o `finalizar`), qualquer que seja a aresta: nada é gravado depois
+# do laço (fail-closed). A comparação é contra `state["passos"]`, que está no checkpoint: vale também
+# numa retomada. Limite declarado: o detector olha o passo DEPOIS de o nó rodar; uma escrita
+# repetida no `gravar` já teria acontecido, e quem a segura é a chave de idempotência de cada
+# escrita (db.abrir_chamado, db.chave_do_encaminhamento), não este detector.
+#
+# O `validar` fica de fora: o passo dele não traz o texto julgado, e a mesma recusa sobre um texto
+# NOVO não é laço (é o modelo errando de outro jeito, e o MAX_REDACOES encerra). O texto repetido é
+# pego no `redigir`, cujo passo traz o texto.
+# Fica no fim do arquivo, como os blocos acima, para não deslocar as linhas citadas em docs/grafo.md §4.
+MOTIVO_LACO = "laço detectado"
+NOS_FORA_DO_DETECTOR = frozenset({"validar"})
+
+
+def _assinatura_do_passo(p: dict) -> str:
+    """O que identifica uma ação na trajetória: o nó (ou a ferramenta), os argumentos, o resultado e
+    o erro. O índice e o tempo ficam de fora: mudam a cada passo."""
+    return json.dumps([p.get("ferramenta"), p.get("argumentos"), p.get("resultado"), p.get("erro")],
+                      sort_keys=True, ensure_ascii=False, default=str)
+
+
+def passo_repetido(state, saida: dict | None) -> dict | None:
+    """O primeiro passo novo de `saida` que repete um passo já na trajetória, ou None."""
+    vistos = {_assinatura_do_passo(p) for p in state.get("passos") or []
+              if p.get("ferramenta") not in NOS_FORA_DO_DETECTOR}
+    for p in (saida or {}).get("passos", []):
+        if p.get("ferramenta") not in NOS_FORA_DO_DETECTOR and _assinatura_do_passo(p) in vistos:
+            return p
+    return None
+
+
+_rodar_no_sem_detector = _rodar_no
+
+
+def _rodar_no(funcao, state, ctx):
+    if (state.get("motivo") or "").startswith(MOTIVO_LACO) and funcao.__name__ != "finalizar":
+        return {}                          # depois do laço, nada mais executa
+    saida = _rodar_no_sem_detector(funcao, state, ctx)
+    repetido = passo_repetido(state, saida)
+    if repetido is None:
+        return saida
+    return {**(saida or {}), "termino": Termino.ERRO_FATAL.value,
+            "motivo": (f"{MOTIVO_LACO}: o nó {funcao.__name__} repetiu o passo '{repetido['ferramenta']}' "
+                       "com os mesmos argumentos e o mesmo resultado; nada foi gravado depois dele")}
+
+
+# ================================================================ OS EPISÓDIOS PARECIDOS NA TELA DO H1 (21/11/2026)
+# Correção da devolutiva da Parte 2 (subcritério 4b): a tela do H1 traz, em `precedentes.parecidos`,
+# os episódios de OUTRO guia mais parecidos com o caso atual (vetorial.precedentes_parecidos). Só
+# informam o analista, como o resto da memória episódica. Só com embedding: na busca por palavra sem
+# embedder (os testes offline, `--busca palavra`) o campo fica `None`, com o motivo ao lado.
+# Fail-open: se o embedding falha, a tela vai sem os parecidos e diz por quê. Limite declarado: os
+# tokens deste embedding não entram no `custo_usd` da execução.
+_tela_do_h1_sem_parecidos = _tela_do_h1
+
+
+def _tela_do_h1(state, ctx, artigo: dict, pendencia: dict) -> dict:
+    tela = _tela_do_h1_sem_parecidos(state, ctx, artigo, pendencia)
+    memoria = tela.get("precedentes")
+    if not MEMORIA or not isinstance(memoria, dict):
+        return tela
+    if BUSCA == "palavra" and vetorial.EMBEDDER is None:
+        memoria["parecidos"], memoria["parecidos_motivo"] = None, "busca por palavra: sem embedding"
+        return tela
+    try:
+        memoria["parecidos"] = vetorial.precedentes_parecidos(
+            ctx.con, state.get("classe"), artigo, pendencia.get("ferramenta"), state["ticket"]["_cliente_id"])
+    except Exception as e:                 # noqa: BLE001 - fail-open: só a informação falta
+        memoria["parecidos"], memoria["parecidos_motivo"] = None, f"embedding indisponível ({type(e).__name__})"
+    return tela

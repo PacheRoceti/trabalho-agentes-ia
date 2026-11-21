@@ -255,6 +255,20 @@ passo: ele devolve um JSON, o nó o grava no estado, e uma função de código l
 - dentro do nó `conferir_ressalva`: o mesmo, e também quando a frase citada não é uma das do
   guia (`MAX_TENTATIVAS_RESSALVA = 2`).
 
+**O detector de laço (21/11/2026).** A devolutiva da Parte 2 (subcritério 5d) apontou que os
+contadores e o `recursion_limit` limitam o dano, mas não percebem a repetição. Desde 21/11/2026
+cada nó passa por `grafo.passo_repetido`, no fim de `src/grafo.py`, que confere se o passo novo
+repete um passo já na trajetória: o mesmo nó, os mesmos argumentos e o mesmo resultado (ou o mesmo
+erro), sem contar o índice nem o tempo.
+- **Quando dispara:** a execução termina em ●T3 (`erro_fatal`), com o motivo começando por
+  `laço detectado`, e nenhum nó executa depois dele, além do `finalizar`. Nada é gravado
+  (*fail-closed*).
+- **Exemplo:** o modelo devolve na segunda redação o mesmo texto que já tinha sido recusado.
+- **O `validar` fica de fora:** o passo dele não traz o texto julgado.
+- **Limite:** o detector olha o passo depois de o nó rodar. Uma escrita repetida no `gravar` é
+  segurada pela chave de idempotência, e não pelo detector.
+- **Testes:** `tests/test_devolutiva.py`.
+
 Com isso o pior caso são 6 chamadas ao modelo por execução (2 de triagem, 2 de ressalva e 2 de
 redação), contra 11 no laço da Parte 1.
 

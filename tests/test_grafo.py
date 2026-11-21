@@ -231,7 +231,8 @@ class TestGrafo(unittest.TestCase):
         self.assertIn("ERRO DA TENTATIVA ANTERIOR", self.modelo.pedidos[2]["messages"][1]["content"])
 
     def test_texto_recusado_duas_vezes_termina_em_erro_fatal_sem_gravar(self):
-        e = self.rodar("TKT-0004", [triagem("comercial"), texto("Upgrade.")])
+        # duas redações diferentes, as duas curtas: a mesma repetida seria laço (tests/test_devolutiva.py)
+        e = self.rodar("TKT-0004", [triagem("comercial"), texto("Upgrade."), texto("Plano.")])
         self.assertEqual(e.termino, Termino.ERRO_FATAL)
         self.assertIn("recusado em 2 tentativas", e.motivo)
         self.assertEqual(db.contar(self.con, "encaminhamentos", "TKT-0004"), 0)

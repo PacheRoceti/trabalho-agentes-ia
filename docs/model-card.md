@@ -8,7 +8,7 @@ campo 12 e em `docs/mudancas.md`.
 
 **Como ler a evidência.**
 - **Linhas de código.** `arquivo:linha` se refere ao commit `925b464`, cujo `src/` e `tests/` são os do `fa74011`.
-- **Testes.** Os testes são citados pelo nome: `python -m unittest discover -s tests` roda os **206** testes offline, sem chave e sem rede. Todos passaram em 21/11/2026, sobre o `925b464`.
+- **Testes.** Os testes são citados pelo nome: `python -m unittest discover -s tests` roda os **214** testes offline, sem chave e sem rede. Todos passaram em 21/11/2026: 206 sobre o `925b464`, e 214 com as correções da devolutiva da Parte 2 (`docs/mudancas.md` §1), ainda não commitadas quando esta linha foi escrita.
 - **Lacunas.** Um campo sem evidência leva a marca **LACUNA** com um número. A seção final reúne todas, cada uma com a correção proposta.
 - **Lacunas resolvidas.** Ficam riscadas, com a data e o que as resolveu.
 
@@ -73,6 +73,7 @@ fica só no prompt conta como lacuna.
 | Credencial do modelo | uma chave (`OPENAI_API_KEY`) para chat **e** embedding | credencial | `.env.example`; `src/vetorial.py:5-6`. **LACUNA L3**: não é uma identidade própria do agente, e a conta dona da chave é de um integrante |
 | Credencial do banco | **nenhuma**: o processo abre o SQLite com acesso total a todas as tabelas | — | `db.conectar`, `src/db.py:208`. **LACUNA L4**: todo limite de escrita está só no código |
 | Limite por execução | Tetos de 8 passos, 30.000 tokens, US$ 0,05 e 90 s (`Orcamento`), e 20 superpassos | código | `src/agente.py:184-191`; `src/grafo.py:71`, `_teto` em `:216`; testes `test_teto_de_tokens_termina_antes_da_redacao` e `test_limite_de_superpassos_e_declarado_no_codigo`. Medido: US$ 0,00043 por execução, nenhuma com orçamento esgotado (`docs/observabilidade.md` §6) |
+| Repetição da mesma ação (detector de laço, desde 21/11/2026) | o passo que repete outro da trajetória (mesmo nó, mesmos argumentos, mesmo resultado) encerra a execução em `erro_fatal`; nada executa depois, além do `finalizar` (*fail-closed*) | código | `grafo.passo_repetido`, no fim de `src/grafo.py`; testes `test_a_mesma_redacao_repetida_e_laco_e_termina_sem_gravar` e `test_depois_do_laco_nenhum_no_executa_alem_do_finalizar` (`tests/test_devolutiva.py`); `docs/mudancas.md` §1 |
 | Limite por janela (dia ou mês) | não existe | — | **LACUNA L5**: o limite de requisições do plano é do provedor, e não configuração nossa |
 | **Retomada depois de uma queda** (controle **C3**, desde a 1.1.0) | Cada execução interrompida é retomada no máximo `MAX_FALHAS_DE_RETOMADA` (3) vezes com falha. Depois disso não é retomada de novo, o gestor é avisado e nenhum desfecho é gravado por essa rotina (*fail-closed*) | código | `retomar_interrompidas`, `src/grafo.py:1384`; `src/db.py:920-952`; testes `test_c3_execucao_que_falha_sempre_para_no_teto_e_o_gestor_e_avisado` e `test_c3_o_que_passa_falha_passageira_e_retomada_normalmente` |
 | Limiar de aprovação humana | **Toda** abertura de chamado interno (H1) e **todo** pedido ao cliente (H2) esperam o analista, com prazo de 20 min. O silêncio não executa a ação | código | `PRAZO_CONFIRMACAO_MIN`, `src/ferramentas.py:29`; `interrupt`, `src/grafo.py:596`; testes `test_sem_resposta_do_analista_o_grafo_pausa_no_interrupt` e `test_prazo_vencido_de_p1_vai_a_fila_humana_e_avisa_o_gestor` |
@@ -143,7 +144,7 @@ Neste card ficam as lacunas que aquele mapa aponta:
 | SLO de qualidade | pelo menos 75% das execuções com desfecho certo; medido **90,9%** na 1.1.0, com 36% do orçamento de erro consumido | `docs/observabilidade.md` §8 |
 | Repetições | **1 por versão** (pass^1), por causa do limite do plano. O pass^3 previsto não foi medido | `docs/evals.md` §4.2 |
 | Concordância do juiz com humano | **O juiz existe, mas não foi validado.** A rubrica `evals/prompts/juiz-v1.0.0.md` confere a fidelidade da correção ao guia, e os 22 itens estão separados para rótulo humano. Não há rótulo, limiar nem matriz ainda, e o juiz não foi rodado | `evals/juiz/rotulos-v1.0.0.json` (`rotulado_por: null`); `docs/evals.md` §3. **LACUNA L13** |
-| Testes offline (código, sem modelo) | 206 testes passam no `925b464` | `python -m unittest discover -s tests`, rodado em 21/11/2026: `Ran 206 tests`, `OK` |
+| Testes offline (código, sem modelo) | 214 testes passam com as correções da devolutiva (206 no `925b464`) | `python -m unittest discover -s tests`, rodado em 21/11/2026: `Ran 214 tests`, `OK` |
 
 ## 8. Limites conhecidos
 
