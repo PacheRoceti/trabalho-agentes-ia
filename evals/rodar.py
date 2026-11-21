@@ -35,6 +35,63 @@ def _limite_de_requisicoes(log: dict) -> bool:
     return log.get("termino") == "erro_fatal" and "429" in str(log.get("motivo") or "")
 
 
+class Ritmo:
+    """O ritmo das chamadas ao modelo de chat, para caber no limite do provedor (20/11/2026: 2 por
+    minuto no plano da conta; o embedding tem limite próprio, de 60, e não passa por aqui). O limite
+    conta as chamadas numa janela de 60 s (medido em 20/11/2026: a terceira chamada 30 s depois da
+    primeira foi recusada com 429), então uma chamada só sai quando houve menos de `por_minuto`
+    chamadas nos últimos 60 s, mais uma folga. Antes de cada execução a suíte espera a janela
+    esvaziar (`esperar_cheio`), para a execução começar com espaço; o que ela ainda esperar DENTRO
+    fica em `espera_s`, que vai ao resultado, para as métricas de latência poderem descontar. A
+    espera de dentro também fica no span `chat` do trace, porque acontece dentro da chamada. Não muda
+    nada do que o sistema decide. `relogio` e `dormir` existem para os testes."""
+
+    JANELA_S = 60.0
+    FOLGA_S = 1.0
+
+    def __init__(self, por_minuto: float, relogio=time.monotonic, dormir=time.sleep):
+        self.maximo = max(1, int(por_minuto))
+        self.relogio, self.dormir = relogio, dormir
+        # O processo não sabe das chamadas feitas antes dele (outra rodada, um teste da API): começa
+        # supondo a janela cheia, e a primeira execução espera uma janela inteira.
+        self.chamadas: list[float] = [relogio()] * self.maximo
+        self.espera_s = 0.0
+
+    def _livre_em(self, vagas: int) -> float:
+        """Quando haverá `vagas` lugares na janela: o instante em que sai a chamada que os ocupa."""
+        recentes = [t for t in self.chamadas if self.relogio() - t < self.JANELA_S + self.FOLGA_S]
+        self.chamadas = recentes
+        excesso = len(recentes) - (self.maximo - vagas)
+        if excesso <= 0:
+            return self.relogio()
+        return sorted(recentes)[excesso - 1] + self.JANELA_S + self.FOLGA_S
+
+    def esperar_cheio(self):
+        falta = self._livre_em(self.maximo) - self.relogio()
+        if falta > 0:
+            self.dormir(falta)
+
+    def pegar(self):
+        falta = self._livre_em(1) - self.relogio()
+        if falta > 0:
+            self.espera_s += falta
+            self.dormir(falta)
+        self.chamadas.append(self.relogio())
+
+
+def cliente_com_ritmo(client, ritmo: Ritmo):
+    """O mesmo cliente, com o `chat.completions.create` passando pelo ritmo. O resto (embeddings,
+    atributos) é o do cliente original."""
+    from types import SimpleNamespace
+
+    def criar(**kw):
+        ritmo.pegar()
+        return client.chat.completions.create(**kw)
+    embrulho = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=criar)))
+    embrulho.__dict__.update({k: getattr(client, k) for k in ("embeddings",) if hasattr(client, k)})
+    return embrulho
+
+
 def carregar_dataset(caminho: Path | None = None) -> tuple[dict, Path]:
     """O dataset mais novo (ou o pedido). Os nomes são v<x.y.z>.json."""
     if caminho is None:
@@ -91,10 +148,13 @@ def resumir(execucoes: list[dict], casos: list[dict]) -> dict:
 
 
 def rodar_rodada(dataset: dict, casos: list[dict], repeticoes: int, destino: Path, client, modelo: str,
-                 precos, metadados: dict, avisar=print) -> dict:
-    """O laço da suíte. Recebe o cliente pronto, para os testes offline passarem um modelo roteirizado."""
+                 precos, metadados: dict, avisar=print, ritmo: Ritmo | None = None) -> dict:
+    """O laço da suíte. Recebe o cliente pronto, para os testes offline passarem um modelo roteirizado.
+    Com `ritmo`, as chamadas ao modelo de chat passam por ele (o limite do provedor)."""
     import db
     import main
+    if ritmo is not None:
+        client = cliente_com_ritmo(client, ritmo)
     destino.mkdir(parents=True)
     resultado = {**metadados, "execucoes": []}
     with (destino / "saida-terminal.txt").open("w", encoding="utf-8") as saida:
@@ -109,6 +169,9 @@ def rodar_rodada(dataset: dict, casos: list[dict], repeticoes: int, destino: Pat
                     db.recriar_banco()           # cada caso parte do mesmo estado inicial
                     con = db.conectar()
                     antes = checagens.foto_do_resto(con, i)
+                    if ritmo is not None:        # a execução começa com o balde cheio
+                        ritmo.esperar_cheio()
+                        ritmo.espera_s = 0.0
                     inicio = time.monotonic()
                     erro = None
                     try:
@@ -141,6 +204,8 @@ def rodar_rodada(dataset: dict, casos: list[dict], repeticoes: int, destino: Pat
                     "tokens": (log.get("tokens_entrada") or 0) + (log.get("tokens_saida") or 0),
                     "custo_usd": log.get("custo_usd"), "commit_no_log": log.get("commit"),
                     "reexecucoes_429": reexecucoes_429,
+                    # o que a execução esperou pelo ritmo, dentro dela: está em `segundos` e no trace
+                    "espera_do_ritmo_s": round(ritmo.espera_s, 2) if ritmo is not None else 0.0,
                     "falha_de_infraestrutura": _limite_de_requisicoes(log),
                     "log": caminho_log.relative_to(destino).as_posix() if caminho_log.exists() else None,
                 })
@@ -152,6 +217,15 @@ def rodar_rodada(dataset: dict, casos: list[dict], repeticoes: int, destino: Pat
     resultado["resumo"] = resumir(resultado["execucoes"], casos)
     _gravar(destino, resultado)
     return resultado
+
+
+def _evals_alterado() -> bool | None:
+    import subprocess
+    try:
+        return bool(subprocess.run(["git", "status", "--porcelain", "--", "evals"], cwd=RAIZ, capture_output=True,
+                                   text=True, timeout=5, check=True).stdout.strip())
+    except (OSError, subprocess.SubprocessError):
+        return None
 
 
 def _gravar(destino: Path, resultado: dict):
@@ -169,6 +243,9 @@ def main_cli():
     ap.add_argument("--casos", nargs="+", help="só estes ids (a rodada fica marcada como parcial)")
     ap.add_argument("--dataset", type=Path, help="arquivo do dataset (padrão: o mais novo em evals/dataset/)")
     ap.add_argument("--nome", help="nome da pasta em evals/resultados/ (padrão: v<versao>-<data e hora>)")
+    ap.add_argument("--chamadas-por-minuto", type=float, default=2,
+                    help="ritmo das chamadas ao modelo de chat, para caber no limite do provedor "
+                         "(padrão: 2, o do plano da conta em 20/11/2026; 0 = sem ritmo)")
     args = ap.parse_args()
 
     from dotenv import load_dotenv
@@ -212,12 +289,17 @@ def main_cli():
                     "casos": len(casos), "origem": dict(Counter(c["origem"] for c in casos)),
                     "classes": dataset["classes"]},
         "parcial": bool(args.casos), "repeticoes": args.repeticoes,
+        "ritmo_chamadas_por_minuto": args.chamadas_por_minuto or None,
+        # o código da suíte não entra no `commit` (agente._commit olha src/ e dados/): registra à parte
+        "suite_com_alteracoes_locais": _evals_alterado(),
         "juiz": None,                    # docs/evals.md §3: ainda não validado
         "iniciado_em": agora.isoformat(timespec="seconds"),
     }
     print(f"Rodada {nome}: {len(casos)} caso(s) x {args.repeticoes} repetição(ões), modelo {modelo}, "
           f"commit {commit}\n")
-    resultado = rodar_rodada(dataset, casos, args.repeticoes, destino, client, modelo, precos, metadados)
+    ritmo = Ritmo(args.chamadas_por_minuto) if args.chamadas_por_minuto else None
+    resultado = rodar_rodada(dataset, casos, args.repeticoes, destino, client, modelo, precos, metadados,
+                             ritmo=ritmo)
     print()
     from evals.comparar import imprimir
     imprimir([resultado])

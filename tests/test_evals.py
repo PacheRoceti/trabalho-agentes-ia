@@ -211,6 +211,45 @@ class TestRodada(unittest.TestCase):
         self.assertEqual((e["reexecucoes_429"], e["falha_de_infraestrutura"]), (1, False))
         self.assertEqual(r["resumo"]["reexecucoes_429"], 1)
 
+    def test_ritmo_espera_a_janela_de_60_s_e_registra_a_espera_de_dentro(self):
+        from evals.rodar import Ritmo
+        relogio = {"t": 0.0}
+        dormidas = []
+
+        def dormir(s):
+            dormidas.append(round(s, 1))
+            relogio["t"] += s
+        ritmo = Ritmo(2, relogio=lambda: relogio["t"], dormir=dormir)   # 2 chamadas por janela de 60 s
+        ritmo.esperar_cheio()              # nasce supondo a janela cheia: espera uma janela inteira
+        self.assertEqual(dormidas, [61.0])
+        dormidas.clear()
+        ritmo.pegar()
+        relogio["t"] += 1
+        ritmo.pegar()                      # duas na janela: sem espera
+        self.assertEqual(dormidas, [])
+        relogio["t"] += 29                 # 30 s depois da primeira: o provedor recusaria
+        ritmo.pegar()                      # espera a primeira sair da janela (60 s + 1 s de folga)
+        self.assertEqual(dormidas, [31.0])
+        self.assertEqual(round(ritmo.espera_s), 31)
+        ritmo.esperar_cheio()              # antes da execução seguinte: até a janela esvaziar
+        self.assertEqual(dormidas, [31.0, 61.0])
+
+    def test_rodada_com_ritmo_passa_as_chamadas_por_ele(self):
+        from evals.rodar import Ritmo
+        ritmo = Ritmo(2, dormir=lambda s: None)   # sem dormir: o teste confere o caminho, e não a espera
+        chamadas = []
+        pegar = ritmo.pegar
+        ritmo.pegar = lambda: (chamadas.append(1), pegar())[1]
+        casos = [c for c in self.dataset["casos"] if c["id"] == "TKT-0001"]
+        destino = Path(self.pasta.name) / "com-ritmo"
+        r = rodar_rodada(self.dataset, casos, 1, destino, ModeloRoteirizado(ROTEIROS["TKT-0001"]), "fake",
+                         (0.0, 0.0), {"rodada": "t", "versao": "0", "commit": None, "modelo": "fake",
+                                      "dataset": {"versao": "x", "casos": 1, "origem": {}, "classes": {}},
+                                      "repeticoes": 1}, avisar=lambda *_: None, ritmo=ritmo)
+        self.assertEqual(len(chamadas), 2)                  # triagem e redação
+        self.assertTrue(r["execucoes"][0]["passou"])
+        self.assertIn("espera_do_ritmo_s", r["execucoes"][0])
+
     def test_rodada_que_ja_existe_nao_e_sobrescrita(self):
         self.rodar(["TKT-0004"], ROTEIROS)
         with self.assertRaises(FileExistsError):

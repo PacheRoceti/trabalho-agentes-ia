@@ -250,13 +250,13 @@ gravar `logs/saida-demonstracao.txt` e regravaria os oito logs acima. As rodadas
 A suíte roda os 44 casos do golden dataset ([`evals/dataset/v1.0.0.json`](evals/dataset/v1.0.0.json)) sobre o sistema entregue, pelo mesmo `main.executar` do `--todos`, três vezes cada, e confere cada execução em três níveis: o objeto de saída, a trajetória do log e o que ficou gravado no banco ([`docs/evals.md`](docs/evals.md)).
 
 ```bash
-python -m evals.rodar --versao 1.0.0          # usa a API: 132 execuções, uns 12 a 15 min; grava evals/resultados/v1.0.0-<data e hora>/
+python -m evals.rodar --repeticoes 1         # usa a API: os 44 casos, uma hora no limite de 2 chamadas por minuto; grava evals/resultados/v<versão>-<data e hora>/
 python -m evals.comparar evals/resultados/<rodada-A> evals/resultados/<rodada-B>   # compara duas rodadas, por classe (só lê)
 python -m evals.comparar evals/resultados/<rodada>                                 # mostra uma rodada
 python -m unittest tests.test_evals           # os testes da suíte, sem chave
 ```
 
-Sem `--versao`, vale a de [`src/versao.py`](src/versao.py), que é a mesma que vai aos traces. Rode da raiz do repositório. Uma rodada que já existe não é sobrescrita (`--nome` escolhe outro nome), e a suíte recria `dados/tickets.db`, como o `--todos`. O número de cada classe é o pass^3: a fração dos casos que passaram nas três repetições.
+Sem `--versao`, vale a de [`src/versao.py`](src/versao.py), que é a mesma que vai aos traces. Rode da raiz do repositório. Uma rodada que já existe não é sobrescrita (`--nome` escolhe outro nome), e a suíte recria `dados/tickets.db`, como o `--todos`. O número de cada classe é o pass^k: a fração dos casos que passaram em todas as k repetições. As rodadas desta entrega usam uma repetição, por causa do limite da API ([`docs/evals.md`](docs/evals.md) §4.2), e a suíte espaça as chamadas ao modelo para caber nele (`--chamadas-por-minuto`, padrão 2).
 
 ## Como ver os traces
 

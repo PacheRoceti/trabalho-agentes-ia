@@ -1,0 +1,283 @@
+{
+  "execucao_id": "TKT-0136-21efc69c",
+  "id_ticket": "TKT-0136",
+  "executado_em": "2026-11-20T22:29:05-03:00",
+  "commit": "ca4a8bc",
+  "entrada": "É a terceira vez só neste mês que o site do restaurante sai do ar: nenhuma página abre para os clientes.",
+  "modelo": "ministral-8b-2512",
+  "prompt": "triagem-v1.md + ressalva-v3.md + redigir-v3.md + regras-redigir-v2.md",
+  "temperatura": 0.0,
+  "termino": "respondeu",
+  "motivo": null,
+  "resposta": null,
+  "desfecho": {
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-106",
+    "chamado_interno": "INC-0005",
+    "time_destino": "Infraestrutura",
+    "prioridade": "P1",
+    "reincidencias_confirmadas_no_sistema": 0,
+    "ja_existia": false
+  },
+  "pendencia": null,
+  "confirmacoes": [
+    {
+      "pendencia": {
+        "ferramenta": "abrir_chamado_interno",
+        "id_ticket": "TKT-0136",
+        "categoria": "dns_dominio",
+        "resumo": "Resumo para escalar: o domínio do cliente apresenta falha de resolução DNS (SERVFAIL) no registro do nome **www.delta-restaurantes.example**, mas o acesso direto ao IP do servidor (203.0.113.71) permite carregar a página inicial normalmente. O histórico do sistema não confirma ocorrências anteriores, embora o cliente afirme que é a terceira vez no mês. O procedimento **KB-106** (score 0.51) sugere verificar o nameserver e os registros DNS do domínio, mas não cobre a zona externa do cliente. **Ação necessária:** escalar para o time de DNS externo.",
+        "time_destino": "Infraestrutura",
+        "kb_id": "KB-106",
+        "prioridade_prevista": "P1",
+        "guia_publicado_em": "2026-03-18",
+        "guia_nao_cobre": [],
+        "plano": "Hospedagem Start",
+        "escopo_do_plano": "Hospedagem compartilhada de entrada. O suporte cobre o ambiente do servidor: a conta, os certificados, o DNS, o e-mail e os arquivos do site. Não cobre desenvolvimento, correção ou depuração do código do site do cliente. Atendimento por chamado, em horário comercial.",
+        "precedentes": {
+          "guia": {
+            "kb_id": "KB-106",
+            "janela_dias": 90,
+            "decisoes": 0,
+            "aprovados": 0,
+            "editados": 0,
+            "rejeitados": 0,
+            "decisoes_antigas": 0,
+            "rejeicoes_por_motivo": {}
+          },
+          "cliente": []
+        },
+        "fatos_cliente": {},
+        "score": 0.51,
+        "reincidencia": [],
+        "sla_previsto": "2 horas",
+        "pedido_em": "2026-11-20T22:29:09-03:00",
+        "vence_em": "2026-11-20T22:49:09-03:00"
+      },
+      "aprovado": true,
+      "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+      "status": "aprovada",
+      "resolvido_em": "2026-11-20T22:29:09-03:00",
+      "editado": false
+    }
+  ],
+  "n_chamadas_modelo": 2,
+  "lembretes": 0,
+  "tokens_entrada": 1682,
+  "tokens_saida": 232,
+  "custo_usd": 0.000464,
+  "scores_kb": {
+    "KB-106": 0.51,
+    "KB-104": 0.49,
+    "KB-110": 0.48
+  },
+  "saida": {
+    "id_ticket": "TKT-0136",
+    "executado_em": "2026-11-20T22:29:05-03:00",
+    "termino": "respondeu",
+    "resultado": {
+      "acao": "abrir_chamado_interno",
+      "texto": "Resumo para escalar: o domínio do cliente apresenta falha de resolução DNS (SERVFAIL) no registro do nome **www.delta-restaurantes.example**, mas o acesso direto ao IP do servidor (203.0.113.71) permite carregar a página inicial normalmente. O histórico do sistema não confirma ocorrências anteriores, embora o cliente afirme que é a terceira vez no mês. O procedimento **KB-106** (score 0.51) sugere verificar o nameserver e os registros DNS do domínio, mas não cobre a zona externa do cliente. **Ação necessária:** escalar para o time de DNS externo.",
+      "chamado_interno": "INC-0005",
+      "time_destino": "Infraestrutura",
+      "prioridade": "P1"
+    },
+    "fonte": {
+      "tipo": "procedimento_da_base",
+      "kb_id": "KB-106",
+      "score": 0.51,
+      "registros": [
+        "TKT-0136"
+      ],
+      "ferramentas": [
+        "consultar_ticket",
+        "triagem",
+        "buscar_base_conhecimento",
+        "decidir",
+        "redigir",
+        "confirmar",
+        "abrir_chamado_interno"
+      ]
+    },
+    "suficiencia": {
+      "suficiente": true,
+      "motivo": "procedimento KB-106 com score 0.51, igual ou acima do limiar 0.5"
+    }
+  },
+  "passos": [
+    {
+      "indice": 0,
+      "ferramenta": "consultar_ticket",
+      "argumentos": {
+        "id_ticket": "TKT-0136"
+      },
+      "resultado": {
+        "id": "TKT-0136",
+        "aberto_em": "2026-09-21 11:58",
+        "status": "novo",
+        "anexo_log": "2026-09-21 11:40 nslookup www.delta-restaurantes.example -> falha de resolução DNS: SERVFAIL. 2026-09-21 11:42 acesso ao site direto pelo IP do servidor (http://203.0.113.71) -> a página inicial abre normalmente.",
+        "cliente": "Delta Restaurantes",
+        "plano": "Hospedagem Start",
+        "historico_cliente": []
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 1,
+      "ferramenta": "triagem",
+      "argumentos": {},
+      "resultado": {
+        "classe": "tecnico",
+        "log_aponta_outro_servico": false,
+        "termos_busca": [
+          "site",
+          "sai",
+          "ar"
+        ],
+        "justificativa": "o cliente relata falha no acesso ao site, e o log confirma falha de resolução DNS, mesmo serviço afetado"
+      },
+      "erro": null,
+      "ms": 903
+    },
+    {
+      "indice": 2,
+      "ferramenta": "buscar_base_conhecimento",
+      "argumentos": {
+        "termos": [
+          "site",
+          "sai",
+          "ar"
+        ]
+      },
+      "resultado": {
+        "resultados": [
+          {
+            "kb_id": "KB-106",
+            "titulo": "Falha de resolução DNS do domínio",
+            "score": 0.51,
+            "cosseno": 0.807,
+            "causa": "Nameserver do domínio fora do ar ou zona DNS com registro inválido.",
+            "solucao": "Verificar o nameserver responsável pela zona e os registros do domínio; restabelecer o serviço de DNS.",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-104",
+            "titulo": "Site fora do ar com erro 5xx após deploy",
+            "score": 0.49,
+            "cosseno": 0.8,
+            "causa": "Processo da aplicação parado ou configuração inválida do nginx após o deploy (falha CONSTANTE).",
+            "solucao": "Reiniciar o processo da aplicação, validar a configuração do nginx; reverter o deploy só em acordo com o cliente (o deploy é dele).",
+            "acao_padrao": "escalar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          },
+          {
+            "kb_id": "KB-110",
+            "titulo": "Site em laço de redirecionamentos",
+            "score": 0.48,
+            "cosseno": 0.793,
+            "causa": "Regras de redirecionamento do servidor web em conflito: por exemplo, uma manda para HTTPS e outra manda de volta para o endereço sem HTTPS.",
+            "solucao": "Revisar as regras de redirecionamento do nginx, remover a regra duplicada e testar com curl -I seguindo os redirecionamentos.",
+            "acao_padrao": "anotar",
+            "time_destino": "Infraestrutura",
+            "busca": "vetorial"
+          }
+        ],
+        "limiar_para_agir_sozinho": 0.5
+      },
+      "erro": null,
+      "ms": 1467
+    },
+    {
+      "indice": 3,
+      "ferramenta": "decidir",
+      "argumentos": {},
+      "resultado": {
+        "acao": "abrir_chamado_interno",
+        "kb_id": "KB-106",
+        "motivo": "procedimento_escalar"
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 4,
+      "ferramenta": "redigir",
+      "argumentos": {
+        "desfecho": "abrir_chamado_interno"
+      },
+      "resultado": {
+        "texto": "Resumo para escalar: o domínio do cliente apresenta falha de resolução DNS (SERVFAIL) no registro do nome **www.delta-restaurantes.example**, mas o acesso direto ao IP do servidor (203.0.113.71) permite carregar a página inicial normalmente. O histórico do sistema não confirma ocorrências anteriores, embora o cliente afirme que é a terceira vez no mês. O procedimento **KB-106** (score 0.51) sugere verificar o nameserver e os registros DNS do domínio, mas não cobre a zona externa do cliente. **Ação necessária:** escalar para o time de DNS externo."
+      },
+      "erro": null,
+      "ms": 1470
+    },
+    {
+      "indice": 5,
+      "ferramenta": "confirmar",
+      "argumentos": {
+        "kb_id": "KB-106"
+      },
+      "resultado": {
+        "status": "aprovada",
+        "por": "auto-aprovado (--auto-aprovar; só para demonstração)",
+        "editado": false
+      },
+      "erro": null,
+      "ms": 0
+    },
+    {
+      "indice": 6,
+      "ferramenta": "abrir_chamado_interno",
+      "argumentos": {
+        "id_ticket": "TKT-0136",
+        "resumo": "Resumo para escalar: o domínio do cliente apresenta falha de resolução DNS (SERVFAIL) no registro do nome **www.delta-restaurantes.example**, mas o acesso direto ao IP do servidor (203.0.113.71) permite carregar a página inicial normalmente. O histórico do sistema não confirma ocorrências anteriores, embora o cliente afirme que é a terceira vez no mês. O procedimento **KB-106** (score 0.51) sugere verificar o nameserver e os registros DNS do domínio, mas não cobre a zona externa do cliente. **Ação necessária:** escalar para o time de DNS externo.",
+        "kb_id": "KB-106"
+      },
+      "resultado": {
+        "chamado_interno": "INC-0005",
+        "time_destino": "Infraestrutura",
+        "prioridade": "P1",
+        "reincidencias_confirmadas_no_sistema": 0,
+        "ja_existia": false
+      },
+      "erro": null,
+      "ms": 2
+    }
+  ],
+  "motor": "langgraph",
+  "classe": "tecnico",
+  "log_diverge": false,
+  "desfecho_proposto": {
+    "acao": "abrir_chamado_interno",
+    "kb_id": "KB-106",
+    "motivo": "procedimento_escalar"
+  },
+  "tentativas_redacao": 1,
+  "tokens_embedding": 1768,
+  "custo_embedding_usd": 0.000177,
+  "episodio": {
+    "execucao_id": "TKT-0136-21efc69c",
+    "ticket_externo": "TKT-0136",
+    "cliente_id": "CLI-04",
+    "classe": "tecnico",
+    "categoria": "dns_dominio",
+    "kb_id": "KB-106",
+    "score": 0.51,
+    "acao_proposta": "abrir_chamado_interno",
+    "desfecho": "abrir_chamado_interno",
+    "motivo": "procedimento_escalar",
+    "veredito": "aprovado",
+    "motivo_rejeicao": null,
+    "termino": "respondeu",
+    "resumo": "TKT-0136: classe tecnico; guia KB-106 (score 0.51); proposto abrir_chamado_interno; gravado abrir_chamado_interno; analista: aprovado; término respondeu",
+    "criado_em": "2026-11-20T22:29:09-03:00",
+    "id": 1,
+    "chave": "db9e7e470023b0d3",
+    "ja_existia": false
+  },
+  "segundos_gastos": 3.848
+}

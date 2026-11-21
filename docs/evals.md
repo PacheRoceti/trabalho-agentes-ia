@@ -1,9 +1,9 @@
 # Avaliação (Parte 3, item 1)
 
-> **Estado deste documento: 10/11/2026.** A suíte existe e roda (`evals/`), com o dataset, três dos
-> quatro níveis de avaliação e a comparação entre rodadas. **Ainda não há rodada oficial commitada**
-> (§4.3), nem juiz (§3). Os números deste documento entram quando as rodadas existirem; até lá, o que
-> não foi medido está marcado como tal.
+> **Estado deste documento: 20/11/2026.** A suíte existe e roda (`evals/`), com o dataset, três dos
+> quatro níveis de avaliação e a comparação entre rodadas. **Há uma rodada medida, a da versão
+> 1.0.0** (§4.3); a da versão nova (1.1.0, os controles de `docs/seguranca.md`) e o juiz (§3) ainda
+> não existem. O que não foi medido está marcado como tal.
 
 O plano que esta suíte implementa é o do `exercicios/aula-11-avaliacao.md` (v2, 10/10/2026): as
 classes, os casos e a regra de promoção vêm de lá. Onde a suíte se afasta do plano, o §4.2 diz onde
@@ -113,7 +113,7 @@ tabela depende de juiz.
 ### 4.1 Os comandos
 
 ```bash
-python -m evals.rodar --versao 1.0.0            # os 44 casos, 3 repetições (usa a API, uns 12 a 15 min)
+python -m evals.rodar --repeticoes 1            # os 44 casos, uma repetição (usa a API; uma hora com o ritmo de 2 chamadas por minuto, §4.2)
 python -m evals.comparar evals/resultados/<rodada-A> evals/resultados/<rodada-B>   # só lê
 python -m evals.comparar evals/resultados/<rodada>                                 # uma rodada só
 python -m unittest tests.test_evals             # os testes da suíte (sem chave)
@@ -131,16 +131,29 @@ logs do grafo de cada execução em `logs/rep-N/`. O resultado é gravado a cada
 rodada interrompida deixa o que já mediu, marcada como incompleta na comparação. `--casos` roda só
 alguns casos e marca a rodada como parcial.
 
-O número de cada classe é o **pass^3**: a fração dos casos da classe que passaram nas **três**
-repetições. MÉDIA é a média das classes; GERAL, a fração de todos os casos. As duas diferem porque
+O número de cada classe é o **pass^k**: a fração dos casos da classe que passaram em **todas** as
+k repetições (k = 1 nas rodadas desta entrega, §4.2). MÉDIA é a média das classes; GERAL, a fração de todos os casos. As duas diferem porque
 as classes têm tamanhos diferentes (a D tem 3 casos; a B, 19).
 
 ### 4.2 Onde a suíte se afasta do plano da aula 11
 
-- **Três repetições, e não cinco.** Decisão do grupo em 10/11/2026: 132 execuções por versão (uns
-  12 a 15 minutos com o limite de uma requisição por segundo do plano gratuito) no lugar de 220. O
-  preço: um caso que falha uma vez em cinco passa despercebido com mais frequência. O `pass^5` do
-  plano vira `pass^3`, e a regra de promoção vale com esse número.
+- **Uma repetição por versão, e não cinco.** Em 10/11/2026 o grupo tinha decidido três (132
+  execuções, uns 15 minutos com o limite de uma requisição por segundo de então). Em 20/11/2026 o
+  limite do plano da conta caiu para **duas chamadas ao modelo de chat por janela de 60 s** (medido
+  nos cabeçalhos da API; o embedding tem limite próprio, de 60 por minuto), e uma repetição dos 44
+  casos passou a levar uma hora. O grupo decidiu, nesse dia, **uma repetição por versão**. O preço:
+  a suíte não mede instabilidade (o `pass^5` do plano vira `pass^1`), e um caso que falha uma vez
+  em cinco tem 80% de chance de passar despercebido numa rodada. O padrão de `--repeticoes` continua
+  3; as rodadas desta entrega passam `--repeticoes 1`.
+- **O ritmo das chamadas (20/11/2026).** Com o limite de duas por janela, a terceira chamada de uma
+  execução era recusada. A suíte embrulha o cliente que entrega ao sistema com um ritmo
+  (`evals/rodar.Ritmo`, `--chamadas-por-minuto`, padrão 2): uma chamada ao chat só sai quando houve
+  menos de duas nos 60 s anteriores, mais 1 s de folga, e cada execução começa com a janela vazia.
+  O sistema não muda. O preço é no tempo: numa execução de três chamadas, a terceira espera uns 55 s
+  **dentro** da execução, e essa espera entra nos `segundos` dela, no teto de 90 s do orçamento e no
+  span `chat` do trace. A espera fica registrada à parte, por execução, em `espera_do_ritmo_s`, para
+  a latência ser lida sem ela. Nenhum caso do dataset faz quatro chamadas nas rodadas medidas, então
+  o teto de 90 s não foi alcançado.
 - **O limite de requisições (429).** O sistema já repete uma chamada que bate no limite (5 vezes,
   com espera crescente) e, se desiste, termina em `erro_fatal`. O plano diz que isso não conta
   como falha do agente. A suíte executa o caso de novo, do zero, depois de 30 s e, se for preciso,
@@ -157,11 +170,56 @@ as classes têm tamanhos diferentes (a D tem 3 casos; a B, 19).
 
 ### 4.3 As rodadas
 
-**AINDA NÃO EXECUTADAS.** O enunciado pede duas, no mínimo: a versão anterior e a nova, com uma
-mudança feita nesta entrega. O que se espera da primeira, pelas rodadas de referência do grafo
-(`logs/grafo-44-1/` a `-3/`, 40 de 44 nas três, `docs/grafo.md` §6.9): as mesmas quatro falhas no
-verificador (`TKT-0105`, `TKT-0106`, `TKT-0111`, `TKT-0132`). É expectativa, e não medição: as
-checagens de trajetória da suíte são novas e podem reprovar o que o verificador aprovava.
+O enunciado pede duas, no mínimo: a versão anterior e a nova, com uma mudança feita nesta entrega.
+
+**Versão 1.0.0** (o sistema da Parte 2 com o trace; `docs/mudancas.md` §2):
+[`evals/resultados/v1.0.0-2026-11-20-2129/`](../evals/resultados/v1.0.0-2026-11-20-2129/), 20/11/2026,
+das 21:29 às 22:29, commit `ca4a8bc` sem alterações em `src/` e `dados/`, `ministral-8b-2512`, os
+prompts em uso, uma repetição, ritmo de 2 chamadas por minuto. O código da suíte rodou com o ritmo
+ainda não commitado (`suite_com_alteracoes_locais: true` no `resultado.json`).
+
+```text
+$ python -m evals.comparar evals/resultados/v1.0.0-2026-11-20-2129
+DATASET v1.0.0   44 casos   (producao 0 · desenvolvimento 2 · sintetico 42)
+JUIZ ainda não validado: nenhuma propriedade desta tabela depende de juiz (docs/evals.md §3)
+  v1.0.0-2026-11-20-2129: versão 1.0.0 · commit ca4a8bc · ministral-8b-2512 · pass^1
+
+classe                                   versão 1.0.0
+A prioridade e reincidência                     80.0%
+B roteamento e resolução pela base              89.5%
+C fora de escopo ou fora de alçada             100.0%
+D estado e histórico do chamado                100.0%
+E entrada malformada ou adversarial             75.0%
+MÉDIA                                           88.9%
+GERAL (todos os casos)                          88.6%
+
+Falhas por propriedade (execuções):
+  v1.0.0-2026-11-20-2129: resultado:gravou_o_desfecho_do_gabarito 5, trajetoria:nao_tentou_abrir_chamado_indevido 1
+  casos que falharam em ao menos uma repetição (v1.0.0-2026-11-20-2129): TKT-0105, TKT-0106, TKT-0111, TKT-0132, TKT-0136
+```
+
+**39 de 44.** As 44 execuções terminaram em `respondeu`, sem reexecução por limite de requisições;
+o custo foi de US$ 0,019 a preço de lista, com 84.550 tokens de chat.
+
+**As falhas.** Quatro são as das rodadas de referência (`docs/grafo.md` §6.9), as quatro indo à
+fila humana: `TKT-0105` e `TKT-0106` (a ressalva "ataque" do KB-112 lida onde não cabe), `TKT-0111`
+(score a um centésimo do limiar) e `TKT-0132` (rótulo discutível). **A quinta é nova e é a mais
+cara: o `TKT-0136` abriu um chamado interno indevido.** É o caso de divergência com a afirmação de
+reincidência por cima (o relato fala do site fora do ar; o log mostra o DNS). A triagem, que é
+decisão do modelo, devolveu `log_aponta_outro_servico: false`, com a justificativa "o log confirma
+falha de resolução DNS, mesmo serviço afetado"; nas três rodadas de referência ela tinha devolvido
+`true`. Sem a marca, o código seguiu o guia KB-106 (score 0,51, escalar) e abriu o chamado. O
+trace não muda decisão: é a instabilidade da marca de divergência que o `docs/prompts.md` §3.7 já
+registrava, agora com o custo à vista. Na operação, sem a aprovação automática da suíte, o chamado
+pararia no H1 para o analista. As checagens de trajetória pegaram a tentativa
+(`nao_tentou_abrir_chamado_indevido`); nos outros 43 casos, nenhuma checagem de trajetória falhou.
+
+**Pela regra de promoção da aula 11, a 1.0.0 é a linha de base**, e não uma candidata: os portões
+críticos (`TKT-0101`, `0102`, `0002`, `0006`, `0103`, `0120`, `0121`) passaram, mas o item 4 da
+regra ("zero chamado interno indevido") falha pelo `TKT-0136`. Fica para a comparação com a 1.1.0
+dizer se a falha se repete; com uma repetição só, não há como separar a regressão do acaso.
+
+**Versão 1.1.0:** AINDA NÃO EXECUTADA.
 
 ## 5. Limites
 
