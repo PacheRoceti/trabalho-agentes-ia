@@ -17,11 +17,11 @@ professor apontou defeitos, eles entram aqui primeiro: o que estava errado, o qu
 | Versão | O que muda no comportamento | Commit | Medida em |
 |---|---|---|---|
 | **1.0.0** | nada na decisão: é o sistema da Parte 2 (`8cac30b`), com o trace OpenTelemetry por cima (o trace observa e não muda desfecho). A constante `VERSAO` nasce aqui | `ca4a8bc` | **39 de 44** (88,6%), uma repetição: `evals/resultados/v1.0.0-2026-11-20-2129/`, commitado em `3f1fd54` (`docs/evals.md` §4.3) |
-| **1.1.0** | os três controles de segurança (`docs/seguranca.md` §3): o C1 recusa o texto do modelo com comando fora do guia, o que pode trocar um desfecho por `erro_fatal`; o C2 recusa o `--auto-aprovar` avulso; o C3 para de retomar a execução que falha três vezes | **ainda não commitado** (backup em `../trabalho-agentes-ia-backups/etapa3-controles-2026-11-20/`, que se aplica por cima da 1.0.0) | **AINDA NÃO MEDIDO** |
+| **1.1.0** | os três controles de segurança (`docs/seguranca.md` §3): o C1 recusa o texto do modelo com comando fora do guia, o que pode trocar um desfecho por `erro_fatal`; o C2 recusa o `--auto-aprovar` avulso; o C3 para de retomar a execução que falha três vezes | `fa74011` | **40 de 44** (90,9%), uma repetição: `evals/resultados/v1.1.0-2026-11-20-2244/`. A diferença para a 1.0.0 é um caso (o `TKT-0136`), decidido pela triagem do modelo e não pelos controles: os controles não pioraram nada, e o benefício deles não é medido pelo dataset (`docs/evals.md` §4.3) |
 
 **A ordem importa para a comparação.** A rodada da 1.0.0 mediu o código **sem** os controles (a etapa 3 ficou guardada fora da pasta durante a rodada),
-para a comparação com a 1.1.0 mostrar o efeito deles (`docs/evals.md` §4). Falta commitar a 1.1.0 e
-rodar a suíte sobre esse commit.
+para a comparação com a 1.1.0 mostrar o efeito deles (`docs/evals.md` §4). As duas rodadas foram
+feitas em 20/11/2026.
 
 ## 3. As mudanças, uma a uma
 
@@ -34,7 +34,9 @@ rodar a suíte sobre esse commit.
 | 12/11/2026 | `554268c` | Pedro Roceti Pache | a demonstração para quando o H1 não pausa (por exemplo, por um 429 do plano gratuito), e um vídeo novo | não (só a demonstração) |
 | 20/11/2026 | `ca4a8bc` | Pedro | **versão 1.0.0**: o trace (`src/telemetria.py`, `src/versao.py`, `ver_traces.py`, `tests/test_trace.py`); no `src/grafo.py`, duas linhas trocadas por uma cada (`_no` e `_chamar`) e o bloco do trace no fim; no `src/vetorial.py`, uma linha trocada e o span do embedding no fim; o `evals/rodar.py` passa a usar `VERSAO` como padrão; o OpenTelemetry fixado no `requirements.txt`; o README ganha "Como ver os traces" | não na decisão; grava um arquivo `<id>.trace.jsonl` ao lado de cada log |
 | 20/11/2026 | `3f1fd54` | Pedro | a rodada da versão 1.0.0 (`evals/resultados/v1.0.0-2026-11-20-2129/`, com os logs e os traces); na suíte, o ritmo das chamadas ao modelo (`evals/rodar.Ritmo`, `--chamadas-por-minuto`), por causa do limite de duas por janela de 60 s, e os testes dele; o `docs/evals.md` com os números e a decisão de uma repetição por versão | não no sistema; a suíte espera entre as chamadas |
-| 20/11/2026 | sem commit | — | **versão 1.1.0**: os controles C1, C2 e C3 (`src/grafo.py`, `src/db.py`, `src/main.py`, `src/vigiar_prazos.py`, `tests/test_seguranca.py`). O teste `test_sem_curadoria_o_tkt_0001_vira_chamado_p1_para_o_time_errado` (`tests/test_grafo.py`) ganhou um roteiro sem comando: o texto padrão dele mandava rodar o `certbot` do KB-101-A num desfecho decidido pelo KB-101 revogado, e o C1 o recusava, com razão. A asserção do teste não mudou | sim (ver §2) |
+| 20/11/2026 | `fa74011` | Pedro | **versão 1.1.0**: os controles C1, C2 e C3 (`src/grafo.py`, `src/db.py`, `src/main.py`, `src/vigiar_prazos.py`, `tests/test_seguranca.py`). O teste `test_sem_curadoria_o_tkt_0001_vira_chamado_p1_para_o_time_errado` (`tests/test_grafo.py`) ganhou um roteiro sem comando: o texto padrão dele mandava rodar o `certbot` do KB-101-A num desfecho decidido pelo KB-101 revogado, e o C1 o recusava, com razão. A asserção do teste não mudou | sim (ver §2) |
+| 21/11/2026 | `1ef5558` | Pedro | os casos hostis (`TKT-0137` a `TKT-0139`, no seed e no gabarito), o dataset 1.1.0, a checagem `nao_repassou_o_conteudo_plantado`, o `validar` fora da checagem de laço, `evals/metricas.py`, o juiz (`evals/juiz.py`, a rubrica e o arquivo de rotulação) e a rodada completa da 1.1.0 | não no sistema |
+| 21/11/2026 | `cbba2e2` (branch `medicao-v1.0.0`) | — | o `3f1fd54` com o `1ef5558` aplicado por cima, só para medir os casos hostis na 1.0.0 com o `src/` dela e os dados novos | não: é o `src/` da 1.0.0 |
 
 ## 4. O que ainda não tem versão
 

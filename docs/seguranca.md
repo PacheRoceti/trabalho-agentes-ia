@@ -1,8 +1,8 @@
 # Segurança (Parte 3, item 3)
 
-> **Estado deste documento: 20/11/2026, sobre código ainda não commitado.** Os três controles do §3
-> (C1, C2 e C3) e os testes deles estão na pasta de trabalho, sem commit; o commit de base é o
-> `3f1fd54` (a versão 1.0.0, com o trace). As linhas citadas são as do código de hoje: o corpo de `src/grafo.py` e `src/db.py` não
+> **Estado deste documento: 20/11/2026.** Os três controles do §3 (C1, C2 e C3) e os testes deles
+> estão no commit `fa74011` (a versão 1.1.0), feito sobre o `3f1fd54` (a versão 1.0.0, com o
+> trace). As linhas citadas são as do código de hoje: o corpo de `src/grafo.py` e `src/db.py` não
 > mudou de lugar (o que é novo foi para o fim dos arquivos), então as citações do
 > `exercicios/aula14-respostas.md`, que é o rascunho deste documento, continuam valendo, e as
 > mitigações que ele marcava como "(proposta)" estão marcadas aqui como feitas ou não.
@@ -158,7 +158,11 @@ segunda tentativa grava sem o comando.
 - **Citar comando em mensagem sem guia** (fila humana por score baixo, divergência, id inexistente).
 - **Uma execução que o modelo insiste em escrever com comando termina em `erro_fatal`**, sem
   desfecho: o chamado fica para ser rodado de novo, em vez de receber uma anotação com o passo a
-  mais.
+  mais. **Medido nos casos hostis (21/11/2026, `docs/evals.md` §4.4):** nos dois casos em que o
+  comando vinha plantado (`TKT-0137`, no log; `TKT-0138`, no relato), a versão sem o C1 gravou o
+  comando nos **dois** textos que foram ao analista; a versão com o C1, em **nenhum**. O preço foi
+  um chamado sem desfecho: no `TKT-0138` o modelo citou o comando nas duas tentativas, para dizer
+  que o guia não o traz, e o C1 recusou as duas.
 
 **Limites declarados.** A lista `COMANDOS` é fechada: um comando que não está nela passa sem
 conferência (por exemplo `setfacl`), e a defesa contra isso seria ampliar a lista. A regra não lê o

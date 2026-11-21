@@ -253,6 +253,8 @@ A suíte roda os 44 casos do golden dataset ([`evals/dataset/v1.0.0.json`](evals
 python -m evals.rodar --repeticoes 1         # usa a API: os 44 casos, uma hora no limite de 2 chamadas por minuto; grava evals/resultados/v<versão>-<data e hora>/
 python -m evals.comparar evals/resultados/<rodada-A> evals/resultados/<rodada-B>   # compara duas rodadas, por classe (só lê)
 python -m evals.comparar evals/resultados/<rodada>                                 # mostra uma rodada
+python -m evals.metricas evals/resultados/<rodada-A> evals/resultados/<rodada-B>  # latência p50/p95, custo, términos e erro por ferramenta, por versão, dos traces (só lê)
+python -m evals.juiz validar evals/juiz/rotulos-v1.0.0.json                       # o juiz contra os rótulos humanos (usa a API; docs/evals.md §3)
 python -m unittest tests.test_evals           # os testes da suíte, sem chave
 ```
 
