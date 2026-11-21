@@ -256,7 +256,20 @@ python -m evals.comparar evals/resultados/<rodada>                              
 python -m unittest tests.test_evals           # os testes da suíte, sem chave
 ```
 
-Rode da raiz do repositório. Uma rodada que já existe não é sobrescrita (`--nome` escolhe outro nome), e a suíte recria `dados/tickets.db`, como o `--todos`. O número de cada classe é o pass^3: a fração dos casos que passaram nas três repetições.
+Sem `--versao`, vale a de [`src/versao.py`](src/versao.py), que é a mesma que vai aos traces. Rode da raiz do repositório. Uma rodada que já existe não é sobrescrita (`--nome` escolhe outro nome), e a suíte recria `dados/tickets.db`, como o `--todos`. O número de cada classe é o pass^3: a fração dos casos que passaram nas três repetições.
+
+## Como ver os traces
+
+Cada execução pelo grafo grava, ao lado do log JSON, um trace nas convenções GenAI do OpenTelemetry: `logs/<rodada>/<id>.trace.jsonl`, uma linha por span. A raiz `invoke_agent triagem` traz o término e o motivo, a versão do sistema ([`src/versao.py`](src/versao.py)), a entrada, os guias recuperados com o score, a saída e, na retomada, quem aprovou. Abaixo dela vem um span por nó, com `chat <modelo>` a cada chamada ao modelo (modelo e tokens) e `execute_tool <ferramenta>` em cada uma das quatro ferramentas. A execução que pausa e a aprovação são dois traces no mesmo arquivo, ligados pelo id da execução.
+
+```bash
+python ver_traces.py logs/minha-rodada/TKT-0007.trace.jsonl              # a árvore de um chamado (só lê)
+python ver_traces.py logs/minha-rodada                                    # todos os traces da pasta
+python ver_traces.py logs/minha-rodada/TKT-0007.trace.jsonl --atributos   # com todos os atributos
+python -m unittest tests.test_trace                                       # os testes do trace, sem chave
+```
+
+Nas rodadas da suíte de avaliação os traces ficam em `evals/resultados/<rodada>/logs/rep-N/`. Limite: a recuperação depois de uma queda ([`docs/humano.md`](docs/humano.md) §4.3) não grava trace.
 
 ## Estrutura
 
@@ -264,8 +277,9 @@ Rode da raiz do repositório. Uma rodada que já existe não é sobrescrita (`--
 src/         grafo.py (o grafo em LangGraph: o caminho padrão) · vetorial.py (a busca vetorial do grafo)
              agente.py (o laço da Parte 1, estado, orçamento) · ferramentas.py · db.py (SQLite; a única
              camada que toca o banco, e onde ficam a memória e a busca por palavra) · saida.py (contrato de saída)
-             verificar.py · main.py · medir_rag.py (as medições de docs/rag.md) · comparar_modelos.py
+             verificar.py · main.py · telemetria.py (o trace) · versao.py (a versão do sistema) · medir_rag.py (as medições de docs/rag.md) · comparar_modelos.py
              (item 3.3 da Parte 1) · ver_log.py · testar_api.py
+ver_traces.py   mostra os traces gravados (*.trace.jsonl) como árvore
 conferir_grafo.py   imprime o grafo compilado, para conferir com o desenho (docs/arquitetura.md §9)
 demonstrar_reducer.py   roda o grafo com e sem reducer (docs/grafo.md §3.2); REGRAVA logs/grafo-reducer/
 conferir_regras.py   lê os logs de uma rodada e confere a regra aprendida do redigir (docs/memoria.md §5.1)
@@ -284,7 +298,7 @@ src/prompts/ no grafo, em uso: triagem-v1.md · ressalva-v3.md · redigir-v3.md 
 dados/       seed.sql · gabarito.json · README.md (casos difíceis nomeados)
 evals/       a suíte de avaliação (docs/evals.md): dataset/ (o golden dataset, versionado) · rodar.py ·
              comparar.py · checagens.py (as propriedades conferidas) · resultados/ (uma pasta por rodada)
-tests/       testes offline (sem chave): test_grafo.py (o grafo) · test_offline.py (o laço) · test_vetorial.py (a busca vetorial) · test_vigia.py (o vigia do prazo) · test_recuperacao.py (a recuperação depois de uma queda) · test_evals.py (a suíte)
+tests/       testes offline (sem chave): test_grafo.py (o grafo) · test_offline.py (o laço) · test_vetorial.py (a busca vetorial) · test_vigia.py (o vigia do prazo) · test_recuperacao.py (a recuperação depois de uma queda) · test_evals.py (a suíte) · test_trace.py (o trace)
 docs/        case.md · io.md · prompts.md · arquitetura.md · grafo.md · rag.md · memoria.md · humano.md
              modelos.md · modelos-tabela-3.3.md · base-de-conhecimento-v2.md · fontes.md · evals.md
              arquitetura-v2.md (histórico da Parte 1)

@@ -73,7 +73,7 @@ def _embedar_na_api(textos: list[str]) -> list[list[float]]:
     client = OpenAI(base_url=os.environ["LLM_BASE_URL"], api_key=os.environ["OPENAI_API_KEY"])
     vetores = []
     for i in range(0, len(textos), 32):
-        r = client.embeddings.create(model=MODELO_EMBEDDING, input=textos[i:i + 32])
+        r = _embeddings(client, textos[i:i + 32])          # o span `embeddings` (fim do arquivo)
         TOKENS_EMBEDDING += r.usage.total_tokens
         vetores += [d.embedding for d in r.data]
     return vetores
@@ -199,3 +199,23 @@ def buscar(con: sqlite3.Connection, termos: list[str], relato: str | None = None
             r["versoes_descartadas"] = descartadas[kb_id]
         resultados.append(r)
     return resultados
+
+
+# ------------------------------------------------------------------ o trace (20/11/2026)
+# No fim do arquivo para não deslocar as linhas citadas nos docs (docs/model-card.md e docs/rag.md).
+import telemetria  # noqa: E402
+
+
+def _embeddings(client, textos: list[str]):
+    """Uma chamada à API de embedding, num span `embeddings` (Parte 3, §4.2), com o modelo e os tokens."""
+    with telemetria.span_filho(f"embeddings {MODELO_EMBEDDING}",
+                               {"gen_ai.operation.name": "embeddings", "gen_ai.provider.name": telemetria.PROVEDOR,
+                                "gen_ai.request.model": MODELO_EMBEDDING, "triagem.textos": len(textos)},
+                               kind=telemetria.otel.SpanKind.CLIENT) as span:
+        try:
+            r = client.embeddings.create(model=MODELO_EMBEDDING, input=textos)
+        except Exception as e:
+            span.set_attribute("error.type", type(e).__name__)
+            raise
+        telemetria.atributos(span, {"gen_ai.usage.input_tokens": getattr(r.usage, "total_tokens", None)})
+        return r

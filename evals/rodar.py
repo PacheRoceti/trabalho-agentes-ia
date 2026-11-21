@@ -161,8 +161,10 @@ def _gravar(destino: Path, resultado: dict):
 
 def main_cli():
     ap = argparse.ArgumentParser(description="Roda a suíte de avaliação sobre o sistema entregue (usa a API)")
-    ap.add_argument("--versao", required=True,
-                    help="a versão do sistema que está sendo medida, ex.: 1.0.0 (vai ao resultado e à comparação)")
+    from versao import VERSAO
+    ap.add_argument("--versao", default=VERSAO,
+                    help=f"a versão do sistema que está sendo medida (padrão: a de src/versao.py, hoje {VERSAO}); "
+                         f"vai ao resultado e à comparação")
     ap.add_argument("--repeticoes", type=int, default=3, help="repetições por caso (padrão: 3)")
     ap.add_argument("--casos", nargs="+", help="só estes ids (a rodada fica marcada como parcial)")
     ap.add_argument("--dataset", type=Path, help="arquivo do dataset (padrão: o mais novo em evals/dataset/)")
@@ -197,6 +199,8 @@ def main_cli():
         sys.exit(f"{destino} já existe: os resultados commitados são evidência e não são sobrescritos. "
                  f"Use outro --nome.")
 
+    if args.versao != VERSAO:
+        print(f"ATENÇÃO: --versao {args.versao} difere de src/versao.py ({VERSAO}), que vai aos traces.")
     client, modelo, precos = main.preparar_api()
     commit = _commit()
     if commit and "alterações locais" in commit:

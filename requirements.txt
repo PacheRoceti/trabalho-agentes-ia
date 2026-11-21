@@ -4,6 +4,10 @@ python-dotenv==1.2.4
 pydantic==2.14.0
 langgraph==1.2.14
 langgraph-checkpoint-sqlite==3.1.1
+# O trace (Parte 3, §4.2; src/telemetria.py), desde 20/11/2026. A transitiva é a
+# opentelemetry-semantic-conventions, logo abaixo; as outras que ele usa já estavam na lista.
+opentelemetry-api==1.45.2
+opentelemetry-sdk==1.45.2
 
 # Dependências transitivas, fixadas também (Parte 2, §10 e §6.6): parte do comportamento do
 # grafo mora nelas, e não só no `langgraph` (ele roda sobre o `langchain-core`, e o checkpoint é
@@ -33,6 +37,7 @@ langgraph-prebuilt==1.1.0
 langgraph-sdk==0.4.6
 langsmith==0.14.7
 orjson==3.13.0
+opentelemetry-semantic-conventions==0.66b2
 ormsgpack==1.12.2
 packaging==26.3
 pydantic_core==2.50.0

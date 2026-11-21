@@ -200,7 +200,7 @@ def _no(funcao):
     """Embrulha um nó: mede o tempo gasto nele (teto de tempo) e mostra o passo no terminal."""
     def no(state: EstadoGrafo, runtime: Runtime[Contexto]) -> dict:
         t0 = time.monotonic()
-        saida = funcao(state, runtime.context) or {}
+        saida = _rodar_no(funcao, state, runtime.context) or {}   # o span do nó (fim do arquivo)
         gasto = time.monotonic() - t0
         for p in saida.get("passos", []):
             p["ms"] = int(gasto * 1000)
@@ -238,7 +238,7 @@ def _chamar(ctx: Contexto, state, sistema: str, usuario: str) -> tuple[str, dict
     espera = 2
     for tentativa in range(5):
         try:
-            resp = ctx.client.chat.completions.create(**args)
+            resp = _chamar_modelo(ctx, args)          # o span `chat` (fim do arquivo)
             break
         except (RateLimitError, APIConnectionError) as e:
             if tentativa == 4:
@@ -1128,3 +1128,133 @@ def _tela_do_h1(state, ctx, artigo: dict, pendencia: dict) -> dict:
             "reincidencia": db.chamados_da_reincidencia(ctx.con, state["ticket"]["_cliente_id"],
                                                         artigo["categoria"]),
             "sla_previsto": db.SLA_POR_PRIORIDADE.get(pendencia["prioridade_prevista"])}
+
+
+# ================================================================ O TRACE (20/11/2026)
+# Parte 3, §4.2 e §2.3: cada execução emite um trace nas convenções GenAI do OpenTelemetry
+# (src/telemetria.py). Fica no fim do arquivo para não deslocar as linhas citadas em docs/grafo.md §4:
+# no corpo, só duas linhas mudaram, cada uma por outra (a execução do nó em `_no` e a chamada ao
+# modelo em `_chamar`). As raízes embrulham `rodar_grafo` e `retomar_grafo` aqui embaixo; quem as
+# importa (main.executar, agente.retomar) as importa na hora da chamada e recebe a versão com trace.
+# Limite: a recuperação depois de uma queda (`retomar_interrompidas`) invoca o grafo direto e não
+# abre raiz; os spans dela ficam sem arquivo. É o caminho raro, e fica declarado.
+import functools                                             # noqa: E402
+
+from langgraph.errors import GraphInterrupt                  # noqa: E402
+
+import telemetria                                            # noqa: E402
+
+# O resultado de uma ferramenta pode ser grande (os guias da busca vêm com causa e solução): o
+# trace guarda até este tamanho, e o log JSON continua com tudo.
+MAX_RESULTADO_NO_TRACE = 4000
+
+
+def _json_curto(valor) -> str:
+    texto = json.dumps(valor, ensure_ascii=False, default=str)
+    return texto if len(texto) <= MAX_RESULTADO_NO_TRACE else texto[:MAX_RESULTADO_NO_TRACE] + "...(cortado)"
+
+
+def _rodar_no(funcao, state, ctx):
+    """Roda um nó dentro de um span. Se o nó é uma das quatro ferramentas, o span vira
+    `execute_tool <ferramenta>`, com argumentos, resultado e erro; senão leva o nome do nó.
+    A pausa do `interrupt` não é erro: o span termina marcado `triagem.pausou`, e a pausa segue."""
+    pausa = None
+    with telemetria.span_filho(funcao.__name__, {"triagem.no": funcao.__name__}) as span:
+        try:
+            saida = funcao(state, ctx)
+        except GraphInterrupt as g:
+            span.set_attribute("triagem.pausou", True)
+            pausa, saida = g, None
+        for p in (saida or {}).get("passos", []):
+            if p["ferramenta"] in telemetria.FERRAMENTAS:
+                span.update_name(f"execute_tool {p['ferramenta']}")
+                telemetria.atributos(span, {
+                    "gen_ai.operation.name": "execute_tool", "gen_ai.tool.name": p["ferramenta"],
+                    "gen_ai.tool.type": "function", "gen_ai.tool.call.arguments": _json_curto(p["argumentos"]),
+                    "gen_ai.tool.call.result": _json_curto(p["resultado"])})
+                if p["ferramenta"] == "buscar_base_conhecimento":   # o contexto recuperado (§2.3): ids e scores
+                    span.set_attribute("triagem.kb_recuperados", [
+                        f"{r['kb_id']}={r['score']}" for r in (p["resultado"] or {}).get("resultados", [])])
+            else:
+                telemetria.atributos(span, {"triagem.passo.argumentos": _json_curto(p["argumentos"]),
+                                            "triagem.passo.resultado": _json_curto(p["resultado"])})
+            if p["erro"]:
+                span.set_attribute("triagem.erro", _json_curto(p["erro"]))
+                telemetria.marcar_erro(span, "erro_da_ferramenta" if p["ferramenta"] in telemetria.FERRAMENTAS
+                                       else "erro_do_no", str(p["erro"].get("erro", "")))
+    if pausa is not None:
+        raise pausa
+    return saida
+
+
+def _chamar_modelo(ctx, args: dict):
+    """Uma chamada ao modelo de chat, num span `chat <modelo>`. A exceção (429, conexão) marca o
+    span e volta para a retentativa de `_chamar`: cada tentativa é um span."""
+    with telemetria.span_filho(f"chat {args['model']}", {
+            "gen_ai.operation.name": "chat", "gen_ai.provider.name": telemetria.PROVEDOR,
+            "gen_ai.request.model": args["model"], "gen_ai.request.temperature": args.get("temperature"),
+            "gen_ai.output.type": "json"}, kind=telemetria.otel.SpanKind.CLIENT) as span:
+        try:
+            resp = ctx.client.chat.completions.create(**args)
+        except Exception as e:
+            span.set_attribute("error.type", type(e).__name__)
+            raise
+        uso = getattr(resp, "usage", None)
+        escolhas = getattr(resp, "choices", None) or []
+        telemetria.atributos(span, {
+            "gen_ai.response.model": getattr(resp, "model", None),
+            "gen_ai.usage.input_tokens": getattr(uso, "prompt_tokens", None),
+            "gen_ai.usage.output_tokens": getattr(uso, "completion_tokens", None),
+            "gen_ai.response.finish_reasons": [str(f) for f in
+                                               (getattr(c, "finish_reason", None) for c in escolhas) if f]})
+        return resp
+
+
+def _anotar_raiz(span, e: Estado):
+    """Os atributos do fim da execução na raiz: o que o §2.3 pede para reconstruir a decisão
+    (entrada, contexto recuperado, versões, saída, término e aprovação humana)."""
+    desfecho = e.desfecho or {}
+    conf = e.confirmacoes[-1] if e.confirmacoes else {}
+    telemetria.atributos(span, {
+        "triagem.termino": e.termino.value if e.termino else None, "triagem.motivo": e.motivo,
+        "triagem.execucao_id": e.execucao_id, "triagem.commit": e.commit, "triagem.prompts": e.prompt,
+        "gen_ai.request.model": e.modelo, "gen_ai.request.temperature": e.temperatura,
+        "triagem.entrada": e.entrada,
+        "triagem.kb_recuperados": [f"{k}={v}" for k, v in (e.scores_kb or {}).items()],
+        "triagem.desfecho": desfecho.get("acao"), "triagem.chamado_interno": desfecho.get("chamado_interno"),
+        "triagem.prioridade": desfecho.get("prioridade"), "triagem.time_destino": desfecho.get("time_destino"),
+        "triagem.saida": e.saida.model_dump_json() if e.saida else None,
+        "gen_ai.usage.input_tokens": e.tokens_entrada, "gen_ai.usage.output_tokens": e.tokens_saida,
+        "triagem.n_chamadas_modelo": e.n_chamadas_modelo, "triagem.custo_usd": round(e.custo_usd, 6),
+        "triagem.pendencia.vence_em": (e.pendencia or {}).get("vence_em"),
+        "triagem.aprovacao.status": conf.get("status"), "triagem.aprovacao.por": conf.get("por"),
+        "triagem.aprovacao.quando": conf.get("quando"), "triagem.aprovacao.editado": conf.get("editado"),
+        "triagem.aprovacao.acao": _json_curto(conf.get("pendencia")) if conf.get("pendencia") else None,
+    })
+    if e.termino and e.termino.value == Termino.ERRO_FATAL.value:
+        telemetria.marcar_erro(span, "erro_fatal", e.motivo or "")
+
+
+_rodar_grafo_sem_trace = rodar_grafo
+_retomar_grafo_sem_trace = retomar_grafo
+
+
+@functools.wraps(_rodar_grafo_sem_trace)
+def rodar_grafo(id_ticket: str, *, log_dir: Path | None = None, **kw) -> Estado:
+    with telemetria.raiz(id_ticket, log_dir, retomada=False) as span:
+        telemetria.atributos(span, {"gen_ai.request.model": kw.get("modelo")})
+        e = _rodar_grafo_sem_trace(id_ticket, log_dir=log_dir, **kw)
+        _anotar_raiz(span, e)
+        return e
+
+
+@functools.wraps(_retomar_grafo_sem_trace)
+def retomar_grafo(id_ticket: str, decisao: str, *, log_dir: Path | None = None, **kw) -> Estado | None:
+    with telemetria.raiz(id_ticket, log_dir, retomada=True) as span:
+        telemetria.atributos(span, {"triagem.decisao": decisao, "triagem.resposta_por": kw.get("por")})
+        e = _retomar_grafo_sem_trace(id_ticket, decisao, log_dir=log_dir, **kw)
+        if e is None:                # nada pausado, ou a resposta repetida: nada foi gravado (§8.5)
+            span.set_attribute("triagem.nada_a_retomar", True)
+        else:
+            _anotar_raiz(span, e)
+        return e
