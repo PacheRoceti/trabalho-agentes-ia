@@ -11,7 +11,15 @@ nome da pasta: um número que mistura versões soma sistemas diferentes):
 - custo por execução: o `triagem.custo_usd` da raiz (chat e embedding, a preço de lista);
 - a distribuição dos motivos de término: o `triagem.termino` da raiz;
 - a taxa de erro por ferramenta: os spans `execute_tool` com status de erro, por `gen_ai.tool.name`,
-  e, à parte, as chamadas ao modelo (`chat`) recusadas.
+  e, à parte, as chamadas ao modelo (`chat`) e à API de embedding (`embeddings`) com erro.
+
+E, desde 21/11/2026, os sinais da qualidade (docs/observabilidade.md §3 e §5):
+
+- o SLI de qualidade: das execuções cujo chamado está em dados/gabarito.json (as válidas), a fração
+  com `triagem.termino` = respondeu E `triagem.desfecho` igual à `acao` do gabarito (as boas);
+- a distribuição dos desfechos (`triagem.desfecho`), e a fila humana gravada contra a pedida;
+- o melhor score da busca (`triagem.kb_recuperados`) logo acima do limiar, a menos de 0,05 dele;
+- as redações recusadas pelo `validar` (o span do nó com `triagem.erro`).
 
 Percentil pelo método do posto mais próximo, sem interpolação: com 44 execuções, o p95 é a 42ª.
 """
@@ -21,6 +29,11 @@ import sys
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
+
+from evals import RAIZ
+from ferramentas import LIMIAR_CONFIANCA
+
+FAIXA_DO_LIMIAR = 0.05      # "logo acima do limiar": score em [0,50; 0,55)
 
 
 def _instante(texto: str) -> datetime:
@@ -62,6 +75,8 @@ def ler_rodada(pasta: Path) -> list[dict]:
             "termino": a.get("triagem.termino"), "custo_usd": a.get("triagem.custo_usd"),
             "segundos": _duracao_s(raiz), "espera_do_ritmo_s": espera.get((rep, id_ticket), 0.0),
             "spans": por_trace[raiz["context"]["trace_id"]],
+            "desfecho": a.get("triagem.desfecho"),
+            "melhor_score": max((float(k.split("=")[1]) for k in a.get("triagem.kb_recuperados") or []), default=None),
         })
     return execucoes
 
@@ -71,7 +86,7 @@ def calcular(execucoes: list[dict]) -> dict:
     sem_espera = [max(0.0, e["segundos"] - (e["espera_do_ritmo_s"] or 0.0)) for e in execucoes]
     custos = [e["custo_usd"] for e in execucoes if e["custo_usd"] is not None]
     ferramentas = defaultdict(lambda: [0, 0])        # nome -> [execuções, com erro]
-    chat = [0, 0]
+    chat, embeddings, recusas_do_validar = [0, 0], [0, 0], 0
     for e in execucoes:
         for s in e["spans"]:
             erro = s.get("status", {}).get("status_code") == "ERROR"
@@ -82,6 +97,15 @@ def calcular(execucoes: list[dict]) -> dict:
             elif s["name"].startswith("chat "):
                 chat[0] += 1
                 chat[1] += erro
+            elif s["name"].startswith("embeddings "):
+                embeddings[0] += 1
+                embeddings[1] += erro or bool(s["attributes"].get("error.type"))
+            elif s["attributes"].get("triagem.no") == "validar" and s["attributes"].get("triagem.erro"):
+                recusas_do_validar += 1
+    gabarito = json.loads((RAIZ / "dados" / "gabarito.json").read_text(encoding="utf-8"))
+    validas = [e for e in execucoes if e["id"] in gabarito]
+    boas = [e for e in validas if e["termino"] == "respondeu" and e["desfecho"] == gabarito[e["id"]]["acao"]]
+    com_busca = [e["melhor_score"] for e in execucoes if e["melhor_score"] is not None]
     return {
         "execucoes": len(execucoes),
         "latencia_p50_s": percentil(latencia, 50), "latencia_p95_s": percentil(latencia, 95),
@@ -92,6 +116,18 @@ def calcular(execucoes: list[dict]) -> dict:
         "erro_por_ferramenta": {k: {"chamadas": v[0], "com_erro": v[1], "taxa": v[1] / v[0]}
                                 for k, v in sorted(ferramentas.items())},
         "chat": {"chamadas": chat[0], "recusadas": chat[1], "taxa": chat[1] / chat[0] if chat[0] else None},
+        "embeddings": {"chamadas": embeddings[0], "com_erro": embeddings[1]},
+        "sli_qualidade": {"boas": len(boas), "validas": len(validas),
+                          "fracao": len(boas) / len(validas) if validas else None,
+                          "ruins": sorted(e["id"] for e in validas if e not in boas)},
+        "desfechos": dict(Counter(e["desfecho"] for e in execucoes).most_common()),
+        "fila_humana": {"gravada": sum(e["desfecho"] == "fila_humana" for e in validas),
+                        "pedida": sum(gabarito[e["id"]]["acao"] == "fila_humana" for e in validas)},
+        "busca": {"com_busca": len(com_busca),
+                  "logo_acima_do_limiar": sum(LIMIAR_CONFIANCA <= s < LIMIAR_CONFIANCA + FAIXA_DO_LIMIAR
+                                              for s in com_busca),
+                  "abaixo_do_limiar": sum(s < LIMIAR_CONFIANCA for s in com_busca)},
+        "recusas_do_validar": recusas_do_validar,
     }
 
 
@@ -111,6 +147,19 @@ def imprimir(por_versao: dict[str, dict], rodadas: dict[str, list[str]]):
         if c["chamadas"]:
             print(f"    {'(modelo de chat)':<28} {c['recusadas']:3d} de {c['chamadas']:3d}   {100 * c['taxa']:5.1f}%"
                   "   recusadas pelo provedor (429) ou com erro")
+        if m["embeddings"]["chamadas"]:
+            print(f"    {'(API de embedding)':<28} {m['embeddings']['com_erro']:3d} de {m['embeddings']['chamadas']:3d}"
+                  "          com erro: a busca recuou para a busca por palavra")
+        q = m["sli_qualidade"]
+        if q["validas"]:
+            print(f"  SLI de qualidade           {q['boas']} de {q['validas']} = {100 * q['fracao']:.1f}%"
+                  f"   (término respondeu e desfecho do gabarito)   fora: {', '.join(q['ruins']) or 'nenhuma'}")
+        print("  desfecho                   " + "   ".join(f"{k} {v}" for k, v in m["desfechos"].items()))
+        print(f"  fila humana                gravada {m['fila_humana']['gravada']}, o gabarito pede {m['fila_humana']['pedida']}")
+        b = m["busca"]
+        print(f"  melhor score da busca      {b['logo_acima_do_limiar']} de {b['com_busca']} logo acima do limiar "
+              f"(< {LIMIAR_CONFIANCA + FAIXA_DO_LIMIAR:.2f}), {b['abaixo_do_limiar']} abaixo")
+        print(f"  redações recusadas pelo validar   {m['recusas_do_validar']}")
 
 
 def main_cli():

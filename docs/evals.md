@@ -309,7 +309,7 @@ de ganho acima do ruído (item 2) não se aplica a uma mudança de segurança, q
 acerto, e o ruído não foi medido. **A 1.1.0 é promovida pelo critério de não piorar**, que é o que
 uma mudança de segurança precisa provar; a melhora de 88,6% para 90,9% não é atribuída a ela.
 
-#### As métricas das duas rodadas (para o `docs/observabilidade.md`)
+#### As métricas das duas rodadas (lidas em [`docs/observabilidade.md`](observabilidade.md) §6 e §7, com o SLO no §8)
 
 Lidas dos traces, por versão (`python -m evals.metricas`, §4.1):
 

@@ -253,7 +253,7 @@ A suíte roda os 44 casos do golden dataset ([`evals/dataset/v1.0.0.json`](evals
 python -m evals.rodar --repeticoes 1         # usa a API: os 44 casos, uma hora no limite de 2 chamadas por minuto; grava evals/resultados/v<versão>-<data e hora>/
 python -m evals.comparar evals/resultados/<rodada-A> evals/resultados/<rodada-B>   # compara duas rodadas, por classe (só lê)
 python -m evals.comparar evals/resultados/<rodada>                                 # mostra uma rodada
-python -m evals.metricas evals/resultados/<rodada-A> evals/resultados/<rodada-B>  # latência p50/p95, custo, términos e erro por ferramenta, por versão, dos traces (só lê)
+python -m evals.metricas evals/resultados/<rodada-A> evals/resultados/<rodada-B>  # latência p50/p95, custo, términos, erro por ferramenta e o SLI de qualidade, por versão, dos traces (só lê; docs/observabilidade.md)
 python -m evals.juiz validar evals/juiz/rotulos-v1.0.0.json                       # o juiz contra os rótulos humanos (usa a API; docs/evals.md §3)
 python -m unittest tests.test_evals           # os testes da suíte, sem chave
 ```
@@ -302,7 +302,7 @@ evals/       a suíte de avaliação (docs/evals.md): dataset/ (o golden dataset
              comparar.py · checagens.py (as propriedades conferidas) · resultados/ (uma pasta por rodada)
 tests/       testes offline (sem chave): test_grafo.py (o grafo) · test_offline.py (o laço) · test_vetorial.py (a busca vetorial) · test_vigia.py (o vigia do prazo) · test_recuperacao.py (a recuperação depois de uma queda) · test_evals.py (a suíte) · test_trace.py (o trace)
 docs/        case.md · io.md · prompts.md · arquitetura.md · grafo.md · rag.md · memoria.md · humano.md
-             modelos.md · modelos-tabela-3.3.md · base-de-conhecimento-v2.md · fontes.md · evals.md
+             modelos.md · modelos-tabela-3.3.md · base-de-conhecimento-v2.md · fontes.md · evals.md · observabilidade.md
              arquitetura-v2.md (histórico da Parte 1)
 logs/        trajetória de cada execução demonstrada (JSON); logs/grafo*/ são do grafo, logs/TKT-*.json e
              logs/rodada-*/ do laço, logs/rag-medicao/ das medições da busca
