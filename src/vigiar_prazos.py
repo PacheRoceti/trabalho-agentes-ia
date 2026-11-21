@@ -76,7 +76,7 @@ def uma_volta(client, con, agora: datetime | None = None, log_dir: Path = LOGS_D
     import grafo                            # aqui, e não no topo: os testes fixam o checkpointer antes
     for r in grafo.retomar_interrompidas(client=client, con=con, log_dir=log_dir, agora=agora):
         if "erro" in r:
-            log.error("RECUPERAÇÃO FALHOU: %s (parou em %s): %s", r["id_ticket"], r["parou_em"], r["erro"])
+            log.error("RECUPERAÇÃO FALHOU: %s (parou em %s; falha %s)%s: %s", r["id_ticket"], r["parou_em"], r.get("falhas", "?"), " | NÃO SERÁ RETOMADA DE NOVO, GESTOR AVISADO" if r.get("desistiu") else "", r["erro"])
         else:
             desfecho = r["estado"].desfecho or {}
             log.warning("EXECUÇÃO RETOMADA DEPOIS DE QUEDA: %s | parou em %s | desfecho: %s | log: %s",

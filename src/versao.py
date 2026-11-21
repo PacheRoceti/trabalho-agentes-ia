@@ -6,4 +6,4 @@ Muda quando muda o comportamento do sistema (código de decisão, prompt, modelo
 mudança vai ao docs/mudancas.md com o commit. O commit continua indo ao log e ao trace: a versão diz
 o que se pretendia medir; o commit, o que rodou.
 """
-VERSAO = "1.0.0"
+VERSAO = "1.1.0"

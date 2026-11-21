@@ -909,3 +909,54 @@ def avisos_ao_gestor(con) -> list[dict]:
     return [dict(l) for l in con.execute(
         "SELECT id, ticket_externo, prioridade, motivo, mensagem, criado_em FROM avisos_gestor "
         "ORDER BY id DESC")]
+
+
+# ------------------------------------------------------------------ controle C3: o teto de retomadas (20/11/2026)
+# Parte 3, §3.2; risco ASI10 (docs/seguranca.md). O vigia retoma, a cada volta, a execução que uma
+# queda deixou pela metade (grafo.retomar_interrompidas). Uma que quebra sempre do mesmo jeito era
+# retomada sem fim, sem ninguém ver. Aqui se conta a falha por EXECUÇÃO (o execucao_id, e não o
+# chamado: rodar o chamado de novo é outra execução e começa do zero). No fim do arquivo para não
+# deslocar as linhas citadas nos docs.
+MAX_FALHAS_DE_RETOMADA = 3
+
+SQL_RETOMADAS = """
+CREATE TABLE IF NOT EXISTS retomadas_que_falharam (
+    execucao_id  TEXT PRIMARY KEY,
+    thread_id    TEXT NOT NULL,           -- o id do chamado (o thread do checkpoint)
+    falhas       INTEGER NOT NULL,
+    ultimo_erro  TEXT NOT NULL,
+    ultima_em    TEXT NOT NULL,           -- ISO 8601 com fuso
+    desistida_em TEXT                     -- preenchido no teto: não é mais retomada
+)"""
+
+
+def registrar_falha_de_retomada(con, execucao_id: str, thread_id: str, erro: str, quando: str) -> dict:
+    """Soma uma falha. Devolve {falhas, desistiu}: `desistiu` é True só na falha que atinge o teto."""
+    con.execute(SQL_RETOMADAS)
+    con.execute(
+        """INSERT INTO retomadas_que_falharam (execucao_id, thread_id, falhas, ultimo_erro, ultima_em)
+           VALUES (?, ?, 1, ?, ?)
+           ON CONFLICT(execucao_id) DO UPDATE SET falhas = falhas + 1, ultimo_erro = excluded.ultimo_erro,
+                                                  ultima_em = excluded.ultima_em""",
+        (execucao_id, thread_id, erro, quando))
+    linha = con.execute("SELECT falhas, desistida_em FROM retomadas_que_falharam WHERE execucao_id = ?",
+                        (execucao_id,)).fetchone()
+    desistiu = linha["falhas"] >= MAX_FALHAS_DE_RETOMADA and linha["desistida_em"] is None
+    if desistiu:
+        con.execute("UPDATE retomadas_que_falharam SET desistida_em = ? WHERE execucao_id = ?",
+                    (quando, execucao_id))
+    con.commit()
+    return {"falhas": linha["falhas"], "desistiu": desistiu}
+
+
+def retomada_desistida(con, execucao_id: str) -> bool:
+    con.execute(SQL_RETOMADAS)
+    return con.execute("SELECT 1 FROM retomadas_que_falharam WHERE execucao_id = ? AND desistida_em IS NOT NULL",
+                       (execucao_id,)).fetchone() is not None
+
+
+def limpar_falhas_de_retomada(con, execucao_id: str):
+    """A retomada deu certo: as falhas anteriores não contam mais."""
+    con.execute(SQL_RETOMADAS)
+    con.execute("DELETE FROM retomadas_que_falharam WHERE execucao_id = ?", (execucao_id,))
+    con.commit()

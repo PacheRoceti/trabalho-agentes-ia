@@ -157,17 +157,20 @@ class TestGrafo(unittest.TestCase):
                                                  "motivo": "score_abaixo_do_limiar"})
         self.assertFalse(e.saida.suficiencia.suficiente)
 
-    def rodar_sem(self, ticket, filtro=True, desempate=True):
+    def rodar_sem(self, ticket, filtro=True, desempate=True, roteiro=None):
         db.FILTRAR_REVOGADOS, db.DESEMPATAR_POR_DATA = filtro, desempate
         try:
-            return self.rodar(ticket)
+            return self.rodar(ticket, roteiro)
         finally:
             db.FILTRAR_REVOGADOS, db.DESEMPATAR_POR_DATA = True, True
 
     def test_sem_curadoria_o_tkt_0001_vira_chamado_p1_para_o_time_errado(self):
         # o achado do documento revogado (docs/rag.md §2.1): mesmo roteiro, mesmo score, e o
-        # guia antigo decide a ação, o time e a prioridade
-        e = self.rodar_sem("TKT-0001", filtro=False, desempate=False)
+        # guia antigo decide a ação, o time e a prioridade. A redação do roteiro não traz comando:
+        # o `certbot` do roteiro padrão é do KB-101-A, e o controle C1 (docs/seguranca.md) recusa,
+        # com razão, um comando que o guia que decidiu (o KB-101) não traz.
+        roteiro = [ROTEIROS["TKT-0001"][0], texto("Emitir e instalar um novo certificado pelo painel.")]
+        e = self.rodar_sem("TKT-0001", filtro=False, desempate=False, roteiro=roteiro)
         self.assertEqual(e.scores_kb["KB-101"], e.scores_kb["KB-101-A"])
         self.assertEqual((e.desfecho["acao"], e.desfecho["kb_id"]), ("abrir_chamado_interno", "KB-101"))
         self.assertEqual((e.desfecho["prioridade"], e.desfecho["time_destino"]), ("P1", "Seguranca"))

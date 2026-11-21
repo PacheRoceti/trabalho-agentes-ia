@@ -7,7 +7,7 @@
                                                     a ENTRADA é o texto do chamado, acompanhado do id
     python src/main.py TKT-0001                     sem o texto, o programa pede que você o digite;
                                                     Enter em branco usa o texto já registrado no chamado
-    python src/main.py TKT-0002 "..." --auto-aprovar   sem esperar a confirmação (demonstração)
+    python src/main.py TKT-0002 "..." --auto-aprovar --rodada NOME   sem esperar a confirmação (só para medir)
 
   Abrir chamado interno é irreversível: sem --auto-aprovar a execução PAUSA, grava a pendência e
   o analista tem 20 minutos para responder (--prazo-confirmacao MIN muda o prazo da execução):
@@ -318,7 +318,7 @@ def main():
         con = db.conectar()
         try:
             fato = db.registrar_fato(con, cliente, chave.strip(), valor.strip(),
-                                     por="analista de suporte (terminal)")
+                                     por=analista_do_terminal())
         except db.FatoRecusado as r:
             con.close()
             sys.exit(f"Fato recusado: {r}")
@@ -406,6 +406,9 @@ def main():
     if args.todos and not args.auto_aprovar:
         sys.exit("--todos recria o banco a cada caso, e uma ação pendente se perderia: "
                  "use --todos --auto-aprovar.")
+    erro = erro_do_auto_aprovar(args)      # controle C2 (docs/seguranca.md): fim do arquivo
+    if erro:
+        sys.exit(erro)
 
     client, modelo, precos = preparar_api()
     # Sem --auto-aprovar não há confirmador: a ação irreversível fica pendente, com prazo.
@@ -463,7 +466,7 @@ def main():
         if resposta:
             try:
                 estado = retomar(resposta, "aprovar" if args.aprovar else "rejeitar", client=client,
-                                 con=con, por="analista de suporte (terminal)", log_dir=log_dir,
+                                 con=con, por=analista_do_terminal(), log_dir=log_dir,
                                  resumo=args.resumo, motivo_rejeicao=args.motivo,
                                  mensagem=args.mensagem)
             except EdicaoRecusada as r:
@@ -549,6 +552,35 @@ def preparar_api():
         import vetorial
         vetorial.PRECO_USD_POR_MTOK = float(os.environ["PRECO_EMBEDDING_USD"])
     return client, modelo, precos
+
+
+# ------------------------------------------------------------------ controle C2 (20/11/2026)
+# Parte 3, §3.2; risco ASI03 (docs/seguranca.md). Duas peças, no fim do arquivo para não deslocar
+# as linhas citadas em exercicios/aula14-respostas.md:
+# 1. o --auto-aprovar responde "sim" a toda ação irreversível sem pessoa nenhuma, e só existe para
+#    medir (o --todos e as rodadas). Fora disso ele é recusado ANTES de qualquer execução:
+#    fail-closed, nada roda. A suíte de avaliação não passa por aqui (chama main.executar).
+# 2. quem aprova pelo terminal deixa de ser o texto fixo "analista de suporte (terminal)" e passa a
+#    ser o usuário do sistema operacional. Isso IDENTIFICA, e não impede: qualquer usuário da máquina
+#    ainda aprova (decisão do grupo, 20/11/2026; o resíduo está em docs/seguranca.md).
+
+def erro_do_auto_aprovar(args) -> str | None:
+    if args.auto_aprovar and not (args.rodada or args.todos):
+        return ("--auto-aprovar aprova a ação irreversível sem ninguém olhar e só vale para medir: "
+                "use com --todos ou com --rodada NOME. Sem ele, a ação espera o analista "
+                "(--pendencias, --aprovar, --rejeitar).")
+    return None
+
+
+def analista_do_terminal() -> str:
+    """Quem respondeu pelo terminal: o usuário do sistema operacional, no campo `por` da confirmação
+    (log, trace e pendência)."""
+    import getpass
+    try:
+        usuario = getpass.getuser()
+    except Exception:                    # noqa: BLE001 - sem usuário identificável, diz isso
+        usuario = None
+    return f"{usuario} (terminal)" if usuario else "usuário não identificado (terminal)"
 
 
 if __name__ == "__main__":
