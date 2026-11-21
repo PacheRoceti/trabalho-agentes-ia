@@ -8,7 +8,7 @@ campo 12 e em `docs/mudancas.md`.
 
 **Como ler a evidência.**
 - **Linhas de código.** `arquivo:linha` se refere ao commit `925b464`, cujo `src/` e `tests/` são os do `fa74011`.
-- **Testes.** Os testes são citados pelo nome: `python -m unittest discover -s tests` roda os **214** testes offline, sem chave e sem rede. Todos passaram em 21/11/2026: 206 sobre o `925b464`, e 214 com as correções da devolutiva da Parte 2 (`docs/mudancas.md` §1), ainda não commitadas quando esta linha foi escrita.
+- **Testes.** Os testes são citados pelo nome: `python -m unittest discover -s tests` roda os **214** testes offline, sem chave e sem rede. Todos passaram em 21/11/2026: 206 sobre o `925b464`, e 214 sobre o `42b68b9`, que traz as correções da devolutiva da Parte 2 (`docs/mudancas.md` §1).
 - **Lacunas.** Um campo sem evidência leva a marca **LACUNA** com um número. A seção final reúne todas, cada uma com a correção proposta.
 - **Lacunas resolvidas.** Ficam riscadas, com a data e o que as resolveu.
 

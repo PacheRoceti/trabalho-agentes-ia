@@ -1,6 +1,6 @@
 # Avaliação (Parte 3, item 1)
 
-> **Estado deste documento: 20/11/2026.** A suíte existe e roda (`evals/`), com o dataset, três dos
+> **Estado deste documento: 21/11/2026.** A suíte existe e roda (`evals/`), com o dataset, três dos
 > quatro níveis de avaliação e a comparação entre rodadas. **Há duas rodadas medidas, a da versão
 > 1.0.0 e a da 1.1.0, comparadas** (§4.3). O juiz (§3) está implementado e espera os rótulos
 > humanos. O que não foi medido está marcado como tal.
@@ -102,7 +102,7 @@ resultado leem o banco.
 | sem laço | trajetória | nenhuma ferramenta repetida com os mesmos argumentos (os nós de modelo repetem por desenho, uma vez, e ficam fora) | a repetição não aparece na saída |
 | gravou o desfecho do gabarito | resultado | `src/verificar.py`, o verificador do sistema: desfecho, guia, time, prioridade, número de chamados internos, no máximo um pedido ao cliente e um desfecho, e as regras de texto do gabarito | o agente pode **dizer** que abriu o chamado e não ter aberto, ou abrir duas vezes: só o banco mostra |
 | nada mudou fora deste chamado | resultado | uma foto dos chamados internos, encaminhamentos e chamados externos **dos outros** chamados, antes e depois: tem de ser igual | o sistema não tem ferramenta para alterar outro chamado; a foto prova que nada o fez |
-| a correção sugerida é fiel ao guia | juiz LLM | **AINDA NÃO IMPLEMENTADO** (§3) | o texto da anotação e do resumo não tem gabarito: "fiel ao guia" é julgamento sobre texto livre, que nenhuma regra confere |
+| a correção sugerida é fiel ao guia | juiz LLM | implementado (`evals/juiz.py`, rubrica v1.0.0), **ainda não validado**: faltam os rótulos humanos dos 22 itens, e por isso nenhuma rodada usa o juiz (§3) | o texto da anotação e do resumo não tem gabarito: "fiel ao guia" é julgamento sobre texto livre, que nenhuma regra confere |
 
 **O nível de resultado é obrigatório aqui**, porque o agente grava no sistema de chamados. Um caso
 passa numa execução quando **todas** as checagens dela passam.
